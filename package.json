@@ -1,0 +1,8 @@
+{
+    "name": "zerux-js-packages",
+    "description": "ZeruxJS Packages",
+    "private": true,
+    "workspaces": [
+        "packages/*"
+    ]
+}
