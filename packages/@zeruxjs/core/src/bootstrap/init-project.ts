@@ -1,0 +1,1 @@
+export const initProject = (a: any) => { console.log("test") };

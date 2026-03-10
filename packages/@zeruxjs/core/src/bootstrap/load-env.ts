@@ -1,0 +1,1 @@
+export const loadEnv = (a: any) => { console.log("test") };

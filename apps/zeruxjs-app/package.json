@@ -1,0 +1,16 @@
+{
+  "name": "zeruxjs-app",
+  "version": "1.0.0",
+  "description": "A test site to test Zerux on the go",
+  "author": "Shubham Kumar Bansal",
+  "type": "commonjs",
+  "main": "index.js",
+  "dependencies": {
+    "@zeruxjs/core": "*"
+  },
+  "private": true,
+  "scripts": {
+    "start": "zerux start",
+    "dev": "zerux dev"
+  }
+}

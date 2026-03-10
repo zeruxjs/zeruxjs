@@ -1,0 +1,1 @@
+export const startServer = () => console.log("Start server");

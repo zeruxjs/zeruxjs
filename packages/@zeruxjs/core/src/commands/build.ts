@@ -1,0 +1,1 @@
+export const buildProject = () => console.log("Build project");

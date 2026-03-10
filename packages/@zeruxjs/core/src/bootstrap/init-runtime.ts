@@ -1,0 +1,1 @@
+export const initRuntime = (a: any) => { console.log("test") };

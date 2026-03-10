@@ -3,6 +3,7 @@
     "description": "ZeruxJS Packages",
     "private": true,
     "workspaces": [
-        "packages/*"
+        "packages/@zeruxjs/*",
+        "apps/*"
     ]
 }

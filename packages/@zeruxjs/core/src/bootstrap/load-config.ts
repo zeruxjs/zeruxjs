@@ -1,0 +1,1 @@
+export const loadConfig = (a: any) => { console.log("test") };
