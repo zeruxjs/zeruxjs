@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  zerux-dev-env:
+    build:
+      context: .
+      dockerfile: .dev-container/Dockerfile.dev
+    container_name: zerux-dev-env
+    volumes:
+      # map entire root directory (where docker-compose.yml is present) as ubuntu drive
+      - .:/workspace
+    working_dir: /workspace
+    ports:
+      - "3000-3100:3000-3100"
+      - "9999-10099:9999-10099"
+    # Keeps the container alive without running anything specific yet
+    command: tail -f /dev/null

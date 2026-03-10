@@ -1,5 +1,5 @@
-import { registerTypescript } from "./register";
-import { createTsConfig } from "./tsconfig";
+import { registerTypescript } from "./register.js";
+import { createTsConfig } from "./tsconfig.js";
 
 export {
     registerTypescript,

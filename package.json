@@ -2,6 +2,23 @@
     "name": "zerux-js-packages",
     "description": "ZeruxJS Packages",
     "private": true,
+    "scripts": {
+        "preinstall": "node ./scripts/preinstall.js",
+        "env:install": "node ./scripts/install.js",
+        "env:stop": "node ./scripts/stop.js",
+        "env:dev": "node ./scripts/dev.js",
+        "env:build": "node ./scripts/build.js",
+        "env:start": "node ./scripts/start.js",
+        "env:restart": "node ./scripts/restart.js",
+        "env:list": "node ./scripts/list.js",
+        "docker:shell": "docker exec -it zerux-dev-env bash",
+        "docker:install": "docker exec -it zerux-dev-env npm run env:install",
+        "docker:dev": "docker exec -d zerux-dev-env npm run env:dev",
+        "docker:start": "docker exec -d zerux-dev-env npm run env:start",
+        "docker:stop": "docker exec -it zerux-dev-env npm run env:stop",
+        "docker:list": "docker exec -it zerux-dev-env npm run env:list",
+        "docker:restart": "docker exec -it zerux-dev-env npm run env:restart"
+    },
     "workspaces": [
         "packages/@zeruxjs/*",
         "apps/*"

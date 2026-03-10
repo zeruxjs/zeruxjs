@@ -7,8 +7,10 @@ export async function startDev() {
 
     try {
         const ts = await import("@zeruxjs/typescript");
-        ts.registerTypescript();
-    } catch {
+        console.log("Registering typescript support...");
+        // ts.registerTypescript();
+    } catch (err) {
+        console.error("Import failed:", err);
         // typescript support not installed
     }
 
