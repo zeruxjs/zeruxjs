@@ -1,9 +1,16 @@
-import { startAppServer } from "../server/app-server";
-import { startDevServer } from "../server/dev-server";
-import { startWatcher } from "../compiler/watcher";
+import { startAppServer } from "../server/app-server.js";
+import { startDevServer } from "../server/dev-server.js";
+import { startWatcher } from "../compiler/watcher.js";
 
 export async function startDev() {
     const rootDir = process.cwd();
+
+    try {
+        const ts = await import("@zeruxjs/typescript");
+        ts.registerTypescript();
+    } catch {
+        // typescript support not installed
+    }
 
     let appServer = await startAppServer(rootDir);
 

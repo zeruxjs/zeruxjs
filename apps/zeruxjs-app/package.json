@@ -6,7 +6,8 @@
   "type": "commonjs",
   "main": "index.js",
   "dependencies": {
-    "@zeruxjs/core": "*"
+    "@zeruxjs/core": "*",
+    "@zeruxjs/typescript": "*"
   },
   "private": true,
   "scripts": {

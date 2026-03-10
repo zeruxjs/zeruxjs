@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { startDev } from "../commands/dev";
-import { startServer } from "../commands/start";
-import { buildProject } from "../commands/build";
+import { startDev } from "../commands/dev.js";
+import { startServer } from "../commands/start.js";
+import { buildProject } from "../commands/build.js";
 
 const command = process.argv[2];
 

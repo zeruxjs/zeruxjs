@@ -1,7 +1,7 @@
-import { loadEnv } from "./load-env";
-import { loadConfig } from "./load-config";
-import { initRuntime } from "./init-runtime";
-import { initProject } from "./init-project";
+import { loadEnv } from "./load-env.js";
+import { loadConfig } from "./load-config.js";
+import { initRuntime } from "./init-runtime.js";
+import { initProject } from "./init-project.js";
 
 export async function bootstrap({ rootDir, mode }: { rootDir: string; mode: string }) {
     const context = {
