@@ -11,8 +11,11 @@ export interface DevServer extends http.Server {
 const VALID_TYPES = new Set(["new", "update", "delete"]);
 const JS_EXT_REGEX = /\.(jsx?|tsx?)$/;
 
+let assignedPort: number | null = null;
+
 export function startDevServer(rootDir: string, port: number | null = null): Promise<DevServer> {
     return new Promise((resolve, reject) => {
+        const isFixedPort = port !== null || assignedPort !== null;
         const createServer = (portToTry: number) => {
             const server = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
                 res.end("Zerux running");
@@ -20,7 +23,7 @@ export function startDevServer(rootDir: string, port: number | null = null): Pro
 
             server.on("error", (err: any) => {
                 if (err.code === "EADDRINUSE") {
-                    if (port !== null) reject(new Error(`Port ${portToTry} is already in use.`));
+                    if (isFixedPort) reject(new Error(`Port ${portToTry} is already in use.`));
                     else createServer(portToTry + 1);
                 } else {
                     reject(err);
@@ -28,7 +31,7 @@ export function startDevServer(rootDir: string, port: number | null = null): Pro
             });
 
             server.listen(portToTry, () => {
-                console.log("Dev server:", portToTry);
+                assignedPort = portToTry;
 
                 server.build = (event: { type: string; file: string }) => VALID_TYPES.has(event.type) && JS_EXT_REGEX.test(event.file);
 
@@ -85,10 +88,11 @@ export function startDevServer(rootDir: string, port: number | null = null): Pro
                     console.error("Failed to start WebSocket server:", e);
                 }
 
+                console.log(`Dev Server is running at http://localhost:${portToTry} and ws://localhost:${portToTry}`);
                 resolve(server);
             });
         };
 
-        createServer(port ?? 9999);
+        createServer(port ?? assignedPort ?? 9001);
     });
 }

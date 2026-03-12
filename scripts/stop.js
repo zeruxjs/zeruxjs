@@ -2,7 +2,9 @@ const { readState, writeState, stopProcess } = require('./helper');
 const { execSync } = require('child_process');
 
 // Optional target name to stop specific process, e.g. "npm run env:stop core"
-const targetName = process.argv[2];
+const args = process.argv.slice(2);
+const isHard = args.includes('--hard');
+const targetName = args.find(a => !a.startsWith('--'));
 const state = readState();
 let stoppedCount = 0;
 
@@ -44,8 +46,8 @@ if (!targetName) {
     } catch (e) {}
 
     const fs = require('fs');
-    if (!fs.existsSync('/.dockerenv')) {
-        console.log('Stopping Docker container...');
+    if (!fs.existsSync('/.dockerenv') && isHard) {
+        console.log('Stopping Docker container (--hard flag passed)...');
         try {
             execSync('docker compose down', { stdio: 'inherit' });
         } catch (e) {

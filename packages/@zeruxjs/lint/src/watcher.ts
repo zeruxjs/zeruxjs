@@ -1,7 +1,7 @@
-import fs from "node:fs";
+import { startWatcher } from "@zeruxjs/watcher";
 
 export function watchFiles(callback: () => void) {
-    fs.watch(process.cwd(), { recursive: true }, () => {
+    startWatcher(process.cwd(), () => {
         callback();
     });
 }
