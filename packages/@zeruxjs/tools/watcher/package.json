@@ -1,5 +1,5 @@
 {
-  "name": "@zeruxjs/watcher",
+  "name": "@zeruxjs/tools/watcher",
   "version": "1.0.0",
   "description": "Watcher support for ZeruxJS",
   "author": "",

@@ -4,12 +4,12 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 
 if (process.argv.includes('--run-packages-watcher')) {
-    const watcherModulePath = path.join(__dirname, '../packages/@zeruxjs/watcher/dist/index.js');
+    const watcherModulePath = path.join(__dirname, '../packages/@zeruxjs/tools/watcher/dist/index.js');
     if (!fs.existsSync(watcherModulePath)) {
-        console.error('Watcher module not found. Build @zeruxjs/watcher first.');
+        console.error('Watcher module not found. Build @zeruxjs/tools/watcher first.');
         process.exit(1);
     }
-    
+
     let debounceTimer = null;
 
     import('file://' + watcherModulePath).then(({ startWatcher }) => {
@@ -18,49 +18,49 @@ if (process.argv.includes('--run-packages-watcher')) {
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 console.log(`\n[Watcher] Package changed: ${event.file}, restarting apps...`);
-                
+
                 const currentState = readState();
                 if (!currentState || currentState.type !== 'dev' || !currentState.processes) return;
-                
+
                 const appProcs = currentState.processes.filter(p => /[\\\/]apps[\\\/][^\\\/]+$/.test(p.dir));
                 const otherProcs = currentState.processes.filter(p => !/[\\\/]apps[\\\/][^\\\/]+$/.test(p.dir));
-                
+
                 const newAppProcs = [];
-                
+
                 appProcs.forEach(proc => {
                     console.log(`Restarting ${proc.name}...`);
                     stopProcess(proc);
-                    
+
                     const outPath = path.join(proc.dir, `${proc.safeName}-dev-out.log`);
                     const errPath = path.join(proc.dir, `${proc.safeName}-dev-err.log`);
-                    
+
                     if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
                     if (fs.existsSync(errPath)) fs.unlinkSync(errPath);
-                    
+
                     const out = fs.openSync(outPath, 'a');
                     const err = fs.openSync(errPath, 'a');
-                    
+
                     const child = spawn('npm', ['run', 'dev'], {
                         cwd: proc.dir,
                         detached: true,
                         stdio: ['ignore', out, err],
                         env: { ...process.env }
                     });
-                    
+
                     newAppProcs.push({ ...proc, pid: child.pid, ports: proc.ports });
                     child.unref();
                 });
-                
+
                 writeState({ type: 'dev', processes: [...otherProcs, ...newAppProcs] });
                 console.log('[Watcher] Apps restarted.');
-                
+
             }, 1000);
         });
     }).catch(err => {
         console.error('Failed to start watcher:', err);
     });
-    
-    setInterval(() => {}, 10000);
+
+    setInterval(() => { }, 10000);
     return;
 }
 
@@ -78,7 +78,7 @@ function scanApps(dir) {
                 if (pkg.scripts && pkg.scripts.start && pkg.scripts.dev) {
                     apps.push({ dir: appPath, pkgName: pkg.name || entry.name });
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
     }
     return apps;
@@ -87,19 +87,19 @@ function scanApps(dir) {
 function scanPackages(dir) {
     const packages = [];
     if (!fs.existsSync(dir)) return packages;
-    
+
     const entriesLevel1 = fs.readdirSync(dir, { withFileTypes: true });
     for (const lvl1 of entriesLevel1) {
         if (!lvl1.isDirectory() || lvl1.name.startsWith('.') || lvl1.name === 'node_modules') continue;
         const path1 = path.join(dir, lvl1.name);
-        
+
         if (lvl1.name.startsWith('@')) {
             const entriesLevel2 = fs.readdirSync(path1, { withFileTypes: true });
             for (const lvl2 of entriesLevel2) {
                 if (!lvl2.isDirectory() || lvl2.name.startsWith('.') || lvl2.name === 'node_modules') continue;
                 const path2 = path.join(path1, lvl2.name);
                 const pkgPath2 = path.join(path2, 'package.json');
-                
+
                 if (fs.existsSync(pkgPath2)) {
                     addIfValid(pkgPath2, path2);
                 } else {
@@ -121,16 +121,16 @@ function scanPackages(dir) {
             }
         }
     }
-    
+
     function addIfValid(pkgPath, fullPath) {
         try {
             const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
             if (pkg.scripts && pkg.scripts.dev) {
                 packages.push({ dir: fullPath, pkgName: pkg.name || path.basename(fullPath) });
             }
-        } catch(e) {}
+        } catch (e) { }
     }
-    
+
     return packages;
 }
 
@@ -203,7 +203,7 @@ folders.forEach(({ dir, pkgName }) => {
 
 // Spawn packages watcher
 if (packages.length > 0 && apps.length > 0) {
-    console.log('Starting `@zeruxjs/watcher` for packages...');
+    console.log('Starting `@zeruxjs/tools/watcher` for packages...');
     const watcherChild = spawn('node', [__filename, '--run-packages-watcher'], {
         cwd: __dirname,
         detached: true,
@@ -255,7 +255,7 @@ const checkInterval = setInterval(() => {
                         console.log(`[${proc.name}] Dev Server started on ${devMatch[1].toLowerCase()} port ${devMatch[2]}`);
                     }
                 }
-                
+
                 const busyMatch = content.match(/Port (\d+) is already in use/i);
                 if (busyMatch && (!foundApp || !foundDev)) {
                     proc.ports.push({ port: parseInt(busyMatch[1], 10), protocol: 'http' });

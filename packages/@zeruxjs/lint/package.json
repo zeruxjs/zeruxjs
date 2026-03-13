@@ -13,7 +13,7 @@
     ".": "./dist/index.js"
   },
   "dependencies": {
-    "@zeruxjs/watcher": "*",
+    "@zeruxjs/tools/watcher": "*",
     "@eslint/js": "^9.39.4",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
