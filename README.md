@@ -12,7 +12,7 @@ This repository is a monorepo containing several interconnected packages:
 
 | Package | Description | Version |
 | ------- | ----------- | ------- |
-| [zyro](./packages/zyrojs) | Library for building fast and scalable applications. | yet to be released |
+| [`zyro`](./packages/zyrojs) | Library for building fast and scalable applications. | yet to be released |
 | [`@zeruxjs`](./packages/@zeruxjs) | The core Node.js framework. Contains the main runtime, API, and core logic. | yet to be released |
 | [`create-zerux-js`](./packages/create-zerux-js) | The CLI tool to scaffold and bootstrap new ZeruxJS projects globally via `npm create npm create zerux-js`. | yet to be released |
 | [`zerux-js-dev`](./vs-ext/zerux-js-dev) | The official Visual Studio Code extension providing intelligent code completion, snippets, and framework integration. | yet to be released |
