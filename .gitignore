@@ -4,6 +4,7 @@
 /.dev-container/docker
 /.dev-container/.env-state.json
 /.dev-container/log
+e-notes
 
 # VS Code
 .vscode
