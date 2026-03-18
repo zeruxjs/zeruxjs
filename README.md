@@ -60,4 +60,9 @@ If you discover a security vulnerability within ZeruxJS, please refer to our [Se
 
 ## 📝 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under both:
+
+- [MIT License](LICENSE-MIT)
+- [Apache License, Version 2.0](LICENSE-APACHE)
+
+at your option.
