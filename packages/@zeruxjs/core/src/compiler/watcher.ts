@@ -1,1 +1,1 @@
-export { startWatcher } from "@zeruxjs/tools/watcher";
+export { startWatcher } from "@zeruxjs/watcher";

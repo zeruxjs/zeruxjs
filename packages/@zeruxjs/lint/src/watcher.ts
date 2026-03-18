@@ -1,4 +1,4 @@
-import { startWatcher } from "@zeruxjs/tools/watcher";
+import { startWatcher } from "@zeruxjs/watcher";
 
 export function watchFiles(callback: () => void) {
     startWatcher(process.cwd(), () => {

@@ -36,7 +36,7 @@ export function startWatcher(rootDir: string, onChange?: WatcherCallback) {
 
     client.on("connect", () => {
         console.log(`[Watcher] Connected to existing watcher daemon for: ${rootDir}`);
-        
+
         let buffer = "";
         client.on("data", (data) => {
             buffer += data.toString();
@@ -49,7 +49,7 @@ export function startWatcher(rootDir: string, onChange?: WatcherCallback) {
                     for (const cb of watchers.get(rootDir) || []) {
                         cb(event, event.type);
                     }
-                } catch (e) {}
+                } catch (e) { }
             }
         });
 
@@ -81,7 +81,7 @@ function startMasterDaemon(rootDir: string, socketPath: string) {
 
     if (process.platform !== "win32") {
         if (fs.existsSync(socketPath)) {
-            try { fs.unlinkSync(socketPath); } catch (e) {}
+            try { fs.unlinkSync(socketPath); } catch (e) { }
         }
     }
 
@@ -97,7 +97,7 @@ function startMasterDaemon(rootDir: string, socketPath: string) {
     server.listen(socketPath, () => {
         console.log(`[Watcher] Started master watcher daemon for: ${rootDir}`);
         isTakingOver.delete(rootDir);
-        
+
         const watchDir = path.resolve(rootDir);
         const fileHashes = new Map();
         const debounceTimers = new Map();
@@ -160,7 +160,7 @@ function startMasterDaemon(rootDir: string, socketPath: string) {
                 if (process.platform !== "win32" && fs.existsSync(socketPath)) {
                     fs.unlinkSync(socketPath);
                 }
-            } catch (e) {}
+            } catch (e) { }
         };
 
         process.on("exit", cleanup);
@@ -171,29 +171,29 @@ function startMasterDaemon(rootDir: string, socketPath: string) {
     server.on("error", (err: any) => {
         isTakingOver.delete(rootDir);
         if (err.code === "EADDRINUSE") {
-             setTimeout(() => {
-                 const client = net.createConnection(socketPath);
-                 client.on("connect", () => { 
-                     // connected fallback
-                 });
-                 client.on("error", () => { 
-                     // retry mechanism failed
-                 });
-                 client.on("close", () => {
-                     startMasterDaemon(rootDir, socketPath);
-                 });
-             }, 100);
+            setTimeout(() => {
+                const client = net.createConnection(socketPath);
+                client.on("connect", () => {
+                    // connected fallback
+                });
+                client.on("error", () => {
+                    // retry mechanism failed
+                });
+                client.on("close", () => {
+                    startMasterDaemon(rootDir, socketPath);
+                });
+            }, 100);
         }
     });
 
     function broadcast(eventData: WatcherEvent) {
         console.log(`[Watcher] File changed: ${eventData.file} (${eventData.type})`);
-        
+
         // local listeners
         for (const cb of watchers.get(rootDir) || []) {
             cb(eventData, eventData.type);
         }
-        
+
         // ipc listeners
         const msg = JSON.stringify(eventData) + "\n";
         for (const client of clients) {

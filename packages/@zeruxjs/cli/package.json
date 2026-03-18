@@ -1,11 +1,13 @@
 {
-    "name": "@zeruxjs/core",
+    "name": "@zeruxjs/cli",
     "version": "1.0.0",
-    "description": "ZeruxJS framework core",
+    "description": "ZeruxJS CLI Helper - Assign Port, Auto Assign Port, Name Host Proxy, Certificate, SSL, Proxy.",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
-    "zerux": "./dist/bin/zerux.js",
+    "bin": {
+        "zerux": "./dist/bin/zerux.js"
+    },
     "scripts": {
         "build": "tsc",
         "dev": "tsc --watch"
@@ -15,7 +17,6 @@
     },
     "license": "MIT",
     "dependencies": {
-        "@zeruxjs/watcher": "*",
-        "ws": "^8.19.0"
+        "chalk": "^4.1.2"
     }
 }

@@ -1,7 +1,7 @@
 {
-    "name": "zyrojs",
+    "name": "@zeruxjs/server",
     "version": "1.0.0",
-    "description": "Zyro Library",
+    "description": "ZeruxJS Server Helper",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -12,5 +12,9 @@
     "exports": {
         ".": "./dist/index.js"
     },
-    "license": "MIT"
+    "license": "MIT",
+    "dependencies": {
+        "@zeruxjs/watcher": "*",
+        "ws": "^8.19.0"
+    }
 }
