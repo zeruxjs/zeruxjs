@@ -3,6 +3,7 @@
 import { startDev } from "../commands/dev.js";
 import { startServer } from "../commands/start.js";
 import { buildProject } from "../commands/build.js";
+import { cli } from "@zeruxjs/cli";
 
 const command = process.argv[2];
 
@@ -75,4 +76,6 @@ Commands:
     }
 }
 
-run();
+// run();
+
+cli.addCommand('zerux', 'apple', () => { console.log('called apple 2') })

@@ -1,0 +1,13 @@
+{
+    "name": "create-zerux-js",
+    "version": "1.0.0",
+    "description": "Create ZeruxJS project",
+    "bin": {
+        "create-zerux": "index.js"
+    },
+    "type": "module",
+    "dependencies": {
+        "prompts": "^2.4.2"
+    },
+    "license": "MIT"
+}
