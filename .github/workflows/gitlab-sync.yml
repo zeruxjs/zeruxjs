@@ -1,27 +1,21 @@
-name: Sync GitHub → GitLab (Full Mirror)
+name: Sync to GitLab
 
 on:
   push:
     branches:
-      - '**'   # all branches
-  delete:       # handle branch deletions
-
-permissions:
-  contents: read
+      - '**'
 
 jobs:
   sync:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout FULL repo (not shallow)
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      # 2. Setup SSH for GitLab
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -29,25 +23,8 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
 
-      # 3. Add GitLab remote
-      - name: Add GitLab remote
+      - name: Push ALL branches & tags to GitLab
         run: |
           git remote add gitlab git@gitlab.com:zeruxjs/zeruxjs.git || true
-
-      # 4. Sync ALL branches (mirror)
-      - name: Sync branches
-        run: |
-          git fetch --prune --unshallow || true
-          git fetch origin "+refs/heads/*:refs/remotes/origin/*"
-
-          git push --force gitlab refs/remotes/origin/*:refs/heads/*
-
-      # 5. Sync tags
-      - name: Sync tags
-        run: |
-          git push --force gitlab --tags
-
-      # 6. Delete removed branches on GitLab
-      - name: Prune deleted branches
-        run: |
-          git push gitlab --prune +refs/heads/*:refs/heads/*
+          git push --force --all gitlab
+          git push --force --tags gitlab
