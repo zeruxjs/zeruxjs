@@ -10,7 +10,10 @@
     "dev": "tsc --watch"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "dependencies": {
     "@zeruxjs/watcher": "*",

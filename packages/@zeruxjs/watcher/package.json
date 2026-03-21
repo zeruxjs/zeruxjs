@@ -12,7 +12,10 @@
     "dev": "tsc --watch"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "license": "(MIT AND Apache-2.0)",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",

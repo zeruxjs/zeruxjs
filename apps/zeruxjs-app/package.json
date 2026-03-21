@@ -11,8 +11,10 @@
   },
   "private": true,
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
+    "build": "zerux build",
+    "dev": "zerux dev",
+    "start": "zerux start",
+    "meow": "zerux meow"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

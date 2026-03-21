@@ -11,12 +11,12 @@
     "dev": "tsc --watch"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./hooks": "./dist/hooks/index.js"
   },
   "license": "(MIT AND Apache-2.0)",
   "dependencies": {
-    "@zeruxjs/watcher": "*",
-    "ws": "^8.19.0"
+    "@zeruxjs/hooks": "*"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

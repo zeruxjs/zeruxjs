@@ -1,9 +1,7 @@
 import chalk from "chalk";
 import fs from "fs";
 import path from "path";
-import { createRequire } from "module";
-
-const require = createRequire(import.meta.url);
+import { pathToFileURL } from "node:url";
 
 type CommandHandler = (args: string[]) => Promise<void> | void;
 
@@ -76,37 +74,39 @@ class ZeruxCLI {
         return null;
     }
 
-    private loadPackage(pkgPath: string) {
+    /**
+     * 🔥 FIXED: ESM-safe loader
+     */
+    private async loadPackage(pkgPath: string) {
         try {
             const pkgJsonPath = path.join(pkgPath, "package.json");
 
-            if (!fs.existsSync(pkgJsonPath)) {
-                return;
-            }
+            if (!fs.existsSync(pkgJsonPath)) return;
 
             const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, "utf8"));
 
-            if (!pkg.zerux) {
-                return;
-            }
+            if (!pkg.zerux) return;
 
             const entry = path.join(pkgPath, pkg.zerux);
 
-            require(entry);
-        } catch {
-            // ignore plugin errors
+            const entryUrl = pathToFileURL(entry).href;
+
+            await import(entryUrl); // ✅ ESM safe
+        } catch (err) {
+            console.error("[zerux plugin load error]", err);
         }
     }
 
-    private loadPlugins() {
+    /**
+     * 🔥 FIXED: async plugin loader
+     */
+    private async loadPlugins() {
         if (ZeruxCLI.loadedPlugins) return;
         ZeruxCLI.loadedPlugins = true;
 
         const nodeModules = this.findNodeModules(process.cwd());
 
-        if (!nodeModules) {
-            return;
-        }
+        if (!nodeModules) return;
 
         const packages = fs.readdirSync(nodeModules);
 
@@ -115,16 +115,14 @@ class ZeruxCLI {
 
             const pkgPath = path.join(nodeModules, pkg);
 
-            // Scoped packages like @zeruxjs are grouped inside a folder starting with "@"
             if (pkg.startsWith("@")) {
                 const scopePackages = fs.readdirSync(pkgPath);
 
                 for (const scoped of scopePackages) {
-                    this.loadPackage(path.join(pkgPath, scoped));
+                    await this.loadPackage(path.join(pkgPath, scoped));
                 }
             } else {
-                // Parse all normal packages that do not start with "@"
-                this.loadPackage(pkgPath);
+                await this.loadPackage(pkgPath);
             }
         }
     }
@@ -142,7 +140,6 @@ class ZeruxCLI {
             }
         }
 
-        // Auto-run once registration is complete
         setImmediate(() => {
             this.run(keyword);
         });
@@ -157,13 +154,12 @@ class ZeruxCLI {
 
         const keyCommands = ZeruxCLI.keys.get(keyword)!;
 
-        // First come, first serve: ignore duplicate commands
         if (keyCommands.has(name)) return;
 
         const cmdObj: Command = { name, options: opts, handler };
         keyCommands.set(name, cmdObj);
 
-        // Immediate Execution Check
+        // 🔥 Immediate execution
         if (this.command === name) {
             if (ZeruxCLI.isHelp) {
                 this.showCommandHelp(cmdObj);
@@ -176,19 +172,24 @@ class ZeruxCLI {
             }
 
             if (!ZeruxCLI.isRea && !opts.rea) {
-                this.loadPlugins();
-                Promise.resolve(handler(this.args)).then(() => process.exit(0)).catch((err) => {
-                    this.error(err?.message || String(err));
-                    process.exit(1);
-                });
+                (async () => {
+                    await this.loadPlugins();
+
+                    try {
+                        await handler(this.args);
+                        process.exit(0);
+                    } catch (err: any) {
+                        this.error(err?.message || String(err));
+                        process.exit(1);
+                    }
+                })();
             }
         }
     }
 
     private async run(keyword: string) {
-        this.loadPlugins();
+        await this.loadPlugins();
 
-        // Handle global flags with keyword context
         if (ZeruxCLI.isList && (this.command === "--list" || this.command === "-l")) {
             this.showList(keyword);
             process.exit(0);
@@ -253,11 +254,9 @@ class ZeruxCLI {
 
     private showCommandHelp(cmd: Command) {
         this.log(chalk.bold.yellow(`Help: ${cmd.name}`));
-        if (cmd.options.description) {
-            this.log(cmd.options.description);
-        }
+        if (cmd.options.description) this.log(cmd.options.description);
 
-        if (cmd.options.help && cmd.options.help.length > 0) {
+        if (cmd.options.help?.length) {
             this.log(chalk.bold("\nArguments:"));
             cmd.options.help.forEach((h) => {
                 this.log(`  ${chalk.cyan(h.arg.padEnd(15))} ${h["its description"]}`);

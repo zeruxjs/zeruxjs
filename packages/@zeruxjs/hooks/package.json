@@ -1,0 +1,36 @@
+{
+    "name": "@zeruxjs/hooks",
+    "version": "1.0.0",
+    "description": "Hooks for ZeruxJS Framework",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "license": "(MIT AND Apache-2.0)",
+    "dependencies": {},
+    "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+    "bugs": {
+        "url": "https://github.com/zeruxjs/zeruxjs/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+    },
+    "keywords": [
+        "hooks",
+        "zerux",
+        "zeruxjs"
+    ]
+}
