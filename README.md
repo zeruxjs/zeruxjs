@@ -71,4 +71,4 @@ You may choose either license for your use.
 
 | Dependency | Version | License | Source | Used In |
 |-----------|--------|--------|--------|--------|
-| Poerless | 0.7.1 | Apache 2.0 | https://github.com/vercel-labs/portless | @zerux/server |
+| Portless | 0.7.1 | Apache 2.0 | [Portless](https://github.com/vercel-labs/portless) | @zerux/server |
