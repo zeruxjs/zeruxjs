@@ -12,7 +12,7 @@
   },
   "exports": {
     ".": "./dist/index.js",
-    "./hooks": "./dist/hooks/index.js"
+    "./schema/schema.config.json": "./assets/json/schema.config.json"
   },
   "license": "(MIT AND Apache-2.0)",
   "dependencies": {
