@@ -25,6 +25,11 @@
             "description": "Database Settings",
             "type": "object",
             "properties": {
+                "default": {
+                    "type": "string",
+                    "description": "Default database connection slug",
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                },
                 "connections": {
                     "type": "array",
                     "description": "List of database connections",

@@ -16,6 +16,9 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      # -------------------------------
+      # 🔐 Setup SSH (for gitlab.com)
+      # -------------------------------
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -23,8 +26,27 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
 
-      - name: Push ALL branches & tags to GitLab
+      # -------------------------------
+      # 🚀 Push to MAIN GitLab (must succeed)
+      # -------------------------------
+      - name: Push ALL branches & tags to GitLab.com
         run: |
           git remote add gitlab git@gitlab.com:zeruxjs/zeruxjs.git || true
           git push --force --all gitlab
           git push --force --tags gitlab
+
+      # -------------------------------
+      # 🌐 Push to SELF-HOSTED GitLab (optional)
+      # -------------------------------
+      - name: Push to Self-hosted GitLab (optional)
+        env:
+          SELF_GITLAB_TOKEN: ${{ secrets.SELF_GITLAB_TOKEN }}
+        run: |
+          set +e  # ❗ allow failure
+
+          git remote add selfgitlab https://oauth2:${SELF_GITLAB_TOKEN}@gitlab.shubkb.me/zeruxjs/zeruxjs.git || true
+
+          git push --force --all selfgitlab
+          git push --force --tags selfgitlab
+
+          echo "Self-hosted push attempted (failure ignored)"

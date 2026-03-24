@@ -3,6 +3,7 @@
     "apiVersion": 1,
     "type": "fix",
     "database": {
+        "default": "something",
         "connections": [
             {
                 "name": "Something",
