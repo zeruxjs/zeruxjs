@@ -224,8 +224,6 @@ export const startServer = async (details: any) => {
                 appServer.close(() => r())
             );
 
-            removeSerDetails(serviceFile, "app");
-
             await details.dev.watchFunc(event.file);
 
             if (!(await isPortFree(appPort))) {
@@ -237,8 +235,6 @@ export const startServer = async (details: any) => {
             await new Promise<void>((r) =>
                 appServer.listen(appPort, r)
             );
-
-            addSerDetails(serviceFile, "app", appUrls);
 
             console.log(
                 `App server restarted at ${appUrls.join(", ")}`
