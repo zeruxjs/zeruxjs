@@ -3,7 +3,12 @@ import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "node:url";
 
-type CommandHandler = (args: string[]) => Promise<void> | void;
+export interface ParsedArgs {
+    namedArgs: Record<string, string | boolean | string[]>;
+    positionalArgs: string[];
+}
+
+type CommandHandler = (args: ParsedArgs) => Promise<void> | void;
 
 interface CommandOptions {
     rea?: boolean;
@@ -36,11 +41,13 @@ class ZeruxCLI {
 
     private command: string | undefined;
     private args: string[];
+    private parsedArgs: ParsedArgs;
 
     constructor() {
         const [, , command, ...args] = process.argv;
         this.command = command;
         this.args = args;
+        this.parsedArgs = this.parseArguments(args);
 
         const checkFlag = (val: string) => {
             if (val === "--docs" || val === "-d") ZeruxCLI.isDocs = true;
@@ -56,6 +63,66 @@ class ZeruxCLI {
         }
 
         this.args.forEach(checkFlag);
+    }
+
+    private parseArguments(args: string[]): ParsedArgs {
+        const result: ParsedArgs = {
+            namedArgs: {},
+            positionalArgs: []
+        };
+
+        const setNamedArg = (key: string, val: string | boolean) => {
+            if (key in result.namedArgs) {
+                const existing = result.namedArgs[key];
+                if (Array.isArray(existing)) {
+                    existing.push(val as string);
+                } else {
+                    result.namedArgs[key] = [existing as string, val as string];
+                }
+            } else {
+                result.namedArgs[key] = val;
+            }
+        };
+
+        for (let i = 0; i < args.length; i++) {
+            const arg = args[i];
+
+            if (arg.startsWith('--')) {
+                const eqIndex = arg.indexOf('=');
+                if (eqIndex !== -1) {
+                    const key = arg.slice(2, eqIndex);
+                    const val = arg.slice(eqIndex + 1);
+                    setNamedArg(key, val);
+                } else {
+                    const key = arg.slice(2);
+                    if (i + 1 < args.length && !args[i + 1].startsWith('-') && !args[i + 1].includes('=')) {
+                        setNamedArg(key, args[i + 1]);
+                        i++;
+                    } else {
+                        setNamedArg(key, true);
+                    }
+                }
+            } else if (arg.startsWith('-')) {
+                if (arg.includes('=')) {
+                    console.error(`\x1b[31m✖ Invalid argument format: "${arg}". Use '--key=value' instead of '-key=value'.\x1b[0m`);
+                    process.exit(1);
+                }
+                const key = arg.slice(1);
+                if (i + 1 < args.length && !args[i + 1].startsWith('-') && !args[i + 1].includes('=')) {
+                    setNamedArg(key, args[i + 1]);
+                    i++;
+                } else {
+                    setNamedArg(key, true);
+                }
+            } else if (arg.includes('=')) {
+                console.error(`\x1b[31m✖ Invalid argument format: "${arg}". Use '--key=value' for assignments.\x1b[0m`);
+                process.exit(1);
+            } else {
+                result.positionalArgs.push(arg);
+            }
+        }
+
+        return result;
     }
 
     private findNodeModules(start: string): string | null {
@@ -176,7 +243,7 @@ class ZeruxCLI {
                     await this.loadPlugins();
 
                     try {
-                        await handler(this.args);
+                        await handler(this.parsedArgs);
                         process.exit(0);
                     } catch (err: any) {
                         this.error(err?.message || String(err));
@@ -219,7 +286,7 @@ class ZeruxCLI {
             process.exit(1);
         }
 
-        await cmd.handler(this.args);
+        await cmd.handler(this.parsedArgs);
         process.exit(0);
     }
 

@@ -5,9 +5,6 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "zerux": "./dist/bin/zerux.js"
-  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"

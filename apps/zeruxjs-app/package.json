@@ -12,7 +12,7 @@
   "private": true,
   "scripts": {
     "build": "zerux build",
-    "dev": "zerux dev",
+    "dev": "zerux dev -p 80 --v=s",
     "start": "zerux start",
     "meow": "zerux meow"
   },
