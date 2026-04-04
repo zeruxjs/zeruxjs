@@ -15,7 +15,6 @@ const getConfig = async (mode: 'dev' | 'start' = 'start') => {
                     config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
                 } else {
                     const cacheBuster = mode === 'dev' ? `?t=${Date.now()}` : '';
-                    console.log(`file://${configPath}${cacheBuster}`);
                     const mod = await import(`file://${configPath}${cacheBuster}`);
                     config = mod.default || mod.zeruxConfig || mod;
                 }
@@ -55,7 +54,7 @@ export const server = async (mode: 'dev' | 'start' = 'start', args: { namedArgs:
     };
 
     const details: any = {
-        service: projectName,
+        service: 'zerux',
         config: config,
         app: {
             name: projectName,

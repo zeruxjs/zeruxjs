@@ -1,0 +1,18 @@
+[
+  {
+    "type": "app",
+    "urls": [
+      "http://127.0.0.1:3001",
+      "https://zeruxjs-app.localhost"
+    ]
+  },
+  {
+    "type": "dev",
+    "urls": [
+      "http://127.0.0.1:9000/zeruxjs-app",
+      "ws://127.0.0.1:9000/zeruxjs-app",
+      "https://zdev.localhost/zeruxjs-app",
+      "wss://zdev.localhost/zeruxjs-app"
+    ]
+  }
+]
