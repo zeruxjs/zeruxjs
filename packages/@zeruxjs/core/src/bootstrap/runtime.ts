@@ -45,6 +45,18 @@ const MIME_TYPES: Record<string, string> = {
     ".txt": "text/plain; charset=utf-8"
 };
 
+const looksLikeHtml = (value: string) => {
+    const trimmed = value.trimStart().toLowerCase();
+    return (
+        trimmed.startsWith("<!doctype html") ||
+        trimmed.startsWith("<html") ||
+        trimmed.startsWith("<body") ||
+        trimmed.startsWith("<main") ||
+        trimmed.startsWith("<section") ||
+        trimmed.startsWith("<div")
+    );
+};
+
 const normalizeMethod = (value?: string) => (value ? value.toUpperCase() : "GET");
 
 const asArray = <T>(value: T | T[] | undefined): T[] => {
@@ -104,7 +116,10 @@ const sendResponse = (res: ServerResponse, payload: unknown, statusCode = 200) =
 
     if (typeof payload === "string") {
         res.statusCode = statusCode;
-        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        res.setHeader(
+            "Content-Type",
+            looksLikeHtml(payload) ? "text/html; charset=utf-8" : "text/plain; charset=utf-8"
+        );
         res.end(payload);
         return;
     }

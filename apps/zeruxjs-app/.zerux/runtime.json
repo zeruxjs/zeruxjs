@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-05T08:22:03.157Z",
+  "generatedAt": "2026-04-05T12:25:34.877Z",
   "mode": "dev",
   "rootDir": "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app",
   "entryModulePath": null,
@@ -75,6 +75,16 @@
   "middleware": [],
   "controllers": [],
   "composables": [],
-  "routes": [],
+  "routes": [
+    {
+      "id": "app/page",
+      "path": "/",
+      "file": "app/page.ts",
+      "methods": [
+        "ALL"
+      ],
+      "middleware": []
+    }
+  ],
   "publicFiles": []
 }

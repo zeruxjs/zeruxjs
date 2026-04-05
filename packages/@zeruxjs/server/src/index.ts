@@ -81,6 +81,9 @@ const removeSerDetails = (file: string, type: string) => {
 
 const ensureSharedDev = async (appName: string, port?: number) => {
     let data = readJSON(SHARED_DEV_FILE);
+    if (!Array.isArray(data.services)) {
+        data.services = [];
+    }
 
     if (!data.port) {
         const p = port ? await findPort(port) : await findPort(9000);
@@ -108,12 +111,19 @@ const ensureSharedDev = async (appName: string, port?: number) => {
 };
 
 const removeSharedDev = (name: string) => {
-    const data = readJSON(SHARED_DEV_FILE);
+    if (!fs.existsSync(SHARED_DEV_FILE)) {
+        return false;
+    }
 
-    data.services = data.services.filter((s: any) => s.name !== name);
+    const data = readJSON(SHARED_DEV_FILE);
+    const services = Array.isArray(data.services) ? data.services : [];
+
+    data.services = services.filter((s: any) => s.name !== name);
 
     if (data.services.length === 0) {
-        fs.unlinkSync(SHARED_DEV_FILE);
+        if (fs.existsSync(SHARED_DEV_FILE)) {
+            fs.unlinkSync(SHARED_DEV_FILE);
+        }
         return true;
     }
 
@@ -244,7 +254,12 @@ export const startServer = async (details: any) => {
 
     /* ---------------- CLEANUP ---------------- */
 
+    let cleanedUp = false;
+
     const cleanup = () => {
+        if (cleanedUp) return;
+        cleanedUp = true;
+
         removeSerDetails(serviceFile, "app");
         removeSerDetails(serviceFile, "dev");
 

@@ -17,6 +17,11 @@ const parsePort = (value: unknown) => {
     return Number.isFinite(port) ? port : undefined;
 };
 
+const isInsideGeneratedDir = (filePath: string) => {
+    const normalized = filePath.replace(/\\/g, "/");
+    return normalized === ".zerux" || normalized.startsWith(".zerux/") || normalized.includes("/.zerux/");
+};
+
 const getProjectName = (rootDir: string) => {
     const packageJsonPath = path.join(rootDir, "package.json");
     if (!fs.existsSync(packageJsonPath)) {
@@ -84,7 +89,7 @@ export const server = async (
                 const file = event.file ?? "";
                 if (!file) return false;
                 if (file.includes("node_modules")) return false;
-                if (file.includes(`${path.sep}.zerux${path.sep}`)) return false;
+                if (isInsideGeneratedDir(file)) return false;
                 if (file.endsWith(".log")) return false;
                 return true;
             },
