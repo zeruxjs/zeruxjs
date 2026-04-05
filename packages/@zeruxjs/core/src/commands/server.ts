@@ -1,99 +1,104 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { startServer } from "@zeruxjs/server";
-import fs from "fs";
-import path from "path";
 
-const getConfig = async (mode: 'dev' | 'start' = 'start') => {
-    const rootDir = process.cwd();
+import { loadConfig, resolveStructure } from "../bootstrap/config.js";
+import { loadEnvironmentFiles } from "../bootstrap/env.js";
+import { registerProcessExceptionHandlers } from "../bootstrap/exception.js";
+import { writeRuntimeManifest } from "../bootstrap/manifest.js";
+import { bootstrapApplication } from "../bootstrap/runtime.js";
+import { logger } from "../bootstrap/logger.js";
 
-    // Get Configuration.
-    let config: any = {};
-    for (const ext of [".ts", ".js", ".mjs"]) {
-        const configPath = path.join(rootDir, `zerux.config${ext}`);
-        if (fs.existsSync(configPath)) {
-            try {
-                if (ext === ".json") {
-                    config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-                } else {
-                    const cacheBuster = mode === 'dev' ? `?t=${Date.now()}` : '';
-                    const mod = await import(`file://${configPath}${cacheBuster}`);
-                    config = mod.default || mod.zeruxConfig || mod;
-                }
-                break;
-            } catch (err: any) {
-                console.error(`[zerux] Error loading ${configPath}:`, err.message);
-            }
-        }
-    }
-    return config;
-}
+const parsePort = (value: unknown) => {
+    if (value === undefined || value === null || value === "") return undefined;
 
-export const server = async (mode: 'dev' | 'start' = 'start', args: { namedArgs: any, positionalArgs: any }, options: any) => {
-    const rootDir = process.cwd();
+    const port = Number.parseInt(String(value), 10);
+    return Number.isFinite(port) ? port : undefined;
+};
 
-    const config = await getConfig(mode);
+const getProjectName = (rootDir: string) => {
     const packageJsonPath = path.join(rootDir, "package.json");
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
-    const projectName = packageJson.name;
+    if (!fs.existsSync(packageJsonPath)) {
+        return path.basename(rootDir);
+    }
 
-    const mainFile = packageJson.main || "index.js";
-    const mainPath = path.join(rootDir, mainFile);
+    try {
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+        return packageJson.name || path.basename(rootDir);
+    } catch {
+        return path.basename(rootDir);
+    }
+};
 
-    const loadAppFunc = async () => {
-        try {
-            const cacheBuster = mode === 'dev' ? `?t=${Date.now()}` : '';
-            const modulePath = `file://${mainPath}${cacheBuster}`;
-            const m = await import(modulePath);
-            return m.default || m.app || m.server || m.handler;
-        } catch (err: any) {
-            console.error(`[zerux] Failed to load application entry (${mainFile}):`, err.message);
-            return (req: any, res: any) => {
-                res.writeHead(500);
-                res.end(`Load Error: ${err.message}`);
-            };
-        }
-    };
+export const server = async (
+    mode: "dev" | "start" = "start",
+    args: { namedArgs?: Record<string, string | boolean | string[]>; positionalArgs?: string[] }
+) => {
+    const rootDir = process.cwd();
+    const config = await loadConfig(rootDir, mode);
+    const structure = resolveStructure(rootDir, config);
 
-    const details: any = {
-        service: 'zerux',
-        config: config,
+    const loadedEnvFiles = loadEnvironmentFiles(structure.envFiles);
+    registerProcessExceptionHandlers(logger);
+
+    let bootstrap = await bootstrapApplication(rootDir, mode, config, structure);
+    let manifestPath = writeRuntimeManifest(bootstrap.runtime);
+    const appName = getProjectName(rootDir);
+    const appPort = parsePort(args.namedArgs?.p ?? args.namedArgs?.port ?? config.server?.port);
+    const devPort = parsePort(args.namedArgs?.devPort ?? config.server?.devPort);
+    let currentHandler = bootstrap.runtime.createHandler();
+    const appHandler = async (req: any, res: any) => currentHandler(req, res);
+
+    logger.info("Zerux bootstrap ready", {
+        mode,
+        appName,
+        manifestPath,
+        loadedEnvFiles,
+        routes: bootstrap.runtime.routes.length
+    });
+
+    await startServer({
+        service: "zerux",
+        config,
         app: {
-            name: projectName,
-            port: args.namedArgs?.p || args.namedArgs?.port ? parseInt(args.namedArgs.p || args.namedArgs.port) : undefined,
-            func: await loadAppFunc(),
-        }
-    };
-
-    if (mode === 'dev') {
-        let devFunc;
-        try {
-            // @ts-ignore
-            const devModule = await import("@zeruxjs/dev").catch(() => null);
-            devFunc = devModule?.default || devModule?.app || devModule?.handler || devModule?.server;
-        } catch (err) { }
-
-        details.dev = {
-            port: args.namedArgs?.devPort ? parseInt(args.namedArgs.devPort) : undefined,
-            func: devFunc || ((req: any, res: any) => {
-                if (req.url === '/') {
-                    res.writeHead(200, { 'Content-Type': 'text/html' });
-                    res.end('<h1>ZeRux Dev Site</h1><p>Dev frontend is not ready yet. Develop mode active.</p>');
-                }
-            }),
-            watchTriggerFunc: (event: any) => {
-                if (event.file?.includes("node_modules")) return false;
-                if (event.file?.includes(".log")) return false;
-                if (event.file?.includes(`.${projectName}`)) return false; // stop infinite reload loop on server.json updates
-                if (event.file?.includes(".zerux")) return false; // same here for .zerux config files
+            name: appName,
+            port: appPort,
+            func: appHandler
+        },
+        dev: mode === "dev" ? {
+            port: devPort,
+            func: (_req: any, res: any) => {
+                res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+                res.end(JSON.stringify({
+                    app: appName,
+                    mode,
+                    manifestPath,
+                    routes: bootstrap.runtime.routes.map((route) => ({
+                        path: route.pattern,
+                        methods: Object.keys(route.methods).sort()
+                    }))
+                }));
+            },
+            watchTriggerFunc: (event: { file?: string }) => {
+                const file = event.file ?? "";
+                if (!file) return false;
+                if (file.includes("node_modules")) return false;
+                if (file.includes(`${path.sep}.zerux${path.sep}`)) return false;
+                if (file.endsWith(".log")) return false;
                 return true;
             },
-            watchFunc: async (file: string) => {
-                details.app.func = await loadAppFunc();
+            watchFunc: async () => {
+                const nextConfig = await loadConfig(rootDir, mode);
+                const nextStructure = resolveStructure(rootDir, nextConfig);
+                loadEnvironmentFiles(nextStructure.envFiles);
+
+                bootstrap = await bootstrapApplication(rootDir, mode, nextConfig, nextStructure);
+                manifestPath = writeRuntimeManifest(bootstrap.runtime);
+                currentHandler = bootstrap.runtime.createHandler();
             }
-        };
-    }
+        } : undefined
+    });
 
-    await startServer(details);
-
-    // Keep the process alive so the CLI doesn't call process.exit(0)
-    return new Promise(() => { });
+    return new Promise(() => undefined);
 };

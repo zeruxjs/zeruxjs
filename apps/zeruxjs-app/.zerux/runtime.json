@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-04-05T08:22:03.157Z",
+  "mode": "dev",
+  "rootDir": "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app",
+  "entryModulePath": null,
+  "config": {
+    "type": "fix",
+    "database": {
+      "default": "something",
+      "connections": [
+        {
+          "name": "Something",
+          "slug": "something",
+          "connecter": "@zeruxjs/mongo",
+          "options": {
+            "key_1": "KEY_1_VALUE",
+            "key_2": "KEY_2_VALUE"
+          }
+        }
+      ]
+    }
+  },
+  "structure": {
+    "mode": "fix",
+    "entryPointName": "index",
+    "appDir": "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/app",
+    "middlewareDirs": [
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/app/middleware",
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/middleware"
+    ],
+    "controllerDirs": [
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/app/controllers",
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/controllers"
+    ],
+    "composableDirs": [
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/app/composables",
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/composables"
+    ],
+    "pluginDirs": [
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/plugins"
+    ],
+    "publicDirs": [
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/public"
+    ],
+    "envFiles": [
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/.env",
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/.env.local",
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/.env.development",
+      "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/.env.development.local"
+    ],
+    "outputDir": "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/.zerux",
+    "raw": {
+      "app": "app",
+      "middleware": [
+        "app/middleware",
+        "middleware"
+      ],
+      "controllers": [
+        "app/controllers",
+        "controllers"
+      ],
+      "composables": [
+        "app/composables",
+        "composables"
+      ],
+      "plugins": [
+        "plugins"
+      ],
+      "public": [
+        "public"
+      ],
+      "env": []
+    }
+  },
+  "middleware": [],
+  "controllers": [],
+  "composables": [],
+  "routes": [],
+  "publicFiles": []
+}

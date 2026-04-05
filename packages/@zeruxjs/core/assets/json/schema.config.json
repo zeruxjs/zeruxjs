@@ -17,9 +17,96 @@
             "default": "fix",
             "enum": [
                 "fix",
-                "user-define",
+                "dynamic",
                 "function"
             ]
+        },
+        "entryPoint": {
+            "description": "Root entry file name without extension",
+            "type": "string",
+            "default": "index"
+        },
+        "outDir": {
+            "description": "Generated Zerux runtime output directory",
+            "type": "string",
+            "default": ".zerux"
+        },
+        "server": {
+            "description": "Runtime server settings",
+            "type": "object",
+            "properties": {
+                "port": {
+                    "type": "integer"
+                },
+                "devPort": {
+                    "type": "integer"
+                }
+            },
+            "additionalProperties": false
+        },
+        "structure": {
+            "description": "Project folder mapping for dynamic and function loading",
+            "type": "object",
+            "properties": {
+                "app": {
+                    "type": "string"
+                },
+                "middleware": {
+                    "oneOf": [
+                        { "type": "string" },
+                        {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    ]
+                },
+                "controllers": {
+                    "oneOf": [
+                        { "type": "string" },
+                        {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    ]
+                },
+                "composables": {
+                    "oneOf": [
+                        { "type": "string" },
+                        {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    ]
+                },
+                "plugins": {
+                    "oneOf": [
+                        { "type": "string" },
+                        {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    ]
+                },
+                "public": {
+                    "oneOf": [
+                        { "type": "string" },
+                        {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    ]
+                },
+                "env": {
+                    "oneOf": [
+                        { "type": "string" },
+                        {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
         },
         "database": {
             "description": "Database Settings",

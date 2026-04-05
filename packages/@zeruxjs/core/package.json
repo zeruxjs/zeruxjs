@@ -18,7 +18,8 @@
   },
   "license": "(MIT OR Apache-2.0)",
   "dependencies": {
-    "@zeruxjs/hooks": "*"
+    "@zeruxjs/hooks": "*",
+    "@zeruxjs/server": "*"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

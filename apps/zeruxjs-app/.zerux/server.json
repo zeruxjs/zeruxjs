@@ -2,7 +2,7 @@
   {
     "type": "app",
     "urls": [
-      "http://127.0.0.1:3001",
+      "http://127.0.0.1:3010",
       "https://zeruxjs-app.localhost"
     ]
   },
