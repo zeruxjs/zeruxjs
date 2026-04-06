@@ -31,7 +31,7 @@ export default ({ app, snapshot, identifier, sections, modules, nonce }: Applica
       <div class="zx-app-shell" data-app="${escapeHtml(app.routeName)}">
         <header class="zx-app-topbar">
           <div>
-            <p class="zx-eyebrow">Nuxt-style Workspace</p>
+            <p class="zx-eyebrow">Dev Workspace</p>
             <h1>${escapeHtml(app.appName)}</h1>
             <p class="zx-subtle">
               Shared workspace for <code>${escapeHtml(app.routeName)}</code>
@@ -57,13 +57,13 @@ export default ({ app, snapshot, identifier, sections, modules, nonce }: Applica
               <h2>Modules</h2>
               <div class="zx-module-list" data-module-summary>
                 ${modules.length
-                  ? modules.map((module) => `
+        ? modules.map((module) => `
                     <article class="zx-module-item">
                       <strong>${escapeHtml(module.title)}</strong>
                       <span>${escapeHtml(module.badge ?? "registered")}</span>
                     </article>
                   `).join("")
-                  : `<p class="zx-empty">No extra modules registered.</p>`}
+        : `<p class="zx-empty">No extra modules registered.</p>`}
               </div>
             </section>
           </aside>
