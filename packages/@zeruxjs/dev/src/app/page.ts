@@ -1,7 +1,13 @@
 import { renderDocument, escapeHtml } from "../components/document.js";
 import { renderThemeButton } from "../components/chrome.js";
+import type { SharedDevRegistration } from "../types.js";
 
-export default ({ apps, nonce }) => renderDocument({
+interface HomePageContext {
+  apps: SharedDevRegistration[];
+  nonce?: string;
+}
+
+export default ({ apps, nonce }: HomePageContext) => renderDocument({
   title: "Zerux Dev",
   bodyClass: "zx-home",
   nonce,

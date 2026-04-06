@@ -174,7 +174,7 @@ export default () => `<!DOCTYPE html>
         <div class="hero-grid">
           <div>
             <div class="eyebrow">ZeruxJS Sample Runtime</div>
-            <h1>Framework pieces are wired together now.</h1>
+            <h1>Framework's pieces are wired together now.</h1>
             <p>
               This sample app is no longer a single static page. It exercises app routes,
               dynamic params, JSON handlers, middleware, controllers, composables, plugins,

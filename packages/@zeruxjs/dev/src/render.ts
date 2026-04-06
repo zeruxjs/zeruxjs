@@ -8,9 +8,9 @@ import type { DevtoolsModuleDefinition, DevtoolsSectionDefinition } from "./modu
 import type { SharedDevRegistration, SharedDevSnapshot } from "./types.js";
 
 const packageRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
-const sourceRoot = path.join(packageRoot, "src");
+const runtimeRoot = path.join(packageRoot, "dist");
 const assetsRoot = path.join(packageRoot, "assets");
-const appRoot = path.join(sourceRoot, "app");
+const appRoot = path.join(runtimeRoot, "app");
 const applicationRoot = path.join(appRoot, "application");
 
 const importSourceModule = async <T = any>(filePath: string): Promise<T> => {

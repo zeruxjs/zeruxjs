@@ -1,7 +1,18 @@
 import { renderDocument, escapeHtml } from "../../components/document.js";
 import { renderSectionNav, renderSectionPanels, renderThemeButton } from "../../components/chrome.js";
+import type { DevtoolsModuleDefinition, DevtoolsSectionDefinition } from "../../module-registry.js";
+import type { SharedDevRegistration, SharedDevSnapshot } from "../../types.js";
 
-export default ({ app, snapshot, identifier, sections, modules, nonce }) => {
+interface ApplicationPageContext {
+  app: SharedDevRegistration;
+  snapshot: SharedDevSnapshot;
+  identifier?: string | null;
+  sections: Array<DevtoolsSectionDefinition & { content: string }>;
+  modules: DevtoolsModuleDefinition[];
+  nonce?: string;
+}
+
+export default ({ app, snapshot, identifier, sections, modules, nonce }: ApplicationPageContext) => {
   const activeId = sections[0]?.id ?? "overview";
 
   return renderDocument({

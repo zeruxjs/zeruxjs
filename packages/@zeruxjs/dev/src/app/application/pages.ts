@@ -1,4 +1,6 @@
-export default {
+import type { DevtoolsSectionDefinition } from "../../module-registry.js";
+
+const section: DevtoolsSectionDefinition = {
   id: "pages",
   title: "Pages",
   icon: "□",
@@ -26,3 +28,5 @@ export default {
     `;
   }
 };
+
+export default section;

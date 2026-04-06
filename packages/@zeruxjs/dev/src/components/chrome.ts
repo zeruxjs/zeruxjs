@@ -1,4 +1,5 @@
 import { escapeHtml } from "./document.js";
+import type { DevtoolsSectionDefinition } from "../module-registry.js";
 
 export const renderThemeButton = () => `
   <button type="button" class="zx-theme-toggle" data-theme-toggle>
@@ -6,7 +7,11 @@ export const renderThemeButton = () => `
   </button>
 `;
 
-export const renderSectionNav = (sections, activeId) => `
+type RenderableSection = DevtoolsSectionDefinition & {
+  content?: string;
+};
+
+export const renderSectionNav = (sections: RenderableSection[], activeId: string) => `
   <nav class="zx-sidebar-nav">
     ${sections.map((section) => `
       <button
@@ -21,7 +26,7 @@ export const renderSectionNav = (sections, activeId) => `
   </nav>
 `;
 
-export const renderSectionPanels = (sections, activeId) => `
+export const renderSectionPanels = (sections: Array<RenderableSection & { content: string }>, activeId: string) => `
   <div class="zx-panels">
     ${sections.map((section) => `
       <section

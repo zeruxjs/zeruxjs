@@ -4,11 +4,19 @@ import {
   serializeJsonForScript
 } from "@zeruxjs/security";
 
+interface RenderDocumentOptions {
+  title: string;
+  bodyClass?: string;
+  content: string;
+  payload: unknown;
+  nonce?: string;
+}
+
 export const createDocumentSecurity = () => ({
   nonce: createNonce()
 });
 
-export const renderDocument = ({ title, bodyClass = "", content, payload, nonce = createNonce() }) => `<!doctype html>
+export const renderDocument = ({ title, bodyClass = "", content, payload, nonce = createNonce() }: RenderDocumentOptions) => `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
