@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-05T20:09:51.326Z",
+  "generatedAt": "2026-04-06T06:16:32.829Z",
   "mode": "dev",
   "rootDir": "/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app",
   "entryModulePath": null,
@@ -77,10 +77,37 @@
       "env": []
     }
   },
-  "middleware": [],
-  "controllers": [],
-  "composables": [],
+  "middleware": [
+    "app/middleware/request-context",
+    "app/middleware/trace-runtime",
+    "plugin-tag",
+    "request-context",
+    "trace-runtime"
+  ],
+  "controllers": [
+    "app/controllers/status",
+    "status"
+  ],
+  "composables": [
+    "app/composables/formatSlug",
+    "app/composables/runtimeSummary",
+    "formatSlug",
+    "pluginSummary",
+    "runtimeSummary"
+  ],
   "routes": [
+    {
+      "id": "inline:/plugin/runtime:GET",
+      "path": "/plugin/runtime",
+      "file": "/plugin/runtime",
+      "methods": [
+        "GET"
+      ],
+      "middleware": [
+        "request-context",
+        "plugin-tag"
+      ]
+    },
     {
       "id": "app/page",
       "path": "/",
@@ -89,7 +116,60 @@
         "ALL"
       ],
       "middleware": []
+    },
+    {
+      "id": "app/api/echo/route",
+      "path": "/api/echo",
+      "file": "app/api/echo/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "middleware": [
+        "request-context",
+        "trace-runtime"
+      ]
+    },
+    {
+      "id": "app/api/health/route",
+      "path": "/api/health",
+      "file": "app/api/health/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "middleware": [
+        "request-context",
+        "trace-runtime"
+      ]
+    },
+    {
+      "id": "app/blog/[slug]/page",
+      "path": "/blog/:slug",
+      "file": "app/blog/[slug]/page.ts",
+      "methods": [
+        "ALL"
+      ],
+      "middleware": []
+    },
+    {
+      "id": "app/boom/page",
+      "path": "/boom",
+      "file": "app/boom/page.ts",
+      "methods": [
+        "ALL"
+      ],
+      "middleware": []
+    },
+    {
+      "id": "app/playground/page",
+      "path": "/playground",
+      "file": "app/playground/page.ts",
+      "methods": [
+        "ALL"
+      ],
+      "middleware": []
     }
   ],
-  "publicFiles": []
+  "publicFiles": [
+    "/public-note.txt"
+  ]
 }

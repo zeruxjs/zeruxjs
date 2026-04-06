@@ -1,7 +1,17 @@
+const sections = [
+  { href: "/playground", title: "Playground", body: "HTML page route with middleware state and controller data." },
+  { href: "/blog/zerux-runtime", title: "Dynamic Blog Route", body: "Checks `[slug]` route params and composable formatting." },
+  { href: "/api/health", title: "API Health", body: "JSON route handler using middleware and controller references." },
+  { href: "/api/echo", title: "API Echo", body: "POST endpoint for request body and query parsing." },
+  { href: "/plugin/runtime", title: "Plugin Route", body: "Route added at runtime by a Zerux plugin." },
+  { href: "/boom", title: "Intentional Error", body: "Throws an `HttpError` so error handling and logs are visible." }
+];
+
 const stats = [
-  { label: "mode", value: "fix" },
-  { label: "routing", value: "app-first" },
-  { label: "runtime", value: ".zerux manifest" }
+  { label: "pages", value: "nested app routes" },
+  { label: "middleware", value: "request context + headers" },
+  { label: "controllers", value: "string references" },
+  { label: "plugins", value: "runtime route injection" }
 ];
 
 export default () => `<!DOCTYPE html>
@@ -9,12 +19,14 @@ export default () => `<!DOCTYPE html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ZeruxJS App</title>
+    <title>ZeruxJS Playground</title>
     <style>
       :root {
         color-scheme: light;
         --bg: #f4efe7;
-        --panel: rgba(255,255,255,0.82);
+        --bg-2: #edf5f3;
+        --panel: rgba(255,255,255,0.84);
+        --panel-2: rgba(255,255,255,0.66);
         --text: #1d2433;
         --muted: #5c667a;
         --accent: #0d9488;
@@ -22,110 +34,135 @@ export default () => `<!DOCTYPE html>
         --border: rgba(29,36,51,0.08);
         --shadow: 0 24px 70px rgba(29,36,51,0.14);
       }
-
       * { box-sizing: border-box; }
       body {
         margin: 0;
         font-family: "Segoe UI", "Helvetica Neue", sans-serif;
-        background:
-          radial-gradient(circle at top left, rgba(13,148,136,0.18), transparent 28%),
-          radial-gradient(circle at bottom right, rgba(249,115,22,0.16), transparent 30%),
-          linear-gradient(135deg, #f8f3ec 0%, #eef6f4 100%);
         color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(13,148,136,0.18), transparent 24%),
+          radial-gradient(circle at bottom right, rgba(249,115,22,0.18), transparent 26%),
+          linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 100%);
       }
-
       main {
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        padding: 32px;
+        width: min(1180px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 28px 0 40px;
       }
-
-      .shell {
-        width: min(920px, 100%);
-        background: var(--panel);
+      .hero, .card, .route-card, .footer {
         border: 1px solid var(--border);
-        border-radius: 28px;
+        border-radius: 22px;
+        background: var(--panel);
         box-shadow: var(--shadow);
-        overflow: hidden;
         backdrop-filter: blur(18px);
       }
-
       .hero {
-        padding: 40px 40px 28px;
-        border-bottom: 1px solid var(--border);
+        padding: 34px;
       }
-
-      .eyebrow {
+      .eyebrow, .pill {
         display: inline-flex;
-        padding: 8px 12px;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 12px;
         border-radius: 999px;
         font-size: 12px;
         letter-spacing: 0.12em;
         text-transform: uppercase;
+      }
+      .eyebrow {
         background: rgba(13,148,136,0.12);
         color: var(--accent);
       }
-
+      .pill {
+        background: rgba(249,115,22,0.1);
+        color: var(--accent-2);
+      }
       h1 {
         margin: 18px 0 14px;
-        font-size: clamp(2.4rem, 6vw, 4.8rem);
-        line-height: 0.95;
+        font-size: clamp(2.8rem, 7vw, 5rem);
+        line-height: 0.93;
       }
-
       p {
         margin: 0;
         color: var(--muted);
         line-height: 1.7;
-        font-size: 1.02rem;
       }
-
-      .grid {
+      .hero-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 18px;
-        padding: 28px 40px 40px;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 20px;
+        align-items: end;
       }
-
-      .card {
-        padding: 22px;
-        border-radius: 20px;
-        background: rgba(255,255,255,0.78);
-        border: 1px solid rgba(29,36,51,0.06);;
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
       }
-
-      .card strong {
-        display: block;
-        font-size: 0.82rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--accent-2);
-        margin-bottom: 10px;
-      }
-
-      .card span {
-        font-size: 1.2rem;
+      .hero-actions a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 16px;
+        border-radius: 999px;
+        text-decoration: none;
         font-weight: 700;
       }
-
-      .footer {
-        padding: 0 40px 40px;
+      .hero-actions a.primary {
+        background: linear-gradient(135deg, var(--accent), #0f766e);
+        color: white;
       }
-
+      .hero-actions a.secondary {
+        border: 1px solid var(--border);
+        color: var(--text);
+        background: var(--panel-2);
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 22px;
+      }
+      .card {
+        padding: 18px;
+      }
+      .card strong {
+        display: block;
+        margin-top: 10px;
+        font-size: 1.15rem;
+      }
+      .routes {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .route-card {
+        padding: 20px;
+        text-decoration: none;
+        color: inherit;
+      }
+      .route-card h2 {
+        margin: 14px 0 10px;
+        font-size: 1.35rem;
+      }
+      .route-card:hover {
+        transform: translateY(-1px);
+      }
+      .footer {
+        margin-top: 20px;
+        padding: 22px;
+      }
       code {
-        padding: 2px 8px;
+        padding: 3px 8px;
         border-radius: 999px;
         background: rgba(29,36,51,0.06);
-        color: var(--text);
       }
-
-      @media (max-width: 760px) {
-        .hero, .grid, .footer {
-          padding-left: 22px;
-          padding-right: 22px;
-        }
-
-        .grid {
+      @media (max-width: 900px) {
+        .hero-grid,
+        .routes,
+        .stats {
           grid-template-columns: 1fr;
         }
       }
@@ -133,30 +170,57 @@ export default () => `<!DOCTYPE html>
   </head>
   <body>
     <main>
-      <section class="shell">
-        <div class="hero">
-          <div class="eyebrow">ZeruxJS Runtime</div>
-          <h1>Framework boot path is live. Yes</h1>
-          <p>
-            This page is served from <code>app/page.ts</code> through the new core bootstrap.
-            Middleware, controllers, composables, plugins, generated manifests, and app routing
-            can now attach to the same runtime instead of relying on a single hard-coded entry file.
-          </p>
+      <section class="hero">
+        <div class="hero-grid">
+          <div>
+            <div class="eyebrow">ZeruxJS Sample Runtime</div>
+            <h1>Framework pieces are wired together now.</h1>
+            <p>
+              This sample app is no longer a single static page. It exercises app routes,
+              dynamic params, JSON handlers, middleware, controllers, composables, plugins,
+              public assets, logging, and framework error responses.
+            </p>
+            <div class="hero-actions">
+              <a class="primary" href="/playground">Open Playground</a>
+              <a class="secondary" href="/plugin/runtime">See Plugin Route</a>
+              <a class="secondary" href="/public-note.txt">Public Asset</a>
+            </div>
+          </div>
+          <div class="card">
+            <div class="pill">Sample Module Enabled</div>
+            <strong>Devtools route extension is active.</strong>
+            <p>
+              Open Zerux devtools and check the external module section, API route output,
+              page warnings, and runtime snapshots together.
+            </p>
+          </div>
         </div>
-        <div class="grid">
+
+        <div class="stats">
           ${stats.map((item) => `
             <article class="card">
-              <strong>${item.label}</strong>
-              <span>${item.value + " : " + process.env.K}</span>
+              <div class="pill">${item.label}</div>
+              <strong>${item.value}</strong>
             </article>
           `).join("")}
         </div>
-        <div class="footer">
-          <p>
-            Next step: add nested routes like <code>app/blog/[slug]/page.ts</code>, route handlers
-            like <code>app/api/health/route.ts</code>, and middleware under <code>app/middleware</code>.
-          </p>
-        </div>
+      </section>
+
+      <section class="routes">
+        ${sections.map((item) => `
+          <a class="route-card" href="${item.href}">
+            <div class="pill">${item.href}</div>
+            <h2>${item.title}</h2>
+            <p>${item.body}</p>
+          </a>
+        `).join("")}
+      </section>
+
+      <section class="footer">
+        <p>
+          Suggested checks: visit <code>/api/health</code>, post JSON to <code>/api/echo?debug=1</code>,
+          open <code>/blog/zerux-runtime</code>, and hit <code>/boom</code> to confirm logs and error handling.
+        </p>
       </section>
     </main>
   </body>
