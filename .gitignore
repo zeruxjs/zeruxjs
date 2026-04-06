@@ -5,6 +5,8 @@
 /.dev-container/.env-state.json
 /.dev-container/log
 /notes/
+.zerux/
+.zyro/
 
 # VS Code
 .vscode
