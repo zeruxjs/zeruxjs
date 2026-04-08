@@ -11,6 +11,12 @@
 # VS Code
 .vscode
 
+#AI
+.claude/
+.agent/
+.gemini/
+.cursor/
+
 # Logs
 logs
 *.log

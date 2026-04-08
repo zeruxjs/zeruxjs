@@ -29,6 +29,7 @@ import {
 
 let sharedDevWebSocketServer: WebSocketServer | null = null;
 let sharedDevWebSocketHttpServer: http.Server | null = null;
+let devPortLessAlias: { value: string | null | false } = { value: null };
 
 const ensureSharedDevSockets = (server: http.Server) => {
     if (sharedDevWebSocketServer && sharedDevWebSocketHttpServer === server) {
@@ -166,7 +167,7 @@ const ensureSharedDevSockets = (server: http.Server) => {
 
 const createInjectedAppHandler = (
     handler: (req: any, res: any) => Promise<void>,
-    options: { routeName: string; devServerUrl: string; allowedDevDomain?: string | null }
+    options: { routeName: string; devServerUrl: string; allowedDevDomain?: string | null; devPortLessAlias: { value: string | null | false } }
 ) => {
     return async (req: any, res: any) => {
         if (!isPrimaryHtmlRequest(req)) {
@@ -214,15 +215,24 @@ const createInjectedAppHandler = (
 
             const contentType = String(headers.get("content-type") || "");
             if (!intercepted || !contentType.includes("text/html")) {
-                if (typeof callback === "function") callback();
-                return originalEnd(chunk, encoding);
+                res.setHeader = originalSetHeader;
+                res.writeHead = originalWriteHead;
+                res.write = originalWrite;
+                res.end = originalEnd;
+
+                res.statusCode = statusCode;
+                if (intercepted) {
+                    return originalEnd(Buffer.concat(chunks), callback);
+                }
+                return originalEnd(chunk, encoding, callback);
             }
 
             const html = Buffer.concat(chunks).toString("utf8");
             const transformed = injectDevClient(html, {
                 routeName: options.routeName,
                 devServerUrl: options.devServerUrl,
-                allowedDevDomain: options.allowedDevDomain
+                allowedDevDomain: options.allowedDevDomain,
+                devPortLessAlias: options.devPortLessAlias
             });
 
             res.setHeader = originalSetHeader;
@@ -364,6 +374,7 @@ export const startServer = async (details: any) => {
         ];
 
         addSerDetails(serviceFile, "dev", devUrls);
+        devPortLessAlias.value = devUrls.find(url => new URL(url).hostname.endsWith(".localhost") && new URL(url).protocol === "https:") ?? null;;
     }
 
     let appRequestHandler = details.app.func;
@@ -371,7 +382,8 @@ export const startServer = async (details: any) => {
         appRequestHandler = createInjectedAppHandler(details.app.func, {
             routeName: devInfo.routeName,
             devServerUrl: devInfo.urls.devtools,
-            allowedDevDomain: devInfo.allowedDevDomain
+            allowedDevDomain: devInfo.allowedDevDomain,
+            devPortLessAlias: devPortLessAlias
         });
     }
 
@@ -381,7 +393,8 @@ export const startServer = async (details: any) => {
 
     const appAlias = await portlessAlias(appName, appPort);
 
-    const appAliasUrl = appAlias ? await portlessGet(appName) : false;
+    const appAliasUrl = await portlessGet(appName);
+
     const appUrls = [
         `http://127.0.0.1:${appPort}`,
         ...(appAliasUrl ? [appAliasUrl] : [])
@@ -432,7 +445,8 @@ export const startServer = async (details: any) => {
             appRequestHandler = devInfo
                 ? createInjectedAppHandler(details.app.func, {
                     routeName: devInfo.routeName,
-                    devServerUrl: devInfo.urls.devtools
+                    devServerUrl: devInfo.urls.devtools,
+                    devPortLessAlias: devPortLessAlias
                 })
                 : details.app.func;
 

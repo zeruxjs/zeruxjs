@@ -15,10 +15,16 @@ const zeruxConfig: ZeruxConfig = {
             {
                 "name": "Something",
                 "slug": "something",
-                "connecter": "@zeruxjs/mongo",
+                "connecter": "@zeruxjs/db-mysql",
                 "options": {
-                    "key_1": "KEY_1_VALUE",
-                    "key_2": "KEY_2_VALUE"
+                    "host": process.env.DB_HOST,
+                    "username": process.env.DB_USER,
+                    "password": process.env.DB_PASSWORD,
+                    "database": process.env.DB_NAME,
+                    "port": process.env.DB_PORT,
+                    "prefix": process.env.DB_PREFIX,
+                    "polling": true,
+                    "pollingInterval": 1000,
                 }
             }
         ]

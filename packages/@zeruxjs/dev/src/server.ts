@@ -64,21 +64,49 @@ const matchWildcard = (pattern: string, host: string) => {
 };
 
 const getFrameAncestors = (req?: IncomingMessage, registration?: SharedDevRegistration | null) => {
-    const ancestors = new Set<string>(["'self'"]);
+    const localIPs = [
+        "localhost",
+        "127.0.0.1",
+        // "[::1]",  // TODO: Check in Future for The Content-Security-Policy directive 'frame-ancestors' does not support the source expression 'http://[::1]' briwser side error.
+        // "0.0.0.0",
+    ];
+
+    const localWildCardIPs = [
+        "http://*.localhost",
+        "https://*.localhost",
+        "http://10.*",
+        "https://10.*",
+        "http://192.168.*",
+        "https://192.168.*",
+        "http://172.16.*",
+        "https://172.16.*",
+    ];
+    const ancestors = new Set<string>(["'self'", ...localWildCardIPs]);
+
+    // Static local origins (both http/https, with and without port)
+    for (const host of localIPs) {
+        ancestors.add(`http://${host}`);
+        ancestors.add(`https://${host}`);
+    }
+
+    // Port-specific entries for appPort + local hosts
     const appPort = registration?.appPort;
     if (appPort) {
-        ancestors.add(`http://127.0.0.1:${appPort}`);
-        ancestors.add(`http://localhost:${appPort}`);
-        ancestors.add(`https://127.0.0.1:${appPort}`);
-        ancestors.add(`https://localhost:${appPort}`);
+        for (const host of localIPs) {
+            ancestors.add(`http://${host}:${appPort}`);
+            ancestors.add(`https://${host}:${appPort}`);
+        }
     }
 
     if (registration) {
-        if (registration.allowedDevDomain) {
-            ancestors.add(`http://${registration.allowedDevDomain}`);
-            ancestors.add(`https://${registration.allowedDevDomain}`);
+        const { allowedDevDomain, allowedDomains } = registration;
+
+        if (allowedDevDomain) {
+            ancestors.add(`http://${allowedDevDomain}`);
+            ancestors.add(`https://${allowedDevDomain}`);
         }
-        const domains = Array.isArray(registration.allowedDomains) ? registration.allowedDomains : [registration.allowedDomains];
+
+        const domains = Array.isArray(allowedDomains) ? allowedDomains : [allowedDomains];
         for (const domain of domains) {
             if (domain) {
                 ancestors.add(`http://${domain}`);
@@ -91,7 +119,7 @@ const getFrameAncestors = (req?: IncomingMessage, registration?: SharedDevRegist
     const refererOrigin = normalizeAncestorOrigin(String(req?.headers.referer || ""));
     if (requestOrigin) ancestors.add(requestOrigin);
     if (refererOrigin) ancestors.add(refererOrigin);
-    ancestors.add("https://*.localhost");
+
     return [...ancestors];
 };
 
@@ -148,7 +176,7 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
         if (resolved) {
             const { app } = resolved;
             let allowed = false;
-            
+
             if (app.allowedDevDomain && matchWildcard(app.allowedDevDomain, host.split(":")[0])) {
                 allowed = true;
             } else {
@@ -160,7 +188,7 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
                     }
                 }
             }
-            
+
             if (!allowed) {
                 console.error(`[Dev] Blocked unallowed host access to devtools: ${host} (App: ${app.appName})`);
                 sendJson(res, { error: "Unallowed Host", message: `Host ${host} is not allowed to access devtools for ${app.appName}.` }, 403);
@@ -199,7 +227,7 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
             let hostAllowed = false;
             for (const app of apps) {
                 const domains = Array.isArray(app.allowedDomains) ? app.allowedDomains : [app.allowedDomains];
-                if ((app.allowedDevDomain && matchWildcard(app.allowedDevDomain, host.split(":")[0])) || 
+                if ((app.allowedDevDomain && matchWildcard(app.allowedDevDomain, host.split(":")[0])) ||
                     domains.some(d => d && matchWildcard(d, host.split(":")[0]))) {
                     hostAllowed = true;
                     break;

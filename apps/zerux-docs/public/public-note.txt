@@ -1,0 +1,2 @@
+This file is served from zeruxjs-app/public/public-note.txt.
+If this loads directly, static public file serving is working.

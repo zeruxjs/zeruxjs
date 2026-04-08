@@ -1,0 +1,31 @@
+{
+  "name": "zeruxjs-docs",
+  "version": "1.0.0",
+  "description": "ZeruxJS Documentation",
+  "author": "Shubham Kumar Bansal",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@zeruxjs/core": "*",
+    "@zeruxjs/typescript": "*"
+  },
+  "private": true,
+  "scripts": {
+    "build": "zerux build",
+    "dev": "zerux dev -p 3010",
+    "start": "zerux start"
+  },
+  "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+  "bugs": {
+    "url": "https://github.com/zeruxjs/zeruxjs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "types": "./dist/index.d.ts",
+  "keywords": [
+    "ZeruxJS Documentation"
+  ]
+}

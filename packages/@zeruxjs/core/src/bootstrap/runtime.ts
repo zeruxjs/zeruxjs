@@ -193,9 +193,11 @@ const compileRoutePattern = (pattern: string) => {
 };
 
 const serveStaticFile = (res: ServerResponse, filePath: string) => {
+    const content = fs.readFileSync(filePath);
     res.statusCode = 200;
     res.setHeader("Content-Type", getContentType(filePath));
-    res.end(fs.readFileSync(filePath));
+    res.setHeader("Content-Length", content.length);
+    res.end(content);
 };
 
 const loadModulesFromDirectories = async <T = any>(

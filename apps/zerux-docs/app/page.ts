@@ -22,7 +22,7 @@ export default () => `<!DOCTYPE html>
     <title>ZeruxJS Playground</title>
     <style>
       :root {
-        color-scheme: light dark;
+        color-scheme: light;
         --bg: #f4efe7;
         --bg-2: #edf5f3;
         --panel: rgba(255,255,255,0.84);
@@ -33,20 +33,6 @@ export default () => `<!DOCTYPE html>
         --accent-2: #f97316;
         --border: rgba(29,36,51,0.08);
         --shadow: 0 24px 70px rgba(29,36,51,0.14);
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #1d2433;
-          --bg-2: #131820;
-          --panel: rgba(30,38,50,0.84);
-          --panel-2: rgba(30,38,50,0.66);
-          --text: #f4efe7;
-          --muted: #8b95a5;
-          --accent: #2dd4bf;
-          --accent-2: #fb923c;
-          --border: rgba(244,239,231,0.08);
-          --shadow: 0 24px 70px rgba(0,0,0,0.4);
-        }
       }
       * { box-sizing: border-box; }
       body {

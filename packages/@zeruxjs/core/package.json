@@ -14,6 +14,7 @@
   },
   "exports": {
     ".": "./dist/index.js",
+    "./database": "./dist/bootstrap/database.js",
     "./schema/schema.config.json": "./assets/json/schema.config.json"
   },
   "license": "(MIT OR Apache-2.0)",

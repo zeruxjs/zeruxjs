@@ -1,37 +1,37 @@
 import type { IncomingMessage } from "node:http";
 
 interface DevClientScriptOptions {
-    routeName: string;
-    devServerUrl: string;
-    allowedDevDomain?: string | null;
+  routeName: string;
+  devServerUrl: string;
+  allowedDevDomain?: string | null;
+  devPortLessAlias: { value: string | null | false };
 }
 
-const buildInjectedClient = ({ routeName, devServerUrl, allowedDevDomain }: DevClientScriptOptions) => `<script>
+const buildInjectedClient = ({ routeName, devServerUrl, allowedDevDomain, devPortLessAlias }: DevClientScriptOptions) => `<script>
 (() => {
   if (window.__ZERUX_DEV_CLIENT__) return;
   window.__ZERUX_DEV_CLIENT__ = true;
-  const app = ${JSON.stringify(routeName)};
-  const loopbackDevServerUrl = ${JSON.stringify(devServerUrl)};
-  const configDevDomain = ${JSON.stringify(allowedDevDomain)};
+  const app = '${routeName}';
+  const devMainServerUrl = '${devServerUrl}';
+  const allowedDevDomain = '${allowedDevDomain}';
+  const devPortLessAlias = '${devPortLessAlias.value}';
   const resolveDevServerUrl = () => {
+    const currentProtocol = window.location.protocol;
+    const currentHostname = window.location.hostname;
     const currentPort = window.location.port ? ':' + window.location.port : '';
-    if (configDevDomain) {
-      // If configDevDomain specifies a port, use it. Otherwise, use current port.
-      const targetHost = configDevDomain.includes(':') ? configDevDomain : configDevDomain + currentPort;
-      return window.location.protocol + '//' + targetHost + '/' + app;
+    const isLocalHostOrPrivate = /^(localhost|127\.0\.0\.1|::1|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|169\.254\.|f[cd][0-9a-f]{0,2}:|fe80:)/.test(currentHostname);
+    console.log({app, devMainServerUrl, allowedDevDomain, devPortLessAlias, currentHostname, currentPort, isLocalHostOrPrivate});
+    if (isLocalHostOrPrivate) {
+      return Object.assign(new URL(devMainServerUrl), { hostname: currentHostname }).toString();
+    } else if (currentHostname.endsWith(".localhost")) {
+      return devPortLessAlias;
+    } else {
+      if (allowedDevDomain) {
+        return currentProtocol + '//' + allowedDevDomain;
+      } else {
+        return devPortLessAlias;
+      }
     }
-
-    const host = window.location.hostname || '';
-    const isLocalAlias = host.endsWith('.localhost') && host !== 'localhost' && host !== '127.0.0.1';
-    
-    if (isLocalAlias) {
-      console.warn("Zerux Devtools: Working through .localhost alias. Devtools only work fully in local machine environment.");
-      const loopbackUrl = new URL(loopbackDevServerUrl);
-      const internalPort = loopbackUrl.port ? ':' + loopbackUrl.port : '';
-      return window.location.protocol + '//zdev.localhost' + internalPort + '/' + app;
-    }
-    
-    return loopbackDevServerUrl;
   };
   const devServerUrl = resolveDevServerUrl();
   const devServer = new URL(devServerUrl);
@@ -585,30 +585,41 @@ const buildInjectedClient = ({ routeName, devServerUrl, allowedDevDomain }: DevC
     } catch {}
   });
 })();
+</script>
+<script type="module">
+  import {
+    onCLS,
+    onINP,
+    onLCP,
+  } from 'https://unpkg.com/web-vitals@5/dist/web-vitals.attribution.js?module';
+
+  onCLS((m)=>console.log("CLS: ", m));
+  onINP((m)=>console.log("INP: ", m));
+  onLCP((m)=>console.log("LCP: ", m));
 </script>`;
 
 export const isPrimaryHtmlRequest = (req: IncomingMessage) => {
-    if ((req.method || "GET").toUpperCase() !== "GET") return false;
+  if ((req.method || "GET").toUpperCase() !== "GET") return false;
 
-    const accept = String(req.headers.accept || "");
-    if (!accept.includes("text/html")) return false;
+  const accept = String(req.headers.accept || "");
+  if (!accept.includes("text/html")) return false;
 
-    const requestedWith = String(req.headers["x-requested-with"] || "").toLowerCase();
-    if (requestedWith === "xmlhttprequest") return false;
+  const requestedWith = String(req.headers["x-requested-with"] || "").toLowerCase();
+  if (requestedWith === "xmlhttprequest") return false;
 
-    const secFetchDest = String(req.headers["sec-fetch-dest"] || "").toLowerCase();
-    if (secFetchDest && secFetchDest !== "document" && secFetchDest !== "iframe") return false;
+  const secFetchDest = String(req.headers["sec-fetch-dest"] || "").toLowerCase();
+  if (secFetchDest && secFetchDest !== "document" && secFetchDest !== "iframe") return false;
 
-    const secFetchMode = String(req.headers["sec-fetch-mode"] || "").toLowerCase();
-    if (secFetchMode && secFetchMode !== "navigate") return false;
+  const secFetchMode = String(req.headers["sec-fetch-mode"] || "").toLowerCase();
+  if (secFetchMode && secFetchMode !== "navigate") return false;
 
-    return true;
+  return true;
 };
 
 export const injectDevClient = (html: string, options: DevClientScriptOptions) => {
-    const snippet = buildInjectedClient(options);
-    if (html.includes("</body>")) {
-        return html.replace("</body>", `${snippet}</body>`);
-    }
-    return `${html}${snippet}`;
+  const snippet = buildInjectedClient(options);
+  if (html.includes("</body>")) {
+    return html.replace("</body>", `${snippet}</body>`);
+  }
+  return `${html}${snippet}`;
 };
