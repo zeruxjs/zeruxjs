@@ -64,70 +64,66 @@ const matchWildcard = (pattern: string, host: string) => {
 };
 
 const getFrameAncestors = (req?: IncomingMessage, registration?: SharedDevRegistration | null) => {
-    const localIPs = [
-        "localhost",
-        "127.0.0.1",
-        // "[::1]",  // TODO: Check in Future for The Content-Security-Policy directive 'frame-ancestors' does not support the source expression 'http://[::1]' briwser side error.
-        // "0.0.0.0",
-    ];
+    const referer = req?.headers.referer || req?.headers.origin;
 
-    const localWildCardIPs = [
-        "http://*.localhost",
-        "https://*.localhost",
-        "http://10.*",
-        "https://10.*",
-        "http://192.168.*",
-        "https://192.168.*",
-        "http://172.16.*",
-        "https://172.16.*",
-    ];
-    const ancestors = new Set<string>(["'self'", ...localWildCardIPs]);
-
-    // Static local origins (both http/https, with and without port)
-    for (const host of localIPs) {
-        ancestors.add(`http://${host}`);
-        ancestors.add(`https://${host}`);
+    if (!referer) {
+        return ["'self'"];
     }
 
-    // Port-specific entries for appPort + local hosts
-    const appPort = registration?.appPort;
-    if (appPort) {
-        for (const host of localIPs) {
-            ancestors.add(`http://${host}:${appPort}`);
-            ancestors.add(`https://${host}:${appPort}`);
-        }
+    const refererOrigin = normalizeAncestorOrigin(String(referer));
+    if (!refererOrigin) {
+        return ["'self'"];
     }
 
-    if (registration) {
-        const { allowedDevDomain, allowedDomains } = registration;
+    try {
+        const hostname = new URL(refererOrigin).hostname;
 
-        if (allowedDevDomain) {
-            ancestors.add(`http://${allowedDevDomain}`);
-            ancestors.add(`https://${allowedDevDomain}`);
+        // Check if referer is a local IP or localhost
+        const isLocalIP =
+            hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname === '[::1]' ||
+            hostname === '::1' ||
+            hostname.startsWith('192.168.') ||
+            hostname.startsWith('10.') ||
+            hostname.match(/^172\.(1[6-9]|2[0-9]|3[01])\./); // 172.16.0.0 - 172.31.255.255
+
+        // Check if referer is *.localhost
+        const isLocalhost = hostname.endsWith('.localhost');
+
+        // Check if referer matches allowedDomains
+        const allowedDomains = registration?.allowedDomains
+            ? (Array.isArray(registration.allowedDomains)
+                ? registration.allowedDomains
+                : [registration.allowedDomains])
+            : [];
+
+        const isAllowedDomain = allowedDomains.some(domain =>
+            domain && (hostname === domain || hostname.endsWith(`.${domain}`))
+        );
+
+        const isAllowedDevDomain = registration?.allowedDevDomain
+            ? (hostname === registration.allowedDevDomain ||
+                hostname.endsWith(`.${registration.allowedDevDomain}`))
+            : false;
+
+        // Return referer + self if it matches any allowed pattern
+        if (isLocalIP || isLocalhost || isAllowedDomain || isAllowedDevDomain) {
+            return ["'self'", refererOrigin];
         }
 
-        const domains = Array.isArray(allowedDomains) ? allowedDomains : [allowedDomains];
-        for (const domain of domains) {
-            if (domain) {
-                ancestors.add(`http://${domain}`);
-                ancestors.add(`https://${domain}`);
-            }
-        }
+    } catch (err) {
+        // Invalid URL, fall through to default
     }
 
-    const requestOrigin = normalizeAncestorOrigin(String(req?.headers.origin || ""));
-    const refererOrigin = normalizeAncestorOrigin(String(req?.headers.referer || ""));
-    if (requestOrigin) ancestors.add(requestOrigin);
-    if (refererOrigin) ancestors.add(refererOrigin);
-
-    return [...ancestors];
+    // Otherwise, only self
+    return ["'self'"];
 };
 
-const buildFrameAwarePolicy = (nonce: string, req?: IncomingMessage, registration?: SharedDevRegistration | null) =>
-    buildContentSecurityPolicy(nonce).replace(
-        "frame-ancestors 'self'",
-        `frame-ancestors ${getFrameAncestors(req, registration).join(" ")}`
-    );
+const buildFrameAwarePolicy = (nonce: string, req?: IncomingMessage, registration?: SharedDevRegistration | null) => buildContentSecurityPolicy(nonce).replace(
+    "frame-ancestors 'self'",
+    `frame-ancestors ${getFrameAncestors(req, registration).join(" ")}`
+);
 
 const readRequestBody = async (req: IncomingMessage) =>
     new Promise<Buffer>((resolve, reject) => {

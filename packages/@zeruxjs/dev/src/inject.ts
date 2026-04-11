@@ -20,7 +20,6 @@ const buildInjectedClient = ({ routeName, devServerUrl, allowedDevDomain, devPor
     const currentHostname = window.location.hostname;
     const currentPort = window.location.port ? ':' + window.location.port : '';
     const isLocalHostOrPrivate = /^(localhost|127\.0\.0\.1|::1|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|169\.254\.|f[cd][0-9a-f]{0,2}:|fe80:)/.test(currentHostname);
-    console.log({app, devMainServerUrl, allowedDevDomain, devPortLessAlias, currentHostname, currentPort, isLocalHostOrPrivate});
     if (isLocalHostOrPrivate) {
       return Object.assign(new URL(devMainServerUrl), { hostname: currentHostname }).toString();
     } else if (currentHostname.endsWith(".localhost")) {
@@ -326,15 +325,26 @@ const buildInjectedClient = ({ routeName, devServerUrl, allowedDevDomain, devPor
   const errorMessage = errorScreen.querySelector('#zerux-dev-error-message');
   const errorStack = errorScreen.querySelector('#zerux-dev-error-stack');
   const frame = drawer.querySelector('#zerux-dev-frame');
+  
+  let isFrameLoaded = false;
+  
   const format = (value) => typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  
   const postThemeToFrame = () => {
     if (!frame || !frame.contentWindow) return;
+    
+    if (!isFrameLoaded) {
+      console.log('[Zerux] Iframe not loaded yet, skipping postMessage');
+      return;
+    }
+    
     frame.contentWindow.postMessage({
       type: 'zerux:theme-sync',
       mode: getStoredThemeMode(),
       effectiveTheme: getEffectiveTheme()
     }, devServer.origin);
   };
+  
   const applyOverlayTheme = () => {
     const theme = getEffectiveTheme();
     button.setAttribute('data-theme', theme);
@@ -354,10 +364,11 @@ const buildInjectedClient = ({ routeName, devServerUrl, allowedDevDomain, devPor
   const openDrawer = () => {
     state.drawerOpen = true;
     if (frame && frame.getAttribute('src') !== pairedDevtoolsUrl) {
+      isFrameLoaded = false; // Reset since we're changing src
       frame.setAttribute('src', pairedDevtoolsUrl);
     }
     drawer.classList.add('zerux-open');
-    postThemeToFrame();
+    // Don't call postThemeToFrame here - wait for load event
   };
   const closeDrawer = () => {
     state.drawerOpen = false;
@@ -444,9 +455,14 @@ const buildInjectedClient = ({ routeName, devServerUrl, allowedDevDomain, devPor
   drawer.querySelector('#zerux-dev-open-current-tab')?.addEventListener('click', () => {
     window.open(pairedDevtoolsUrl, '_blank', 'noopener,noreferrer');
   });
+  
+  // Mark iframe as loaded and send initial theme
   frame?.addEventListener('load', () => {
+    console.log('[Zerux] Iframe loaded from:', frame.src);
+    isFrameLoaded = true;
     postThemeToFrame();
   });
+  
   drawer.querySelector('#zerux-dev-open-tab')?.addEventListener('pointerdown', (event) => {
     event.stopPropagation();
   });
@@ -591,11 +607,19 @@ const buildInjectedClient = ({ routeName, devServerUrl, allowedDevDomain, devPor
     onCLS,
     onINP,
     onLCP,
+    onFCP,
+    onTTFB
   } from 'https://unpkg.com/web-vitals@5/dist/web-vitals.attribution.js?module';
 
-  onCLS((m)=>console.log("CLS: ", m));
-  onINP((m)=>console.log("INP: ", m));
-  onLCP((m)=>console.log("LCP: ", m));
+  const logMetric = (metric) => {
+    console.log(metric.name, metric.value, metric.attribution);
+  };
+
+  onCLS(logMetric);
+  onINP(logMetric);
+  onLCP(logMetric);
+  onFCP(logMetric);
+  onTTFB(logMetric);
 </script>`;
 
 export const isPrimaryHtmlRequest = (req: IncomingMessage) => {
