@@ -1,20 +1,24 @@
-# create-zerux-js
+> [!WARNING]
+> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
 
-The official CLI tool to scaffold and bootstrap new ZeruxJS projects in seconds.
+# create-zyro-app
 
-## 🛠️ Commands & Usage
+The official CLI tool to scaffold and bootstrap standalone **ZyroJS Library** projects.
 
-| Command | Description |
-| :--- | :--- |
-| `npm create zerux-js@latest` | Scaffolds a new project interactively. |
-| `yarn create zerux-js` | Alternative using Yarn. |
-| `pnpm create zerux-js` | Alternative using PNPM. |
+## 🚀 Quick Start
 
-## ✨ Capabilities
+```bash
+npm create zyro-app@latest
+```
 
-| Capability | Description |
-| :--- | :--- |
-| **Interactive Prompts** | Tailor your project setup (TypeScript, linting, etc.) through a user-friendly CLI. |
-| **Smart Scaffolding** | Automatically generates the optimal folder structure and essential configuration files. |
-| **Zero Config** | Get up and running instantly with sensible defaults and built-in integration. |
-| **Framework Ready** | Pre-configured for both ZeruxJS Framework and ZyroJS Library usage. |
+## 🏗️ Project Types
+
+- **Single Page App**: Optimized for standalone ZyroJS browser applications.
+- **Library Component**: Scaffolds a structure for building shareable ZyroJS components.
+- **Framework Lite**: A minimal ZeruxJS-compatible setup for ZyroJS projects.
+
+## ✨ Features
+
+- **TypeScript First**: Full Type-safe scaffolding out of the box.
+- **Lightweight**: Zero-bloat project generation focused on the ZyroJS engine.
+- **HMR Enabled**: Pre-configured with `@zeruxjs/watcher` for a fast dev loop.

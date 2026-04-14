@@ -1,20 +1,25 @@
-# create-zerux-js
+> [!WARNING]
+> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
 
-The official CLI tool to scaffold and bootstrap new ZeruxJS projects in seconds.
+# create-zerux-app
 
-## 🛠️ Commands & Usage
+The official CLI tool to scaffold and bootstrap new **ZeruxJS Framework** projects. Choose your engine and get started in seconds.
 
-| Command | Description |
-| :--- | :--- |
-| `npm create zerux-js@latest` | Scaffolds a new project interactively. |
-| `yarn create zerux-js` | Alternative using Yarn. |
-| `pnpm create zerux-js` | Alternative using PNPM. |
+## 🚀 Quick Start
 
-## ✨ Capabilities
+```bash
+npm create zerux-app@latest
+```
 
-| Capability | Description |
-| :--- | :--- |
-| **Interactive Prompts** | Tailor your project setup (TypeScript, linting, etc.) through a user-friendly CLI. |
-| **Smart Scaffolding** | Automatically generates the optimal folder structure and essential configuration files. |
-| **Zero Config** | Get up and running instantly with sensible defaults and built-in integration. |
-| **Framework Ready** | Pre-configured for both ZeruxJS Framework and ZyroJS Library usage. |
+## 🛠️ Supported Engines
+
+During the setup process, you can choose the frontend engine that fits your project:
+- **Zyro**: The native, high-performance engine for ZeruxJS.
+- **React**: Standard React setup with ZeruxJS server benefits.
+- **Vue**: Standard Vue setup with ZeruxJS server benefits.
+
+## ✨ Features
+
+- **Multi-Engine Scaffolding**: Automatically configures the project based on your chosen library.
+- **Ready-to-Go**: Pre-configured with server commands (`zsrv`), watcher, and shared devtools.
+- **Optimized Structure**: Generates a clean, scalable folder hierarchy by default.
