@@ -37,15 +37,9 @@ const HTTP_METHODS: HttpMethod[] = [
 
 const RESERVED_ROUTE_FILE_NAMES = new Set(["layout", "loading", "template", "error"]);
 
-const MIME_TYPES: Record<string, string> = {
-    ".css": "text/css; charset=utf-8",
-    ".html": "text/html; charset=utf-8",
-    ".js": "text/javascript; charset=utf-8",
-    ".json": "application/json; charset=utf-8",
-    ".png": "image/png",
-    ".svg": "image/svg+xml",
-    ".txt": "text/plain; charset=utf-8"
-};
+const MIME_TYPES: Record<string, string> = JSON.parse(
+    fs.readFileSync(new URL("../../assets/json/mime.json", import.meta.url), "utf-8")
+);
 
 const looksLikeHtml = (value: string) => {
     const trimmed = value.trimStart().toLowerCase();
@@ -87,8 +81,11 @@ const sanitizePathname = (pathname: string) => {
     return normalized.endsWith("/") && normalized !== "/" ? normalized.slice(0, -1) : normalized;
 };
 
-const getContentType = (filePath: string) =>
-    MIME_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+const getContentType = (filePath: string) => {
+    const extParts = path.extname(filePath).toLowerCase();
+    const lookupKey = extParts.startsWith(".") ? extParts.slice(1) : extParts;
+    return MIME_TYPES[lookupKey] || "application/octet-stream";
+};
 
 const readRequestBody = async (req: IncomingMessage) =>
     new Promise<Buffer>((resolve, reject) => {

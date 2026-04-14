@@ -10,7 +10,8 @@
         "dev": "tsc --watch"
     },
     "exports": {
-        ".": "./dist/index.js"
+        ".": "./dist/index.js",
+        "./dom": "./dist/dom/index.js"
     },
     "license": "MIT"
 }

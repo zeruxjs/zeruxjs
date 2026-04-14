@@ -29,6 +29,9 @@ const zeruxConfig: ZeruxConfig = {
                 }
             }
         ]
+    },
+    "apiKeys": {
+        "lighthouse": process.env.LIGHTHOUSE_API_KEY
     }
 };
 
