@@ -7,8 +7,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch"
+    "build": "tsc",
+    "dev": "tsc --watch"
   },
   "exports": {
     ".": {
@@ -29,7 +29,7 @@
     "Typescript Support"
   ],
   "devDependencies": {
-    "tsup": "^8.5.1",
+    "tsc": "^8.5.1",
     "typescript": "^5.9.3"
   }
 }
