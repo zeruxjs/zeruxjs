@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/mcp",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "MCP Connection Helper for AI and Stuff",
   "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",

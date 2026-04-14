@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/asset-manager",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "Asset Manager, Help naming asset and manage them on the go, best for managing branding and your identity assets by arrangeing them, can be for Logo, Images, Video but not limited to assets, can be add Color, font and more",
   "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",

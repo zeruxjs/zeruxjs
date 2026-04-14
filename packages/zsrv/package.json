@@ -1,6 +1,6 @@
 {
   "name": "zsrv",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "Server Creator and Handle Auto load and so via @zerux/watcher",
   "type": "module",
   "main": "./dist/index.js",

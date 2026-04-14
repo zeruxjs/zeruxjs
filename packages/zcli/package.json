@@ -1,6 +1,6 @@
 {
   "name": "zcli",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "CLI Wrapper to help share CLI keyword and Coloring and other small plugins",
   "type": "module",
   "main": "./dist/index.js",

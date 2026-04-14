@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/auth",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "Provide all AUth option from Password, OTP Verification, Reverification, Password Change, Oauth, Third-Party Provider (Add more option), Login/Register/Reset Form (with @zerux/form), Passkey, Authanticator Apps, Session Management, App passwords, API keys and more.",
   "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",

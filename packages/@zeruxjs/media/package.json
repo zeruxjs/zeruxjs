@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/media",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "Download and Upload Media, Making them enter only in non-executable area, Download Manager, expiry function and more.",
   "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",

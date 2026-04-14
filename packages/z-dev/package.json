@@ -1,6 +1,6 @@
 {
   "name": "z-dev",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "Dev tools present here like mapping function and classes and all internal services",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

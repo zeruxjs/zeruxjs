@@ -1,6 +1,6 @@
 {
   "name": "create-zenix-js",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "CLI Creater for Zyro CMS",
   "bin": {
     "create-zerux": "index.js"

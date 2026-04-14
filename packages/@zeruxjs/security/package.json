@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/security",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "A security Plugin to secure application by auto CFSR, XSS and many other attacks, validate schema, escaping, sanitization, CROS, and much more",
   "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",

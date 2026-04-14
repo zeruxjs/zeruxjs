@@ -1,6 +1,6 @@
 {
   "name": "zeruxjs",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "Main application ZeruxJS Framework",
   "type": "module",
   "main": "./dist/index.js",
