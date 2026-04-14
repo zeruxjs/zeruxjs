@@ -1,5 +1,5 @@
 {
-  "name": "@zeruxjs/watcher",
+  "name": "zwatch",
   "version": "1.0.0",
   "description": "File Change Watcher, Optize for multiple watcher together by sharing events",
   "author": "",

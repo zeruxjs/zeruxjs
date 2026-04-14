@@ -4,9 +4,9 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 
 if (process.argv.includes('--run-packages-watcher')) {
-    const watcherModulePath = path.join(__dirname, '../packages/@zeruxjs/watcher/dist/index.js');
+    const watcherModulePath = path.join(__dirname, '../packages/zwatch/dist/index.js');
     if (!fs.existsSync(watcherModulePath)) {
-        console.error('Watcher module not found. Build @zeruxjs/watcher first.');
+        console.error('Watcher module not found. Build zwatch first.');
         process.exit(1);
     }
 
@@ -203,7 +203,7 @@ folders.forEach(({ dir, pkgName }) => {
 
 // Spawn packages watcher
 if (packages.length > 0 && apps.length > 0) {
-    console.log('Starting `@zeruxjs/watcher` for packages...');
+    console.log('Starting `zwatch` for packages...');
     const watcherChild = spawn('node', [__filename, '--run-packages-watcher'], {
         cwd: __dirname,
         detached: true,

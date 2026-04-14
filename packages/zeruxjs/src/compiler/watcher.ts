@@ -1,3 +1,3 @@
-import { startWatcher } from "@zeruxjs/watcher";
+import { startWatcher } from "zwatch";
 
 export { startWatcher };

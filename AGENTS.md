@@ -76,7 +76,7 @@ ZeruxJS/
 #### Other Important Packages (`packages/@zeruxjs/`):
 - `zsrv`: Handles server initialization, devtools operations, and WebSocket channels.
 - `zcli`: Framework command line utility parser, sharing commands alongside the core package.
-- `@zeruxjs/watcher`: Custom file watcher running in shared mode to optimize and reduce CPU overhead.
+- `zwatch`: Custom file watcher running in shared mode to optimize and reduce CPU overhead.
 - `@zeruxjs/validator`: Shared validation logic, schemas, and types for parameters and structures.
 - `@zeruxjs/db` (and `db-*` adapters): Unified database wrappers to easily connect to Mongo, MySQL, PostgreSQL, and SQLite.
 - `@zeruxjs/auth` & `@zeruxjs/security`: Authentication functions, guards, and security utilities.

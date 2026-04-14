@@ -18,7 +18,7 @@
   "license": "(MIT OR Apache-2.0)",
   "dependencies": {
     "z-dev": "*",
-    "@zeruxjs/watcher": "*",
+    "zwatch": "*",
     "ws": "^8.19.0"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
