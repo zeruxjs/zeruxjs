@@ -11,9 +11,9 @@ export default ({ apps, nonce }: HomePageContext) => renderDocument({
   title: "Zerux Dev",
   bodyClass: "zx-home",
   nonce,
-  payload: {
+  config: {
     page: "home",
-    apps
+    apps: apps.map(app => ({ routeName: app.routeName, appName: app.appName, appPort: app.appPort, rootDir: app.rootDir }))
   },
   content: `
     <div class="zx-home-shell">

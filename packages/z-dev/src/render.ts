@@ -63,21 +63,23 @@ export const renderHomePage = async (apps: SharedDevRegistration[]) => {
 export const renderApplicationPage = async (
     app: SharedDevRegistration,
     snapshot: SharedDevSnapshot,
-    identifier?: string | null
+    identifier?: string | null,
+    sectionId?: string | null
 ) => {
     const application = await importSourceModule<{
         default: (context: {
             app: SharedDevRegistration;
             snapshot: SharedDevSnapshot;
             identifier?: string | null;
+            sectionId?: string | null;
             sections: Array<DevtoolsSectionDefinition & { content: string }>;
             modules: DevtoolsModuleDefinition[];
             nonce?: string;
         }) => string;
     }>(path.join(applicationRoot, "page.js"));
-
+ 
     const { modules, sections } = await loadApplicationSections(app, snapshot, identifier);
-    return (nonce?: string) => application.default({ app, snapshot, identifier, sections, modules, nonce });
+    return (nonce?: string) => application.default({ app, snapshot, identifier, sectionId, sections, modules, nonce });
 };
 
 export const resolveCustomApiHandler = (name: string) => getDevtoolsApiHandler(name);

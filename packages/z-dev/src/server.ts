@@ -195,6 +195,22 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
 
     const url = new URL(req.url || "/", "http://127.0.0.1");
     const pathname = url.pathname;
+    
+    if (pathname === "/favicon.ico" || pathname === "/__zerux/assets/favicon.ico") {
+        const asset = readDevAsset("favicon.ico");
+        if (asset) {
+            sendBuffer(res, asset, "image/x-icon");
+            return;
+        }
+    }
+
+    if (pathname === "/favicon.png" || pathname === "/__zerux/assets/favicon.png") {
+        const asset = readDevAsset("favicon.png");
+        if (asset) {
+            sendBuffer(res, asset, "image/png");
+            return;
+        }
+    }
 
     if (pathname === "/__zerux/assets/style.css") {
         const asset = readDevAsset("style.css");
@@ -271,29 +287,14 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
     }
 
     if (remainingPath === "/__zerux/api/bootstrap" && req.method === "GET") {
-        const { sections, modules } = await loadApplicationSections(app, snapshot, identifier);
         sendJson(res, {
-            app,
-            identifier,
-            modules: modules.map((module) => ({
-                id: module.id,
-                title: module.title,
-                description: module.description,
-                badge: module.badge,
-                packageName: module.packageName,
-                dependencies: module.dependencies,
-                assets: module.assets,
-                sections: (module.sections ?? []).map((section) => ({
-                    id: section.id,
-                    title: section.title,
-                    icon: section.icon,
-                    order: section.order,
-                    moduleId: section.moduleId
-                })),
-                meta: module.meta
-            })),
-            sections: sections.map(({ id, title, icon }) => ({ id, title, icon })),
-            snapshot
+            snapshot: {
+                updatedAt: snapshot.updatedAt,
+                routes: snapshot.routes,
+                clientEvents: snapshot.clientEvents,
+                logs: snapshot.logs
+            },
+            identifier
         });
         return;
     }
@@ -370,9 +371,11 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
         return;
     }
 
-    if (remainingPath === "/" && req.method === "GET") {
+    const isAsset = remainingPath.startsWith("/__zerux/");
+    if (!isAsset && req.method === "GET") {
         const security = createDocumentSecurity();
-        const page = await renderApplicationPage(app, snapshot, identifier);
+        const sectionId = remainingPath.replace(/^\//, "") || null;
+        const page = await renderApplicationPage(app, snapshot, identifier, sectionId);
         sendHtml(res, page(security.nonce), 200, {
             "Content-Security-Policy": buildFrameAwarePolicy(security.nonce, req, app)
         });

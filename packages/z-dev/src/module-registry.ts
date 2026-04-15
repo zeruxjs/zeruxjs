@@ -14,7 +14,7 @@ export interface DevtoolsSectionDefinition {
     icon?: string;
     order?: number;
     moduleId?: string;
-    render(context: DevtoolsSectionContext): string;
+    render(context: DevtoolsSectionContext): string | Promise<string>;
 }
 
 export interface DevtoolsModuleAssetConfig {
@@ -31,6 +31,7 @@ export interface DevtoolsModuleServerConfig {
 export interface DevtoolsModuleConfig {
     id?: string;
     title?: string;
+    version?: string;
     description?: string;
     entry: string;
     assets?: DevtoolsModuleAssetConfig;
@@ -42,6 +43,7 @@ export interface DevtoolsModuleConfig {
 export interface DevtoolsModuleDefinition {
     id: string;
     title: string;
+    version?: string;
     description?: string;
     badge?: string;
     packageName?: string;

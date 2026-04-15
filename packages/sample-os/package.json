@@ -1,0 +1,11 @@
+{
+  "name": "sample-os",
+  "version": "0.0.1-alpha.1",
+  "private": true,
+  "type": "module",
+  "main": "./index.js",
+  "dependencies": {
+    "systeminformation": "^5.31.5",
+    "z-dev": "*"
+  }
+}

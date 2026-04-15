@@ -9,6 +9,7 @@
     "@zeruxjs/db": "*",
     "zeruxjs": "*",
     "sample-module": "*",
+    "sample-os": "*",
     "@zeruxjs/typescript": "*"
   },
   "private": true,

@@ -1,15 +1,5 @@
 import { defineDevtoolsModule } from "z-dev";
 
-const formatRoutes = (snapshot) =>
-  Array.isArray(snapshot?.routes) && snapshot.routes.length
-    ? snapshot.routes.map((route) => `
-      <li>
-        <strong>${route.path}</strong>
-        <span>${(route.methods || []).join(", ")}</span>
-      </li>
-    `).join("")
-    : `<li><span>No routes detected.</span></li>`;
-
 export default defineDevtoolsModule({
   id: "sample-module",
   title: "Sample Module",
@@ -75,18 +65,6 @@ export default defineDevtoolsModule({
                 <pre data-sample-socket>Waiting for websocket message…</pre>
               </article>
             </div>
-
-            <article class="sample-panel">
-              <div class="sample-panel-head">
-                <div>
-                  <span class="sample-label">Routes</span>
-                  <h3>Snapshot Data</h3>
-                </div>
-              </div>
-              <ul class="sample-route-list">
-                ${formatRoutes(snapshot)}
-              </ul>
-            </article>
           </section>
         `;
       }

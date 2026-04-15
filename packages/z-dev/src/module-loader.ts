@@ -63,6 +63,7 @@ const toModuleDefinition = (
     return {
         id: sanitizeIdentifier(definition.id ?? fallback.id, fallback.id),
         title: String(definition.title ?? fallback.title),
+        version: typeof definition.version === "string" ? definition.version : undefined,
         description: typeof definition.description === "string" ? definition.description : fallback.description,
         badge: typeof definition.badge === "string" ? definition.badge : "module",
         packageName: fallback.packageName,
@@ -150,9 +151,10 @@ const loadConfiguredModule = async (
 
         const stylePath = resolveModuleFile(packageRoot, config.assets?.style);
         const scriptPath = resolveModuleFile(packageRoot, config.assets?.script);
+        const versionSuffix = typeof config.version === "string" ? `?v=${encodeURIComponent(config.version)}` : "";
         definition.assets = {
-            styleUrl: stylePath ? `/${app.routeName}/__zerux/modules/${moduleId}/style.css` : undefined,
-            scriptUrl: scriptPath ? `/${app.routeName}/__zerux/modules/${moduleId}/client.js` : undefined
+            styleUrl: stylePath ? `/${app.routeName}/__zerux/modules/${moduleId}/style.css${versionSuffix}` : undefined,
+            scriptUrl: scriptPath ? `/${app.routeName}/__zerux/modules/${moduleId}/client.js${versionSuffix}` : undefined
         };
         definition.meta = {
             ...definition.meta,
@@ -218,16 +220,16 @@ export const loadApplicationSections = async (
 
     return {
         modules,
-        sections: sections.map((section) => ({
+        sections: await Promise.all(sections.map(async (section) => ({
             ...section,
-            content: section.render({
+            content: await section.render({
                 app,
                 snapshot,
                 identifier,
                 modules,
                 module: section.moduleId ? modules.find((module) => module.id === section.moduleId) : undefined
             })
-        }))
+        })))
     };
 };
 

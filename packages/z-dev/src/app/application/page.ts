@@ -7,25 +7,35 @@ interface ApplicationPageContext {
   app: SharedDevRegistration;
   snapshot: SharedDevSnapshot;
   identifier?: string | null;
+  sectionId?: string | null;
   sections: Array<DevtoolsSectionDefinition & { content: string }>;
   modules: DevtoolsModuleDefinition[];
   nonce?: string;
 }
 
-export default ({ app, snapshot, identifier, sections, modules, nonce }: ApplicationPageContext) => {
-  const activeId = sections[0]?.id ?? "overview";
+export default ({ app, snapshot, identifier, sectionId, sections, modules, nonce }: ApplicationPageContext) => {
+  const activeId = sectionId || sections[0]?.id || "overview";
 
   return renderDocument({
     title: `${app.routeName} | Zerux Devtools`,
     bodyClass: "zx-application",
     nonce,
-    payload: {
+    config: {
       page: "application",
-      app,
-      snapshot,
+      app: { routeName: app.routeName, appName: app.appName },
       identifier,
+      sectionId: activeId,
       sections: sections.map(({ id, title, icon }) => ({ id, title, icon })),
-      modules
+      modules: modules.map((m) => ({
+        id: m.id,
+        title: m.title,
+        description: m.description,
+        badge: m.badge,
+        packageName: m.packageName,
+        assets: m.assets,
+        sections: (m.sections ?? []).map((s) => ({ id: s.id, title: s.title, icon: s.icon, order: s.order, moduleId: s.moduleId })),
+        meta: m.meta
+      }))
     },
     content: `
       <div class="zx-app-shell" data-app="${escapeHtml(app.routeName)}">

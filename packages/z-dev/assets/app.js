@@ -1,14 +1,52 @@
-const payloadElement = document.getElementById("zerux-dev-payload");
-const payload = payloadElement ? JSON.parse(payloadElement.textContent || "{}") : {};
+const { config = {}, bootstrap: initialBootstrap = null } = window.zerux || {};
 const themeStorageKey = "zerux:devtools:theme";
 const themeModes = ["system", "dark", "light"];
 let forcedThemeMode = null;
 const moduleMounts = new Map();
+const loadedScripts = new Map();
+const loadedStyles = new Map();
+
+const loadModuleAssets = async (moduleData) => {
+  if (!moduleData.assets) return null;
+
+  const { styleUrl, scriptUrl } = moduleData.assets;
+  const results = {};
+
+  if (styleUrl) {
+    if (!loadedStyles.has(styleUrl)) {
+      loadedStyles.set(styleUrl, (async () => {
+        const response = await fetch(styleUrl, { cache: "default" });
+        if (!response.ok) throw new Error("Failed to load style");
+        return response.text();
+      })());
+    }
+    results.style = await loadedStyles.get(styleUrl);
+  }
+
+  if (scriptUrl) {
+    if (!loadedScripts.has(scriptUrl)) {
+      loadedScripts.set(scriptUrl, import(new URL(scriptUrl, window.location.origin).toString()));
+    }
+    results.script = await loadedScripts.get(scriptUrl);
+  }
+
+  return results;
+};
+
+const preloadModules = (modules, skipId) => {
+  modules.forEach((module) => {
+    if (module.id === skipId || (module.sections && module.sections.some(s => s.id === skipId))) return;
+    if (module.assets) {
+      void loadModuleAssets(module);
+    }
+  });
+};
 
 let applicationState = {
-  app: payload.app?.routeName || null,
-  identifier: payload.identifier || null,
-  bootstrap: null,
+  app: config.app?.routeName || null,
+  identifier: config.identifier || null,
+  sectionId: config.sectionId || null,
+  bootstrap: initialBootstrap,
   socket: null,
   devtoolsSocket: null
 };
@@ -251,24 +289,23 @@ const mountModulePanel = async (panel, moduleData) => {
   shadowRoot.append(baseStyle, wrapper);
   wrapper.append(template.content.cloneNode(true));
 
-  if (moduleData.assets?.styleUrl) {
-    const styleResponse = await fetch(moduleData.assets.styleUrl, { cache: "no-store" });
-    if (styleResponse.ok) {
-      const style = document.createElement("style");
-      style.textContent = await styleResponse.text();
-      shadowRoot.prepend(style);
-    }
+  let lifecycle = null;
+  const assets = await loadModuleAssets(moduleData);
+
+  if (assets?.style) {
+    const style = document.createElement("style");
+    style.textContent = assets.style;
+    shadowRoot.prepend(style);
   }
 
-  let lifecycle = null;
-  if (moduleData.assets?.scriptUrl) {
-    const mod = await import(new URL(moduleData.assets.scriptUrl, window.location.origin).toString());
+  const mod = assets?.script;
+  if (mod) {
     const mount = mod.mount || mod.default?.mount;
     if (typeof mount === "function") {
       lifecycle = await mount({
-        app: payload.app,
-        identifier: payload.identifier || null,
-        snapshot: applicationState.bootstrap?.snapshot || payload.snapshot,
+        app: config.app,
+        identifier: config.identifier || null,
+        snapshot: applicationState.bootstrap?.snapshot || {},
         module: moduleData,
         root: wrapper,
         shadowRoot,
@@ -289,12 +326,22 @@ const mountModulePanel = async (panel, moduleData) => {
   });
 };
 
-const setActiveSection = async (id) => {
+const setActiveSection = async (id, skipHistory = false) => {
+  if (!skipHistory) {
+    const url = new URL(window.location.href);
+    url.pathname = `/${applicationState.app}/${id === "overview" ? "" : id}`;
+    if (applicationState.identifier) {
+      url.searchParams.set("identifier", applicationState.identifier);
+    }
+    window.history.pushState({ sectionId: id }, "", url.toString());
+  }
+
+  applicationState.sectionId = id;
   document.querySelectorAll("[data-section-link]").forEach((link) => {
     link.classList.toggle("is-active", link.getAttribute("data-section-link") === id);
   });
 
-  const modules = applicationState.bootstrap?.modules || payload.modules || [];
+  const modules = applicationState.bootstrap?.modules || config.modules || [];
   const moduleMap = new Map(modules.map((module) => [module.id, module]));
 
   for (const panel of document.querySelectorAll("[data-section-panel]")) {
@@ -316,15 +363,23 @@ const setupSectionNavigation = (sections) => {
     link.addEventListener("click", async () => {
       const id = link.getAttribute("data-section-link");
       if (!id) return;
-      await setActiveSection(id);
       if (window.innerWidth <= 750) {
         closeSidebar();
       }
+      await setActiveSection(id);
     });
   });
-  if (sections[0]?.id) {
-    void setActiveSection(sections[0].id);
+  const initialId = config.sectionId || (sections[0]?.id);
+  if (initialId) {
+    void setActiveSection(initialId, true);
   }
+
+  window.addEventListener("popstate", (event) => {
+    const id = event.state?.sectionId || config.sectionId || (sections[0]?.id);
+    if (id) {
+      void setActiveSection(id, true);
+    }
+  });
   document.querySelector("[data-sidebar-close]")?.addEventListener("click", closeSidebar);
   document.addEventListener("click", (event) => {
     if (window.innerWidth > 750) return;
@@ -339,11 +394,11 @@ const setupSectionNavigation = (sections) => {
 };
 
 const setupApplication = async () => {
-  const app = payload.app?.routeName;
+  const app = config.app?.routeName;
   if (!app) return;
 
   applicationState.app = app;
-  applicationState.identifier = payload.identifier || null;
+  applicationState.identifier = config.identifier || null;
 
   const bootstrapUrl = new URL(`/${app}/__zerux/api/bootstrap`, window.location.origin);
   if (applicationState.identifier) bootstrapUrl.searchParams.set("identifier", applicationState.identifier);
@@ -351,21 +406,68 @@ const setupApplication = async () => {
   const refresh = async () => {
     const response = await fetch(bootstrapUrl, { cache: "no-store" });
     const data = await response.json();
-    applicationState.bootstrap = data;
-    renderOverview(data.snapshot, data.modules || []);
-    renderPages(data.snapshot);
-    renderModules(data.modules || []);
-    renderDiagnostics(data.snapshot);
+    
+    // Merge only updated info (snapshot, identifier) into the bootstrap state
+    // to preserve static config like modules and sections metadata.
+    applicationState.bootstrap = {
+      ...(applicationState.bootstrap || {}),
+      ...data,
+      snapshot: {
+        ...(applicationState.bootstrap?.snapshot || {}),
+        ...(data.snapshot || {})
+      }
+    };
+    
+    // Sync with global window object
+    window.zerux.bootstrap = applicationState.bootstrap;
+    
+    const { snapshot, modules = [] } = applicationState.bootstrap;
+    renderOverview(snapshot, modules);
+    renderPages(snapshot);
+    renderModules(modules);
+    renderDiagnostics(snapshot);
+    
     for (const mount of moduleMounts.values()) {
-      mount.refresh?.(data);
+      mount.refresh?.(applicationState.bootstrap);
+    }
+    if (modules.length) {
+      preloadModules(modules, applicationState.sectionId);
     }
   };
 
-  setupSectionNavigation(payload.sections || []);
+  if (!applicationState.bootstrap) {
+    applicationState.bootstrap = { ...config };
+    window.zerux.bootstrap = applicationState.bootstrap;
+  }
+
+  setupSectionNavigation(config.sections || []);
+  if (config.modules) {
+    const initialId = config.sectionId || (config.sections && config.sections[0]?.id);
+    preloadModules(config.modules, initialId);
+  }
   document.querySelector("[data-sidebar-toggle]")?.addEventListener("click", () => {
     document.querySelector(".zx-app-shell")?.classList.toggle("is-sidebar-open");
   });
-  await refresh();
+  
+  if (applicationState.bootstrap.snapshot) {
+    // Initial snapshot present (if we had it in inject, which we don't for now, but good for future)
+    // or we just initialized it from config. 
+    // If we only have config, we still need one refresh for the snapshot.
+    const data = applicationState.bootstrap;
+    if (data.snapshot && Object.keys(data.snapshot).length > 0) {
+        renderOverview(data.snapshot, data.modules || []);
+        renderPages(data.snapshot);
+        renderModules(data.modules || []);
+        renderDiagnostics(data.snapshot);
+        if (data.modules) {
+          preloadModules(data.modules, applicationState.sectionId);
+        }
+    } else {
+        await refresh();
+    }
+  } else {
+    await refresh();
+  }
 
   const socket = createDevtoolsSocket();
   applicationState.devtoolsSocket = socket;
@@ -385,6 +487,6 @@ const setupApplication = async () => {
 };
 
 setupThemeToggle();
-if (payload.page === "application") {
+if (config.page === "application") {
   setupApplication().catch(() => undefined);
 }

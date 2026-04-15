@@ -5,7 +5,8 @@ const zeruxConfig: ZeruxConfig = {
     "connectorManager": "@zeruxjs/db",
     "devtools": {
         "modules": [
-            "sample-module"
+            "sample-module",
+            "sample-os"
         ]
     },
     "allowedDomains": ["zerux.shubkb.me"],
