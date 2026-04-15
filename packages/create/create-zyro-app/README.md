@@ -21,4 +21,4 @@ npm create zyro-app@latest
 
 - **TypeScript First**: Full Type-safe scaffolding out of the box.
 - **Lightweight**: Zero-bloat project generation focused on the ZyroJS engine.
-- **HMR Enabled**: Pre-configured with `@zeruxjs/watcher` for a fast dev loop.
+- **HMR Enabled**: Pre-configured with `zwatch` for a fast dev loop.

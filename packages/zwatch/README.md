@@ -1,7 +1,7 @@
 > [!WARNING]
 > This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
 
-# @zeruxjs/watcher (zwatch)
+# zwatch
 
 
 A high-performance, intelligent file change watcher designed for the ZeruxJS ecosystem. `zwatch` optimizes resource usage by sharing file system events across multiple processes using a local daemon.
