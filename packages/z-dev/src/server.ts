@@ -195,7 +195,7 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
 
     const url = new URL(req.url || "/", "http://127.0.0.1");
     const pathname = url.pathname;
-    
+
     if (pathname === "/favicon.ico" || pathname === "/__zerux/assets/favicon.ico") {
         const asset = readDevAsset("favicon.ico");
         if (asset) {
@@ -208,6 +208,14 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
         const asset = readDevAsset("favicon.png");
         if (asset) {
             sendBuffer(res, asset, "image/png");
+            return;
+        }
+    }
+
+    if (pathname === "/robots.txt" || pathname === "/__zerux/assets/robots.txt") {
+        const asset = readDevAsset("robots.txt");
+        if (asset) {
+            sendBuffer(res, asset, "text/plain");
             return;
         }
     }
