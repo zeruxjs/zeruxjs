@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Frontend bridge browser fixture</title>
+<style>.motion{transition:transform 1s}@media(prefers-reduced-motion:reduce){.motion{transition:none}}</style></head>
+<body>
+<p id="react-text" aria-live="polite">pending</p><p id="vue-text">pending</p><p id="zyro-text">pending</p>
+<div role="tablist" id="tabs" aria-label="Demo tabs">
+<button type="button" id="tab-one" role="tab" aria-controls="panel-one" aria-selected="true">One</button>
+<button type="button" id="tab-two" role="tab" aria-controls="panel-two">Two</button>
+<button type="button" id="tab-disabled" role="tab" aria-controls="panel-disabled" aria-disabled="true">Disabled</button>
+</div>
+<div id="panel-one" role="tabpanel" aria-labelledby="tab-one">First panel</div>
+<div id="panel-two" role="tabpanel" aria-labelledby="tab-two">Second panel</div>
+<div id="panel-disabled" role="tabpanel" aria-labelledby="tab-disabled">Disabled panel</div>
+<div class="motion" id="motion"></div><output id="browser-result">{"pass":false,"errors":["pending"]}</output>
+<script type="module">
+import {createReactStore} from '/packages/@zeruxjs/react/dist/index.js';
+import {createVueBindings} from '/packages/@zeruxjs/vue/dist/index.js';
+import {createObservable,createZyroSubscriptionScope} from '/packages/@zeruxjs/zyro/dist/index.js';
+import {bindAccessibleTabs,prefersReducedMotion} from '/packages/zeruxjs/dist/accessibility.js';
+const errors=[];const check=(condition,description)=>{if(!condition)errors.push(description)};
+try{
+ const r=createReactStore('first');const out=document.getElementById('react-text');let calls=0;
+ const unmount=r.subscribe(()=>{calls++;out.textContent=r.getSnapshot()});out.textContent=r.getSnapshot();
+ r.set('second');check(out.textContent==='second','React projection');unmount();r.set('third');check(calls===1,'React teardown');
+ const scoped=[];const vue=createVueBindings({shallowRef:value=>({value}),getCurrentScope:()=>true,onScopeDispose:fn=>scoped.push(fn),readonly:ref=>ref});
+ const v=vue.useStore(r);r.set('fourth');check(v.value==='fourth','Vue projection');scoped.forEach(fn=>fn());
+ r.set('fifth');check(v.value==='fourth','Vue teardown');document.getElementById('vue-text').textContent=v.value;
+ const z=createObservable('a'),scope=createZyroSubscriptionScope(),output=document.getElementById('zyro-text');
+ scope.observe(z,value=>output.textContent=value);z.set('b');check(output.textContent==='b','Zyro projection');scope.destroy();z.set('c');check(output.textContent==='b','Zyro teardown');
+ const tabs=document.getElementById('tabs');const binding=bindAccessibleTabs(tabs);
+ document.getElementById('tab-one').focus();
+ document.getElementById('tab-one').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}));
+ check(document.activeElement.id==='tab-two','keyboard focus');
+ check(document.getElementById('tab-two').getAttribute('aria-selected')==='true','aria-selected');
+ check(document.getElementById('panel-one').hidden&& !document.getElementById('panel-two').hidden,'tab panel visibility');
+ document.getElementById('tab-two').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}));
+ check(document.activeElement.id==='tab-one','disabled tab skipped');
+ binding.destroy();
+ check(prefersReducedMotion()===window.matchMedia('(prefers-reduced-motion: reduce)').matches,'reduced motion query');
+ check(window.getComputedStyle(document.getElementById('motion')).transitionDuration==='0s','reduced-motion CSS');
+ r.destroy();
+}catch(error){errors.push(String(error.stack||error))}
+const out=document.getElementById('browser-result');out.textContent=JSON.stringify({pass:errors.length===0,errors});
+</script></body></html>

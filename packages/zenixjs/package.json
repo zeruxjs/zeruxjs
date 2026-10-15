@@ -19,5 +19,6 @@
   },
   "keywords": [
     "AI Funtion Provider to easily connect APIs and Front-Backend too"
-  ]
+  ],
+  "private": true
 }

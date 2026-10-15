@@ -1,0 +1,932 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "name": "@zeruxjs/accessibility",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/ai",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/ai-model",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/analytics",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "./http": {
+          "types": "./dist/http.d.ts",
+          "default": "./dist/http.js"
+        },
+        "./email": {
+          "types": "./dist/email-tracking.d.ts",
+          "default": "./dist/email-tracking.js"
+        },
+        "./browser": {
+          "types": "./dist/browser.d.ts",
+          "default": "./dist/browser.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": {
+        "@zeruxjs/db": "0.0.1-alpha.1"
+      },
+      "peerDependenciesMeta": {
+        "@zeruxjs/db": {
+          "optional": true
+        }
+      }
+    },
+    {
+      "name": "@zeruxjs/asset-manager",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/auth",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/cache",
+      "version": "0.0.1-alpha.1",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/cache-redis",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/db",
+      "version": "0.0.1-alpha.1",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/db-mongo",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": {
+        "mongodb": ">=6.0.0"
+      },
+      "peerDependenciesMeta": {
+        "mongodb": {
+          "optional": true
+        }
+      }
+    },
+    {
+      "name": "@zeruxjs/db-mysql",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/db-pg",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/db-sql-core",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/db-sqlite",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/email",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "./html": {
+          "types": "./dist/html.d.ts",
+          "default": "./dist/html.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": {
+        "@zeruxjs/files": "0.0.1-alpha.2"
+      },
+      "peerDependenciesMeta": {
+        "@zeruxjs/files": {
+          "optional": true
+        }
+      }
+    },
+    {
+      "name": "@zeruxjs/feed",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": "./dist/index.js",
+        "./fetch": "./dist/fetch.js"
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/files",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "./client": {
+          "types": "./dist/client.d.ts",
+          "default": "./dist/client.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/font",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": "./dist/index.js",
+        "./http": "./dist/http.js"
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/hooks",
+      "version": "0.0.1-alpha.2",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "import": "./dist/index.js",
+          "types": "./dist/index.d.ts"
+        },
+        "./state": {
+          "types": "./dist/state.d.ts",
+          "import": "./dist/state.js"
+        },
+        "./context": {
+          "types": "./dist/context.d.ts",
+          "import": "./dist/context.js"
+        },
+        "./paths": {
+          "types": "./dist/path-registry.d.ts",
+          "import": "./dist/path-registry.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/lint",
+      "version": "0.0.1-alpha.2",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "import": "./dist/index.js",
+          "types": "./dist/index.d.ts"
+        },
+        "./files": {
+          "types": "./dist/files.d.ts",
+          "import": "./dist/files.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/media",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/performance",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/queue",
+      "version": "0.1.0-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/react",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/reports",
+      "version": "0.1.0-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": {
+        "@zeruxjs/analytics": "0.0.1-alpha.2"
+      },
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/search",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": "./dist/index.js",
+        "./http": "./dist/http.js",
+        "./persistence": "./dist/persistence.js"
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/security",
+      "version": "0.0.1-alpha.1",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "import": "./dist/index.js",
+          "types": "./dist/index.d.ts"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/seo",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": "./dist/index.js",
+        "./fetch": "./dist/fetch.js"
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/share",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/tags",
+      "version": "0.1.0-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": {
+        "@zeruxjs/analytics": "0.0.1-alpha.2"
+      },
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/typescript",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "import": "./dist/index.js",
+          "types": "./dist/index.d.ts"
+        },
+        "./loader": {
+          "types": "./dist/loader.d.ts",
+          "import": "./dist/loader.js"
+        },
+        "./build": {
+          "types": "./dist/build.d.ts",
+          "import": "./dist/build.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/validator",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "import": "./dist/index.js",
+          "types": "./dist/index.d.ts"
+        },
+        "./http": {
+          "types": "./dist/integrations/http.d.ts",
+          "import": "./dist/integrations/http.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/vue",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "@zeruxjs/zyro",
+      "version": "0.0.1-alpha.2",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "create-zenix-js",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": {
+        "create-zerux": "./dist/index.js"
+      },
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "create-zerux-js",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": {
+        "create-zerux": "./dist/index.js"
+      },
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "create-zyro-app",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": {
+        "create-zyro": "./dist/index.js"
+      },
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "sample-child",
+      "version": "1.0.0",
+      "private": true,
+      "main": "./src/index.js",
+      "module": null,
+      "types": null,
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "sample-module",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./index.js",
+      "module": null,
+      "types": null,
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "sample-multi-section-module",
+      "version": "1.0.0",
+      "private": true,
+      "main": "./src/index.js",
+      "module": null,
+      "types": null,
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "sample-os",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./index.js",
+      "module": null,
+      "types": null,
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "sample-parent",
+      "version": "1.0.0",
+      "private": true,
+      "main": "./src/index.js",
+      "module": null,
+      "types": null,
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "z-dev",
+      "version": "0.0.1-alpha.2",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "import": "./dist/index.js",
+          "types": "./dist/index.d.ts"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "zcli",
+      "version": "0.1.0",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        }
+      },
+      "bin": {
+        "zcli": "./dist/bin.js"
+      },
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "zenix",
+      "version": "0.0.1-alpha.1",
+      "private": true,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": null,
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "zeruxjs",
+      "version": "0.0.1-alpha.3",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": "./dist/index.js",
+        "./navigation": "./dist/navigation.js",
+        "./accessibility": {
+          "types": "./dist/accessibility.d.ts",
+          "import": "./dist/accessibility.js"
+        },
+        "./cache": "./dist/cache-api.js",
+        "./loader": "./dist/loader/register-loader.js",
+        "./database": "./dist/bootstrap/database.js",
+        "./cache-runtime": "./dist/bootstrap/cache.js",
+        "./schema/schema.config.json": "./assets/json/schema.config.json",
+        "./theme": "./dist/theme.js",
+        "./protocols": "./dist/protocols.js",
+        "./response": "./dist/response.js",
+        "./fetch-route": "./dist/fetch-route.js",
+        "./services": {
+          "import": "./dist/bootstrap/services.js",
+          "types": "./dist/bootstrap/services.d.ts"
+        },
+        "./build": {
+          "import": "./dist/commands/project-builder.js",
+          "types": "./dist/commands/project-builder.d.ts"
+        },
+        "./variables": {
+          "import": "./dist/variables.js",
+          "types": "./dist/variables.d.ts"
+        }
+      },
+      "bin": {
+        "zerux": "./dist/bin/zerux.js"
+      },
+      "engines": null,
+      "peerDependencies": {
+        "@zeruxjs/queue": "0.1.0-alpha.1"
+      },
+      "peerDependenciesMeta": {
+        "@zeruxjs/queue": {
+          "optional": true
+        }
+      }
+    },
+    {
+      "name": "zeyro",
+      "version": "0.1.0",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "./jsdom": "./dist/adapters/jsdom/setup.js",
+        "./playwright": "./dist/adapters/playwright/setup.js",
+        "./vitest": "./dist/adapters/vitest/setup.js"
+      },
+      "bin": {
+        "zeyro": "./dist/bin/cli.js"
+      },
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "zsrv",
+      "version": "0.0.1-alpha.2",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "import": "./dist/index.js",
+          "types": "./dist/index.d.ts"
+        },
+        "./protocols": {
+          "import": "./dist/protocols/index.js",
+          "types": "./dist/protocols/index.d.ts"
+        }
+      },
+      "bin": {
+        "zerux-server": "./dist/bin/zerux.js"
+      },
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "zuix",
+      "version": "0.2.0",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "./node": {
+          "types": "./dist/node.d.ts",
+          "import": "./dist/node.js"
+        },
+        "./vite": {
+          "types": "./dist/adapters.d.ts",
+          "import": "./dist/adapters.js"
+        },
+        "./theme": {
+          "types": "./dist/theme.d.ts",
+          "import": "./dist/theme.js"
+        }
+      },
+      "bin": {
+        "zuix": "./dist/cli.js"
+      },
+      "engines": {
+        "node": ">=20"
+      },
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "zwatch",
+      "version": "0.0.1-alpha.2",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "import": "./dist/index.js",
+          "types": "./dist/index.d.ts"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "zyrojs",
+      "version": "0.0.1-alpha.2",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "./dom": {
+          "types": "./dist/dom/index.d.ts",
+          "default": "./dist/dom/index.js"
+        },
+        "./network": {
+          "types": "./dist/network/index.d.ts",
+          "default": "./dist/network/index.js"
+        }
+      },
+      "bin": null,
+      "engines": {
+        "node": ">=20"
+      },
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    }
+  ]
+}

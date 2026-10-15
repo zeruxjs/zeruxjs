@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {inspectInstalledLicenses} from './workspace-installed-licenses.mjs';
+test('installed license review requires matching package manifests and notice files',t=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'installed-license-'));
+ t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+ const p=path.join(root,'node_modules','sample');fs.mkdirSync(p,{recursive:true});
+ const lock={packages:{'node_modules/sample':{version:'1.2.3'},'node_modules/missing':{version:'1.0.0'},'node_modules/local':{link:true}}};
+ fs.writeFileSync(path.join(p,'package.json'),JSON.stringify({name:'sample',version:'1.2.3',license:'MIT'}));
+ let result=inspectInstalledLicenses(root,lock);
+ assert.equal(result.uninstalled.length,1);assert.equal(result.missing.length,1);assert.equal(result.ok,false);
+ fs.writeFileSync(path.join(p,'LICENSE-MIT'),'MIT license terms');
+ result=inspectInstalledLicenses(root,{packages:{'node_modules/sample':{version:'1.2.3'}}});
+ assert.equal(result.ok,true);assert.equal(result.checked,1);
+ result=inspectInstalledLicenses(root,{packages:{'node_modules/sample':{version:'1.2.4'}}});
+ assert.equal(result.discrepancies.length,1);
+ const escaped=inspectInstalledLicenses(root,{packages:{'node_modules/../../../elsewhere':{version:'1.0.0'}}});
+ assert.equal(escaped.discrepancies.length,1);
+});
+test('invalid installed package.json and unlicensed packages fail closed',t=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'installed-license-bad-'));
+ t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+ const dir=path.join(root,'node_modules','bad');fs.mkdirSync(dir,{recursive:true});
+ fs.writeFileSync(path.join(dir,'package.json'),'{broken');
+ const lock={packages:{'node_modules/bad':{version:'2.0.0'}}};
+ assert.equal(inspectInstalledLicenses(root,lock).discrepancies.length,1);
+ fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify({name:'bad',version:'2.0.0'}));
+ assert.equal(inspectInstalledLicenses(root,lock).missing.length,1);
+});

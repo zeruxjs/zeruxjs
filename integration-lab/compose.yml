@@ -1,0 +1,72 @@
+# Section 83 disposable **package-only** lab. Never point these ports at production.
+# All published ports are loopback-only; isolate with `-p zerux-lab-<runid>`.
+# CI should use `docker compose -f integration-lab/compose.yml -p zerux-lab up -d --wait`.
+name: zerux-package-lab
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: lab_only_not_production
+      POSTGRES_DB: zerux_lab
+    ports: ['127.0.0.1:${LAB_PG_PORT:-55432}:5432']
+    healthcheck:
+      test: ['CMD-SHELL','pg_isready -U lab -d zerux_lab']
+      interval: 5s
+      timeout: 3s
+      retries: 25
+    tmpfs: ['/var/lib/postgresql/data']
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: lab_root_only
+      MYSQL_USER: lab
+      MYSQL_PASSWORD: lab_only_not_production
+      MYSQL_DATABASE: zerux_lab
+    ports: ['127.0.0.1:${LAB_MYSQL_PORT:-53306}:3306']
+    healthcheck:
+      test: ['CMD-SHELL','mysqladmin ping -h 127.0.0.1 -ulab -plab_only_not_production --silent']
+      interval: 5s
+      timeout: 4s
+      retries: 35
+    tmpfs: ['/var/lib/mysql']
+  mongo:
+    image: mongo:7.0
+    ports: ['127.0.0.1:${LAB_MONGO_PORT:-57017}:27017']
+    healthcheck:
+      test: ['CMD','mongosh','--quiet','--eval','db.adminCommand({ping:1}).ok']
+      interval: 5s
+      timeout: 3s
+      retries: 25
+    tmpfs: ['/data/db']
+  redis:
+    image: redis:7.4-alpine
+    command: ['redis-server','--save','','--appendonly','no']
+    ports: ['127.0.0.1:${LAB_REDIS_PORT:-56379}:6379']
+    healthcheck:
+      test: ['CMD','redis-cli','ping']
+      interval: 5s
+      timeout: 3s
+      retries: 25
+    tmpfs: ['/data']
+  minio:
+    image: ${LAB_MINIO_IMAGE:-minio/minio:RELEASE.2024-12-18T13-15-44Z}
+    command: ['server','/data','--console-address',':9001']
+    environment:
+      MINIO_ROOT_USER: minio_lab_only
+      MINIO_ROOT_PASSWORD: minio_lab_secret_only
+    ports: ['127.0.0.1:${LAB_MINIO_PORT:-59000}:9000']
+    # The MinIO server image does not guarantee a shell or mc client for a
+    # container healthcheck. The test runner probes the port, then executes real
+    # authenticated S3 operations; a socket alone is never a PASS.
+    tmpfs: ['/data']
+  # GreenMail is a test-only SMTP+IMAP+POP3 server. Ports are TLS variants;
+  # provide a dedicated CA via NODE_EXTRA_CA_CERTS for authentication tests.
+  greenmail:
+    image: ${LAB_GREENMAIL_IMAGE:-greenmail/standalone:2.1.3}
+    environment:
+      GREENMAIL_OPTS: '-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=lab:lab@zerux.test -Dgreenmail.verbose=false'
+    ports:
+      - '127.0.0.1:${LAB_SMTP_PORT:-53465}:3465'
+      - '127.0.0.1:${LAB_IMAP_PORT:-53993}:3993'
+      - '127.0.0.1:${LAB_POP3_PORT:-53995}:3995'

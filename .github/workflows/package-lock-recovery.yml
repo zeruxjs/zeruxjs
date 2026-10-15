@@ -1,0 +1,38 @@
+name: Recover package-lock (manual, no publish)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  propose-lockfile:
+    name: Resolve and test proposed root lockfile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Resolve registry metadata without installer side effects
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund --fetch-retries=2
+      - name: Save proposed lockfile before further checks
+        run: cp package-lock.json package-lock-proposed.json
+      - run: npm run deps:check
+      - run: npm run verify:source
+      - name: Prove a clean installation, not an npm install repair
+        run: npm ci --no-audit --no-fund
+      - run: npm run build:workspaces
+      - run: npm run release:public:consumer
+      - name: Proposed lockfile, for manual commit/review only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: root-package-lock-proposal
+          path: package-lock-proposed.json
+          if-no-files-found: warn

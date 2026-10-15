@@ -1,72 +1,49 @@
-name: Sync All Repos
+name: Safe GitLab branch mirror (optional)
 
 on:
   push:
-    branches:
-      - '**'
+    branches: ['**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  sync:
-    runs-on: ubuntu-latest
-
+  mirror:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      # --------------------------------
-      # 🧠 Skip if already synced
-      # --------------------------------
-      - name: Check commit message
-        id: check
-        run: |
-          msg=$(git log -1 --pretty=%B)
-          echo "MESSAGE=$msg"
-          if [[ "$msg" == *"[skip-sync]"* ]]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Stop if skip
-        if: steps.check.outputs.skip == 'true'
-        run: |
-          echo "Skipping sync (already synced commit)"
-          exit 0
-
-      # --------------------------------
-      # 🔐 SSH for GitLab.com
-      # --------------------------------
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.GIT_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
-
-      # --------------------------------
-      # 🔁 Push to GitLab.com (REQUIRED)
-      # --------------------------------
-      - name: Push to GitLab.com
-        run: |
-          git remote add gitlab git@gitlab.com:zeruxjs/zeruxjs.git || true
-          git commit --allow-empty -m "[skip-sync] sync from github" || true
-          git push --force --all gitlab
-          git push --force --tags gitlab
-
-      # --------------------------------
-      # 🌐 Push to Self-hosted (OPTIONAL)
-      # --------------------------------
-      - name: Push to Self-hosted GitLab
+          persist-credentials: false
+      - name: Fast-forward only to GitLab (no branch/tag force or empty commits)
+        shell: bash
         env:
-          TOKEN: ${{ secrets.SELF_GITLAB_TOKEN }}
+          MIRROR_SSH_KEY: ${{ secrets.GIT_SSH_KEY }}
+          GITLAB_KNOWN_HOSTS: ${{ secrets.GITLAB_KNOWN_HOSTS }}
         run: |
-          set +e
-
-          git remote add self https://oauth2:${TOKEN}@gitlab.shubkb.me/zeruxjs/zeruxjs.git || true
-
-          git push --force --all self
-          git push --force --tags self
-
-          echo "Self-host sync attempted"
+          set -euo pipefail
+          if [[ -z "$MIRROR_SSH_KEY" ]]; then
+            echo 'GitLab mirror disabled: repository secret GIT_SSH_KEY is not configured.'
+            exit 0
+          fi
+          if git log -1 --pretty=%B | grep -Fq '[skip-sync]'; then
+            echo 'Mirror skipped for [skip-sync] commit.'
+            exit 0
+          fi
+          if [[ -z "$GITLAB_KNOWN_HOSTS" ]]; then
+            echo 'GitLab mirror blocked: add a verified GITLAB_KNOWN_HOSTS secret.' >&2
+            exit 1
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$MIRROR_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$GITLAB_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          git remote add gitlab git@gitlab.com:zeruxjs/zeruxjs.git
+          git push gitlab "HEAD:refs/heads/${GITHUB_REF_NAME}"
+          echo 'Mirrored using fast-forward-only push; remote divergences are intentionally not overwritten.'

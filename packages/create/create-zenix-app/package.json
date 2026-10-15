@@ -3,7 +3,7 @@
   "version": "0.0.1-alpha.1",
   "description": "CLI Creater for Zyro CMS",
   "bin": {
-    "create-zerux": "index.js"
+    "create-zerux": "./dist/index.js"
   },
   "type": "module",
   "dependencies": {
@@ -26,5 +26,6 @@
   },
   "keywords": [
     "CLI Creater for Zyro CMS"
-  ]
+  ],
+  "private": true
 }

@@ -2,28 +2,21 @@
 
 ## Supported Versions
 
-We take the security of ZeruxJS seriously. Vulnerability patches are applied to the latest major version, as well as actively supported stable branches. 
+ZeruxJS ecosystem packages are versioned independently. **No stable 1.x release is certified yet.** Current alpha/beta packages are under active development and receive fixes on a best-effort basis, not a guaranteed stable security-support SLA. Do not interpret a successful local source test as stable publication approval.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| v1.x.x  | :white_check_mark: |
-| < v1.0  | :x:                |
+| Package versions | Security support |
+| --- | --- |
+| Current prerelease branches (for example `0.0.1-alpha.x`) | Best effort; no guaranteed support window |
+| Current released `0.x` packages | Best effort until an explicit support matrix is published |
+| `1.x` (not released/certified yet) | Not applicable |
+| Older prereleases | Not supported |
 
-*(Note: Depending on the release status of ZeruxJS, update this table to reflect the current active releases.)*
+After the first stable npm publication, replace this table with exact supported version lines and EOL dates. See `RELEASE_DECISION_85.md` for the current release state.
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within ZeruxJS or any of its official packages (`zeruxjs`, `create-zerux-js`, `zerus-js-vs-ext`), please **DO NOT** file a public issue on GitHub. 
+**Do not post proof-of-concepts, secrets or vulnerability details in public GitHub issues.** Report confidentially using the repository's [GitHub security advisory reporting](https://github.com/zeruxjs/zeruxjs/security/advisories/new). The repository maintainers must enable private vulnerability reporting in GitHub Settings → Code security if it is not available.
 
-Instead, please send an e-mail to the core team to report the vulnerability. (Please update with the project's official security email address).
+Include the affected package/version, reproducible steps, impact and a safe proof-of-concept when possible. Maintainers will triage and coordinate a fix and disclosure. Until an explicit security-response SLA is published, response and resolution times are not guaranteed. Never use a placeholder or unverified security-reporting email address.
 
-**Please include the following information in your report:**
-- Type of issue (e.g., buffer overflow, SQL injection, cross-site scripting).
-- Full paths of source file(s) related to the manifestation of the issue.
-- The location of the affected source code (tag/branch/commit or direct URL).
-- Any special configuration required to reproduce the issue.
-- Step-by-step instructions to reproduce the issue.
-- Proof-of-concept or exploit code (if possible).
-- Impact of the issue, including how an attacker might exploit the issue.
-
-We will acknowledge receipt of your vulnerability report as soon as possible and will strive to send you regular updates about our progress. If the issue is confirmed, we will release a patch as soon as possible. We may request an embargo period before the vulnerability is made public to ensure all users have time to patch their systems.
+A reported issue may be accepted, declined with an explanation or held for more information; no automatic public disclosure is implied.
