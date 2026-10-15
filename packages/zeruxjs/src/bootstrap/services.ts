@@ -2,6 +2,7 @@ import path from 'node:path';
 import type { ZeruxConfig } from '../index.js';
 import { initializeDatabaseRuntime } from './database.js';
 import { initializeCacheRuntime } from './cache.js';
+import { serviceRouteOverlaps } from './service-http.js';
 
 export type ServiceName = 'database' | 'cache' | 'files' | 'analytics' | 'email' | 'tags' | 'reports' | 'queue';
 export type ServiceStatus = { name: ServiceName; state: 'ready' | 'disabled' | 'degraded' | 'closed' };
@@ -39,13 +40,20 @@ export function createServiceScope() {
     /** Register only distinct, absolute service paths; never override application routes. */
     addHttpRoutes(service: 'analytics' | 'email' | 'tags' | 'reports' | 'queue', routes: readonly ServiceHttpRoute[]) {
       if (closed) throw new Error('Cannot register HTTP routes on a closed service scope');
-      const seen = new Set(httpRoutes.map(route => route.pattern));
+      // Check the entire batch before mutating the live scope. Dynamic paths and
+      // catch-alls can shadow routes even when their strings differ.
+      const accepted = httpRoutes.map(route => route.pattern);
       for (const route of routes) {
-        if (!route.pattern.startsWith('/') || route.pattern === '/' || route.pattern.includes('..') || route.pattern.includes('//') || typeof route.handler !== 'function') {
+        if (typeof route.pattern !== 'string' || !/^\/(?:[A-Za-z0-9_.~:*-]+)(?:\/[A-Za-z0-9_.~:*-]+)*\/?$/.test(route.pattern) ||
+            route.pattern === '/' || route.pattern.includes('..') || route.pattern.includes('//') ||
+            route.pattern.includes('?') || route.pattern.includes('#') || typeof route.handler !== 'function') {
           throw new TypeError('Invalid service HTTP route');
         }
-        if (seen.has(route.pattern)) throw new Error(`Duplicate service HTTP route: ${route.pattern}`);
-        seen.add(route.pattern);
+        if (accepted.includes(route.pattern)) throw new Error(`Duplicate service HTTP route: ${route.pattern}`);
+        if (accepted.some(existing => serviceRouteOverlaps(existing, route.pattern))) {
+          throw new Error(`Conflicting service HTTP route: ${route.pattern}`);
+        }
+        accepted.push(route.pattern);
       }
       httpRoutes.push(...routes.map(route => ({ ...route, service })));
     },
@@ -133,6 +141,11 @@ export interface TagsStartupConfig {
   credentials?:Record<string,{secret:string}>;
   destinations?:Record<string,{url:string;headers?:Record<string,string>}>;
   authorizeAdmin?:(request:Request)=>boolean|Promise<boolean>;
+  authorizePublish?:(request:Request)=>boolean|Promise<boolean>;
+  requireBrowserConsent?:boolean;
+  siteByOrigin?:Record<string,string>;
+  botPolicy?:'allow'|'drop-known';
+  onWarning?:(message:string)=>void;
   dashboardHost?:string;
   debug?:boolean;
   defaultConsent?:'granted'|'denied';
@@ -143,10 +156,12 @@ export interface TagsStartupConfig {
 export interface ReportsStartupConfig {
   enabled?:boolean;
   prefix?:string;
-  authorize:(request:Request)=>boolean|Promise<boolean>;
+  authorize:(request:Request,action?:'read'|'edit'|'export'|'sensitive'|'campaign',resourceId?:string)=>boolean|Promise<boolean>;
   dashboardHost?:string;
-  store?:{load():Promise<unknown>;save(document:unknown,expectedVersion:number):Promise<boolean>};
-  source?:{events(query:unknown):Promise<unknown[]>;aggregate?:(query:unknown)=>Promise<unknown>};
+  store?:{load():Promise<any>;save(document:any,expectedVersion:number):Promise<boolean>};
+  source?:{events(query:any):Promise<any[]>;aggregate?:(query:any)=>Promise<any>;aggregateNumeric?:(query:any)=>Promise<any>;supportsNumericField?:(field:string)=>boolean};
+  resolveScope?:(request:Request)=>Promise<{site:string;store:{load():Promise<any>;save(document:any,expectedVersion:number):Promise<boolean>};source?:ReportsStartupConfig['source']}>|{site:string;store:{load():Promise<any>;save(document:any,expectedVersion:number):Promise<boolean>};source?:ReportsStartupConfig['source']};
+  campaigns?:{report:(code:string,options:{cursor:string|null;limit:number;site?:string})=>Promise<any>;performance?:(code:string,site?:string)=>Promise<unknown>;dailyTrends?:(code:string,from:string,to:string,site?:string)=>Promise<unknown>;activity?:(code:string,from:string,to:string,site?:string)=>Promise<unknown>};
   maxSourceRows?:number;
   /** Restrict every report query to one analytics site, independent of saved chart definitions. */
   site?:string;
@@ -155,7 +170,7 @@ export interface ReportsStartupConfig {
 export interface QueueStartupConfig {
   enabled?:boolean;
   required?:boolean;
-  redis: {url?:string;host?:string;port?:number;username?:string;password?:string;db?:number;tls?:Record<string,unknown>};
+  redis: {url?:string;host?:string;port?:number;username?:string;password?:string;db?:number;tls?:Record<string,unknown>;cluster?:{nodes:Array<{host:string;port:number}>};keyPrefix?:never};
   prefix?:string;
   queues: Array<string | {name:string;defaultJobOptions?:Record<string,unknown>}>;
   workers?:Record<string,{processor:(job:unknown)=>Promise<unknown>|unknown;concurrency?:number;autorun?:boolean;lockDuration?:number;limiter?:{max:number;duration:number}}>;
@@ -173,7 +188,7 @@ export interface QueueStartupConfig {
     publicOrigin?:string;
   };
   administration?:{
-    authorize:(action:'inspect'|'retry'|'pause-queue'|'resume-queue'|'pause-worker'|'resume-worker',queue:string,context:unknown)=>boolean|Promise<boolean>;
+    authorize:(action:'inspect'|'retry'|'pause-queue'|'resume-queue'|'pause-worker'|'resume-worker'|'schedule-inspect'|'schedule-create'|'schedule-remove',queue:string,context:unknown)=>boolean|Promise<boolean>;
     onAudit?:(entry:{action:string;queue:string;jobId?:string;success:boolean;at:string})=>void|Promise<void>;
     maxPageSize?:number;
   };

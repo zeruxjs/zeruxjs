@@ -79,7 +79,7 @@ export function createVariableRegistry(){
     for(const match of matches){if(!safeName(match[1]))throw new TypeError('Forbidden variable name');names.add(match[1]);}
     return [...names];
   }
-  return {register,unregister:(name:string)=>resolvers.delete(name),has:(name:string)=>resolvers.has(name),render,renderFields,extract};
+  return {register,unregister:(name:string)=>resolvers.delete(name),has:(name:string)=>resolvers.has(name),clear:()=>resolvers.clear(),render,renderFields,extract};
 }
 export type VariableRegistry=ReturnType<typeof createVariableRegistry>;
 /** Convenience singleton for code registered in the current server process. Prefer an explicit registry per app/tenant. */

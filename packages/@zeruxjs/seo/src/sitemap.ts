@@ -7,7 +7,7 @@ export function createSitemap(urls: Iterable<SitemapEntry>): string {
   const body=entries.map(entry=>{
     const tags=[`<loc>${escapeHtml(safeUrl(entry.loc))}</loc>`];
     if(entry.lastmod)tags.push(`<lastmod>${iso(entry.lastmod)}</lastmod>`);
-    if(entry.changefreq)tags.push(`<changefreq>${entry.changefreq}</changefreq>`);
+    if(entry.changefreq){if(!['always','hourly','daily','weekly','monthly','yearly','never'].includes(entry.changefreq))throw new TypeError('Invalid sitemap change frequency');tags.push(`<changefreq>${entry.changefreq}</changefreq>`);}
     if(entry.priority!==undefined){if(!Number.isFinite(entry.priority)||entry.priority<0||entry.priority>1)throw new RangeError('Sitemap priority must be between 0 and 1');tags.push(`<priority>${entry.priority.toFixed(1)}</priority>`);}
     for(const [lang,url] of Object.entries(entry.alternates??{}))tags.push(`<xhtml:link rel="alternate" hreflang="${escapeHtml(lang)}" href="${escapeHtml(safeUrl(url))}"/>`);
     for(const image of entry.images??[])tags.push(`<image:image><image:loc>${escapeHtml(safeUrl(image))}</image:loc></image:image>`);

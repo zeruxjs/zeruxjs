@@ -34,3 +34,4 @@ export const createConnector: DatabaseConnectorFactory = async options => {
 export { createSqliteExecutor, openSqlite } from "./driver.js";
 export type { SqliteDatabase, SqliteDriver, SqliteOptions } from "./driver.js";
 export default createConnector;
+export { createSqliteConsistentBackup } from "./backup.js";

@@ -2,7 +2,6 @@
   "name": "@zeruxjs/db",
   "version": "0.0.1-alpha.1",
   "description": "A powerful library that can connect with database with similar JSON structured query.",
-  "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
     "url": "https://github.com/zeruxjs/zeruxjs/issues"
@@ -21,5 +20,17 @@
   },
   "keywords": [
     "A powerful library that can connect with database with similar JSON structured query."
-  ]
+  ],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  }
 }

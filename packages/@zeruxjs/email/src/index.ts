@@ -18,6 +18,7 @@ export * from './feedback-http.js';
 export * from './reputation.js';
 export * from './contacts.js';
 export * from './marketing.js';
+export * from './marketing-audit.js';
 
 export * from './marketing-import.js';
 export * from './marketing-dashboard.js';

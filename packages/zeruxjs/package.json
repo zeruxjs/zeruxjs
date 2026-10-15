@@ -16,6 +16,10 @@
   "exports": {
     ".": "./dist/index.js",
     "./navigation": "./dist/navigation.js",
+    "./accessibility": {
+      "types": "./dist/accessibility.d.ts",
+      "import": "./dist/accessibility.js"
+    },
     "./cache": "./dist/cache-api.js",
     "./loader": "./dist/loader/register-loader.js",
     "./database": "./dist/bootstrap/database.js",
@@ -40,14 +44,14 @@
   },
   "license": "(MIT OR Apache-2.0)",
   "dependencies": {
-    "@zeruxjs/cache": "*",
-    "@zeruxjs/db": "*",
-    "@zeruxjs/lint": "*",
-    "z-dev": "*",
-    "@zeruxjs/hooks": "*",
-    "zwatch": "*",
-    "zsrv": "*",
-    "zcli": "*"
+    "@zeruxjs/cache": "0.0.1-alpha.1",
+    "@zeruxjs/db": "0.0.1-alpha.1",
+    "@zeruxjs/lint": "0.0.1-alpha.2",
+    "z-dev": "0.0.1-alpha.2",
+    "@zeruxjs/hooks": "0.0.1-alpha.2",
+    "zwatch": "0.0.1-alpha.2",
+    "zsrv": "0.0.1-alpha.2",
+    "zcli": "0.1.0"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -61,11 +65,18 @@
     "Main application ZeruxJS Framework"
   ],
   "peerDependencies": {
-    "@zeruxjs/queue": "*"
+    "@zeruxjs/queue": "0.1.0-alpha.1"
   },
   "peerDependenciesMeta": {
     "@zeruxjs/queue": {
       "optional": true
     }
-  }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+    "assets/json/schema.config.json"
+  ]
 }

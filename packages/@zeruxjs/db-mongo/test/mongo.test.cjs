@@ -69,3 +69,11 @@ test('Mongo createTable ifNotExists tolerates existing namespaces for concurrent
  assert.equal(ok.ok,true);
  await assert.rejects(connector.execute({op:'createTable',table:'numeric_facts',columns:[{name:'id',type:'varchar'}]},context),/already there/);
 });
+
+test('Mongo rejects unsupported schema mutations and malformed operators',async()=>{
+ const {db}=mockDatabase(), connector=await mongo.createConnector({db},context.connection);
+ await assert.rejects(connector.execute({op:'alterTable',table:'records',actions:[{type:'dropColumn',name:'name'}]},context),/not supported/);
+ assert.throws(()=>mongo.buildWhere({field:'name',operator:'$where',value:'evil'}),/Unsupported Mongo comparison/);
+ const ix=await mongo.createConnector({db:{collection:()=>({createIndex:async()=> 'ix'})}},context.connection);
+ await assert.rejects(ix.execute({op:'createIndex',table:'items',name:'ix',columns:[{kind:'function',name:'NOW'}]},context),/plain named columns/);
+});

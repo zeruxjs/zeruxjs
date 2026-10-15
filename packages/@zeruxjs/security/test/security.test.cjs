@@ -27,3 +27,25 @@ test('bounded limiter resets after expiry',()=>{
  assert.equal(limiter.check('ip').allowed,true); assert.equal(limiter.check('ip').allowed,true); assert.equal(limiter.check('ip').allowed,false);
  now+=1001; assert.equal(limiter.check('ip').allowed,true);
 });
+test('security regression: bounded nonce, encoded traversals, and cookie control characters',()=>{
+ const {createNonce} = require('../dist/index.js');
+ assert.throws(()=>createNonce(2**24),/nonce size/i);
+ assert.throws(()=>createNonce(0),/nonce size/i);
+ assert.ok(createNonce(16).length >= 22);
+ for (const path of ['../secret','..\\secret','sub/%2e%2e%2fsecret','sub/%5csecret','data:evil','folder/a%2F..','folder\\..\\secret'])
+   assert.equal(sanitizeRelativeAssetPath(path),null,path);
+ assert.equal(sanitizeRelativeAssetPath('assets/icons/logo.svg'),'assets/icons/logo.svg');
+ assert.throws(()=>serializeCookie('auth','ok',{path:'/ok\u0001evil'}),/cookie path/);
+});
+test('security parsers remain bounded and reject malicious randomized input',()=>{
+ const {createNonce} = require('../dist/index.js');
+ let s=1234567;
+ for(let i=0;i<2500;i++) {
+   s=(Math.imul(s,1664525)+1013904223)>>>0;
+   const candidates=['../secret', '%2E%2E%2fprivate', `safe/${s.toString(36)}`, 'x\0y', String.fromCharCode(s%32)+'a'];
+   const item=candidates[s%5];
+   const result=sanitizeRelativeAssetPath(item);
+   if(result!==null) assert.ok(!result.includes('\0') && !result.includes('..'));
+   assert.ok(createNonce(16).length>=22);
+ }
+});

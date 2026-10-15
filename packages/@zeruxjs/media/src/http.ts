@@ -34,9 +34,10 @@ export async function createMediaResponse(store: MediaStore, id: string, options
   if (method !== 'GET' && method !== 'HEAD') return new Response(null, { status: 405, headers: { Allow: 'GET, HEAD' } });
   const meta: StoredMedia = await store.info(id);
   const etag = `"${meta.sha256}"`;
+  const safeInline=/^(?:image\/(?:png|jpeg|gif|webp|avif)|audio\/[A-Za-z0-9.+-]+|video\/[A-Za-z0-9.+-]+|application\/pdf|text\/plain)$/.test(meta.contentType.toLowerCase());
   const headers = new Headers({
     'Content-Type': meta.contentType,
-    'Content-Disposition': `${options.inline ? 'inline' : 'attachment'}; filename=${quotedFilename(options.downloadName ?? meta.originalName)}`,
+    'Content-Disposition': `${options.inline && safeInline ? 'inline' : 'attachment'}; filename=${quotedFilename(options.downloadName ?? meta.originalName)}`,
     'X-Content-Type-Options': 'nosniff',
     'Cache-Control': options.cacheControl ?? 'private, no-store',
     'Accept-Ranges': 'bytes',

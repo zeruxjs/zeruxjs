@@ -185,3 +185,27 @@ await enqueueEmailCampaignBatch(queueService.queue('emails'),
 ## Section 55 — Campaign planning and delivery gates
 
 `enqueueCampaignPlan()` stores only an opaque campaign ID plus monotonic page sequence in BullMQ. `createCampaignPlanningProcessor()` accepts an explicit allowlist of durable planners and a `scheduleNext` callback for remaining pages. Campaign messages continue through `createDurableEmailDeliveryProcessor()`, which now accepts optional `isSuppressed` (hard bounce/complaint) and `campaignGate` (cancel/paused checks) callbacks. A fail-closed check is required again in the trusted SMTP sender. An application must provide durable idempotent mail creation, a versioned delivery store, and scheduled job workers. See root `SECTION_55_MARKETING_CAMPAIGNS_SUPPRESSION.md`.
+
+## Section 75 — cluster, certified-test harness and scheduler privileges
+
+`createQueueService()` now accepts `redis:{cluster:{nodes:[{host,port}, ...]}, password?,tls?}`. In Redis Cluster mode, **require a hash-tagged prefix** such as `prefix:'{tenant-a}'` so all BullMQ keys for that service route to the same slot. Standalone `redis.url`, `host`, `port`, `db`, and ioredis `keyPrefix` cannot be combined with cluster mode. The service owns two independently configured ioredis Cluster clients (bounded-failure producers, reconnecting workers) and closes both on shutdown or startup failure; BullMQ may duplicate worker/event connections internally. All shards must be part of a properly configured, reachable Redis Cluster. The per-tenant hash-tag is a Redis key-routing convention, **not an authorization boundary**. Redis ACLs, network/TLS controls and unique prefixes are required. Cross-slot cache operations use per-key operations; cluster queue commands stay in one slot.
+
+Recurring cron/interval jobs use Redis-backed BullMQ v5 Job Schedulers; a distributed scheduler does **not** guarantee exactly-once processor invocation, catch-up of missed offline occurrences, or wall-clock DST semantics different from the configured IANA zone. Schedule IDs are stable across restarts, and upserting an ID replaces that schedule. A one-off `jobId` prevents simultaneous duplicates while the job remains in Redis, but retention or an explicit delete can permit re-adding the same ID. For important side effects use a durable application-level idempotency key and, when applicable, the existing database fencing/outbox package.
+
+Server-internal `service.schedules(queue)` remains an explicitly trusted application API, **not an HTTP/user-controlled surface**. Host-facing operations must call the separately authorized `service.operations.listSchedules`, `scheduleOnce`, `scheduleEvery`, `scheduleCron`, `removeSchedule`, and `cancelOneOff`. The host-provided authorization callback receives `schedule-inspect`, `schedule-create`, or `schedule-remove`, scoped to the exact queue; the optional audit callback records only operation metadata. Administrators cannot create arbitrary executable jobs: tasks still resolve through code-owned `createTaskRegistry()` handlers. Registered task payloads are JSON-bounded at 8 KiB, reject unsafe nested property names and excessive nesting, and must not contain personal data or secrets. Queue/job retry, deduplication, retention and worker lock settings are runtime-validated before contacting Redis.
+
+### Opt-in live release gate
+
+Install dependencies with a repaired registry-backed lockfile, use isolated Redis and **explicitly** opt in:
+
+```bash
+# Real standalone, two BullMQ service instances, delayed/retry/concurrent workers:
+QUEUE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/queue/test/section75-live-certification.test.mjs
+# Standalone namespace safety:
+CACHE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/cache-redis/test/section75-live-redis.test.mjs
+# Real Redis Cluster masters, e.g. ephemeral ports (never production):
+QUEUE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/queue/test/section75-live-certification.test.mjs
+CACHE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/cache-redis/test/section75-live-redis.test.mjs
+```
+
+Use dedicated throwaway test Redis instances, correct authentication and TLS as appropriate. Live tests do not intentionally stop Redis: a full outage/restart and worker crash-injection rehearsal, DST boundary verification, cluster resharding, and long-running load/retention/ACL testing are **separate operational gates**. In an offline environment these suites are intentionally skipped; mocked tests are not live certification. The Section 66 `npm ci` gate is also not satisfied by locally generated `dist` files.

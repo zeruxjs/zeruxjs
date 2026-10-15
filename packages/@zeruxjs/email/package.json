@@ -31,7 +31,7 @@
     "node-pop3": "^0.15.1"
   },
   "peerDependencies": {
-    "@zeruxjs/files": "*"
+    "@zeruxjs/files": "0.0.1-alpha.2"
   },
   "peerDependenciesMeta": {
     "@zeruxjs/files": {

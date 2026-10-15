@@ -65,3 +65,24 @@ Plugins are **trusted executable code**, not sandboxed extensions. Entry paths a
 npm run build
 node --test test/*.test.mjs
 ```
+
+## Section 79 — safe app starter
+
+After installing/building this package, use `zcli create my-app` (TypeScript),
+`zcli create my-app --js` (JavaScript), or `zcli create my-app --dry-run` to inspect
+what will be written. Programmatic usage:
+
+```ts
+import { createZeruxProject } from 'zcli';
+const result = createZeruxProject('./my-app', { language: 'typescript' });
+console.log(result.files);
+```
+
+The destination must be a new, non-hidden directory with an existing parent.
+The generator stages files, claims its target directory exclusively, refuses
+existing files/directories **including dangling symlinks**, and cleans up on
+failed writes; no `--force` overwrite or shell command is run. Starters use only
+public `zeruxjs` dependencies and Node's test runner. The generated source is
+intentionally minimal—not a fully integrated demo or live-deployment proof.
+`npm install`, `npm run dev`, `npm run build`, browser acceptance and real service
+configuration must be verified separately in a clean environment.

@@ -18,13 +18,25 @@ export async function uploadMediaRequest(store: MediaStore, request: Request, op
   const length = request.headers.get('content-length');
   if (length && (!/^\d+$/.test(length) || !Number.isSafeInteger(Number(length)))) throw new RangeError('Invalid Content-Length');
   if (options.maxBytes !== undefined && length && Number(length) > options.maxBytes) throw new RangeError('Media size exceeds limit');
+  const maxBytes=options.maxBytes;
+  if(maxBytes!==undefined&&(!Number.isSafeInteger(maxBytes)||maxBytes<1))throw new RangeError('Invalid upload limit');
+  const expected=length===null?undefined:Number(length);
   const name = options.name ?? 'upload';
   const reader = request.body.getReader();
   async function* chunks(): AsyncGenerator<Uint8Array> {
-    try { while (true) { const { done,value } = await reader.read(); if (done) break; yield value; } }
+    let bytes=0;
+    try { while (true) {
+      if(request.signal.aborted)throw request.signal.reason;
+      const { done,value } = await reader.read(); if (done) break;
+      if(!(value instanceof Uint8Array))throw new TypeError('Invalid binary upload chunk');
+      bytes+=value.byteLength;
+      if(!Number.isSafeInteger(bytes)||(maxBytes!==undefined&&bytes>maxBytes))throw new RangeError('Media size exceeds limit');
+      if(expected!==undefined&&bytes>expected)throw new RangeError('Upload length mismatch');
+      yield value;
+    }
+    if(expected!==undefined&&bytes!==expected)throw new RangeError('Upload length mismatch');
+    }
     finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
   }
-  const result = await store.uploadStream(chunks(), { name, contentType, maxBytes: options.maxBytes, expiresInMs: options.expiresInMs });
-  if (length && result.size !== Number(length)) { await store.remove(result.id); throw new RangeError('Upload length mismatch'); }
-  return result;
+  return store.uploadStream(chunks(), { name, contentType, maxBytes, expiresInMs: options.expiresInMs });
 }

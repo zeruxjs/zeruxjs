@@ -20,7 +20,7 @@
     "test": "npm run build && node --test test/*.test.cjs"
   },
   "dependencies": {
-    "@zeruxjs/db": "*"
+    "@zeruxjs/db": "0.0.1-alpha.1"
   },
   "keywords": [
     "Helper for @zerux/db for MongoDB Database."

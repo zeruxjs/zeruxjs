@@ -1,5 +1,5 @@
 import type { FileAddress, FileInfo, PutFileOptions, StorageManager } from './types.js';
-import { validateAddress } from './validation.js';
+import { chunks, validateAddress } from './validation.js';
 export interface FileHttpOptions {
   /** Called before each access, including public files. Required to access private files. */
   authorize?: (request:Request,address:FileAddress,operation:'read'|'write'|'delete',info?:FileInfo) => boolean|Promise<boolean>;
@@ -53,9 +53,21 @@ export async function uploadFileRequest(manager:StorageManager,address:FileAddre
   if(!Number.isSafeInteger(max)||max<1)throw new RangeError('Invalid upload limit');
   if(length&&Number(length)>max)throw new RangeError('File exceeds upload limit');
   const contentType=options.contentType??request.headers.get('content-type')?.split(';')[0].trim()??'application/octet-stream';
-  const info=await manager.put(address,request.body,{...options,contentType,maxBytes:max,signal:request.signal});
-  if(length&&Number(length)!==info.size){await manager.delete(address);throw new RangeError('Upload length mismatch');}
-  return info;
+  // Validate the declared length *during* streaming, before a storage driver
+  // commits an object. Deleting after a completed upload is unsafe: another
+  // writer could have replaced that key in the meantime.
+  const declared=length===null?undefined:Number(length);
+  async function* verifiedBody():AsyncGenerator<Uint8Array>{
+    let bytes=0;
+    for await(const part of chunks(request.body!,request.signal)){
+      bytes+=part.byteLength;
+      if(!Number.isSafeInteger(bytes)||bytes>max)throw new RangeError('File exceeds upload limit');
+      if(declared!==undefined&&bytes>declared)throw new RangeError('Upload length mismatch');
+      yield part;
+    }
+    if(declared!==undefined&&bytes!==declared)throw new RangeError('Upload length mismatch');
+  }
+  return manager.put(address,verifiedBody(),{...options,contentType,maxBytes:max,signal:request.signal});
 }
 export function createFileHttpHandler(manager:StorageManager,options:FileHttpOptions):(request:Request)=>Promise<Response>{
   if(!options?.bucket)throw new TypeError('Fixed bucket required');

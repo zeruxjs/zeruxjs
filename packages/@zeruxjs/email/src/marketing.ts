@@ -3,6 +3,8 @@
 import {createHash,randomBytes} from 'node:crypto';
 import {validateEmailAddress,addressString} from './validation.js';
 import {interpolateTemplate} from './templates.js';
+import {matchesCampaignSegment} from './campaigns.js';
+import type {CampaignSegment,CampaignPrimitive} from './campaigns.js';
 import type {CampaignDatabaseConnection} from './campaign-storage.js';
 import type {EmailMessage,EmailResult} from './types.js';
 
@@ -43,6 +45,8 @@ export interface MarketingCampaignInput {
   /** Alias for recipients, useful for one-call campaign creation. */
   emails?:(string|MarketingRecipient)[];
   isTracking?:boolean|NonNullable<EmailMessage['tracking']>;
+  /** Optional audience filter applied before queueing, including streaming imports. */
+  segment?:CampaignSegment;
   sendAt?:number;
   /** When false, store the campaign and recipients but leave delivery enqueueing to enqueue(). */
   autoEnqueue?:boolean;
@@ -50,7 +54,9 @@ export interface MarketingCampaignInput {
 export interface StoredMarketingCampaign {
   code:string;name:string;subject:string;html?:string;text?:string;providers:string[];
   data:Record<string,unknown>;tracking:NonNullable<EmailMessage['tracking']>;
-  sendAt:number;status:'building'|'ready'|'queue_failed'|'paused'|'cancelled';
+  sendAt:number;status:'building'|'ready'|'queue_failed'|'paused'|'cancelled'|'completed'|'archived';
+  segment?:CampaignSegment;archivedAt?:number;redactedAt?:number;
+  operationLease?:{token:string;expiresAt:number};
   version:number;createdAt:number;updatedAt:number;recipientCount:number;
 }
 export interface StoredMarketingRecipient {
@@ -59,6 +65,8 @@ export interface StoredMarketingRecipient {
 }
 export interface MarketingQueue {
   add(name:string,data:{messageId:string},options:{jobId:string;delay:number;attempts:number}):Promise<unknown>;
+  /** Required for safe operator redrive unless verifyMissingJob is provided. */
+  getJob?(id:string):Promise<unknown|null|undefined>;
 }
 export interface MarketingDeliveryStore {
   create(record:{id:string;version:1;purpose:'marketing';recipient:string;campaignId:string;
@@ -72,13 +80,20 @@ export interface MarketingCampaignServiceOptions {
   db:CampaignDatabaseConnection;queue:MarketingQueue;delivery:MarketingDeliveryStore;
   /** Pass zeruxjs createVariableRegistry() instance to support registered functions everywhere. */
   renderer?:MarketingRenderer;
+  /** Optional pre-queue checks; a production delivery worker/EmailManager must independently enforce consent and suppression. */
+  isSubscribed?:(email:string)=>Promise<boolean>|boolean;
+  isSuppressed?:(email:string)=>Promise<boolean>|boolean;
+  /** Prove the job is absent before manual re-publication; must use the real queue/outbox. */
+  verifyMissingJob?:(messageId:string)=>Promise<boolean>|boolean;
+  /** A trusted legal-hold and compliance check before irreversible campaign-data erasure. */
+  approveRetention?:(campaign:Readonly<StoredMarketingCampaign>)=>Promise<boolean>|boolean;
   /** Trusted application authorization. The service is server-side and should never be exposed unauthenticated. */
-  authorize?:(action:'create'|'read'|'enqueue'|'cancel'|'render'|'append'|'pause'|'resume'|'redrive',code?:string)=>Promise<boolean>|boolean;
+  authorize?:(action:'create'|'read'|'enqueue'|'cancel'|'render'|'append'|'pause'|'resume'|'redrive'|'schedule'|'archive'|'export'|'exportPII'|'retention'|'finalize',code?:string)=>Promise<boolean>|boolean;
   onQueueError?:(code:string,error:unknown)=>void|Promise<void>;
   /** Optional validation against configured EmailManager account names at creation. */
   verifyProvider?:(account:string)=>boolean|Promise<boolean>;
   /** Best-effort, PII-free operational audit. Errors never replay queue/SMTP actions. */
-  onAudit?:(entry:{code:string;action:'create'|'append'|'enqueue'|'pause'|'resume'|'cancel'|'redrive';at:number;count?:number})=>void|Promise<void>;
+  onAudit?:(entry:{code:string;action:'create'|'append'|'enqueue'|'pause'|'resume'|'cancel'|'redrive'|'schedule'|'archive'|'export'|'retention'|'finalize';at:number;count?:number})=>void|Promise<void>;
   table?:string;recipientTable?:string;now?:()=>number;
 }
 export function createMarketingCampaignService(options:MarketingCampaignServiceOptions){
@@ -91,10 +106,10 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
   if(!validTable(table)||!validTable(recipientTable)||table===recipientTable)throw new TypeError('Invalid campaign tables');
   const clock=options.now??Date.now;
   const now=()=>{const v=clock();if(!Number.isSafeInteger(v)||v<0)throw new Error('Invalid campaign clock');return v;};
-  const audit=async(code:string,action:'create'|'append'|'enqueue'|'pause'|'resume'|'cancel'|'redrive',count?:number)=>{
+  const audit=async(code:string,action:'create'|'append'|'enqueue'|'pause'|'resume'|'cancel'|'redrive'|'schedule'|'archive'|'export'|'retention'|'finalize',count?:number)=>{
     try{await options.onAudit?.({code,action,at:now(),...(count===undefined?{}:{count})});}catch{/* no side-effect replay */}
   };
-  const authorize=async(action:'create'|'read'|'enqueue'|'cancel'|'render'|'append'|'pause'|'resume'|'redrive',code?:string)=>{
+  const authorize=async(action:'create'|'read'|'enqueue'|'cancel'|'render'|'append'|'pause'|'resume'|'redrive'|'schedule'|'archive'|'export'|'exportPII'|'retention'|'finalize',code?:string)=>{
     if(options.authorize&&await options.authorize(action,code)!==true)throw Object.assign(new Error('Campaign access denied'),{code:'CAMPAIGN_FORBIDDEN'});
   };
   let initialization:Promise<void>|undefined;
@@ -142,6 +157,35 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
     }
     throw new Error('Concurrent campaign checkpoint contention');
   };
+  // Shared version-CAS lease for scheduling, publishing and archive checks. A
+  // crashed process releases it by expiry. Do not use a process-local mutex.
+  const takeLease=async(code:string)=>{
+    const token=randomBytes(20).toString('hex');
+    await updateCampaign(code,c=>{
+      if(c.operationLease&&c.operationLease.expiresAt>now())throw new Error('Campaign operation is busy');
+      return {...c,operationLease:{token,expiresAt:now()+300_000},version:c.version+1};
+    });
+    return token;
+  };
+  const assertLease=async(code:string,token:string)=>{
+    const c=await requireCampaign(code);
+    if(c.operationLease?.token!==token||c.operationLease.expiresAt<=now())throw new Error('Campaign operation lease lost');
+    if(c.operationLease.expiresAt-now()<60_000){
+      await updateCampaign(code,old=>{
+        if(old.operationLease?.token!==token||old.operationLease.expiresAt<=now())throw new Error('Campaign operation lease lost');
+        return {...old,operationLease:{token,expiresAt:now()+300_000},version:old.version+1};
+      });
+    }
+    return c;
+  };
+  const releaseLease=async(code:string,token:string)=>{
+    try{const c=await requireCampaign(code);
+      if(c.operationLease?.token===token)await updateCampaign(code,current=>{
+        if(current.operationLease?.token!==token)throw new Error('Campaign operation lease lost');
+        const next={...current,version:current.version+1};delete next.operationLease;return next;
+      });
+    }catch{/* Expiry permits recovery; caller's original errors must remain visible. */}
+  };
   const countRecipients=async(code:string,onlyUnqueued=false):Promise<number>=>{
     await ensure();const clauses:any[]=[{field:'campaign_id',operator:'eq',value:code}];
     if(onlyUnqueued)clauses.push({field:'enqueued_at',operator:'isNull'});
@@ -179,7 +223,7 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
   };
   async function create(input:MarketingCampaignInput):Promise<string>{
     await authorize('create');
-    if(!input||typeof input!=='object')throw new TypeError('Invalid campaign definition');
+    if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!['name','subject','html','text','content','contentType','account','providers','data','recipients','emails','isTracking','sendAt','autoEnqueue','segment'].includes(k)))throw new TypeError('Invalid campaign definition');
     const html=input.content!==undefined&&input.contentType!=='text'?input.content:input.html;
     const text=input.content!==undefined&&input.contentType==='text'?input.content:input.text;
     if(input.contentType!==undefined&&!['html','text'].includes(input.contentType)||input.content!==undefined&&
@@ -212,7 +256,8 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
         (policy.downloadLinks!==undefined&&(!Array.isArray(policy.downloadLinks)||policy.downloadLinks.length>20||policy.downloadLinks.some(v=>typeof v!=='string'||v.length>2048))))throw new TypeError('Invalid tracking policy');
     }
     const tracking=input.isTracking===true?{enabled:true,opens:true,clicks:true,downloads:true,campaign:code}:input.isTracking===false||input.isTracking===undefined?{enabled:false}:{...input.isTracking,enabled:input.isTracking.enabled===true,campaign:code};
-    const campaign:StoredMarketingCampaign={code,name:input.name,subject:input.subject,html,text,providers:[...new Set(providers)],
+    if(input.segment!==undefined)matchesCampaignSegment({id:'validation',email:'validation@example.test'},input.segment);
+    const campaign:StoredMarketingCampaign={code,name:input.name,subject:input.subject,html,text,providers:[...new Set(providers)],segment:input.segment===undefined?undefined:clone(input.segment),
       data:globalData,tracking,sendAt:input.sendAt??time,status:'building',version:1,createdAt:time,updatedAt:time,recipientCount:people.length};
     await ensure();const created=await db.insert({table,values:{id:code,version:1,created_at:time,payload_json:encode(campaign)}});
     if(!created?.ok)throw new Error('Campaign creation unavailable');
@@ -229,14 +274,31 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
     catch(error){await updateCampaign(code,c=>({...c,status:'queue_failed',version:c.version+1}));try{await options.onQueueError?.(code,error);}catch{/* never conceal durable campaign */}}
     return code;
   }
+  const eligible=async(campaign:StoredMarketingCampaign,row:StoredMarketingRecipient):Promise<boolean>=>{
+    if(campaign.segment){
+      const traits:Record<string,CampaignPrimitive>={name:row.name};
+      for(const [key,value] of Object.entries(row.data))if(value===null||typeof value==='string'||typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value))traits[key]=value;
+      if(!matchesCampaignSegment({id:row.id,email:row.email,traits},campaign.segment))return false;
+    }
+    if(options.isSubscribed&&await options.isSubscribed(row.email)!==true)return false;
+    if(options.isSuppressed&&await options.isSuppressed(row.email)!==false)return false;
+    return true;
+  };
   async function enqueue(code:string,{cursor=null,limit=200}:{cursor?:string|null;limit?:number}={},internal=false){
     if(!internal)await authorize('enqueue',code);
+    const token=await takeLease(code);
+    try{
     const campaign=await requireCampaign(code);
     if(!['ready','queue_failed'].includes(campaign.status))throw new Error('Campaign cannot be enqueued in current state');
     const page=await pageRecipients(code,cursor,limit);
-    let queued=0;
+    let queued=0,excluded=0;
     for(const row of page.items){
       if(row.enqueuedAt!==null)continue;
+      // Fail closed if any configured consent/suppression lookup errors. Do not persist an enqueue checkpoint.
+      if(!await eligible(campaign,row)){excluded++;continue;}
+      // Stop publishing new jobs if another administrator paused/cancelled/archived this campaign.
+      const latest=await assertLease(code,token);
+      if(!['ready','queue_failed'].includes(latest.status)||latest.sendAt!==campaign.sendAt)throw new Error('Campaign changed during enqueue; retry using current schedule');
       const existing=await delivery.load(row.id);
       if(existing&&((existing.campaignId!==code)||(existing.recipient!==row.email)))throw new Error('Conflicting durable mail record');
       if(!existing){const inserted=await delivery.create({id:row.id,version:1,purpose:'marketing',recipient:row.email,campaignId:code,state:'pending',lease:null,updatedAt:now()});
@@ -260,7 +322,8 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
     }
     if(campaign.status==='queue_failed'&&page.done)await updateCampaign(code,c=>({...c,status:'ready',version:c.version+1}));
     if(queued)await audit(code,'enqueue',queued);
-    return {campaignCode:code,queued,nextCursor:page.nextCursor,done:page.done};
+    return {campaignCode:code,queued,excluded,nextCursor:page.nextCursor,done:page.done};
+    }finally{await releaseLease(code,token);}
   }
 
   /** Append a bounded audience batch. Replays compare persisted recipient data before
@@ -269,10 +332,13 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
    * by the host, and the stored count can be refreshed using audience(). */
   async function appendRecipients(code:string,entries:readonly (string|MarketingRecipient)[],enqueueNow=false){
     await authorize('append',code);
+    const token=await takeLease(code);
+    let count=0,added=0,existing=0;
+    try{
     const campaign=await requireCampaign(code);
     if(!['ready','queue_failed'].includes(campaign.status))throw new Error('Cannot append recipients to this campaign');
     if(!Array.isArray(entries)||entries.length<1||entries.length>1000||typeof enqueueNow!=='boolean')throw new RangeError('Append 1..1000 recipients');
-    const seen=new Set<string>();let added=0,existing=0;
+    const seen=new Set<string>();
     for(const entry of entries){
       const person=typeof entry==='string'?{email:entry}:entry;
       if(!person||typeof person.email!=='string'||person.name!==undefined&&(typeof person.name!=='string'||person.name.length>200))throw new TypeError('Invalid campaign recipient');
@@ -292,8 +358,9 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
         throw error;
       }
     }
-    const count=await countRecipients(code);
+    count=await countRecipients(code);
     await updateCampaign(code,c=>({...c,recipientCount:count,version:c.version+1}));
+    }finally{await releaseLease(code,token);}
     let queued=0;
     if(enqueueNow){let cursor:string|null=null;do{const page=await enqueue(code,{cursor,limit:200},true);queued+=page.queued;cursor=page.nextCursor;}while(cursor!==null);}
     await audit(code,'append',added);
@@ -312,23 +379,32 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
    * durable pending records which were previously checkpointed as enqueued.
    * Stable job IDs plus durable worker CAS still gate actual SMTP delivery.
    * Submitted means accepted by the queue API, NOT newly created or delivered. */
+  const eligibleRecipientForRedrive=(campaign:StoredMarketingCampaign,row:StoredMarketingRecipient)=>eligible(campaign,row);
   async function redrivePending(code:string,{cursor=null,limit=100}:{cursor?:string|null;limit?:number}={}){
     await authorize('redrive',code);
+    const token=await takeLease(code);
+    try{
     const campaign=await requireCampaign(code);
     if(!['ready','queue_failed'].includes(campaign.status))throw new Error('Campaign cannot be redriven');
     const page=await pageRecipients(code,cursor,limit);
-    let eligible=0,submitted=0;
+    if(typeof options.verifyMissingJob!=='function'&&typeof queue.getJob!=='function')throw new Error('Safe redrive requires a queue job absence check');
+    let eligible=0,submitted=0,excluded=0;
     for(const row of page.items){
       if(row.enqueuedAt===null)continue;
       const state=await delivery.load(row.id);
       if(!state||state.campaignId!==code||state.recipient!==row.email)throw new Error('Missing or conflicting durable delivery identity');
       if(state.state!=='pending')continue;
+      if(!await eligibleRecipientForRedrive(campaign,row)){excluded++;continue;}
+      const absent=options.verifyMissingJob?await options.verifyMissingJob(row.id):!(await queue.getJob!(row.id));
+      if(absent!==true){excluded++;continue;}
+      await assertLease(code,token);
       eligible++;
       await queue.add('email.deliver',{messageId:row.id},{jobId:row.id,delay:Math.max(0,campaign.sendAt-now()),attempts:5});
       submitted++;
     }
     if(submitted)await audit(code,'redrive',submitted);
-    return {campaignCode:code,inspected:page.items.length,eligible,submitted,nextCursor:page.nextCursor,done:page.done};
+    return {campaignCode:code,inspected:page.items.length,eligible,submitted,excluded,nextCursor:page.nextCursor,done:page.done};
+    }finally{await releaseLease(code,token);}
   }
 
   async function renderRecipient(code:string,id:string):Promise<EmailMessage>{
@@ -348,8 +424,174 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
       subject:await render('subject',campaign.subject,'text'),html:campaign.html===undefined?undefined:await render('html',campaign.html,'html'),
       text:campaign.text===undefined?undefined:await render('text',campaign.text,'text'),tracking:{...campaign.tracking}};
   }
+  /** Set an absolute schedule only BEFORE publishing any recipient. Queue publication is
+   * explicitly requested; no implicit rescheduling of existing BullMQ jobs. */
+  async function schedule(code:string,sendAt:number,{enqueueNow=true}:{enqueueNow?:boolean}={}){
+    await authorize('schedule',code);
+    if(!Number.isSafeInteger(sendAt)||sendAt<now()||sendAt>now()+365*86_400_000||typeof enqueueNow!=='boolean')throw new TypeError('Invalid campaign schedule');
+    const token=await takeLease(code);
+    let updated:StoredMarketingCampaign;
+    try{
+    const initial=await requireCampaign(code);
+    if(!['ready','queue_failed','paused'].includes(initial.status))throw new Error('Campaign cannot be scheduled');
+    if(await countRecipients(code,true)!==await countRecipients(code))throw new Error('Already enqueued campaigns cannot be rescheduled');
+    updated=await updateCampaign(code,current=>{
+      if(!['ready','queue_failed','paused'].includes(current.status))throw new Error('Campaign cannot be scheduled');
+      return {...current,sendAt,version:current.version+1};
+    });
+    }finally{await releaseLease(code,token);}
+    await audit(code,'schedule');
+    let queued=0,excluded=0;
+    if(enqueueNow&&updated.status!=='paused'){
+      let cursor:string|null=null;
+      do{const page=await enqueue(code,{cursor,limit:200},true);queued+=page.queued;excluded+=page.excluded;cursor=page.nextCursor;}while(cursor!==null);
+    }
+    return {campaignCode:code,sendAt,queued,excluded,status:(await requireCampaign(code)).status};
+  }
+
+  /** Fully authorize recipient-sensitive exports separately. Default exports contain
+   * opaque IDs, delivery states and no addresses/personalization/template HTML. */
+  async function exportPage(code:string,{cursor=null,limit=100,includePII=false}:{cursor?:string|null;limit?:number;includePII?:boolean}={}){
+    await authorize('export',code);
+    if(typeof includePII!=='boolean')throw new TypeError('Invalid export privacy option');
+    if(includePII)await authorize('exportPII',code);
+    const campaign=await requireCampaign(code),page=await pageRecipients(code,cursor,limit);
+    const items=[];
+    for(const row of page.items){
+      const state=await delivery.load(row.id);
+      items.push({messageId:row.id,state:state?.state??'not_registered',
+        ...(includePII?{email:row.email,name:row.name,data:clone(row.data)}:{})});
+    }
+    await audit(code,'export',items.length);
+    return {campaign:{code:campaign.code,name:campaign.name,status:campaign.status,createdAt:campaign.createdAt,
+      sendAt:campaign.sendAt,recipientCount:campaign.recipientCount,archivedAt:campaign.archivedAt??null},
+      items,nextCursor:page.nextCursor,done:page.done};
+  }
+
+  /** Bounded, exact-for-scanned-rows report. SMTP 'sent' means accepted by transport,
+   * NOT confirmed inbox delivery. Continue via nextCursor until complete. */
+  async function report(code:string,{cursor=null,limit=200}:{cursor?:string|null;limit?:number}={}){
+    await authorize('read',code);const campaign=await requireCampaign(code);
+    const page=await pageRecipients(code,cursor,limit);
+    const states:Record<string,number>={notQueued:0,pending:0,claimed:0,sending:0,smtpAccepted:0,
+      suppressed:0,uncertain:0,rejected:0,missing:0};
+    for(const row of page.items){
+      if(row.enqueuedAt===null){states.notQueued++;continue;}
+      const deliveryRow=await delivery.load(row.id);
+      if(!deliveryRow||deliveryRow.campaignId!==code||deliveryRow.recipient!==row.email){states.missing++;continue;}
+      const state=deliveryRow.state==='sent'?'smtpAccepted':deliveryRow.state;
+      if(Object.hasOwn(states,state))states[state]++;else states.missing++;
+    }
+    return {campaignCode:code,status:campaign.status,scanned:page.items.length,states,
+      nextCursor:page.nextCursor,done:page.done,scope:page.done&&cursor===null?'complete':'page',
+      disclaimer:'smtpAccepted is not confirmed mailbox delivery'};
+  }
+
+  /** Explicitly finalize a ready campaign only after checking ALL stored delivery
+   * states. This does not infer downstream inbox delivery or unique opens. */
+  async function finalize(code:string,{maxInspect=100_000}:{maxInspect?:number}={}){
+    await authorize('finalize',code);
+    if(!Number.isSafeInteger(maxInspect)||maxInspect<1||maxInspect>1_000_000)throw new RangeError('Invalid completion scan bound');
+    const token=await takeLease(code);
+    try{
+      const campaign=await requireCampaign(code);
+      if(campaign.status==='completed')return {campaignCode:code,status:'completed' as const,inspected:0,nonterminal:0,done:true};
+      if(campaign.status!=='ready')throw new Error('Only ready campaigns can be finalized');
+      let cursor:string|null=null,inspected=0,nonterminal=0,registered=0;
+      do{
+        await assertLease(code,token);
+        const page=await pageRecipients(code,cursor,Math.min(200,maxInspect-inspected));
+        for(const row of page.items){
+          if(row.enqueuedAt!==null){
+            registered++;
+            const state=await delivery.load(row.id);
+            if(!state||state.campaignId!==code||state.recipient!==row.email||
+              !['sent','suppressed','rejected'].includes(state.state))nonterminal++;
+          }
+        }
+        inspected+=page.items.length;cursor=page.nextCursor;
+        if(cursor!==null&&inspected>=maxInspect)throw new Error('Finalize requires a larger bounded recipient scan');
+      }while(cursor!==null);
+      if(!registered||nonterminal)return {campaignCode:code,status:'ready' as const,inspected,nonterminal,done:false};
+      await updateCampaign(code,c=>{
+        if(c.status!=='ready')throw new Error('Campaign changed during finalization');
+        return {...c,status:'completed',version:c.version+1};
+      });
+      await audit(code,'finalize',registered);
+      return {campaignCode:code,status:'completed' as const,inspected,nonterminal:0,done:true};
+    }finally{await releaseLease(code,token);}
+  }
+
+  /** Archive only explicitly cancelled or finalized campaigns after a bounded
+   * full scan finds no pending/ambiguous outcomes. No suppression/audit deletion. */
+  async function archive(code:string,{maxInspect=100_000}:{maxInspect?:number}={}){
+    await authorize('archive',code);
+    if(!Number.isSafeInteger(maxInspect)||maxInspect<1||maxInspect>1_000_000)throw new RangeError('Invalid archive scan bound');
+    const token=await takeLease(code);
+    try{
+    const campaign=await requireCampaign(code);
+    if(campaign.status==='archived')return campaign;
+    if(!['cancelled','completed'].includes(campaign.status))throw new Error('Cancel or finalize campaign before archiving');
+    let cursor:string|null=null,inspected=0;
+    do{
+      await assertLease(code,token);
+      const page=await pageRecipients(code,cursor,Math.min(200,maxInspect-inspected));
+      for(const row of page.items){
+        if(row.enqueuedAt!==null){
+          const state=await delivery.load(row.id);
+          if(!state||!['sent','suppressed','rejected'].includes(state.state))throw new Error('Cannot archive campaign with pending or uncertain deliveries');
+        }
+      }
+      inspected+=page.items.length;cursor=page.nextCursor;
+      if(cursor!==null&&inspected>=maxInspect)throw new Error('Archive requires a larger bounded recipient scan');
+    }while(cursor!==null);
+    const updated=await updateCampaign(code,c=>{
+      if(!['cancelled','completed'].includes(c.status))throw new Error('Campaign must remain cancelled or completed to archive');
+      return {...c,status:'archived',archivedAt:now(),version:c.version+1};
+    });
+    await audit(code,'archive',inspected);
+    return updated;
+    }finally{await releaseLease(code,token);}
+  }
+  /** Erase only this campaign's audience/template after a retention cutoff.
+   * Consent/suppression, queue delivery, tracking and audit stores are NOT erased
+   * by this helper and require separate, policy-approved retention workflows. */
+  async function redactArchived(code:string,{olderThan,cursor=null,limit=200,dryRun=true}:{olderThan:number;cursor?:string|null;limit?:number;dryRun?:boolean}){
+    await authorize('retention',code);
+    if(!Number.isSafeInteger(olderThan)||olderThan<0||olderThan>now()||typeof dryRun!=='boolean')throw new TypeError('Invalid retention cutoff');
+    if(typeof options.approveRetention!=='function')throw new Error('Campaign retention needs an explicit legal-hold approval callback');
+    const token=await takeLease(code);
+    try{
+      const campaign=await requireCampaign(code);
+      if(campaign.status!=='archived'||campaign.archivedAt===undefined||campaign.archivedAt>=olderThan)throw new Error('Only aged archived campaigns can be redacted');
+      if(campaign.redactedAt!==undefined)return {campaignCode:code,inspected:0,deleted:0,nextCursor:null,done:true,redacted:true};
+      if(await options.approveRetention(clone(campaign))!==true)throw new Error('Campaign retention not approved');
+      const page=await pageRecipients(code,cursor,limit);
+      let deleted=0;
+      if(!dryRun){
+        if(typeof db.delete!=='function')throw new Error('Retention requires atomic database delete');
+        for(const row of page.items){
+          await assertLease(code,token);
+          const r=await db.delete({table:recipientTable,where:{and:[{field:'id',operator:'eq',value:row.id},{field:'campaign_id',operator:'eq',value:code}]}});
+          const affected=r?.affectedCount??r?.rowCount;
+          if(!r?.ok||affected!==1)throw new Error('Campaign retention row deletion failed');
+          deleted++;
+        }
+        if(page.done){
+          await updateCampaign(code,c=>{
+            if(c.status!=='archived')throw new Error('Campaign is no longer archived');
+            return {...c,subject:'[redacted]',html:undefined,text:undefined,providers:[],data:{},segment:undefined,
+              tracking:{enabled:false},redactedAt:now(),version:c.version+1};
+          });
+        }
+      }
+      if(deleted)await audit(code,'retention',deleted);
+      return {campaignCode:code,inspected:page.items.length,deleted,nextCursor:page.nextCursor,done:page.done,
+        redacted:!dryRun&&page.done,dryRun};
+    }finally{await releaseLease(code,token);}
+  }
   const api={
-    create,enqueue,appendRecipients,audience,redrivePending,
+    create,enqueue,appendRecipients,audience,redrivePending,schedule,exportPage,report,finalize,archive,redactArchived,
     /** Aggregate, recipient-safe campaign progress. The caller needs campaign read permission. */
     async overview(code:string){
       await authorize('read',code);
@@ -399,7 +641,7 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
     async deliveryGate(record:{campaignId?:string}):Promise<'allow'|'defer'|'suppress'>{
       if(!record.campaignId)return 'allow';
       const campaign=await requireCampaign(record.campaignId);
-      if(campaign.status==='cancelled')return 'suppress';
+      if(['cancelled','completed','archived'].includes(campaign.status))return 'suppress';
       if(campaign.status==='building'||campaign.status==='paused'||campaign.sendAt>now())return 'defer';
       return 'allow';
     },
@@ -407,9 +649,13 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
     async sendById(id:string,manager:{send(message:EmailMessage):Promise<EmailResult>}):Promise<EmailResult>{
       const row=await readRecipient(id);if(!row)throw new Error('Marketing recipient missing');
       const campaign=await requireCampaign(row.campaignCode);
-      if(campaign.status==='cancelled')throw new Error('Campaign cancelled');
+      if(['cancelled','completed','archived'].includes(campaign.status))throw new Error('Campaign cancelled, completed or archived');
+      if(!await eligible(campaign,row))throw Object.assign(new Error('Recipient has no active marketing permission'),{code:'EMAIL_CONSENT_REQUIRED'});
       if(campaign.status==='paused'||campaign.status==='building'||campaign.sendAt>now())throw Object.assign(new Error('Campaign delivery deferred'),{code:'CAMPAIGN_DELIVERY_DEFERRED'});
-      return manager.send(await renderRecipient(row.campaignCode,id));
+      const message=await renderRecipient(row.campaignCode,id);
+      // Fresh policy check at the handoff; EmailManager is still responsible for the final pre-SMTP check.
+      if(!await eligible(await requireCampaign(row.campaignCode),row))throw Object.assign(new Error('Marketing permission revoked'),{code:'EMAIL_CONSENT_REQUIRED'});
+      return manager.send(message);
     },
     async pause(code:string){await authorize('pause',code);const item=await updateCampaign(code,c=>{if(!['ready','queue_failed'].includes(c.status))throw new Error('Campaign cannot be paused');return {...c,status:'paused',version:c.version+1};});await audit(code,'pause');return item;},
     async resume(code:string){await authorize('resume',code);const item=await updateCampaign(code,c=>{if(c.status!=='paused')throw new Error('Campaign is not paused');return {...c,status:'ready',version:c.version+1};});await audit(code,'resume');return item;},

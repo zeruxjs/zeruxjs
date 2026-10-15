@@ -34,3 +34,14 @@ watcher.close();
 ```
 
 Subscribers to the same directory share underlying watchers without sharing their ignore rules. `startWatcher()` is retained for existing callers and returns a disposal callback. The scanner does not traverse symlinks.
+
+## Section 79 watcher validation
+
+`watchDirectory(root, callback, { debounceMs, pollIntervalMs, onError })`
+validates callback/root types and integer millisecond settings before creating
+any shared native watcher. Polling must be at least 100ms when configured;
+intervals are bounded to ten minutes. Subscriber callbacks remain isolated,
+errors are reported through `onError`, and handles must be closed during hot
+reload/unmount. Filesystem symlinks are never traversed by the recursive scan.
+The fallback polling path is retained for hosts where recursive `fs.watch`
+is unsupported. Test with `node --test test/*.test.mjs` after building.

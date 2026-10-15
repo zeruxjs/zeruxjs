@@ -27,5 +27,14 @@
   },
   "keywords": [
     "CLI Wrapper to help share CLI keyword and Coloring and other small plugins"
+  ],
+  "bin": {
+    "zcli": "./dist/bin.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
   ]
 }

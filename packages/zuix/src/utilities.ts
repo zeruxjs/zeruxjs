@@ -1,4 +1,5 @@
 import type { ZuixTheme } from './types.js';
+import {safeCssValue} from './safety.js';
 export type Declarations = Record<string,string>;
 const staticRules: Record<string,Declarations> = {
  block:{display:'block'},inline:{display:'inline'},'inline-block':{display:'inline-block'},flex:{display:'flex'},'inline-flex':{display:'inline-flex'},grid:{display:'grid'},'inline-grid':{display:'inline-grid'},hidden:{display:'none'},contents:{display:'contents'},flow:{display:'flow-root'},
@@ -43,7 +44,7 @@ const staticRules: Record<string,Declarations> = {
   'border-collapse':{'border-collapse':'collapse'},'border-separate':{'border-collapse':'separate'},'list-none':{'list-style-type':'none'},'list-disc':{'list-style-type':'disc'},'list-decimal':{'list-style-type':'decimal'},
 };
 const negativeAllowed = new Set(['m','mx','my','mt','mr','mb','ml','ms','me','top','right','bottom','left','inset','inset-x','inset-y','translate-x','translate-y']);
-function arbitrary(value:string):string|undefined { if(!/^\[[^;{}]+\]$/.test(value)) return; return value.slice(1,-1).replace(/_/g,' '); }
+function arbitrary(value:string):string|undefined { if(!/^\[[^;{}]+\]$/.test(value)) return; const decoded=value.slice(1,-1).replace(/_/g,' ');return safeCssValue(decoded)?decoded:undefined; }
 function scale(theme:ZuixTheme,group:keyof ZuixTheme,value:string) { return arbitrary(value)??(theme[group][value]===undefined?undefined:String(theme[group][value])); }
 function spacingProps(prefix:string):string[]|undefined { const props:Record<string,string[]>={p:['padding'],px:['padding-left','padding-right'],py:['padding-top','padding-bottom'],pt:['padding-top'],pr:['padding-right'],pb:['padding-bottom'],pl:['padding-left'],ps:['padding-inline-start'],pe:['padding-inline-end'],m:['margin'],mx:['margin-left','margin-right'],my:['margin-top','margin-bottom'],mt:['margin-top'],mr:['margin-right'],mb:['margin-bottom'],ml:['margin-left'],ms:['margin-inline-start'],me:['margin-inline-end'],gap:['gap'],'gap-x':['column-gap'],'gap-y':['row-gap'],space:[],top:['top'],right:['right'],bottom:['bottom'],left:['left'],inset:['inset'],'inset-x':['left','right'],'inset-y':['top','bottom']};return props[prefix]; }
 function declarations(properties:string[],value:string):Declarations {return Object.fromEntries(properties.map(p=>[p,value]));}
@@ -80,6 +81,6 @@ export function utilityFor(input:string,theme:ZuixTheme,additional:Record<string
  if(gridGap)return {[`grid-${gridGap[1].replace('-','-')}`]:gridGap[2]};
  const flexOrder=/^(order|grow|shrink)-(\d+)$/.exec(name);if(flexOrder)return {[flexOrder[1]==='order'?'order':`flex-${flexOrder[1]}`]:flexOrder[2]};
  const anim=/^animate-\[(.+)\]$/.exec(name);if(anim){const value=arbitrary('['+anim[1]+']');if(value)return {animation:value};}
-  const arbitraryProperty=/^\[([a-zA-Z-]+):([^;{}]+)\]$/.exec(name);if(arbitraryProperty&&!/^(behavior|-moz-binding)$/i.test(arbitraryProperty[1]))return {[arbitraryProperty[1]]:arbitraryProperty[2].replace(/_/g,' ')};
+  const arbitraryProperty=/^\[([a-zA-Z-]+):([^;{}]+)\]$/.exec(name);if(arbitraryProperty&&!/^(behavior|-moz-binding)$/i.test(arbitraryProperty[1])&&safeCssValue(arbitraryProperty[2].replace(/_/g,' ')))return {[arbitraryProperty[1]]:arbitraryProperty[2].replace(/_/g,' ')};
  return undefined;
 }

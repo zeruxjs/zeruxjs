@@ -99,17 +99,25 @@ const resolveModulePackageRoot = (appRoot: string, packageName: string) => {
     }
 };
 
-const resolveModuleFile = (packageRoot: string, relativePath?: string | null) => {
+/** Validate resolved filesystem paths, not only lexical paths: modules may contain symlinks. */
+export const resolveSafeModuleAsset = (
+    packageRoot: string, relativePath?: string | null, kind: "file" | "directory" = "file"
+): string | null => {
     const safePath = sanitizeRelativeAssetPath(relativePath);
     if (!safePath) return null;
-
-    const absolutePath = path.join(packageRoot, safePath);
-    if (!ensurePathInsideRoot(packageRoot, absolutePath) || !fs.existsSync(absolutePath)) {
-        return null;
-    }
-
-    return absolutePath;
+    try {
+        const realRoot = fs.realpathSync(packageRoot);
+        const absolutePath = fs.realpathSync(path.resolve(packageRoot, safePath));
+        if (!ensurePathInsideRoot(realRoot, absolutePath)) return null;
+        const stat = fs.statSync(absolutePath);
+        if (kind === "file" ? !stat.isFile() : !stat.isDirectory()) return null;
+        return absolutePath;
+    } catch { return null; }
 };
+
+const resolveModuleFile = (packageRoot: string, relativePath?: string | null) =>
+    resolveSafeModuleAsset(packageRoot, relativePath);
+
 
 const loadConfiguredModule = async (
     app: SharedDevRegistration,
@@ -187,7 +195,7 @@ const loadConfiguredModule = async (
         const apiPath = resolveModuleFile(packageRoot, config.server?.api);
         const websocketPath = resolveModuleFile(packageRoot, config.server?.websocket);
 
-        const publicRoot = config.assets?.public ? path.resolve(packageRoot, config.assets.public) : undefined;
+        const publicRoot = resolveSafeModuleAsset(packageRoot, config.assets?.public, "directory");
 
         return {
             definition,
@@ -198,7 +206,7 @@ const loadConfiguredModule = async (
             shareWith: Array.isArray(config.server?.shareWith)
                 ? config.server!.shareWith.filter((item): item is string => typeof item === "string").map((item) => sanitizeIdentifier(item, item))
                 : [],
-            publicRoot: publicRoot && fs.existsSync(publicRoot) ? publicRoot : undefined,
+            publicRoot: publicRoot ?? undefined,
             parent: (config as any).parent || (config.meta as any)?.parent,
             isolated: !!config.server?.isolated,
             allowChildren: !!config.server?.allowChildren
@@ -421,7 +429,7 @@ export const readModuleAsset = async (
     const target = loadedModules.find((module) => module.definition.id === moduleId);
     const targetPath = asset === "style" ? target?.stylePath : target?.scriptPath;
 
-    if (!targetPath || !fs.existsSync(targetPath)) {
+    if (!target || !targetPath || !target.definition.packageRoot || !resolveSafeModuleAsset(target.definition.packageRoot, path.relative(target.definition.packageRoot, targetPath))) {
         return null;
     }
 
@@ -438,10 +446,7 @@ export const readModulePublicAsset = async (
     const target = loadedModules.find((module) => module.definition.id === moduleId);
     if (!target || !target.publicRoot) return null;
 
-    const absolutePath = path.join(target.publicRoot, assetPath);
-    if (!ensurePathInsideRoot(target.publicRoot, absolutePath) || !fs.existsSync(absolutePath)) {
-        return null;
-    }
-
+    const absolutePath = resolveSafeModuleAsset(target.publicRoot, assetPath);
+    if (!absolutePath) return null;
     return fs.readFileSync(absolutePath);
 };

@@ -13,7 +13,17 @@ export function withFallback(primary: AiProvider, secondary: AiProvider): AiProv
  return {
    async chat(messages, options) { try { return await primary.chat(messages, options); } catch (error) { if (options?.signal?.aborted) throw error; return secondary.chat(messages,options); } },
    async *stream(messages,options) {
-     if (!primary.stream) { yield await primary.chat(messages,options); return; }
+     if (!primary.stream) {
+       // A provider without streaming still needs the same pre-output
+       // failover as chat(). Never switch providers after bytes are emitted.
+       try { yield await primary.chat(messages,options); }
+       catch (error) {
+         if (options?.signal?.aborted) throw error;
+         if (secondary.stream) yield* secondary.stream(messages,options);
+         else yield await secondary.chat(messages,options);
+       }
+       return;
+     }
      let emitted = false;
      try { for await (const chunk of primary.stream(messages,options)) { emitted = true; yield chunk; } }
      catch (error) {

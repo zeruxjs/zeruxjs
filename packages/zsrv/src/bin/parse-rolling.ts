@@ -9,6 +9,7 @@ export interface RollingRunArguments {
   readyTimeoutMs?: number;
   shutdownTimeoutMs?: number;
   drainTimeoutMs?: number;
+  preCutoverChecks?: number;
   verificationChecks?: number;
   verificationIntervalMs?: number;
 }
@@ -45,6 +46,7 @@ export function parseRollingRunArguments(args: readonly string[]): RollingRunArg
       case '--ready-timeout': result.readyTimeoutMs = uint(value, flag, 1, 300000); break;
       case '--shutdown-timeout': result.shutdownTimeoutMs = uint(value, flag, 1, 120000); break;
       case '--drain-timeout': result.drainTimeoutMs = uint(value, flag, 0, 300000); break;
+      case '--precutover-checks': result.preCutoverChecks = uint(value, flag, 1, 20); break;
       case '--verify-checks': result.verificationChecks = uint(value, flag, 1, 20); break;
       case '--verify-interval': result.verificationIntervalMs = uint(value, flag, 1, 30000); break;
       default: throw new Error(`Unknown rolling option: ${flag}`);

@@ -116,6 +116,8 @@ export interface ZeruxRequestContext {
 export interface ZeruxPluginApi {
     /** Get an initialized generation-scoped database/cache/files/analytics/email manager. */
     service<T = unknown>(name: import("./services.js").ServiceName): T | undefined;
+    /** Template variables are isolated to this runtime generation. */
+    variables(): import('../variables.js').VariableRegistry;
     /** Register MCP, JSON-RPC, Connect, tRPC and SSE handlers before server startup. */
     protocols(): import("../protocols.js").ZeruxProtocols;
     getLoadStatus(windowMs?: number): import("../metrics.js").ApplicationHttpStatus;
@@ -186,6 +188,7 @@ export interface ZeruxRuntime {
     readonly protocolGateway?: import("../protocols.js").ZeruxProtocolGateway;
     closeProtocols(): void;
     readonly serviceScope: import("./services.js").RuntimeServiceScope;
+    readonly variables: import('../variables.js').VariableRegistry;
     closeServices(): Promise<void>;
     getLoadStatus(windowMs?: number): import("../metrics.js").ApplicationHttpStatus;
     entryModulePath: string | null;

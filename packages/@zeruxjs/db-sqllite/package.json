@@ -20,8 +20,8 @@
     "test": "npm run build && node --test test/*.test.mjs"
   },
   "dependencies": {
-    "@zeruxjs/db": "*",
-    "@zeruxjs/db-sql-core": "*"
+    "@zeruxjs/db": "0.0.1-alpha.1",
+    "@zeruxjs/db-sql-core": "0.0.1-alpha.1"
   },
   "keywords": [
     "Helper for @zerux/db for SQL-Lite Database."

@@ -1,68 +1,83 @@
-import { getCurrentSubscriber, trackDependency } from "./effect.js";
-import type { Signal, Subscriber } from "./types.js";
+import { getCurrentSubscriber, trackDependency, scheduleEffect } from './effect.js';
+import type { Signal, Subscriber } from './types.js';
+export { batch } from './effect.js';
 
-let batchDepth = 0;
-const pendingEffects = new Set<Subscriber>();
-let flushing = false;
-const schedule = (subscriber: Subscriber) => {
-    if (batchDepth || flushing) { pendingEffects.add(subscriber); return; }
-    subscriber();
-};
-const flush = () => {
-    if (flushing) return;
-    flushing = true;
-    try {
-        let cycles = 0;
-        while (pendingEffects.size) {
-            if (++cycles > 1000) throw new Error("ZyroJS: possible reactive update loop");
-            const current = [...pendingEffects];
-            pendingEffects.clear();
-            for (const subscriber of current) subscriber();
-        }
-    } finally { flushing = false; }
-};
-export function batch<T>(fn: () => T): T {
-    batchDepth++;
-    try { return fn(); }
-    finally { if (--batchDepth === 0) flush(); }
-}
 class SignalImpl<T> implements Signal<T> {
-    private _subscribers = new Set<Subscriber>();
-    constructor(private _value: T) {}
-    get value(): T {
-        const subscriber = getCurrentSubscriber();
-        if (subscriber && !this._subscribers.has(subscriber)) {
-            this._subscribers.add(subscriber);
-            trackDependency(() => this._subscribers.delete(subscriber));
-        }
-        return this._value;
+  private readonly subscribers = new Set<Subscriber>();
+  constructor(private current: T) {}
+  get value(): T {
+    const subscriber = getCurrentSubscriber();
+    if (subscriber && !this.subscribers.has(subscriber)) {
+      this.subscribers.add(subscriber);
+      trackDependency(() => this.subscribers.delete(subscriber));
     }
-    set value(next: T) {
-        if (Object.is(this._value, next)) return;
-        this._value = next;
-        for (const subscriber of [...this._subscribers]) schedule(subscriber);
-    }
-    peek(): T { return this._value; }
+    return this.current;
+  }
+  set value(next: T) {
+    if (Object.is(this.current, next)) return;
+    this.current = next;
+    for (const subscriber of [...this.subscribers]) scheduleEffect(subscriber);
+  }
+  peek(): T { return this.current; }
 }
 export function signal<T>(initialValue: T): Signal<T> { return new SignalImpl(initialValue); }
 
+const proxies = new WeakMap<object, object>();
+/** Lazily proxied objects/arrays with property, membership and key-enumeration tracking. */
 export function reactive<T extends object>(target: T): T {
-    const signals = new Map<PropertyKey, Signal<unknown>>();
-    return new Proxy(target, {
-        get(obj, prop, receiver) {
-            if (!signals.has(prop)) signals.set(prop, signal(Reflect.get(obj, prop, receiver)));
-            return signals.get(prop)!.value;
-        },
-        set(obj, prop, value, receiver) {
-            if (!Reflect.set(obj, prop, value, receiver)) return false;
-            if (!signals.has(prop)) signals.set(prop, signal(value));
-            else signals.get(prop)!.value = value;
-            return true;
-        },
-        deleteProperty(obj, prop) {
-            if (!Reflect.deleteProperty(obj, prop)) return false;
-            signals.get(prop)!.value = undefined;
-            return true;
-        }
-    });
+  // Do not proxy native collections, Dates, typed arrays or class instances:
+  // their internal slots/method receivers are not compatible with a generic Proxy.
+  const proto = Object.getPrototypeOf(target);
+  if (!Array.isArray(target) && proto !== Object.prototype && proto !== null) return target;
+  if (proxies.has(target)) return proxies.get(target) as T;
+  const versions = new Map<PropertyKey, Signal<number>>();
+  const membership = new Map<PropertyKey, Signal<number>>();
+  const keys = signal(0);
+  const track = (store: Map<PropertyKey, Signal<number>>, property: PropertyKey) => {
+    let version = store.get(property);
+    if (!version) { version = signal(0); store.set(property, version); }
+    void version.value;
+  };
+  const notify = (store: Map<PropertyKey, Signal<number>>, property: PropertyKey) => {
+    const version = store.get(property);
+    if (version) version.value++;
+  };
+  const proxy = new Proxy(target, {
+    get(obj, property, receiver) {
+      track(versions, property);
+      const value: unknown = Reflect.get(obj, property, receiver);
+      // Proxy invariants require exact values for frozen, non-configurable slots.
+      const descriptor = Reflect.getOwnPropertyDescriptor(obj, property);
+      if (descriptor && !descriptor.configurable && 'writable' in descriptor && !descriptor.writable) return value;
+      return value !== null && typeof value === 'object' ? reactive(value) : value;
+    },
+    has(obj, property) { track(membership, property); return Reflect.has(obj, property); },
+    ownKeys(obj) { void keys.value; return Reflect.ownKeys(obj); },
+    set(obj, property, value, receiver) {
+      const old = Reflect.get(obj, property, receiver);
+      const existed = Object.prototype.hasOwnProperty.call(obj, property);
+      const oldLength = Array.isArray(obj) ? obj.length : -1;
+      if (!Reflect.set(obj, property, value, receiver)) return false;
+      if (!Object.is(old, value)) notify(versions, property);
+      if (!existed) { notify(membership, property); keys.value++; }
+      if (Array.isArray(obj) && obj.length !== oldLength) notify(versions, 'length');
+      return true;
+    },
+    deleteProperty(obj, property) {
+      const existed = Object.prototype.hasOwnProperty.call(obj, property);
+      if (!Reflect.deleteProperty(obj, property)) return false;
+      if (existed) { notify(versions, property); notify(membership, property); keys.value++; }
+      return true;
+    },
+    defineProperty(obj, property, descriptor) {
+      const existed = Object.prototype.hasOwnProperty.call(obj, property);
+      if (!Reflect.defineProperty(obj, property, descriptor)) return false;
+      notify(versions, property);
+      if (!existed) { notify(membership, property); keys.value++; }
+      return true;
+    }
+  });
+  proxies.set(target, proxy);
+  proxies.set(proxy, proxy);
+  return proxy;
 }

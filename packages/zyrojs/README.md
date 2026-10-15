@@ -1,69 +1,77 @@
-> [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
+# ZyroJS — standalone reactive and DOM runtime
 
-# ZyroJS Library
+ZyroJS provides **framework-neutral signals**, lifecycle-managed browser DOM rendering and abortable Fetch-based network helpers. It is an independent library that can run alongside the `@zeruxjs/zyro` observable bridge, React or Vue. It does **not** require ZeruxJS or a component framework.
 
-**ZyroJS** is a modern, high-performance Node.js library designed to be the core building block for scalable web applications. It serves as the primary rendering engine for the ZeruxJS ecosystem.
+**Release status:** `0.0.1-alpha.2`. The source and isolated package tarball pass local checks in Section 81; the prerelease label remains because browser/clean-machine certification has not passed. This package does not currently provide a full React-compatible hooks dispatcher, router, internationalization suite, general SSR hydration, custom HTML compiler or automatic XSS sanitizer.
 
-## 🧬 The Hybrid Approach
-
-ZyroJS brings together the best features from established frameworks into a single, unified developer experience:
-- **React-like Logic**: Familiar component structures and hook-based state management.
-- **Vue-inspired Templates**: Clean, intuitive template syntax that stays close to HTML.
-- **Signals & Globals**: Native support for fine-grained reactivity and shared global state.
-
-## ✨ Core Features
-
-| Feature | Description |
-| :--- | :--- |
-| **State & Hooks** | Intuitive state management with hooks and WordPress-style actions/filters. |
-| **Routing** | Built-in system supporting nested views, dynamic parameters, and SSR. |
-| **Forms & Validation** | Declarative validators (required, email, etc.) directly in tags. |
-| **Optimized Rendering** | Blazing fast performance with SSR support and intelligent asset management. |
-| **I18n & Animations** | Native internationalization and built-in animation primitives. |
-
-## 🔗 Ecosystem Integration
-
-ZyroJS is designed to work seamlessly within the **ZeruxJS Framework**, powering everything from simple sites to complex CMS installations like **Zenix**.
-
-## Network protocols, SSE and reactive remote data
-
-Use the optional framework-neutral `zyrojs/network` entry (also re-exported at the root). No React or Vue dependency is required.
+## Imports
 
 ```ts
-import { createProtocolClient, createQueryCache, createRemoteResource, createEventChannel } from 'zyrojs/network';
-
-const client = createProtocolClient({ baseUrl: 'https://app.example', credentials: 'same-origin', timeoutMs: 10000 });
-const answer = await client.rpc<number>('math.add', { a: 5, b: 7 });
-const tools = await client.mcp('tools/list');
-const response = await client.connect('Messages', 'Ping', { hello: 'world' });
-const tdata = await client.trpc('users.find', { id: '123' });
-
-const cache = createQueryCache({ maxEntries: 100, defaultTtlMs: 30000 });
-const state = createRemoteResource(signal => client.rpc('users.list', {}, { signal }), { cache, key: 'users:list' });
-await state.refresh();
-console.log(state.data.value, state.loading.value);
-state.dispose(); // abort subscriptions/request on component unmount
-
-const events = createEventChannel('https://app.example/events', { maxReconnects: 3 });
-void events.start(); // explicitly start in the browser; SSR-safe by default
-// events.latest.value updates as messages arrive
-// events.stop() when the view is unmounted
+import { signal, computed, effect, batch, reactive, createEffectScope } from 'zyrojs';
+import { h, render, unmount, renderToString } from 'zyrojs/dom';
+import { createRemoteResource, createProtocolClient } from 'zyrojs/network';
 ```
 
-`readEventStream` supports credentials, authorization headers, `Last-Event-ID`, explicit AbortSignals and bounded UTF-8 parsing. `connectJsonStream` handles Connect JSON framing with incremental streaming decoding, but does not implement Protobuf or full duplex in all browsers. QueryCache is an **in-memory, per-instance** TTL/LRU cache; it never persists secrets, automatically caches a request, or retries mutating calls. Use explicit cache keys, TTLs and invalidation.
-
-## Search and feed client (Section 39)
+## Reactivity and lifetime
 
 ```ts
-import { createDiscoveryClient } from 'zyrojs/network';
-const client = createDiscoveryClient({ baseUrl: 'https://example.com' });
-const result = await client.search('search terms', { limit: 20, prefix: true });
-const feedXml = await client.feed('rss'); // ETag revalidation
-const resource = client.searchResource('posts');
+const scope = createEffectScope();
+const price = signal(5);
+const quantity = signal(2);
+
+scope.run(() => {
+  const total = computed(() => price.value * quantity.value);
+  effect(() => console.log('Total:', total.value));
+});
+
+batch(() => { price.value = 8; quantity.value = 3; });
+scope.dispose(); // stop all owned reactive effects/derived subscriptions
+```
+
+`effect(fn)` runs immediately and returns an idempotent `stop()` callback. `fn` may return a cleanup callback, which runs before re-execution and on stopping. Dependency tracking updates after conditional reads; nested synchronous `batch` calls coalesce notifications. `onScopeDispose(fn)` registers additional disposers from inside `scope.run` or an effect owned by that scope. Cleanup errors may be propagated; the scope attempts to run all disposers. Unbounded self-updates fail with a loop guard.
+
+`computed(fn)` is eagerly tracked, read-only, and exposes `.dispose()`. Computed values outside a scope **must be disposed manually** to avoid long-lived subscriptions. `reactive(obj)` observes plain objects and arrays, including property reads, membership, iteration, nested mutable fields and deletions; native collections, Dates, class instances, and immutable slots are preserved rather than wrapped. Mutations made directly to an unproxied original reference cannot notify subscribers.
+
+`useState`, `useEffect`, `useMemo`, `useReactive` and `useRef` are **signal convenience functions**, not React hooks. `useEffect` returns a stop function; `useMemo` returns a getter with `.dispose()`. Avoid constructing new state on every render of a function component. Use stable signals owned by a mount boundary instead.
+
+## DOM, forms and safety
+
+```ts
+const count = signal(0);
+const name = signal('Visitor');
+const app = document.querySelector('#app')!;
+render(h('section', {},
+  h('input', { 'bind:value': name }),
+  h('p', {}, () => `Hello ${name.value}: ${count.value}`),
+  h('button', { onClick: () => { count.value++; } }, 'Increment')
+), app);
+
+// on route change or component unmount:
+unmount(app);
+```
+
+`render()` reconciles child lists by `props.key`, retains suitable DOM nodes and removes listeners/effects when replaced. Function children may return text **or a VNode**. `mount()` mounts an additional subtree, and `unmount(container)` releases the render root and manually mounted subtrees. `bind:value` listens for `input` and `bind:checked` listens for `change` on native form controls. Use normal `onInput` / `onChange` handlers for advanced form validation.
+
+DOM text and attributes are escaped through native DOM APIs. **Raw `innerHTML`, `outerHTML`, `srcdoc`, `srcset`, and inline `on*` strings are rejected**; unsafe URL schemes and raw CSS strings are not written. Do not turn user-controlled component tags or callback functions into trusted code. `renderToString()` produces escaped **static HTML** without mounting subscriptions, but does not output hydration markers; clients must remount using `render()` rather than assume hydration. Do not mix this reconciler with React/Vue ownership of the **same DOM container**. Separate mount roots and dispose each app's subscriptions on teardown.
+
+## Network and cancellation
+
+```ts
+const client = createProtocolClient({ baseUrl: 'https://example.test', timeoutMs: 10000 });
+const resource = createRemoteResource(signal => client.rpc('users.list', {}, { signal }));
 await resource.refresh();
-resource.dispose();
-client.dispose();
+resource.cancel();  // abort current work; stale results cannot change data or cache
+resource.dispose(); // release resource permanently
 ```
 
-Browser/SSR-safe, explicit Fetch dependency injection, bounded downloads, abortable requests and timeout, origin-relative paths, ETag revalidation per feed representation, and reactive search resources. It intentionally omits credentials and does not parse XML into a DOM.
+See `src/network` for Fetch JSON-RPC, MCP, Connect/tRPC, SSE readers, discovery feeds, bounded streaming and in-memory QueryCache. A cancelled stale request rejects with `AbortError` if its loader later resolves without honoring the signal. This is intentional: consumers must handle rejected promises. There is no implicit network retry for mutating calls. Cache entries are per instance; avoid sharing sensitive keys across tenants.
+
+## Local qualification
+
+```sh
+cd apps/proworkspace
+npm run test:zyrojs  # builds ZyroJS + bridge, runs tests, npm-pack consumer import test
+npm run verify:source # source and lock metadata validation, NOT npm ci
+```
+
+The Section 81 suite uses a deterministic DOM fixture in Node and an offline tarball consumer. **Real-browser Chromium/WebKit/Firefox, actual React/Vue hydration and cross-OS testing are still release gates** (Sections 83–85). Do not interpret a passed DOM fixture as browser certification or a passed local tarball check as a clean registry-backed workspace install.

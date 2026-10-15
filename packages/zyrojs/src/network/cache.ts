@@ -35,7 +35,7 @@ export class QueryCache {
     let task = this.pending.get(key) as Promise<T> | undefined;
     if (!task) {
       task = Promise.resolve().then(load).then(value => {
-        if (this.pending.get(key) === task) this.set(key, value, options);
+        if (this.pending.get(key) === task && !options.signal?.aborted) this.set(key, value, options);
         return value;
       }).finally(() => { if (this.pending.get(key) === task) this.pending.delete(key); });
       this.pending.set(key, task);
@@ -44,6 +44,7 @@ export class QueryCache {
     return new Promise<T>((resolve, reject) => {
       const abort = () => { options.signal?.removeEventListener('abort', abort); reject(options.signal?.reason); };
       options.signal!.addEventListener('abort', abort, { once: true });
+      if (options.signal!.aborted) { abort(); return; }
       task!.then(value => { options.signal?.removeEventListener('abort', abort); resolve(value); }, error => { options.signal?.removeEventListener('abort', abort); reject(error); });
     });
   }

@@ -48,3 +48,16 @@ test('browser Fetch client supports upload/download/ranges with mocked Fetch rou
  assert.deepEqual(Buffer.from(await client.bytes('folder/data.bin')),bytes);
  assert.equal(client.head('folder/data.bin') instanceof Promise,true);
 }));
+test('stream Content-Length mismatch rejects before creating an object',()=>setup(async manager=>{
+ const {uploadFileRequest}=await import('../dist/index.js');
+ const id={bucket:'my-bucket',key:'mismatch.bin'};
+ for(const [declared,payload] of [['4','abc'],['2','abc']]){
+  const req=new Request('https://files.example/mismatch.bin',{method:'PUT',headers:{'Content-Length':declared},body:payload});
+  await assert.rejects(uploadFileRequest(manager,id,req),/length mismatch/i);
+  assert.equal(await manager.stat(id),null,'length errors must not commit a file');
+ }
+ const existing=await manager.put(id,Buffer.from('untouched'));
+ const req=new Request('https://files.example/mismatch.bin',{method:'PUT',headers:{'Content-Length':'99'},body:'abc'});
+ await assert.rejects(uploadFileRequest(manager,id,req),/length mismatch|exists/i);
+ assert.equal((await manager.get(id)).toString(),'untouched','failed writes never delete a pre-existing object');
+}));

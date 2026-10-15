@@ -8,10 +8,12 @@ import type { ZeruxConfig } from "../index.js";
 import { isRedirectResponse } from "../navigation.js";
 import { getResolvedTheme, getThemeConfig, getThemeMode } from "../theme.js";
 import { initializeRuntimeServices, type RuntimeServiceScope } from "./services.js";
-import { registerServiceHttpRoutes } from "./service-http.js";
+import { registerServiceHttpRoutes, serviceRouteOverlaps } from "./service-http.js";
 import { redactManifestConfig } from "./manifest-config.js";
 import { createZeruxProtocols, type ZeruxProtocols } from "../protocols.js";
 import { ApplicationHttpMetrics } from "../metrics.js";
+import { createVariableRegistry } from "../variables.js";
+import type { ServiceInitializers } from "./services.js";
 import { applyCachePolicy, isCached, isStream, conditionalEtag, sendStream, stream } from "../response.js";
 import type {
     BootstrapResult,
@@ -680,6 +682,10 @@ const createRuntime = async (
     const publicFiles = collectPublicFiles(rootDir, structure.publicDirs);
     const multisiteEnabled = config.multisite === true;
     const httpMetrics = new ApplicationHttpMetrics();
+    // Each generation owns its registered template values; the global singleton
+    // is only a backwards-compatible convenience, never an app boundary.
+    const variableRegistry = createVariableRegistry();
+    let routesSealed = false;
     let appProtocols: ZeruxProtocols | undefined;
     const protocols = () => {
         if (config.protocols?.enabled === false) throw new Error('Application protocols are disabled');
@@ -721,13 +727,23 @@ const createRuntime = async (
     const pluginApi: ZeruxPluginApi = {
         protocols,
         service: (name) => serviceScope.get(name),
+        variables: () => variableRegistry,
         getLoadStatus: (windowMs) => httpMetrics.snapshot(windowMs),
         addRoute(route) {
+            if (!route || typeof route.pattern !== 'string' || !route.pattern.startsWith('/') ||
+                typeof route.handler !== 'function') throw new TypeError('Invalid application route');
             const normalizedMethod = normalizeMethod(route.method);
+            if (!HTTP_METHODS.includes(normalizedMethod as HttpMethod)) throw new TypeError('Unsupported HTTP method');
+            if (routesSealed && serviceScope.httpRoutes().some(item => serviceRouteOverlaps(item.pattern, sanitizePathname(route.pattern)))) {
+                throw new Error(`Reserved service endpoint cannot be replaced: ${route.pattern}`);
+            }
             const existing = routes.find((item) => item.pattern === sanitizePathname(route.pattern));
             const handler = route.handler;
 
             if (existing) {
+                if (existing.id.startsWith('service:') && route.source !== existing.id) {
+                    throw new Error(`Cannot replace reserved service route: ${route.pattern}`);
+                }
                 existing.methods[normalizedMethod] = handler;
                 existing.middleware = [...new Set([...existing.middleware, ...asArray(route.middleware)])];
                 existing.meta = { ...(existing.meta ?? {}), ...(route.meta ?? {}) };
@@ -746,6 +762,9 @@ const createRuntime = async (
         },
         removeRoute(pattern, method) {
             const normalizedPattern = sanitizePathname(pattern);
+            if (routesSealed && serviceScope.httpRoutes().some(item => serviceRouteOverlaps(item.pattern, normalizedPattern))) {
+                throw new Error(`Cannot remove reserved service route: ${pattern}`);
+            }
             const index = routes.findIndex((route) => route.pattern === normalizedPattern);
             if (index === -1) return;
 
@@ -855,6 +874,7 @@ const createRuntime = async (
 
     // Reserved Fetch endpoints belong to this generation, with collision protection.
     registerServiceHttpRoutes(pluginApi, serviceScope, [...routes.map(route => route.pattern), ...publicFiles.keys()]);
+    routesSealed = true;
 
     runtime = {
         rootDir,
@@ -874,7 +894,8 @@ const createRuntime = async (
         get protocolGateway() { return appProtocols?.gateway; },
         closeProtocols() { appProtocols?.close(); },
         serviceScope,
-        closeServices() { return serviceScope.close(); },
+        variables: variableRegistry,
+        closeServices() { variableRegistry.clear(); return serviceScope.close(); },
         getLoadStatus(windowMs) { return httpMetrics.snapshot(windowMs); },
         createHandler() {
             return async (req: IncomingMessage, res: ServerResponse) => {
@@ -981,6 +1002,7 @@ const createRuntime = async (
                         .filter((fn): fn is MiddlewareFunction => Boolean(fn));
 
                     let globalIndex = -1;
+                    let passedGlobalMiddleware = false;
                     const dispatchGlobal = async (cursor: number): Promise<void> => {
                         applyRegisteredMultisite();
 
@@ -995,10 +1017,16 @@ const createRuntime = async (
                             if (!res.writableEnded && result !== undefined) {
                                 sendResponse(res, result, 200, context);
                             }
+                            return;
                         }
+                        passedGlobalMiddleware = true;
                     };
 
                     await dispatchGlobal(0);
+                    if (!passedGlobalMiddleware) {
+                        if (!res.headersSent && !res.writableEnded) sendResponse(res, {error: 'Forbidden'}, 403, context);
+                        return;
+                    }
                     applyRegisteredMultisite();
 
                     if (res.writableEnded) return;
@@ -1028,6 +1056,12 @@ const createRuntime = async (
 
                     context.params = match.params;
 
+                    const missingMiddleware = match.route.middleware.filter(name => !globalMiddleware.includes(name) && !middleware.has(name));
+                    if (missingMiddleware.length) {
+                        logger.error('Route references unregistered middleware', {path: match.route.pattern});
+                        sendResponse(res, {error: 'Route middleware unavailable'}, 500, context);
+                        return;
+                    }
                     const routeMiddlewareStack = [...new Set(match.route.middleware)]
                         .filter((name) => !globalMiddleware.includes(name))
                         .map((name) => middleware.get(name))
@@ -1115,12 +1149,12 @@ export const bootstrapApplication = async (
     rootDir: string,
     mode: RuntimeMode,
     config: ZeruxConfig,
-    structure: ResolvedStructure
+    structure: ResolvedStructure,
+    providers: Partial<ServiceInitializers> = {}
 ): Promise<BootstrapResult> => {
-    if (typeof globalThis !== 'undefined') {
-        (globalThis as any).zeruxConfig = config;
-    }
-    const serviceScope = await initializeRuntimeServices(config, rootDir);
+    // Never publish raw service configuration on globalThis: it may contain
+    // DB passwords, SMTP tokens, signing keys or provider secrets.
+    const serviceScope = await initializeRuntimeServices(config, rootDir, providers);
     let runtime: ZeruxRuntime;
     try {
         runtime = await createRuntime(rootDir, mode, config, structure, serviceScope);

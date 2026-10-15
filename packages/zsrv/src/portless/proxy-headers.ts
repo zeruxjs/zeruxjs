@@ -39,6 +39,23 @@ export function filterProxyHeaders(
   return result;
 }
 
+/**
+ * Rebuild peer identity at this trust boundary. Client-supplied forwarding
+ * chains, vendor IP aliases and proxy identity headers must not be allowed to
+ * masquerade as a trusted upstream, even when a caller provides a valid Host.
+ * Deployments behind an external terminator must configure that terminator's
+ * trusted-peer policy separately instead of forwarding arbitrary client data.
+ */
+export function sanitizeForwardedRequestHeaders(headers: http.OutgoingHttpHeaders): http.OutgoingHttpHeaders {
+  const result = { ...headers };
+  for (const name of Object.keys(result)) {
+    if (/^(?:forwarded|x-forwarded-.*|x-real-ip|x-client-ip|true-client-ip|cf-connecting-ip|fastly-client-ip|x-original-forwarded-for)$/i.test(name)) {
+      delete result[name];
+    }
+  }
+  return result;
+}
+
 /** Only IP literals may be used as listener addresses. Never resolve a remote
  * host name for the management proxy implicitly. */
 export function validateProxyBindAddress(value: string): string {

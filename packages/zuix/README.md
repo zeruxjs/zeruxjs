@@ -81,3 +81,35 @@ Run `zuix build --per-file` or `zuix build --per-file-dir public/zuix-parts` to 
 ### Production cautions
 
 This version does **not** claim 100% coverage of every current or experimental CSS grammar. For new properties, arbitrary properties (e.g. `[animation-timeline:view()]`) are a forward-compatible escape hatch, subject to browser support. `@property`, `@layer`, complex selector authoring, custom CSS animations, font faces, and newer spec features should use authored CSS or `addBase` in addition to utility classes. Some modern features require progressive enhancement and browser fallbacks. Source extraction is deliberately static, so safelist runtime-built tokens. Do not pass untrusted input into arbitrary CSS syntax. Minification is structural/whitespace-light, not equivalent to an AST optimizer such as Lightning CSS; do not assume vendor prefixing or complex declaration-level compression.
+
+## Section 82 — Production compiler and adapter hardening (source/local gate)
+
+The compiler now rejects malformed/unsafe arbitrary CSS values (including declaration delimiters, comment escapes, `url(...)`, `expression(...)`, control characters and invalid at-rule conditions) instead of concatenating them into CSS. Selectors are CSS-escaped, including leading digits. `unmatched` lists unsupported and rejected class tokens; explicitly safelist classes built at runtime. Plugins (`addBase`, custom keyframes, `addUtilities`) are **trusted application code**, not a sandbox for untrusted CSS.
+
+Generation is bounded through optional `limits` with defaults: `maxFiles: 20000`, `maxFileBytes: 1 MiB`, `maxTotalBytes: 64 MiB`, `maxClasses: 50000`, `maxTokenLength: 256`. Limit failures throw rather than silently produce an incomplete stylesheet. Scanning skips symlink entries and build artefacts; watched files reuse their previous parsed class lists when size/mtime do not change. Outputs must remain under the project root and refuse symlink paths. Per-file manifests remove stale **generated** CSS after a source deletion, not arbitrary files. Configure content/exclude patterns narrowly for large monorepos.
+
+`zuix watch` runs a polling watcher with deterministic regeneration and explicit cleanup; recoverable read/build failures are reported and retried on later polls. `zuix build` rejects unknown flags, missing values and unsupported commands. The framework-neutral Vite adapter tracks current transformed modules in preference to initial scanned data, removes old classes when a file changes, and invalidates its virtual stylesheet on additions/deletions. No eager filesystem import occurs through the browser-safe root entry point.
+
+### Tested integration matrix
+
+| Environment | Supported mechanism | Verification |
+| --- | --- | --- |
+| Plain HTML / ZeruxJS templates | `zuix build` or `zuix watch`; link generated CSS | Node filesystem/compiler tests |
+| ZyroJS DOM templates | Same generated CSS; optional `injectZuix()` / `renderZuixStyle()` | API and packed import tests; live browser pending |
+| React + Vite | `zuixVite()` and `import 'virtual:zuix.css'` | Vite hook/transform simulation; real React app pending |
+| Vue + Vite | Same Vite adapter | Vite hook simulation; real Vue app pending |
+| Next.js | External CLI-generated CSS imported by app layout | No official Next adapter or live Next app certification |
+| Nuxt | External CLI-generated CSS through app stylesheet | No official Nuxt adapter or live Nuxt app certification |
+| Browser/SSR | Browser style injection and inline SSR style | Node output validation; Chromium CSS rendering pending |
+
+### Reproducible commands
+
+```sh
+cd apps/proworkspace
+npm run test:zuix                # TypeScript, focused tests, npm-pack + offline consumer
+npm run test:zuix:browser        # opt-in real Chromium CSS assertion; fails if Chromium cannot launch
+npm run test:workspace-tools
+npm run verify:source            # source-only; does not certify npm ci
+```
+
+`npm run test:zuix` checks tarball contents and installs the packed `zuix` offline in an isolated consumer, importing `zuix`, `zuix/node`, `zuix/vite`, and `zuix/theme`. It does not certify a clean workspace installation or actual Vite/Next/Nuxt applications. Chromium fails to render in the current environment; real computed-style screenshots, CSSOM validation across browsers, large-scale memory/load profiling, and full cross-OS tests remain release gates for Sections 82–85. The existing 14 unresolved external workspace dependency resolutions also remain outstanding.

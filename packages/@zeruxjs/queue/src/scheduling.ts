@@ -7,7 +7,18 @@ const clonePayload=(data:JobData):JobData=>{
   const json=JSON.stringify(data);
   if(typeof json!=='string'||Buffer.byteLength(json)>8192)throw new RangeError('Scheduled task data exceeds 8 KiB');
   const parsed=JSON.parse(json) as JobData;
-  if(Object.keys(parsed).some(k=>['__proto__','constructor','prototype'].includes(k)))throw new TypeError('Unsafe task data key');
+  // Reject unsafe keys anywhere in the JSON tree, not only the top-level
+  // payload. Bound nesting to prevent deeply nested worker-side input.
+  const check=(value:unknown,depth:number):void=>{
+    if(depth>32)throw new RangeError('Scheduled task nesting exceeds 32');
+    if(!value||typeof value!=='object')return;
+    if(Array.isArray(value)){for(const item of value)check(item,depth+1);return;}
+    for(const [key,item] of Object.entries(value)){
+      if(['__proto__','constructor','prototype'].includes(key))throw new TypeError('Unsafe task data key');
+      check(item,depth+1);
+    }
+  };
+  check(parsed,0);
   return parsed;
 };
 const validTime=(date:Date|string|number):number=>{
@@ -39,7 +50,7 @@ function repeatDates(options:TaskScheduleOptions){
   if(options.startDate!==undefined)repeat.startDate=new Date(validTime(options.startDate));
   if(options.endDate!==undefined){const end=options.endDate instanceof Date?options.endDate.getTime():typeof options.endDate==='string'?Date.parse(options.endDate):options.endDate;
     if(!Number.isSafeInteger(end)||end<=Date.now())throw new RangeError('Invalid schedule end date');repeat.endDate=new Date(end);}
-  if(options.startDate&&options.endDate&&Number(repeat.endDate instanceof Date?repeat.endDate.getTime():0)<=Number((repeat.startDate as Date).getTime()))throw new RangeError('Schedule end must follow start');
+  if(options.startDate!==undefined&&options.endDate!==undefined&&Number(repeat.endDate instanceof Date?repeat.endDate.getTime():0)<=Number((repeat.startDate as Date).getTime()))throw new RangeError('Schedule end must follow start');
   if(options.limit!==undefined){if(!Number.isSafeInteger(options.limit)||options.limit<1||options.limit>1_000_000)throw new RangeError('Invalid schedule limit');repeat.limit=options.limit;}
   return repeat;
 }

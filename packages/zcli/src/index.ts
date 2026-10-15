@@ -10,6 +10,8 @@ export { loadPlugins,loadConfiguredPlugins } from './plugin-loader.js';
 export type { PluginContext,LoadedPlugin } from './plugin-loader.js';
 export { formatError,stripTerminalCodes } from './format.js';
 export { color } from './colors.js';
+export { createZeruxProject } from './scaffold.js';
+export type { StarterOptions, StarterLanguage, StarterResult } from './scaffold.js';
 export { validateOptions } from './options.js';
 export type {OptionSchema, OptionDefinition, ValidatedOptions} from './options.js';
 /** Legacy shared instance used by zeruxjs/bin/zerux.ts. */

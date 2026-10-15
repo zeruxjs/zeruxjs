@@ -16,7 +16,7 @@ export async function executeTests(context: TestContext, options: RunOptions = {
   const eligible = (test: TestCase) => !test.skip && (!hasOnly || test.only) && (options.match === undefined || (typeof options.match === 'string' ? test.name.includes(options.match) : new RegExp(options.match.source, options.match.flags.replace('g','').replace('y','')).test(test.name)));
   const selected = tests.filter(eligible);
   const suiteCount = new Map<number, number>(); for (const t of selected) for (const suite of ancestors(t)) suiteCount.set(suite.id, (suiteCount.get(suite.id) || 0) + 1);
-  const started = new Set<number>(); const finished = new Map<number, number>(); const suiteErrors = new Map<number, Error>();
+  const started = new Set<number>(); const closed = new Set<number>(); const finished = new Map<number, number>(); const suiteErrors = new Map<number, Error>();
   const timeout = options.timeoutMs ?? 5000; const retries = options.retries ?? 0;
   if (!Number.isInteger(retries) || retries < 0 || retries > 100) throw new RangeError('Invalid retries');
   let bailed = false;
@@ -51,13 +51,25 @@ export async function executeTests(context: TestContext, options: RunOptions = {
     }
     for (const suite of [...chain].reverse()) {
       const done = (finished.get(suite.id) ?? 0) + 1; finished.set(suite.id, done);
-      if (done === suiteCount.get(suite.id)) for (const hook of suite.afterAll) {
+      if (done === suiteCount.get(suite.id)) { closed.add(suite.id); for (const hook of suite.afterAll) {
         try { await withTimeout(hook, timeout, 'afterAll'); } catch (e) { failure ??= errorOf(e); }
-      }
+      }}
     }
     const result: TestResult = {name:item.name,status:failure ? 'failed':'passed',durationMs:Date.now()-start,attempts,...(failure ? { error: failure } : {})};
     results.push(result); options.onResult?.(result);
     if(options.bail && failure)bailed = true;
+  }
+  // On bail, the normal per-suite last-test path is never reached for some
+  // already-started suites. Always run their afterAll hooks for resource cleanup.
+  for (const suite of [...started].map(id=>context.suites.get(id)!).sort((a,b)=>b.ancestors.length-a.ancestors.length)) {
+    if (closed.has(suite.id)) continue;
+    for (const hook of suite.afterAll) {
+      try { await withTimeout(hook,timeout,'afterAll'); }
+      catch (error) {
+        const result: TestResult={name:`afterAll: ${suite.name}`,status:'failed',durationMs:0,error:errorOf(error)};
+        results.push(result); options.onResult?.(result);
+      }
+    }
   }
   const summary: RunSummary = {passed:results.filter(r=>r.status==='passed').length, failed:results.filter(r=>r.status==='failed').length, skipped:results.filter(r=>r.status==='skipped').length,durationMs:Date.now()-begin,results};
   if (options.throwOnFailure && summary.failed) throw new AggregateError(results.flatMap(r=>r.error ? [r.error] : []), `${summary.failed} tests failed`);

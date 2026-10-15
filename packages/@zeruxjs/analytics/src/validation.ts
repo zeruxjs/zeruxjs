@@ -12,17 +12,30 @@ export function validateEvent(input:AnalyticsEventInput):AnalyticsRow {
   if(!props||typeof props!=='object'||Array.isArray(props)||Object.keys(props).length>40)throw new TypeError('Invalid event properties');
   const clean:EventProperties=Object.create(null) as EventProperties;
   for(const [key,value] of Object.entries(props)){
-    if(!eventName.test(key)||key==='__proto__'||key==='constructor'||key==='prototype')throw new TypeError('Invalid property key');
+    if(!eventName.test(key)||key==='__proto__'||key==='constructor'||key==='prototype'||['zVisitorId','zConsent','zRequestId','zRequestUtcDay'].includes(key))throw new TypeError('Invalid property key');
     if(value!==null&&typeof value!=='string'&&typeof value!=='boolean'&&typeof value!=='number')throw new TypeError('Event values must be scalar');
     if(typeof value==='number'&&!Number.isFinite(value))throw new TypeError('Invalid numeric event value');
     if(typeof value==='string'&&value.length>1024)throw new RangeError('Event property too long');
     clean[key]=value;
+  }
+  if(input.visitorId!==undefined){
+    if(input.consent!=='granted')throw new TypeError('Visitor ID requires granted consent');
+    if(!/^[A-Za-z0-9_-]{16,128}$/.test(input.visitorId))throw new TypeError('Invalid opaque visitor ID');
+    if(Object.hasOwn(clean,'zVisitorId'))throw new TypeError('Reserved visitor property');
+    clean.zVisitorId=input.visitorId;
+  }
+  if(input.consent!==undefined&&!['granted','denied','unknown'].includes(input.consent))throw new TypeError('Invalid consent state');
+  if(input.consent==='denied')throw new TypeError('Denied consent cannot persist events');
+  if(input.sessionId!==undefined){
+    if(input.consent!=='granted')throw new TypeError('Session ID requires granted consent');
+    if(!/^[A-Za-z0-9_-]{16,128}$/.test(input.sessionId))throw new TypeError('Session ID must be an opaque token');
   }
   if(input.requestId!==undefined){
     if(!validRequestId(input.requestId)||!/^\d{4}-\d{2}-\d{2}$/.test(input.requestUtcDay??''))throw new TypeError('Invalid request correlation');
     if(Object.hasOwn(clean,'zRequestId')||Object.hasOwn(clean,'zRequestUtcDay'))throw new TypeError('Reserved request property');
     clean.zRequestId=input.requestId;clean.zRequestUtcDay=input.requestUtcDay!;
   }
+  if(input.consent==='granted'){if(Object.hasOwn(clean,'zConsent'))throw new TypeError('Reserved consent property');clean.zConsent='granted';}
   const properties_json=JSON.stringify(clean);
   if(Buffer.byteLength(properties_json)>8192)throw new RangeError('Event properties exceed limit');
   const string=(v:unknown,max:number)=>{if(v===undefined)return '';if(typeof v!=='string'||v.length>max||/[\x00-\x1f]/.test(v))throw new TypeError('Invalid analytics field');return v;};

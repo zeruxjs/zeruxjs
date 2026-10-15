@@ -14,3 +14,5 @@ finally { await manager.disconnect(); }
 ```
 
 The Mongo implementation is not a complete SQL engine: joins, groups and unions use aggregation pipelines and need schema-specific testing. Document keys beginning with `$` or containing unsafe identifiers are intentionally rejected. Production deployments should configure Mongo driver authentication, TLS, retries, serverSelectionTimeoutMS, least-privilege users and indexes.
+
+Section 74: Mongo `alterTable` now explicitly rejects unsupported alterations rather than returning a fabricated success. Index operations accept only valid named fields; unsupported selector operators are rejected. Use real MongoDB sessions/transactions for multi-document atomicity and migration journals; a JSON operation array is not a transaction.

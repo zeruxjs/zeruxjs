@@ -12,6 +12,8 @@ export type AuthConfig = {
         usersTable: string;
         rolesTable: string;
         usermetaTable: string;
+        /** Set false on engines (e.g. MySQL) without INSERT .. RETURNING; inspect insertedIds instead. */
+        supportsReturning?: boolean;
         fields: {
             userId: string;
             email: string;
@@ -60,7 +62,19 @@ const timingSafeEqualText = (left: string, right: string) => {
     return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
 };
 
+const safeIdentifier = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(value) && !["__proto__", "constructor", "prototype"].includes(value.toLowerCase());
+
 export const setAuthConfig = (config: Partial<AuthConfig>) => {
+    // Validate before modifying the active configuration: table/column names are SQL identifiers,
+    // not values, and parameter binding cannot make an unsafe identifier safe.
+    if (config.db) {
+        for (const name of [config.db.usersTable, config.db.rolesTable, config.db.usermetaTable, ...Object.values(config.db.fields ?? {})]) {
+            if (name !== undefined && !safeIdentifier(name)) throw new Error("Unsafe authentication database identifier");
+        }
+    }
+    if (config.db?.supportsReturning !== undefined && typeof config.db.supportsReturning !== "boolean") throw new Error("Invalid auth returning capability");
+    if (config.session?.cookieName !== undefined && !/^(__Host-|__Secure-)?[A-Za-z_][A-Za-z0-9_-]{0,99}$/.test(config.session.cookieName)) throw new Error("Invalid session cookie name");
+    if (config.session?.expiresIn !== undefined && (!Number.isSafeInteger(config.session.expiresIn) || config.session.expiresIn < 1 || config.session.expiresIn > 86400 * 365)) throw new Error("Invalid session duration");
     globalConfig = {
         ...globalConfig,
         ...config,
@@ -128,6 +142,8 @@ export const verifyPassword = (password: string, storedHash: string) => {
 export const createSession = (userId: string | number, additionalData: Record<string, unknown> = {}) => {
     if (!Number.isSafeInteger(globalConfig.session.expiresIn) || globalConfig.session.expiresIn < 1 || globalConfig.session.expiresIn > 86400 * 365) throw new RangeError("Invalid session duration");
     const expiresAt = Math.floor(Date.now() / 1000) + globalConfig.session.expiresIn;
+    if (additionalData === null || typeof additionalData !== "object" || Array.isArray(additionalData) ||
+        Object.keys(additionalData).some(key => ["__proto__", "constructor", "prototype"].includes(key))) throw new Error("Invalid session claims");
     const payload = JSON.stringify({
         ...additionalData,
         userId,
@@ -156,7 +172,10 @@ export const verifySession = (token: string) => {
         const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
         const session = JSON.parse(decrypted) as { expiresAt?: number; userId?: string | number };
 
-        if ((typeof session.userId !== "string" && typeof session.userId !== "number") || typeof session.expiresAt !== "number" || !Number.isFinite(session.expiresAt) || Math.floor(Date.now() / 1000) >= session.expiresAt) {
+        if ((!(typeof session.userId === "string" && session.userId.length > 0 && session.userId.length <= 512) && !(typeof session.userId === "number" && Number.isSafeInteger(session.userId))) ||
+            typeof session.expiresAt !== "number" || !Number.isSafeInteger(session.expiresAt) ||
+            typeof (session as { jti?: unknown }).jti !== "string" || !/^[A-Za-z0-9_-]{22}$/.test((session as { jti: string }).jti) ||
+            Math.floor(Date.now() / 1000) >= session.expiresAt) {
             return null;
         }
 
@@ -183,7 +202,7 @@ export const createUser = async (
             [config.db.fields.passwordHash]: hashPassword(passwordPlain),
             [config.db.fields.role]: role
         },
-        returning: [config.db.fields.userId]
+        ...(config.db.supportsReturning === false ? {} : { returning: [config.db.fields.userId] })
     });
 };
 
@@ -253,7 +272,8 @@ export const updateUsermeta = async (userId: string | number, key: string, value
 
 export const getCapabilities = async (role: string, dbAdapter: AuthDbAdapter, orgId?: number) => {
     const config = getAuthConfig();
-    const where = orgId
+    if (orgId !== undefined && (!Number.isSafeInteger(orgId) || orgId < 0)) throw new Error("Invalid organization identifier");
+    const where = orgId !== undefined
         ? {
             and: [
                 { field: "name", operator: "eq", value: role },

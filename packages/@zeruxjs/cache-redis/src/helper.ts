@@ -29,9 +29,15 @@ export class RedisCacheHelper implements CacheHelper {
         await this.client.flushDb();
     }
     async clearPrefix(prefix: string): Promise<void> {
-        if (!prefix) throw new TypeError("Prefix must be non-empty");
+        if (typeof prefix !== 'string' || !prefix.length || prefix.length > 256) throw new TypeError("Invalid cache namespace prefix");
         let batch: string[] = [];
-        const flush = async () => { if (batch.length) { await this.client.del(batch); batch = []; } };
+        // A multi-key DEL may fail with CROSSSLOT on Redis Cluster. Delete each
+        // fully verified namespaced key; bounded batches avoid socket flooding.
+        const flush = async () => {
+            if (!batch.length) return;
+            const keys = batch; batch = [];
+            await Promise.all(keys.map(key => this.client.del(key)));
+        };
         for await (const page of this.client.scanIterator({ MATCH: prefixGlob(prefix), COUNT: 100 })) {
             for (const key of typeof page === "string" ? [page] : page) {
                 // Treat the match expression as a hint; never trust it as an authorization check.
@@ -61,7 +67,16 @@ export class RedisCacheHelper implements CacheHelper {
         }
         await this.client.mSet(Object.fromEntries(entries.map(([key, value]) => [key, serialize(value)])));
     }
-    async deleteMany(keys: string[]): Promise<number> { return keys.length ? this.client.del(keys) : 0; }
+    async deleteMany(keys: string[]): Promise<number> {
+        let removed = 0;
+        // Even when using a standalone client this works; with Redis Cluster,
+        // separate keys may be in different hash slots.
+        for (let i = 0; i < keys.length; i += 32) {
+            const results = await Promise.all(keys.slice(i, i + 32).map(key => this.client.del(key)));
+            for (const result of results) removed += result;
+        }
+        return removed;
+    }
     async increment(key: string, amount = 1): Promise<number> { return this.client.incrBy(key, counterAmount(amount)); }
     async decrement(key: string, amount = 1): Promise<number> { return this.client.decrBy(key, counterAmount(amount)); }
     async touch(key: string, seconds: number): Promise<boolean> { return Boolean(await this.client.expire(key, expiration(seconds)!)); }

@@ -37,7 +37,16 @@ export function createMediaFilesService(manager: StorageManager, options: MediaF
       });
       return {id,info};
     },
+    // Trusted server-side operations; use statAuthorized/listAuthorized for
+    // request-facing APIs so private metadata cannot be enumerated.
     async stat(id:string){return manager.stat(address(id));},
+    async statAuthorized(id:string,request:Request){
+      const target=address(id);const info=await manager.stat(target);
+      if(!info)return null;
+      if(!options.authorize||!await options.authorize(request,target,'read',info))
+        throw Object.assign(new Error('Media read forbidden'),{code:'FORBIDDEN'});
+      return info;
+    },
     async download(id:string,request:Request,opts:{inline?:boolean;downloadName?:string}={}){
       return createFileResponse(manager,address(id),request,{...opts,authorize:options.authorize});
     },
@@ -49,6 +58,20 @@ export function createMediaFilesService(manager: StorageManager, options: MediaF
     async list(opts:{limit?:number;cursor?:string}={}){
       const result=await manager.list(options.bucket,{storage:options.storage,prefix,limit:opts.limit,cursor:opts.cursor});
       return {...result,items:result.items.map(info=>({...info,id:info.key.slice(prefix.length)}))};
+    },
+    async listAuthorized(request:Request,opts:{limit?:number;cursor?:string}={}){
+      if(!options.authorize)throw Object.assign(new Error('Media listing forbidden'),{code:'FORBIDDEN'});
+      const result=await manager.list(options.bucket,{storage:options.storage,prefix,limit:opts.limit,cursor:opts.cursor});
+      const visible=[];let denied=false;
+      for(const info of result.items){
+        if(await options.authorize(request,{storage:options.storage,bucket:options.bucket,key:info.key},'read',info))
+          visible.push({...info,id:info.key.slice(prefix.length)});
+        else denied=true;
+      }
+      // Backend page cursors can contain the last raw object key. Suppress
+      // them when that page contained unauthorized objects, rather than
+      // disclosing another tenant's key via pagination metadata.
+      return {items:visible,...(!denied&&result.nextCursor?{nextCursor:result.nextCursor}:{})};
     },
     address
   };

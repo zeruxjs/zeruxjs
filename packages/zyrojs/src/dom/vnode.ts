@@ -1,28 +1,12 @@
-/**
- * @title VNode Types
- * @description Defines the virtual DOM node structure for ZyroJS.
- */
-
-export type VNodeChild = VNode | string | number | boolean | null | undefined | (() => any);
-
+/** Minimal, browser-native VNode representation. JSX is not required. */
+export type VNodeChild = VNode | string | number | boolean | null | undefined | (() => VNodeChild) | VNodeChild[];
 export interface VNode {
-    type: string | Function;
-    props: Record<string, any>;
-    children: VNodeChild[];
-    el?: Node;
+  type: string | ((props: Record<string, unknown>) => VNodeChild);
+  props: Record<string, any>;
+  children: VNodeChild[];
+  /** Set only while mounted. Do not reuse a VNode object in multiple roots. */
+  el?: Node;
 }
-
-/**
- * @description Hyperscript function to create VNodes.
- * @param {string | Function} type - Element tag or Component function.
- * @param {Record<string, any>} props - Element attributes/props.
- * @param {VNodeChild[]} children - Children nodes.
- * @returns {VNode}
- */
-export function h(type: string | Function, props: Record<string, any> | null, ...children: VNodeChild[]): VNode {
-    return {
-        type,
-        props: props || {},
-        children: children.flat().filter(child => child !== null && child !== undefined && child !== false),
-    };
+export function h(type: VNode['type'], props: Record<string, any> | null, ...children: VNodeChild[]): VNode {
+  return { type, props: props ?? {}, children: children.filter(child => child !== null && child !== undefined && child !== false) };
 }

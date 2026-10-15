@@ -9,6 +9,10 @@ export interface AnalyticsEventInput {
   pathname?: string;
   /** An application-assigned opaque session identifier, never a raw email address. */
   sessionId?: string;
+  /** Consent for web identifiers. Denied events are never persisted. */
+  consent?: 'granted'|'denied'|'unknown';
+  /** Pseudonymous, application-generated visitor token (never email/IP). Only stored with explicit consent. */
+  visitorId?: string;
   occurredAt?: number;
   /** 16-character request correlation ID, assigned once per ingress request. */
   requestId?: string;
@@ -27,11 +31,12 @@ export interface AnalyticsRow {
   occurred_at: number;
   properties_json: string;
 }
-export interface DatabaseResultLike {ok: boolean; rows?: unknown[]; error?: {message?:string;code?:string}}
+export interface DatabaseResultLike {ok: boolean; rows?: unknown[]; affectedCount?:number;rowCount?:number; error?: {message?:string;code?:string}}
 export interface AnalyticsConnection {
   insert(operation:{table:string;values:Record<string,string|number>|Array<Record<string,string|number>>}):DatabaseResultLike|Promise<DatabaseResultLike>;
-  select(operation:{table:string;columns?:Array<string|{expr:{kind:'column';name:string}|{kind:'function';name:'COUNT'|'SUM'|'AVG'|'MIN'|'MAX';args:Array<{kind:'column';name:string}>};as?:string}>;groupBy?:string[];where?:{field:string;operator:'eq'|'gte'|'lte'|'gt';value:string|number}|{and:Array<{field:string;operator:'eq'|'gte'|'lte'|'gt';value:string|number}>};orderBy?:Array<{by:string;direction:'desc'|'asc'}>;limit?:number}):DatabaseResultLike|Promise<DatabaseResultLike>;
+  select(operation:{table:string;columns?:Array<string|{expr:{kind:'column';name:string}|{kind:'function';name:'COUNT'|'SUM'|'AVG'|'MIN'|'MAX';args:Array<{kind:'column';name:string}>};as?:string}>;groupBy?:string[];where?:{field:string;operator:'eq'|'gte'|'lte'|'gt'|'lt';value:string|number}|{and:Array<{field:string;operator:'eq'|'gte'|'lte'|'gt'|'lt';value:string|number}>};orderBy?:Array<{by:string;direction:'desc'|'asc'}>;limit?:number}):DatabaseResultLike|Promise<DatabaseResultLike>;
   createTable(operation:{table:string;ifNotExists:true;columns:Array<{name:string;type:'varchar'|'text'|'bigint'|'float';length?:number;primary?:boolean;notNull?:boolean}>}):DatabaseResultLike|Promise<DatabaseResultLike>;
+  delete?(operation:{table:string;where:{field:string;operator:'eq'|'lt';value:string|number}|{and:Array<{field:string;operator:'eq'|'lt';value:string|number}>}}):DatabaseResultLike|Promise<DatabaseResultLike>;
   createIndex?(operation:{table:string;name:string;columns:string[];unique?:boolean;ifNotExists?:boolean}):DatabaseResultLike|Promise<DatabaseResultLike>;
   update?(operation:{table:string;values:Record<string,string|number>;where:{and:Array<{field:string;operator:'eq';value:string|number}>}}):DatabaseResultLike|Promise<DatabaseResultLike>;
 }
@@ -51,6 +56,12 @@ export interface AnalyticsConfig {
   numericFields?:string[];
   /** Trust an externally migrated UNIQUE(event_id, property_name) index when indexes:false. */
   numericUniqueIndexManagedExternally?:boolean;
+  /** Require explicit granted consent before saving *web* events. Default is optional; denied is always dropped. */
+  webConsent?:'optional'|'required';
+  /** Optional allowlist of event names and scalar properties. Unknown names/keys reject if configured. */
+  eventSchemas?:Record<string,{properties:Record<string,'string'|'number'|'boolean'|'null'>;allowAdditionalProperties?:boolean}>;
+  /** Explicit authorized administrator approval, required for destructive retention. */
+  approveRetention?:(scope:{site:string;before:number})=>boolean|Promise<boolean>;
   /** Optional data minimization hook invoked before insertion. */
   filter?:(input:Readonly<AnalyticsEventInput>)=>AnalyticsEventInput|null|Promise<AnalyticsEventInput|null>;
 }

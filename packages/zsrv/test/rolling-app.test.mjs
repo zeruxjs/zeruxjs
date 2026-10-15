@@ -175,3 +175,21 @@ test('drain deadlines are reported rather than falsely claiming idle backends',(
  // The child handles graceful SIGTERM; it may still finish the held response.
  await held.catch(()=>{});
 }));
+
+test('pre-cutover verification prevents a failing candidate from ever receiving traffic',()=>fixture(async ({store,proxyPort,ports,launch})=>{
+ const app=await launch({env:{FAIL_PORT:String(ports[1]),FAIL_MODE:'late'},preCutoverChecks:2,verificationChecks:1,verificationIntervalMs:20});
+ const seen=[];
+ let stopPolling=false;
+ const poll=(async()=>{while(!stopPolling){seen.push(store.loadRoutes()[0]?.port);await delay(2);}})();
+ const serving=[];
+ try {
+   const deploying=app.deploy();
+   for(let i=0;i<18;i++) { const result=await get(proxyPort,'rolling.localhost'); serving.push(result); await delay(4); }
+   await assert.rejects(deploying,/unhealthy before traffic cutover/);
+   assert.equal(store.loadRoutes()[0].port,ports[0]);
+   assert.equal(app.status.generation,1);
+   assert.ok(serving.length>0);
+   assert.ok(serving.every(r=>r.status===200 && r.body===`port-${ports[0]}`));
+ } finally { stopPolling=true; await poll; }
+ assert.ok(seen.every(port=>port===ports[0]),'route was never published to unhealthy candidate');
+}));

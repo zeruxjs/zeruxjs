@@ -5,7 +5,7 @@ import type {MarketingCampaignService,MarketingCampaignInput,MarketingRecipient}
 export interface MarketingCampaignDashboardOptions {
   service:MarketingCampaignService;
   authorize:(request:Request)=>unknown|Promise<unknown>;
-  authorizeCampaign:(principal:unknown,code:string,action:'read'|'recipients'|'preview'|'append'|'enqueue'|'pause'|'resume'|'cancel'|'redrive')=>boolean|Promise<boolean>;
+  authorizeCampaign:(principal:unknown,code:string,action:'read'|'recipients'|'preview'|'append'|'enqueue'|'pause'|'resume'|'cancel'|'redrive'|'schedule'|'archive'|'finalize'|'export')=>boolean|Promise<boolean>;
   /** Creation is a separate permission because a code does not yet exist. */
   authorizeCreate:(principal:unknown)=>boolean|Promise<boolean>;
   /** Listing is only available when the entire campaign namespace is authorized. */
@@ -38,25 +38,31 @@ const css='body{font:16px system-ui,sans-serif;max-width:900px;margin:24px auto;
 const js=String.raw`'use strict';
 const root=document.currentScript.dataset.root,csrf=document.querySelector('meta[name="csrf"]').content;
 const $=id=>document.getElementById(id),message=s=>{$('status').textContent=s},show=v=>{$('result').textContent=JSON.stringify(v,null,2)};
-async function call(action,method='GET',body){
+let lastView='',nextCursor=null;
+async function call(action,method='GET',body,paginate=false){
  const params=new URLSearchParams({code:$('code').value,view:action});
- if(method==='GET'){params.set('limit','10');}
+ if(method==='GET'){params.set('limit','10');if(paginate&&nextCursor)params.set('cursor',nextCursor);}
  const response=await fetch(root+'/api?'+params,{method,credentials:'same-origin',headers:body?{'content-type':'application/json','x-csrf-token':csrf}:{},body:body?JSON.stringify({action,...body}):undefined});
- const value=await response.json();if(!response.ok)throw Error(value.error||'Request failed');return value;
+ const value=await response.json();if(!response.ok)throw Error(value.error||'Request failed');
+ if(method==='GET'){lastView=action;nextCursor=value.nextCursor??null;}return value;
 }
 $('load').onclick=async()=>{try{show(await call('overview'));message('Campaign loaded')}catch(e){message(e.message)}};
 $('recipients').onclick=async()=>{try{show(await call('recipients'));message('Bounded recipient list loaded')}catch(e){message(e.message)}};
 $('previews').onclick=async()=>{try{show(await call('previews'));message('Recipient previews loaded')}catch(e){message(e.message)}};
+$('nextPage').onclick=async()=>{if(!lastView||!nextCursor){message('No more pages');return;}try{show(await call(lastView,'GET',undefined,true));message('Next page loaded')}catch(e){message(e.message)}};
+$('report').onclick=async()=>{try{show(await call('report'));message('Delivery state report page loaded')}catch(e){message(e.message)}};
+$('export').onclick=async()=>{try{show(await call('export'));message('Redacted campaign export page loaded')}catch(e){message(e.message)}};
 $('list').onclick=async()=>{try{show(await call('list'));message('Campaign list loaded')}catch(e){message(e.message)}};
 $('create').onclick=async()=>{try{
  const content=$('content').value;const emails=$('emails').value.split(/[\s,]+/).filter(Boolean);
  const input={name:$('name').value,subject:$('subject').value,content,providers:[$('account').value],emails,isTracking:$('tracking').checked,autoEnqueue:false};
  const response=await call('create','POST',{input});$('code').value=response.code;show(response);message('Campaign stored; use Enqueue to schedule delivery');
  }catch(e){message(e.message)}};
-for(const action of ['enqueue','pause','resume','cancel','redrive'])$(action).onclick=async()=>{try{show(await call(action,'POST',{code:$('code').value}));message(action+' completed')}catch(e){message(e.message)}};
+$('schedule').onclick=async()=>{try{const sendAt=Date.parse($('sendAt').value);if(!Number.isSafeInteger(sendAt))throw Error('Select a valid schedule');show(await call('schedule','POST',{code:$('code').value,sendAt}));message('Schedule updated')}catch(e){message(e.message)}};
+for(const action of ['enqueue','pause','resume','cancel','redrive','finalize','archive'])$(action).onclick=async()=>{try{show(await call(action,'POST',{code:$('code').value}));message(action+' completed')}catch(e){message(e.message)}};
 `;
 export function createMarketingCampaignDashboard(options:MarketingCampaignDashboardOptions){
-  if(!options||!options.service||!['get','list','recipients','previewPage','appendRecipients','enqueue','pause','resume','cancel','redrivePending','create','overview'].every(k=>typeof (options.service as any)[k]==='function')||
+  if(!options||!options.service||!['get','list','recipients','previewPage','appendRecipients','enqueue','pause','resume','cancel','redrivePending','create','overview','schedule','archive','finalize','exportPage','report'].every(k=>typeof (options.service as any)[k]==='function')||
     !['authorize','authorizeCampaign','authorizeCreate','verifyCsrf','csrfToken'].every(k=>typeof (options as any)[k]==='function'))throw new TypeError('Marketing dashboard requires a campaign service and host authorization');
   const prefix=options.prefix??'/_email/marketing';
   if(!/^\/[A-Za-z0-9/_-]{2,100}$/.test(prefix)||prefix.includes('//')||prefix.endsWith('/')||prefix.includes('..'))throw new TypeError('Invalid dashboard route');
@@ -72,7 +78,7 @@ export function createMarketingCampaignDashboard(options:MarketingCampaignDashbo
     if(suffix===''&&request.method==='GET'){
       let token:string;try{token=await options.csrfToken(request,principal);}catch{return json({error:'Forbidden'},403);}
       if(typeof token!=='string'||token.length<16||token.length>512)return json({error:'Forbidden'},403);
-      return html(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="csrf" content="${safe(token)}"><link rel="stylesheet" href="${prefix}/app.css"><title>Zerux Marketing Campaigns</title></head><body><main><h1>Marketing campaigns</h1><p>Create one reusable template and queue recipient-specific renders without duplicating content. All actions require host authorization.</p><section><label>Campaign code <input id="code" maxlength="96"></label><button id="load">Overview</button><button id="list">List</button><button id="recipients">Recipients</button><button id="previews">Previews</button></section><section><h2>New campaign</h2><label>Name <input id="name" maxlength="120"></label><label>Subject <input id="subject" maxlength="998"></label><label>Account <input id="account"></label><label>Recipient emails, comma or newline separated <textarea id="emails" rows="4"></textarea></label><label>HTML content <textarea id="content" rows="7"></textarea></label><label><input id="tracking" type="checkbox"> Enable email tracking</label><button id="create">Create draft</button></section><section><button id="enqueue">Enqueue</button><button id="redrive">Redrive pending</button><button id="pause">Pause</button><button id="resume">Resume</button><button id="cancel">Cancel</button></section><p id="status" role="status"></p><section><h2>Results</h2><pre id="result"></pre></section></main><script defer src="${prefix}/app.js" data-root="${prefix}"></script></body></html>`);
+      return html(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="csrf" content="${safe(token)}"><link rel="stylesheet" href="${prefix}/app.css"><title>Zerux Marketing Campaigns</title></head><body><main><h1>Marketing campaigns</h1><p>Create one reusable template and queue recipient-specific renders without duplicating content. All actions require host authorization.</p><section><label>Campaign code <input id="code" maxlength="96"></label><button id="load">Overview</button><button id="list">List</button><button id="recipients">Recipients</button><button id="previews">Previews</button><button id="export">Redacted export</button><button id="report">Delivery report</button><button id="nextPage">Next page</button></section><section><h2>New campaign</h2><label>Name <input id="name" maxlength="120"></label><label>Subject <input id="subject" maxlength="998"></label><label>Account <input id="account"></label><label>Recipient emails, comma or newline separated <textarea id="emails" rows="4"></textarea></label><label>HTML content <textarea id="content" rows="7"></textarea></label><label><input id="tracking" type="checkbox"> Enable email tracking</label><button id="create">Create draft</button></section><section><label>Schedule (local time) <input id="sendAt" type="datetime-local"></label><button id="schedule">Schedule</button><button id="enqueue">Enqueue</button><button id="redrive">Redrive pending</button><button id="pause">Pause</button><button id="resume">Resume</button><button id="cancel">Cancel</button><button id="finalize">Finalize completed</button><button id="archive">Archive</button></section><p id="status" role="status"></p><section><h2>Results</h2><pre id="result"></pre></section></main><script defer src="${prefix}/app.js" data-root="${prefix}"></script></body></html>`);
     }
     if(suffix==='/app.js'&&request.method==='GET')return new Response(js,{headers:{...headers,'content-type':'text/javascript; charset=utf-8'}});
     if(suffix==='/app.css'&&request.method==='GET')return new Response(css,{headers:{...headers,'content-type':'text/css; charset=utf-8'}});
@@ -107,7 +113,7 @@ export function createMarketingCampaignDashboard(options:MarketingCampaignDashbo
     if(!validCode(code))return json({error:'Invalid campaign code'},400);
     const permission:MarketingCampaignDashboardOptions['authorizeCampaign'] extends (p:any,id:any,a:infer A)=>any?A:never=
       action==='recipients'?'recipients':action==='previews'?'preview':action==='append'?'append':action==='enqueue'?'enqueue':
-      action==='redrive'?'redrive':action==='pause'?'pause':action==='resume'?'resume':action==='cancel'?'cancel':'read';
+      action==='redrive'?'redrive':action==='schedule'?'schedule':action==='archive'?'archive':action==='finalize'?'finalize':action==='export'?'export':action==='pause'?'pause':action==='resume'?'resume':action==='cancel'?'cancel':'read';
     try{if(await options.authorizeCampaign(principal,code,permission)!==true)return json({error:'Forbidden'},403);}catch{return json({error:'Forbidden'},403);}
     try{
       if(request.method==='GET'){
@@ -118,6 +124,11 @@ export function createMarketingCampaignDashboard(options:MarketingCampaignDashbo
         const limit=Math.min(action==='previews'?20:100,Number(url.searchParams.get('limit')??10));
         if(!Number.isSafeInteger(limit)||limit<1)return json({error:'Invalid page size'},400);
         const cursor=url.searchParams.get('cursor');
+        if(action==='report')return json(await service.report(code,{cursor,limit}));
+        if(action==='export'){
+          const result=await service.exportPage(code,{cursor,limit});
+          return json(result);
+        }
         if(action==='previews'){
           const r=await service.previewPage(code,{cursor,limit});
           return json({items:r.items.map(v=>({subject:v.subject,html:v.html,text:v.text,recipient:v.recipient,trackingEnabled:v.trackingEnabled})),nextCursor:r.nextCursor,done:r.done});
@@ -128,6 +139,10 @@ export function createMarketingCampaignDashboard(options:MarketingCampaignDashbo
         }
         return json({error:'Unknown view'},400);
       }
+      if(action==='schedule'){if(typeof input?.sendAt!=='number')return json({error:'Absolute sendAt milliseconds required'},400);
+        return json(await service.schedule(code,input.sendAt));}
+      if(action==='finalize')return json(await service.finalize(code));
+      if(action==='archive')return json({status:(await service.archive(code)).status});
       if(action==='enqueue')return json(await service.enqueue(code));
       if(action==='redrive')return json(await service.redrivePending(code));
       if(action==='pause')return json({status:(await service.pause(code)).status});

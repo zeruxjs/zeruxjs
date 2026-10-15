@@ -6,8 +6,20 @@
   "description": "BullMQ-backed queues and workers with ZeruxJS lifecycle management",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": {".": {"types": "./dist/index.d.ts", "default": "./dist/index.js"}},
-  "scripts": {"build": "tsc", "test": "npm run build && node --test test/*.test.mjs"},
-  "dependencies": {"bullmq": "^5.61.0", "@zeruxjs/cache-redis": "*", "ioredis": "^5.4.0"},
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "bullmq": "^5.61.0",
+    "@zeruxjs/cache-redis": "0.0.1-alpha.1",
+    "ioredis": "^5.4.0"
+  },
   "license": "(MIT OR Apache-2.0)"
 }

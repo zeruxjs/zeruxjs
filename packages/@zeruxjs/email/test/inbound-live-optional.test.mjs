@@ -13,7 +13,7 @@ for(const protocol of ['imap','pop3']){
     {skip:!enabled||!host||!user||!password?'live credentials/test opt-in not provided':false,timeout:45000},
     async()=>{
       const receiver=createEmailReceiver({accounts:[{name:'live',protocol,host,
-        port:protocol==='imap'?993:995,auth:{user,password},timeoutMs:15000,maxMessagesPerPoll:2}],mode:'json'});
+        port:Number(process.env[`${prefix}_PORT`] || (protocol==='imap'?993:995)),auth:{user,password},timeoutMs:15000,maxMessagesPerPoll:2}],mode:'json'});
       try{
         assert.equal(await receiver.verify('live'),true);
         if(protocol==='imap'){

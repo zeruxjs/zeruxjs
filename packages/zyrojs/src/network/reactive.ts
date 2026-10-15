@@ -36,9 +36,10 @@ export function createRemoteResource<T>(
       try {
         const load = () => loader(internal.signal);
         const result = options.cache && options.key
-          ? await options.cache.query(options.key, load, options.cacheOptions)
+          ? await options.cache.query(options.key, load, { ...options.cacheOptions, signal: internal.signal })
           : await load();
-        if (active && current === sequence && !internal.signal.aborted) data.value = result;
+        if (!active || current !== sequence || internal.signal.aborted) throw Object.assign(new Error('Resource request cancelled'), { name: 'AbortError' });
+        data.value = result;
         return result;
       } catch (cause) {
         if (active && current === sequence && !internal.signal.aborted) error.value = cause;

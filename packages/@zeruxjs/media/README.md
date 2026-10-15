@@ -19,3 +19,7 @@ const response = await createMediaResponse(media, record.id, {request});
 `uploadMediaRequest()` streams raw request bytes directly to the store with maximum-size and reported-length validation; it does not parse `multipart/form-data`. Reject compressed request bodies; decompress separately under a bounded policy if needed. Callers control MIME validation, malware scanning and user quotas.
 
 `createSignedMediaToken()` / `verifySignedMediaToken()` create short-lived capabilities using an application-owned signing key (at least 16 bytes). These are not authentication. Store media outside web roots, keep access-control checks on download routes, protect the signing secret and schedule expired-file cleanup. A local directory is not shared storage for multiple hosts.
+
+### Section 80 HTTP safety
+
+For the files-backed media service, use `statAuthorized(id, request)` and `listAuthorized(request, {limit,cursor})` when returning metadata to clients. Both call `authorize` per object, suppressing a backend continuation cursor when unauthorized objects were encountered. For complete paginated tenant listings, partition by bucket/key prefix; the older `stat`/`list` methods are server-trusted only. The request upload helper validates declared length during streaming; legacy media inline responses allow only inert MIME types and force potentially executable content to download.

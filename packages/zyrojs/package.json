@@ -1,19 +1,38 @@
 {
   "name": "zyrojs",
   "version": "0.0.1-alpha.2",
-  "description": "Zyro Library",
+  "description": "Standalone signal reactivity, lifecycle-managed DOM rendering, and abortable network clients",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "bundle": "esbuild src/index.ts --bundle --outfile=dist/zyro.js --format=esm"
+    "bundle": "esbuild src/index.ts --bundle --outfile=dist/zyro.js --format=esm",
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./dom": "./dist/dom/index.js",
-    "./network": "./dist/network/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./dom": {
+      "types": "./dist/dom/index.d.ts",
+      "default": "./dist/dom/index.js"
+    },
+    "./network": {
+      "types": "./dist/network/index.d.ts",
+      "default": "./dist/network/index.js"
+    }
   },
-  "license": "MIT"
+  "license": "MIT",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
 }

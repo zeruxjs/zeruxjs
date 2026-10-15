@@ -47,7 +47,7 @@ export async function startRollingFromCLI(options: RollingRunArguments): Promise
         store: routeStore, hostname, ports: options.ports, connections,
         health: { path: options.healthPath }, force: options.force,
         readyTimeoutMs: options.readyTimeoutMs, shutdownTimeoutMs: options.shutdownTimeoutMs,
-        drainTimeoutMs: options.drainTimeoutMs, verificationChecks: options.verificationChecks,
+        drainTimeoutMs: options.drainTimeoutMs, preCutoverChecks: options.preCutoverChecks, verificationChecks: options.verificationChecks,
         verificationIntervalMs: options.verificationIntervalMs,
         onStatus,
         onLease: leaseId => registry!.lease(leaseId),

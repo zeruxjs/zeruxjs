@@ -132,6 +132,7 @@ class SqlCompiler {
     }
 
     #compileCreateTable(operation: CreateTableOperation): SqlCompilation {
+        if (!operation.columns.length || operation.columns.length > 256) throw createDatabaseError({ code: "INVALID_COLUMNS", message: "Invalid table column count" });
         const columns = operation.columns.map((column) => this.#buildColumn(column));
         const statements = [
             `CREATE TABLE${operation.ifNotExists ? " IF NOT EXISTS" : ""} ${this.#quote(operation.table)} (${columns.join(", ")})`
@@ -187,10 +188,15 @@ class SqlCompiler {
         }
 
         const columns = Object.keys(rows[0]);
+        if (columns.length === 0 || rows.length > 10_000 || rows.some(row =>
+            !row || Array.isArray(row) || Object.keys(row).length !== columns.length ||
+            columns.some(column => !Object.prototype.hasOwnProperty.call(row, column))
+        )) throw createDatabaseError({ code: "INVALID_INSERT", message: "Insert rows must have identical nonempty columns" });
         const values = rows.map((row) =>
             `(${columns.map((column) => this.#compileValue(row[column] as QueryExpression | unknown)).join(", ")})`
         );
 
+        if (operation.returning?.length && !this.#dialect.supportsReturning) throw createDatabaseError({ code: "UNSUPPORTED_RETURNING", message: "This connector does not support RETURNING" });
         const returning = operation.returning && operation.returning.length > 0 && this.#dialect.supportsReturning
             ? ` RETURNING ${operation.returning.map((column) => this.#quote(column)).join(", ")}`
             : "";
@@ -212,10 +218,12 @@ class SqlCompiler {
     }
 
     #compileUpdate(operation: UpdateOperation): SqlCompilation {
+        if (Object.keys(operation.values).length === 0) throw createDatabaseError({ code: "INVALID_UPDATE", message: "Update must contain values" });
         const assignments = Object.entries(operation.values).map(
             ([column, value]) => `${this.#quote(column)} = ${this.#compileValue(value)}`
         );
         const where = operation.where ? ` WHERE ${this.#compileWhere(operation.where)}` : "";
+        if (operation.returning?.length && !this.#dialect.supportsReturning) throw createDatabaseError({ code: "UNSUPPORTED_RETURNING", message: "This connector does not support RETURNING" });
         const returning = operation.returning && operation.returning.length > 0 && this.#dialect.supportsReturning
             ? ` RETURNING ${operation.returning.map((column) => this.#quote(column)).join(", ")}`
             : "";
@@ -228,6 +236,7 @@ class SqlCompiler {
 
     #compileDelete(operation: DeleteOperation): SqlCompilation {
         const where = operation.where ? ` WHERE ${this.#compileWhere(operation.where)}` : "";
+        if (operation.returning?.length && !this.#dialect.supportsReturning) throw createDatabaseError({ code: "UNSUPPORTED_RETURNING", message: "This connector does not support RETURNING" });
         const returning = operation.returning && operation.returning.length > 0 && this.#dialect.supportsReturning
             ? ` RETURNING ${operation.returning.map((column) => this.#quote(column)).join(", ")}`
             : "";
@@ -273,6 +282,7 @@ class SqlCompiler {
     }
 
     #buildJoin(join: JoinDefinition): string {
+        if (!["inner", "left", "right", "full", "self"].includes(join.type)) throw createDatabaseError({ code: "INVALID_JOIN", message: "Unsafe SQL join type" });
         const joinKeyword = join.type === "self"
             ? "INNER JOIN"
             : `${join.type.toUpperCase()} JOIN`;
@@ -280,6 +290,7 @@ class SqlCompiler {
     }
 
     #buildOrderBy(entry: string | OrderByClause): string {
+        if (typeof entry !== "string" && ((entry.direction && !["asc", "desc"].includes(entry.direction)) || (entry.nulls && !["first", "last"].includes(entry.nulls)))) throw createDatabaseError({ code: "INVALID_ORDER", message: "Unsafe SQL order specification" });
         if (typeof entry === "string") {
             return `${this.#compileSelectable(entry)} ASC`;
         }
@@ -297,6 +308,10 @@ class SqlCompiler {
         );
 
         const offset = operation.offset ?? 0;
+        if (!Number.isSafeInteger(offset) || offset < 0 || offset > 1_000_000 ||
+            (effectiveLimit !== undefined && (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > 100_000))) {
+            throw createDatabaseError({ code: "INVALID_LIMIT", message: "SQL pagination must be bounded nonnegative integers" });
+        }
         if (effectiveLimit === undefined) {
             return offset > 0 ? ` OFFSET ${offset}` : "";
         }
@@ -310,32 +325,38 @@ class SqlCompiler {
     }
 
     #buildCreateIndex(operation: CreateIndexOperation): string {
+        if (!Array.isArray(operation.columns) || operation.columns.length < 1 || operation.columns.length > 32) throw createDatabaseError({ code: "INVALID_INDEX", message: "Invalid SQL index columns" });
         const ifNotExists = operation.ifNotExists && this.#dialect.supportsIfNotExistsIndex ? " IF NOT EXISTS" : "";
         const unique = operation.unique ? "UNIQUE " : "";
-        const using = operation.using ? ` USING ${operation.using}` : "";
+        if (operation.using && !/^(?:btree|hash|gin|gist|brin|spgist)$/i.test(operation.using)) {
+            throw createDatabaseError({ code: "INVALID_INDEX_METHOD", message: "Unsafe SQL index method" });
+        }
+        if (operation.using && this.#dialect.kind === "sqlite") throw createDatabaseError({ code: "UNSUPPORTED_INDEX_METHOD", message: "SQLite does not support USING on CREATE INDEX" });
+        const using = operation.using ? ` USING ${operation.using.toUpperCase()}` : "";
         const columns = operation.columns.map((column) => this.#compileSelectable(column)).join(", ");
-        return `CREATE ${unique}INDEX${ifNotExists} ${this.#quote(operation.name)} ON ${this.#quote(operation.table)}${using} (${columns})`;
+        const target = `CREATE ${unique}INDEX${ifNotExists} ${this.#quote(operation.name)} ON ${this.#quote(operation.table)}`;
+        return this.#dialect.kind === "mysql" ? `${target} (${columns})${using}` : `${target}${using} (${columns})`;
     }
 
     #buildDropIndex(operation: DropIndexOperation): string {
-        const ifExists = operation.ifExists ? " IF EXISTS" : "";
-        if (operation.table) {
-            return `DROP INDEX${ifExists} ${this.#quote(operation.name)} ON ${this.#quote(operation.table)}`;
+        if (this.#dialect.kind === "mysql") {
+            if (!operation.table || operation.ifExists) throw createDatabaseError({ code: "UNSUPPORTED_DROP_INDEX", message: "MySQL DROP INDEX requires a table and does not support IF EXISTS" });
+            return `DROP INDEX ${this.#quote(operation.name)} ON ${this.#quote(operation.table)}`;
         }
-
-        return `DROP INDEX${ifExists} ${this.#quote(operation.name)}`;
+        return `DROP INDEX${operation.ifExists ? " IF EXISTS" : ""} ${this.#quote(operation.name)}`;
     }
 
     #buildColumn(column: ColumnDefinition): string {
         const type = this.#buildColumnType(column);
         const parts = [`${this.#quote(column.name)} ${type}`];
 
-        if (column.autoIncrement) {
-            parts.push(this.#dialect.autoIncrementKeyword);
-        }
-
-        if (column.primary) {
-            parts.push("PRIMARY KEY");
+        if (column.autoIncrement && !["integer", "number", "bigint"].includes(column.type)) throw createDatabaseError({ code: "INVALID_AUTOINCREMENT", message: "Auto-increment requires an integral column" });
+        if (column.autoIncrement && this.#dialect.kind === "sqlite") {
+            if (!column.primary || !["integer", "number"].includes(column.type)) throw createDatabaseError({ code: "INVALID_AUTOINCREMENT", message: "SQLite AUTOINCREMENT requires INTEGER PRIMARY KEY" });
+            parts.push("PRIMARY KEY", this.#dialect.autoIncrementKeyword);
+        } else {
+            if (column.autoIncrement) parts.push(this.#dialect.autoIncrementKeyword);
+            if (column.primary) parts.push("PRIMARY KEY");
         }
 
         if (column.unique) {
@@ -352,10 +373,9 @@ class SqlCompiler {
 
         if (column.check !== undefined) {
             if (typeof column.check === "string") {
-                parts.push(`CHECK (${column.check})`);
-            } else {
-                parts.push(`CHECK (${this.#compileSelectable(column.check)})`);
+                throw createDatabaseError({ code: "UNSAFE_SQL_CHECK", message: "Raw SQL CHECK text is forbidden; use structured expressions" });
             }
+            parts.push(`CHECK (${this.#compileDefaultValue(column.check)})`);
         }
 
         if (column.foreign) {
@@ -376,6 +396,13 @@ class SqlCompiler {
     }
 
     #buildColumnType(column: ColumnDefinition): string {
+        const supported = new Set(["bigint", "binary", "blob", "boolean", "char", "date", "datetime", "decimal", "double", "float", "integer", "json", "number", "numeric", "smallint", "text", "time", "timestamp", "uuid", "varchar"]);
+        if (!supported.has(column.type) ||
+            (column.length !== undefined && (!Number.isSafeInteger(column.length) || column.length < 1 || column.length > 65535)) ||
+            (column.precision !== undefined && (!Number.isSafeInteger(column.precision) || column.precision < 1 || column.precision > 65)) ||
+            (column.scale !== undefined && (!Number.isSafeInteger(column.scale) || column.scale < 0 || column.scale > (column.precision ?? 10)))) {
+            throw createDatabaseError({ code: "INVALID_COLUMN_TYPE", message: "Invalid SQL column type or size" });
+        }
         switch (column.type) {
             case "varchar":
             case "char":
@@ -403,17 +430,22 @@ class SqlCompiler {
                 return "SET DEFAULT";
             case "noAction":
                 return "NO ACTION";
-            default:
+            case "cascade":
+            case "restrict":
                 return action.toUpperCase();
+            default:
+                throw createDatabaseError({ code: "INVALID_REFERENCE_ACTION", message: "Unsupported foreign-key action" });
         }
     }
 
     #compileWhere(where: WhereClause): string {
         if ("and" in where) {
+            if (!Array.isArray(where.and) || !where.and.length) throw createDatabaseError({ code: "INVALID_WHERE", message: "Empty AND clause" });
             return `(${where.and.map((entry) => this.#compileWhere(entry)).join(" AND ")})`;
         }
 
         if ("or" in where) {
+            if (!Array.isArray(where.or) || !where.or.length) throw createDatabaseError({ code: "INVALID_WHERE", message: "Empty OR clause" });
             return `(${where.or.map((entry) => this.#compileWhere(entry)).join(" OR ")})`;
         }
 
@@ -442,9 +474,11 @@ class SqlCompiler {
 
         switch (predicate.operator) {
             case "between":
+                if (predicate.from === undefined || predicate.to === undefined) throw createDatabaseError({ code: "INVALID_WHERE", message: "BETWEEN requires bounds" });
                 return `${field} BETWEEN ${this.#compileValue(predicate.from)} AND ${this.#compileValue(predicate.to)}`;
             case "in":
             case "notIn":
+                if (!Array.isArray(predicate.values) || predicate.values.length === 0 || predicate.values.length > 10000) throw createDatabaseError({ code: "INVALID_WHERE", message: "IN requires bounded values" });
                 return `${field} ${operator} (${(predicate.values ?? []).map((entry) => this.#compileValue(entry)).join(", ")})`;
             case "isNull":
             case "isNotNull":
@@ -459,6 +493,7 @@ class SqlCompiler {
                 }
                 return `${field} = ${predicate.operator.toUpperCase()} (${this.#buildSelect(predicate.query)})`;
             default:
+                if (!field || predicate.value === undefined) throw createDatabaseError({ code: "INVALID_WHERE", message: "WHERE requires field and value" });
                 return `${field} ${operator} ${this.#compileValue(predicate.value)}`;
         }
     }
@@ -490,12 +525,14 @@ class SqlCompiler {
             case "isNotNull":
                 return "IS NOT NULL";
             default:
-                return operator.toUpperCase();
+                throw createDatabaseError({ code: "INVALID_OPERATOR", message: "Unsupported SQL comparison operator" });
         }
     }
 
     #compileSelectable(input: string | QueryExpression): string {
         if (typeof input === "string") {
+            if (input === "*") return "*";
+            if (/^[A-Za-z_][A-Za-z0-9_]*\.\*$/.test(input)) return `${this.#quote(input.slice(0, -2))}.*`;
             return this.#quote(input);
         }
 
@@ -511,7 +548,7 @@ class SqlCompiler {
             case "value":
                 return this.#compileValue(input.value);
             case "function": {
-                const functionName = this.#dialect.functions[input.name] ?? input.name;
+                const functionName = this.#safeFunction(input.name);
                 const args = (input.args ?? []).map((entry) => this.#compileSelectable(entry)).join(", ");
                 return `${functionName}(${args})`;
             }
@@ -542,7 +579,7 @@ class SqlCompiler {
                 case "value":
                     return this.#compileDefaultValue(expression.value);
                 case "function": {
-                    const functionName = this.#dialect.functions[expression.name] ?? expression.name;
+                    const functionName = this.#safeFunction(expression.name);
                     const argsList = expression.args ?? [];
 
                     if (
@@ -602,6 +639,14 @@ class SqlCompiler {
         });
     }
 
+    #safeFunction(name: DatabaseFunctionName): string {
+        const valid = new Set(["ABS", "AVG", "COALESCE", "CONCAT", "COUNT", "CURRENT_DATE", "CURRENT_TIMESTAMP", "DAY", "DATE_ADD", "DATE_DIFF", "LEN", "LOWER", "LTRIM", "MAX", "MIN", "MONTH", "NOW", "ROUND", "RTRIM", "SUBSTRING", "SUM", "TRIM", "UPPER", "YEAR"]);
+        if (!valid.has(name)) throw createDatabaseError({ code: "INVALID_FUNCTION", message: "Unsupported SQL function" });
+        const resolved = this.#dialect.functions[name] ?? name;
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(resolved)) throw createDatabaseError({ code: "INVALID_FUNCTION", message: "Unsafe dialect SQL function" });
+        return resolved;
+    }
+
     #mapBinaryOperator(operator: string): string {
         switch (operator) {
             case "add":
@@ -629,6 +674,10 @@ class SqlCompiler {
     }
 
     #quote(identifier: string): string {
+        if (typeof identifier !== "string" || identifier.length > 255 || !/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/.test(identifier) ||
+            identifier.split(".").some(segment => segment.length > 128 || ["__proto__", "constructor", "prototype"].includes(segment.toLowerCase()))) {
+            throw createDatabaseError({ code: "INVALID_IDENTIFIER", message: "Unsafe SQL identifier" });
+        }
         return identifier.split(".").map((segment) => this.#dialect.quoteIdentifier(segment)).join(".");
     }
 
@@ -671,7 +720,8 @@ const normalizeResult = (
         operation: operation.op,
         rows: result.rows,
         rowCount: result.rowCount ?? result.rows?.length,
-        affectedCount: result.affectedRows ?? result.changes,
+        affectedCount: result.affectedRows ?? result.changes ??
+            (["insert", "update", "delete"].includes(operation.op) ? result.rowCount : undefined),
         insertedIds: operation.op === "insert"
             ? (result.insertId !== undefined
                 ? [result.insertId]

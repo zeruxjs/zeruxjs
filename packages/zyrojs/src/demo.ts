@@ -1,23 +1,12 @@
-import { h, render, useState, useEffect } from "./index.js";
-
-/**
- * @title Demo Component
- * @description A simple counter component demonstrating ZyroJS.
- */
-function Counter() {
-    const [count, setCount] = useState(0);
-
-    useEffect(() => {
-        console.log("Count changed to:", count());
-    });
-
-    return h("div", { class: "counter" },
-        h("h1", null, "ZyroJS Counter"),
-        h("p", null, "Count: ", count()),
-        h("button", { onclick: () => setCount(count() + 1) }, "Increment"),
-        h("button", { onclick: () => setCount(count() - 1) }, "Decrement")
-    );
+import { h, render, signal, unmount } from './index.js';
+/** Standalone browser example. Invoke mountCounter after the DOM is available. */
+export function mountCounter(container: HTMLElement): () => void {
+  const count = signal(0);
+  render(h('div', { className: 'counter' },
+    h('h1', null, 'ZyroJS Counter'),
+    h('p', null, 'Count: ', () => count.value),
+    h('button', { onClick: () => { count.value++; } }, 'Increment'),
+    h('button', { onClick: () => { count.value--; } }, 'Decrement')
+  ), container);
+  return () => unmount(container);
 }
-
-// In a real app, you would do:
-// render(h(Counter, null), document.getElementById("app")!);

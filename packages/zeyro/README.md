@@ -60,3 +60,18 @@ Timeouts prevent the runner from waiting forever but cannot forcibly cancel an a
 npm run build
 node --test test/*.test.mjs
 ```
+
+## Section 79 test-runner safeguards
+
+- `--config` accepts a size-limited JSON file; a relative `root` in that file
+  resolves from the file's directory, not the caller's working directory.
+- CLI flags require values and numeric timeouts are bounded to ten minutes.
+- Discovery ignores symlink entries, `.git`, `node_modules` and `dist`.
+- Zero matching files, zero registered test cases and `--match` selecting no
+  runnable test cases now fail with exit code `2` instead of reporting a green run.
+- `--bail` executes `afterAll` for suites already started; cleanup hook failures
+  remain visible as test failures. Timeouts bound reporting but cannot forcibly
+  cancel arbitrary JavaScript async operations.
+
+Verify with `npm run build && node --test test/*.test.mjs`. No browser/runtime
+certification is inferred from source-only tests.

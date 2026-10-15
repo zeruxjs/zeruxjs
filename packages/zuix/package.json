@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test:smoke": "npm run build && node tests/smoke.mjs"
+    "test:smoke": "npm run build && node tests/smoke.mjs",
+    "test": "npm run build && node --test tests/*.mjs"
   },
   "exports": {
     ".": {

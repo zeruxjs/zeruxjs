@@ -79,9 +79,15 @@ export function createFileManager(options: StorageManagerOptions): StorageManage
     async copy(from:FileAddress,to:FileAddress,opts:PutFileOptions={}){
       validatePut(opts);const src=resolve(from),dst=resolve(to);if(dst.connection.readonly)throw new Error('Storage is read-only');
       const info=await manager.stat(from);if(!info)throw Object.assign(new Error('File not found'),{code:'ENOENT'});
+      // Native storage-side COPY must obey the same destination policies as
+      // PUT, even when no data is streamed through the manager.
+      const kind=opts.contentType??info.contentType;
+      if(dst.connection.allowedTypes?.length && !dst.connection.allowedTypes.some(pattern=>pattern.endsWith('/*')?kind.startsWith(pattern.slice(0,-1)):kind===pattern))throw new Error('Content type not allowed');
+      const max=Math.min(opts.maxBytes??Number.MAX_SAFE_INTEGER,dst.connection.maxBytes??Number.MAX_SAFE_INTEGER);
+      if(!Number.isSafeInteger(max)||max<1||info.size>max)throw new RangeError('File size exceeds limit');
       // Streaming fallback across different drivers; never materializes the full object.
       if(src.name===dst.name && src.connection.driver.copy){const result=await src.connection.driver.copy(src.address,dst.address,opts);invalidate(dst.address);return result;}
-      const stream=await manager.read(from);return manager.put(to,stream,{contentType:info.contentType,visibility:info.visibility,cacheControl:info.cacheControl,metadata:info.metadata,...opts});
+      const stream=await manager.read(from);return manager.put(to,stream,{contentType:info.contentType,visibility:info.visibility,cacheControl:info.cacheControl,metadata:info.metadata,...opts,maxBytes:max});
     },
     async signedUrl(method,address,seconds,opts){const {connection,address:a}=resolve(address);if(!Number.isSafeInteger(seconds)||seconds<1||seconds>604800)throw new RangeError('Invalid signing lifetime');if(!connection.driver.signedUrl)throw new Error('Signed URL unsupported by storage');return connection.driver.signedUrl(method,a,seconds,opts);},
     publicUrl(address){const {connection,address:a}=resolve(address);return connection.driver.publicUrl?.(a);},

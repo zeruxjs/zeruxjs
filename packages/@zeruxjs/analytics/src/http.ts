@@ -1,6 +1,7 @@
 import {timingSafeEqual} from 'node:crypto';
 import type {AnalyticsManager} from './manager.js';
 import type {AnalyticsEventInput} from './types.js';
+import {validateEvent} from './validation.js';
 import {createRequestId, requestUtcDay, validRequestId} from './request-id.js';
 import type {RequestIdStore} from './request-id.js';
 export interface CollectorOptions {
@@ -28,6 +29,12 @@ export interface CollectorOptions {
   storageTimeoutMs?:number;
   /** Prevent indefinitely pending database operations accumulating unboundedly. */
   maxPendingEvents?:number;
+  /** Hard tenant binding for public origins; supplied browser site may not override mapping. */
+  siteByOrigin?:Record<string,string>;
+  /** When true, unknown-consent browser events are ignored without writing. */
+  requireBrowserConsent?:boolean;
+  /** Optional conservative known crawler, prefetch and link preview filtering for browser events. */
+  botPolicy?:'allow'|'drop-known';
 }
 const json=(status:number,error:string,cors:Record<string,string>={})=>new Response(JSON.stringify({error}),{status,headers:{...cors,'content-type':'application/json','cache-control':'no-store'}});
 function sameSecret(a:string,b:string){const aa=Buffer.from(a),bb=Buffer.from(b);return aa.length===bb.length&&timingSafeEqual(aa,bb);}
@@ -73,6 +80,12 @@ export function createAnalyticsCollector(options:CollectorOptions){
     !Number.isSafeInteger(timeoutMs)||timeoutMs<10||timeoutMs>10_000||!Number.isSafeInteger(maxPending)||maxPending<1||maxPending>1000)throw new RangeError('Invalid collection limits');
   const origins=new Set((options.allowedOrigins??[]).map(value=>{const url=new URL(value);if(!['https:','http:'].includes(url.protocol)||url.pathname!=='/'||url.search||url.hash||url.username||url.password)return 'invalid';return url.origin;}));
   if(origins.has('invalid'))throw new TypeError('Invalid allowed origin');
+  const siteByOrigin=new Map<string,string>();
+  for(const [origin,site] of Object.entries(options.siteByOrigin??{})){
+    if(!origins.has(origin)||typeof site!=='string'||!site||site.length>200||/[\x00-\x1f]/.test(site))throw new TypeError('Invalid analytics origin-to-site mapping');
+    siteByOrigin.set(origin,site);
+  }
+  if(options.botPolicy!==undefined&&!['allow','drop-known'].includes(options.botPolicy))throw new TypeError('Invalid bot policy');
   const windows=new Map<string,{minute:number,count:number}>();
   let pending=0,activeReads=0;
   async function track(input:AnalyticsEventInput,context:{requestId:string;utcDay:string;origin?:string}):Promise<void>{
@@ -92,6 +105,11 @@ export function createAnalyticsCollector(options:CollectorOptions){
     const token=request.headers.get('authorization')?.replace(/^Bearer /i,'');
     if(!allowed&&(!options.serverToken||!token||!sameSecret(token,options.serverToken)))return json(403,'Collector authorization required',cors);
     // Browser origins enable collection, not user identity or administrative access.
+    if(allowed&&options.botPolicy==='drop-known'){
+      const agent=request.headers.get('user-agent')??'';
+      const purpose=(request.headers.get('sec-purpose')??request.headers.get('purpose')??'').toLowerCase();
+      if(/(?:bot|crawler|spider|headless|bingpreview|google-other)/i.test(agent)||/(?:prefetch|prerender)/.test(purpose))return new Response(null,{status:204,headers:{...cors,'cache-control':'no-store'}});
+    }
     const key=allowed?`origin:${origin}`:'server';const minute=Math.floor(Date.now()/60_000);
     if(windows.size>1024)for(const [k,v] of windows)if(v.minute!==minute)windows.delete(k);
     const window=windows.get(key);if(window&&window.minute===minute&&window.count>=rate)return json(429,'Collector rate exceeded',cors);
@@ -107,10 +125,15 @@ export function createAnalyticsCollector(options:CollectorOptions){
       const input=data as AnalyticsEventInput;
       // Public web endpoint cannot impersonate email or server-side event sources.
       if(allowed&&input.source&&input.source!=='web')return json(403,'Invalid client event source',cors);
+      const boundSite=allowed?siteByOrigin.get(origin!):undefined;
+      if(boundSite!==undefined&&input.site!==undefined&&input.site!==boundSite)return json(403,'Site does not match origin',cors);
+      if(input.consent==='denied'||(allowed&&options.requireBrowserConsent&&input.consent!=='granted'))return new Response(null,{status:204,headers:{...cors,'cache-control':'no-store'}});
       let id=input.requestId;
       if(id!==undefined&&!validRequestId(id))return json(422,'Invalid request ID',cors);
       if(options.requireRequestId&&!id)return json(422,'Request ID required',cors);
       const day=requestUtcDay();
+      try{validateEvent({...input,source:allowed?'web':input.source??'server',...(boundSite?{site:boundSite}:{}),...(id?{requestId:id,requestUtcDay:day}:{})});}
+      catch{return json(422,'Invalid event data',cors);}
       try{
         if(options.requestIdStore){
           if(id){if(!await options.requestIdStore.reserve(day,id))return json(409,'Duplicate request ID',cors);}
@@ -120,7 +143,7 @@ export function createAnalyticsCollector(options:CollectorOptions){
       if(id&&!options.requestIdStore)return json(503,'Request ID reservation not configured',cors);
       // Storage is best-effort. Delivery of the identifier never claims storage durability.
       const context={requestId:id??'',utcDay:day,origin:origin??undefined};
-      await track({...input,source:allowed?'web':input.source??'server',...(id?{requestId:id,requestUtcDay:day}:{})},context);
+      await track({...input,source:allowed?'web':input.source??'server',...(boundSite?{site:boundSite}:{}),...(id?{requestId:id,requestUtcDay:day}:{})},context);
       const headers:Record<string,string>={...cors,'cache-control':'no-store',...(id?{'x-zerux-request-id':id,'x-zerux-request-day':day}:{})};
       if(allowed)headers['access-control-expose-headers']='x-zerux-request-id, x-zerux-request-day';
       return new Response(null,{status:204,headers});

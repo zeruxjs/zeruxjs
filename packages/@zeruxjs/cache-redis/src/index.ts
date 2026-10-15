@@ -31,6 +31,6 @@ export const createCacheHelper: CacheHelperFactory = async (rawOptions) => {
 };
 export { RedisCacheHelper, createRedisCacheHelper } from "./helper.js";
 export type { RedisCacheClient, RedisCacheHelperOptions } from "./types.js";
-export { adaptIORedis, createIORedisCacheHelper, createBullMQRedisOptions } from "./ioredis.js";
-export type { IORedisCompatibleClient, RedisConnectionSettings } from "./ioredis.js";
+export { adaptIORedis, createIORedisCacheHelper, createBullMQRedisOptions, createBullMQRedisClusterConnections } from "./ioredis.js";
+export type { IORedisCompatibleClient, RedisConnectionSettings, RedisClusterSettings, BullMQClusterClient, BullMQClusterConstructor } from "./ioredis.js";
 export default createCacheHelper;

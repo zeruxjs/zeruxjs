@@ -36,6 +36,8 @@ export interface RollingAppOptions extends Omit<SupervisorOptions, 'port' | 'onE
   connections: Pick<BackendConnections, 'waitForIdle'>;
   /** Maximum time to let old HTTP requests and WebSockets finish after cutover. */
   drainTimeoutMs?: number;
+  /** Number of independent health checks required before publishing a replacement. */
+  preCutoverChecks?: number;
   /** Number of post-cutover health probes before retiring the old process. */
   verificationChecks?: number;
   verificationIntervalMs?: number;
@@ -66,10 +68,11 @@ export async function launchRollingApplication(argv: readonly string[], options:
   if (ports.length < 2) throw new RangeError('Rolling deployments need at least two distinct ports');
   const drainTimeoutMs = bounded(options.drainTimeoutMs, 10_000, 0, 300_000, 'drainTimeoutMs');
   const verificationChecks = bounded(options.verificationChecks, 1, 1, 20, 'verificationChecks');
+  const preCutoverChecks = bounded(options.preCutoverChecks, 1, 1, 20, 'preCutoverChecks');
   const verificationIntervalMs = bounded(options.verificationIntervalMs, 100, 1, 30_000, 'verificationIntervalMs');
   validateHealthCheck(options.health);
   const { store, hostname, connections, onStatus, onSpawn, onLease, force, ports: _ports, drainTimeoutMs: _drain,
-    verificationChecks: _checks, verificationIntervalMs: _interval, ...supervisor } = options;
+    verificationChecks: _checks, preCutoverChecks: _preChecks, verificationIntervalMs: _interval, ...supervisor } = options;
   const launch = (port: number) => launchSupervisedCommand(argv, {
     ...supervisor, port, forwardSignals: false,
     onSpawn: child => onSpawn?.(child, port),
@@ -120,6 +123,15 @@ export async function launchRollingApplication(argv: readonly string[], options:
         candidate = await launch(nextPort);
         if (stopping) throw new Error('Deployment cancelled by shutdown');
         if (!old.running) throw new Error('Current application exited before handover');
+        // Readiness on launch is not sufficient evidence for cutover: run a
+        // fresh bounded health gate while the old route still serves traffic.
+        for (let i = 0; i < preCutoverChecks; i++) {
+          if (i) await delay(verificationIntervalMs);
+          if (stopping || !candidate.running || !old.running || !(await probeApplicationHealth(nextPort, options.health))) {
+            throw new Error('Replacement became unhealthy before traffic cutover');
+          }
+        }
+        if (stopping || !old.running) throw new Error('Deployment cancelled before handover');
         if (!lease.switchBackends([{ port: nextPort }])) throw new Error('Route lease was superseded');
         switched = true;
         // The old process remains alive until the replacement survives the

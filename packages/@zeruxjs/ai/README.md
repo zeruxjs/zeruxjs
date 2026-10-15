@@ -21,3 +21,5 @@ const usage = provider.status(); // {active,queued}
 - Only HTTPS or loopback HTTP base URLs are accepted. Redirects are rejected so bearer credentials are not forwarded to another host. Credentials must remain server-side.
 
 The package does not provide OpenAI Responses API, gRPC, image/audio generation or a complete provider-specific SDK; that requires dedicated adapters.
+
+Section 80: `withFallback().stream()` now falls back for **pre-output** failures even if the primary has no native stream, without retrying aborted requests. It cannot safely switch a model once output has been yielded. Provider endpoints, pricing and credentials are owned by the application.

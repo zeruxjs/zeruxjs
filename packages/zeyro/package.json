@@ -22,5 +22,11 @@
   "license": "MIT",
   "bin": {
     "zeyro": "./dist/bin/cli.js"
-  }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ]
 }

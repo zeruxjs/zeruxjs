@@ -78,7 +78,7 @@ const mapOperator = (operator: ComparisonOperator, value: unknown) => {
         case "isNotNull":
             return { $ne: null };
         default:
-            return value;
+            throw createDatabaseError({ code: "INVALID_WHERE", message: "Unsupported Mongo comparison operator" });
     }
 };
 

@@ -8,7 +8,7 @@ export function serializeCookie(name: string, value: string, options: CookieOpti
     if (sameSite === "None" && !options.secure) throw new Error("SameSite=None requires Secure");
     const parts = [`${name}=${encodeURIComponent(value)}`];
     const path = options.path ?? "/";
-    if (!path.startsWith("/") || /[\r\n;]/.test(path)) throw new Error("Invalid cookie path");
+    if (!path.startsWith("/") || /[\u0000-\u001f\u007f;]/.test(path)) throw new Error("Invalid cookie path");
     parts.push(`Path=${path}`);
     if (options.domain) {
         if (!/^(?!-)[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(options.domain)) throw new Error("Invalid cookie domain");

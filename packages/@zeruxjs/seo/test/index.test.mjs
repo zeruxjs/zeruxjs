@@ -14,3 +14,7 @@ test('sitemap alternates and validation',()=>{
  assert.throws(()=>createSitemap([{loc:'javascript:evil'}]),/HTTP/);
  assert.throws(()=>createRobotsTxt({disallow:['/a\nb']}),/line breaks/);
 });
+test('runtime sitemap enums cannot be bypassed with untyped input',()=>{
+ assert.throws(()=>createSitemap([{loc:'https://example.com/',changefreq:'</changefreq><script>bad</script>'}]),/Invalid sitemap change frequency/);
+ assert.match(createSitemap([{loc:'https://example.com/',changefreq:'monthly'}]),/<changefreq>monthly<\/changefreq>/);
+});

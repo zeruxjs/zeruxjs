@@ -140,7 +140,7 @@ const executeWithDb = async (
             getDatabase(options, operation.name);
             return normalizeResult(operation, context, { ok: true });
         case "dropDb":
-            return normalizeResult(operation, context, await getDatabase(options, operation.name).dropDatabase?.() ?? false);
+            return normalizeResult(operation, context, await requireMethod(getDatabase(options, operation.name).dropDatabase, "dropDatabase").call(getDatabase(options, operation.name)));
         case "switchDB":
             getDatabase(options, operation.name);
             return normalizeResult(operation, context, { ok: true, database: operation.name });
@@ -154,8 +154,10 @@ const executeWithDb = async (
             }
             const collection = db.collection(operation.table);
             for (const index of operation.indexes ?? []) {
+                if (index.columns.some(column => typeof column !== "string")) throw createDatabaseError({ code: "INVALID_INDEX", message: "Mongo indexes require plain named columns" });
+                index.columns.forEach(column => assertSafeField(column as string));
                 await requireMethod(collection.createIndex, "createIndex").call(collection,
-                    Object.fromEntries(index.columns.map((column) => [typeof column === "string" ? column : "value", 1 as const])),
+                    Object.fromEntries(index.columns.map((column) => [column, 1 as const])),
                     {
                         unique: index.unique,
                         name: index.name
@@ -169,16 +171,16 @@ const executeWithDb = async (
             return normalizeResult(operation, context, await requireMethod(collection.drop, "drop").call(collection));
         }
         case "alterTable":
-            return normalizeResult(operation, context, {
-                ok: true,
-                warnings: ["Mongo alterTable is metadata-light and may require manual migrations"]
-            });
+            throw createDatabaseError({ code: "UNSUPPORTED_OPERATION", message: "Mongo alterTable is not supported; perform an explicit schema migration" });
         case "turcunateTable":
-            return normalizeResult(operation, context, await getDatabase(options, databaseName).collection(operation.table).deleteMany?.({}) ?? { deletedCount: 0 });
+            const collection = getDatabase(options, databaseName).collection(operation.table);
+            return normalizeResult(operation, context, await requireMethod(collection.deleteMany, "deleteMany").call(collection, {}));
         case "createIndex": {
             const collection = getDatabase(options, databaseName).collection(operation.table);
+            if (operation.columns.some(column => typeof column !== "string")) throw createDatabaseError({ code: "INVALID_INDEX", message: "Mongo indexes require plain named columns" });
+            operation.columns.forEach(column => assertSafeField(column as string));
             const result = await requireMethod(collection.createIndex, "createIndex").call(collection,
-                Object.fromEntries(operation.columns.map((column) => [typeof column === "string" ? column : "value", 1 as const])),
+                Object.fromEntries(operation.columns.map((column) => [column, 1 as const])),
                 {
                     unique: operation.unique,
                     name: operation.name

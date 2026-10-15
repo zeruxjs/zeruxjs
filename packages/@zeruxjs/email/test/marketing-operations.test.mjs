@@ -66,7 +66,7 @@ test('campaign list uses a true lookahead cursor for exact page boundaries',asyn
 test('operator redrive requeues only previously enqueued pending records, never sent or uncertain',async()=>{
  const {db,close}=await database();try{
   const jobs=[],state=delivery();const service=createMarketingCampaignService({db,delivery:state,
-    queue:{async add(name,data,options){jobs.push({name,data,options});}},now:()=>1000});
+    queue:{async add(name,data,options){jobs.push({name,data,options});},async getJob(){return null;}},now:()=>1000});
   const code=await service.create({name:'Recovery',subject:'Hello',text:'Content',account:'main',
     recipients:['a@example.com','b@example.com','c@example.com']});
   assert.equal(jobs.length,3);

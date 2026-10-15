@@ -8,7 +8,7 @@ import { BackendConnections } from "./backend-connections.js";
 import { escapeHtml, formatUrl } from "./utils.js";
 import { ARROW_SVG, renderPage } from "./pages.js";
 import { parseAuthority, readHopCount, createForwardedHeaders, matchProxyRoute } from "./request-security.js";
-import { filterProxyHeaders } from "./proxy-headers.js";
+import { filterProxyHeaders, sanitizeForwardedRequestHeaders } from "./proxy-headers.js";
 import { ProxyResponseCache, cachedReadable } from './proxy-cache.js';
 import { ProxyAdmission } from './proxy-admission.js';
 import { ProxyTelemetry } from './proxy-telemetry.js';
@@ -241,8 +241,7 @@ export function createProxyServer(options: ProxyServerOptions): ProxyServer {
     res.once('finish', () => finishHttp(false));
     res.once('close', () => finishHttp(!res.writableFinished));
     const forwardedHeaders = buildForwardedHeaders(req, isTls);
-    const proxyReqHeaders = filterProxyHeaders(req.headers);
-    delete proxyReqHeaders["forwarded"];
+    const proxyReqHeaders = sanitizeForwardedRequestHeaders(filterProxyHeaders(req.headers));
     for (const [key, value] of Object.entries(forwardedHeaders)) {
       proxyReqHeaders[key] = value;
     }
@@ -255,7 +254,10 @@ export function createProxyServer(options: ProxyServerOptions): ProxyServer {
     }
 
     if (/^application\/grpc(?:\+|;|$)/i.test(String(req.headers["content-type"] ?? ""))) {
-      forwardGrpc(req, res, target.port, proxyReqHeaders as Record<string, string>);
+      forwardGrpc(req, res, target.port, proxyReqHeaders as Record<string, string>, {
+        success: () => backendPool.markSuccess(route.hostname, target.port, routeSignature),
+        failure: () => backendPool.markFailure(route.hostname, target.port, routeSignature),
+      });
       return;
     }
     let clientAborted = false;
@@ -330,8 +332,11 @@ export function createProxyServer(options: ProxyServerOptions): ProxyServer {
           clientAborted = true;
           req.unpipe(proxyReq);
           proxyReq.destroy();
-          res.writeHead(413, { 'Content-Type': 'text/plain', 'Connection': 'close' });
-          res.end('Request body too large');
+          // The upstream might already have started a response. HTTP forbids
+          // sending a second status line after headers; abort the partial
+          // response instead of writing an invalid 413 into a live stream.
+          if (res.headersSent) res.destroy();
+          else { res.writeHead(413, { 'Content-Type': 'text/plain', 'Connection': 'close' }); res.end('Request body too large'); }
           req.resume();
         }
       });
@@ -341,6 +346,19 @@ export function createProxyServer(options: ProxyServerOptions): ProxyServer {
 
   const handleUpgrade = (req: http.IncomingMessage, socket: net.Socket, head: Buffer) => {
     socket.on("error", () => socket.destroy());
+    // Only a WebSocket GET handshake may open an indefinite tunnel. Reject
+    // malformed/unknown upgrade protocols before reserving backend capacity.
+    const upgrade = req.headers.upgrade;
+    const key = req.headers['sec-websocket-key'];
+    const connection = req.headers.connection;
+    const validKey = typeof key === 'string' && /^[a-zA-Z0-9+/]{22}==$/.test(key) &&
+      Buffer.from(key, 'base64').length === 16;
+    if (req.method !== 'GET' || typeof upgrade !== 'string' || upgrade.toLowerCase() !== 'websocket' ||
+        typeof connection !== 'string' || !connection.split(',').some(token => token.trim().toLowerCase() === 'upgrade') ||
+        req.headers['sec-websocket-version'] !== '13' || !validKey) {
+      socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+      return;
+    }
 
     const hops = readHopCount(req.headers[PORTLESS_HOPS_HEADER]);
     if (hops === null || !parseAuthority(getRequestHost(req))) {
@@ -389,8 +407,7 @@ export function createProxyServer(options: ProxyServerOptions): ProxyServer {
     socket.once("close", releaseBackend);
 
     const forwardedHeaders = buildForwardedHeaders(req, isTls);
-    const proxyReqHeaders = filterProxyHeaders(req.headers, { preserveUpgrade: true });
-    delete proxyReqHeaders["forwarded"];
+    const proxyReqHeaders = sanitizeForwardedRequestHeaders(filterProxyHeaders(req.headers, { preserveUpgrade: true }));
     for (const [key, value] of Object.entries(forwardedHeaders)) {
       proxyReqHeaders[key] = value;
     }

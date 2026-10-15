@@ -153,6 +153,10 @@ export const remove = (operation: DeleteOperation) =>
     getActiveDatabaseManager().delete(operation);
 
 export { remove as delete };
+export { createTenantDatabaseFacade } from "./tenant.js";
+export type { TenantDatabase, TenantDatabaseOptions } from "./tenant.js";
+export { createDatabaseMigrationRunner } from "./migrations.js";
+export type { DatabaseMigration, MigrationRecord, MigrationJournal, ExclusiveMigrationTransaction, MigrationRunnerOptions } from "./migrations.js";
 export {
     createDatabaseError,
     configureDatabaseManager,

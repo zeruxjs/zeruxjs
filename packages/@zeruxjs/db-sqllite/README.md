@@ -15,3 +15,7 @@ Native SQLite requires Node.js 22.13+ for loading without an experimental startu
 The JSON-query adapter uses prepared statements, returns rows from `SELECT` and `RETURNING`, provides accurate change counts, and maps the project's truncate operation to SQLite `DELETE FROM`. `CREATE DATABASE`, `DROP DATABASE`, and `USE` are deliberately rejected (SQLite cannot perform these operations). For advanced SQL or transactions, obtain the native connection with `getNativeConnection()` and use native SQLite APIs. Transactions on synchronous drivers should not include `await` between BEGIN/COMMIT operations.
 
 Connection ownership: an injected `databaseInstance` is never closed by the connector; a database opened by the connector is closed by `disconnect()`.
+
+## Online backup and restoration
+
+`createSqliteConsistentBackup(db.getNativeConnection(), "/absolute/private/backup.sqlite")` requires the built-in Node `DatabaseSync`; it uses SQLite's live backup interface, validates integrity and refuses existing destination paths. Backups must be protected by filesystem permissions/encryption, rotation and separate storage. To restore, stop all writers, copy a **verified** snapshot to a new database location, and test before cutover; do not overwrite an opened SQLite database or directly copy an active WAL DB. See `test/section74-backup.test.mjs`.

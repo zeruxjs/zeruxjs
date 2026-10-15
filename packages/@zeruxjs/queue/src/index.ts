@@ -4,8 +4,8 @@ export {createQueueDashboard} from './dashboard.js';
 export type {QueueDashboardOptions} from './dashboard.js';
 export * from './delivery.js';
 export * from './scheduling.js';
-import {createQueueTaskScheduler} from './scheduling.js';
-import { createBullMQRedisOptions, type RedisConnectionSettings } from '@zeruxjs/cache-redis';
+import {createQueueTaskScheduler, type ScheduledTaskSpec, type TaskScheduleOptions} from './scheduling.js';
+import { createBullMQRedisOptions, createBullMQRedisClusterConnections, type RedisConnectionSettings, type BullMQClusterConstructor, type BullMQClusterClient } from '@zeruxjs/cache-redis';
 
 export type JobData = Record<string, unknown>;
 export type JobProcessor = (job: QueueJob, token?: string) => Promise<unknown> | unknown;
@@ -54,7 +54,7 @@ export interface QueueServiceConfig {
   /** Opt-in HTTP dashboard; requires administration.authorize and host session/CSRF callbacks. */
   dashboard?: QueueDashboardOptions;
 }
-export type QueueAdminAction='inspect'|'retry'|'pause-queue'|'resume-queue'|'pause-worker'|'resume-worker';
+export type QueueAdminAction='inspect'|'retry'|'pause-queue'|'resume-queue'|'pause-worker'|'resume-worker'|'schedule-inspect'|'schedule-create'|'schedule-remove';
 export interface QueueAdministrationPolicy {
   /** Fail closed on absent callback, denial or callback error. No permission caching. */
   authorize:(action:QueueAdminAction,queue:string,context:unknown)=>boolean|Promise<boolean>;
@@ -117,21 +117,54 @@ export interface QueueOperations {
   /** Local process control only; global queue pause is a separate action. */
   pauseWorker(queue:string,context:unknown):Promise<void>;
   resumeWorker(queue:string,context:unknown):Promise<void>;
+  /** Host-authorized scheduler operations; raw service.schedules() remains trusted code only. */
+  listSchedules(queue:string,options:{start?:number;limit?:number},context:unknown):Promise<Array<{id:string;name?:string;next?:number}>>;
+  scheduleOnce(queue:string,id:string,spec:ScheduledTaskSpec,when:Date|string|number,context:unknown,options?:TaskScheduleOptions):Promise<{id?:string}>;
+  scheduleEvery(queue:string,id:string,spec:ScheduledTaskSpec,intervalMs:number,context:unknown,options?:TaskScheduleOptions):Promise<{id?:string}>;
+  scheduleCron(queue:string,id:string,spec:ScheduledTaskSpec,pattern:string,context:unknown,options?:TaskScheduleOptions):Promise<{id?:string}>;
+  removeSchedule(queue:string,id:string,context:unknown):Promise<boolean>;
+  cancelOneOff(queue:string,id:string,context:unknown):Promise<boolean>;
 }
 const allowedStates=new Set<QueueJobState>(['waiting','active','delayed','failed','completed','paused','waiting-children','prioritized']);
-const validJobId=(id:string)=>typeof id==='string'&&id.length>0&&id.length<=256&&!/[:\r\n]/.test(id);
+const validJobId=(id:string)=>typeof id==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(id);
 const validPositive=(n:number,min:number,max:number,label:string)=>{if(!Number.isSafeInteger(n)||n<min||n>max)throw new RangeError(`Invalid ${label}`);return n;};
 const validName = (name:string, kind:string) => {
   if (typeof name !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(name)) throw new TypeError(`Invalid ${kind} name`);
   return name;
 };
 function validateJobOptions(options:QueueJobOptions | undefined) {
-  if (!options) return;
-  if (options.jobId !== undefined && (!options.jobId || /[:\r\n]/.test(options.jobId))) throw new TypeError('Invalid jobId');
-  for(const key of ['delay','priority','attempts'] as const) {
-    const n=options[key];if(n !== undefined && (!Number.isSafeInteger(n) || n < (key==='attempts'?1:0))) throw new TypeError(`Invalid ${key}`);
+  if (options === undefined) return;
+  if (!options || typeof options !== 'object' || Array.isArray(options)) throw new TypeError('Invalid job options');
+  if (options.jobId !== undefined && !validJobId(options.jobId)) throw new TypeError('Invalid jobId');
+  if (options.delay !== undefined) validPositive(options.delay,0,366*86_400_000,'job delay');
+  if (options.priority !== undefined) validPositive(options.priority,0,2_097_152,'job priority');
+  if (options.attempts !== undefined) validPositive(options.attempts,1,50,'job attempts');
+  if (options.backoff !== undefined) {
+    if (typeof options.backoff === 'number') validPositive(options.backoff,1,86_400_000,'job backoff');
+    else if (!options.backoff || !['fixed','exponential'].includes(options.backoff.type)) throw new TypeError('Invalid job backoff');
+    else validPositive(options.backoff.delay,1,86_400_000,'job backoff');
   }
-  if (options.repeat?.every !== undefined && (!Number.isSafeInteger(options.repeat.every) || options.repeat.every < 1000)) throw new TypeError('Repeat interval must be at least 1000ms');
+  for (const key of ['removeOnComplete','removeOnFail'] as const) {
+    const value=options[key];
+    if (value===undefined || typeof value==='boolean') continue;
+    if (typeof value==='number') validPositive(value,0,1_000_000, key);
+    else if (!value || typeof value!=='object' || Array.isArray(value)) throw new TypeError(`Invalid ${key}`);
+    else {
+      if (value.age!==undefined) validPositive(value.age,0,366*86_400,key+' age');
+      if (value.count!==undefined) validPositive(value.count,0,1_000_000,key+' count');
+    }
+  }
+  if (options.deduplication!==undefined) {
+    if (!options.deduplication || !validJobId(options.deduplication.id)) throw new TypeError('Invalid deduplication ID');
+    if(options.deduplication.ttl!==undefined)validPositive(options.deduplication.ttl,1,366*86_400_000,'deduplication TTL');
+  }
+  if (options.repeat!==undefined) {
+    const r=options.repeat;
+    if (!r || typeof r!=='object'||Array.isArray(r)) throw new TypeError('Invalid repeat options');
+    if (r.every!==undefined) validPositive(r.every,1000,366*86_400_000,'Repeat interval');
+    if (r.limit!==undefined) validPositive(r.limit,1,1_000_000,'repeat limit');
+    if (r.pattern!==undefined && (typeof r.pattern!=='string'||r.pattern.length>100||!([5,6].includes(r.pattern.trim().split(/\s+/).length))))throw new TypeError('Invalid repeat cron pattern');
+  }
 }
 const deadline = async <T>(promise:Promise<T>, ms:number, message:string):Promise<T> => {
   let timer:ReturnType<typeof setTimeout>|undefined;
@@ -140,10 +173,12 @@ const deadline = async <T>(promise:Promise<T>, ms:number, message:string):Promis
 };
 
 /** Create a managed BullMQ service. Inject a factory in unit tests; normally load real bullmq. */
-export async function createQueueService(config:QueueServiceConfig, injected?:BullMQFactory) {
+export async function createQueueService(config:QueueServiceConfig, injected?:BullMQFactory, injectedCluster?:BullMQClusterConstructor) {
   if (!config || !config.redis || !Array.isArray(config.queues) || !config.queues.length) throw new TypeError('Queue requires Redis settings and at least one named queue');
   const prefix = config.prefix ?? 'zerux';
-  validName(prefix, 'queue prefix');
+  if (config.redis.cluster) {
+    if (!/^\{[A-Za-z0-9][A-Za-z0-9_.-]{0,63}\}$/.test(prefix))throw new TypeError('Redis Cluster needs an explicit hash-tagged BullMQ prefix, e.g. {tenant-a}');
+  } else validName(prefix,'queue prefix');
   const queueDefs = config.queues.map(item=>typeof item==='string'? {name:item}:item);
   const defined=new Set<string>();
   for(const def of queueDefs) {validName(def.name,'queue');if(defined.has(def.name))throw new TypeError('Duplicate queue name');defined.add(def.name);validateJobOptions(def.defaultJobOptions);}
@@ -151,11 +186,24 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
     if(!defined.has(name))throw new TypeError(`Worker targets unknown queue ${name}`);
     const w=config.workers![name];if(typeof w.processor !== 'function')throw new TypeError('Worker processor must be a function');
     if(w.concurrency !== undefined && (!Number.isSafeInteger(w.concurrency)||w.concurrency<1||w.concurrency>1024))throw new TypeError('Worker concurrency must be 1..1024');
+    if(w.autorun!==undefined&&typeof w.autorun!=='boolean')throw new TypeError('Worker autorun must be boolean');
+    if(w.lockDuration!==undefined)validPositive(w.lockDuration,1000,600_000,'worker lock duration');
     if(w.limiter&&(!Number.isSafeInteger(w.limiter.max)||w.limiter.max<1||w.limiter.max>1_000_000||!Number.isSafeInteger(w.limiter.duration)||w.limiter.duration<1000||w.limiter.duration>86_400_000))throw new RangeError('Invalid Redis worker rate limit');
   }
-  const connection = createBullMQRedisOptions(config.redis);
+  // Validate host-controlled operational limits before allocating Cluster sockets.
+  if(config.shutdownGraceMs!==undefined)validPositive(config.shutdownGraceMs,1,300_000,'shutdown grace period');
+  if(config.readyTimeoutMs!==undefined)validPositive(config.readyTimeoutMs,1,120_000,'queue ready timeout');
+  if(config.administration?.maxPageSize!==undefined)validPositive(config.administration.maxPageSize,1,100,'administration.maxPageSize');
   const moduleName='bullmq';
   const bullmq=injected??await import(moduleName) as unknown as BullMQFactory;
+  let ownedCluster: {producer:BullMQClusterClient;worker:BullMQClusterClient}|undefined;
+  let connection: {producer:Record<string,unknown>|BullMQClusterClient;worker:Record<string,unknown>|BullMQClusterClient};
+  if (config.redis.cluster) {
+    const clusterModule='ioredis';
+    const Cluster=injectedCluster??(await import(clusterModule) as {default:{Cluster:BullMQClusterConstructor}}).default.Cluster;
+    ownedCluster=createBullMQRedisClusterConnections(config.redis,Cluster);
+    connection=ownedCluster;
+  } else connection=createBullMQRedisOptions(config.redis);
   const defaultJobOptions:QueueJobOptions={
     attempts:3,backoff:{type:'exponential',delay:1000},
     removeOnComplete:{age:86_400,count:10_000},removeOnFail:{age:604_800,count:10_000}
@@ -167,18 +215,22 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
   const ensureOpen=()=>{if(closed)throw new Error('Queue service is closed');};
   const getQueue=(name:string)=>{ensureOpen();const q=queues.get(name);if(!q)throw new Error(`Unknown queue: ${name}`);return q;};
   const policy=config.administration;
-  if(policy?.maxPageSize!==undefined)validPositive(policy.maxPageSize,1,100,'administration.maxPageSize');
   const authorize=async(action:QueueAdminAction,name:string,context:unknown)=>{
     getQueue(name);
     if(!policy?.authorize||await policy.authorize(action,name,context)!==true)throw new Error('Queue administrative operation forbidden');
   };
   const audit=async(action:QueueAdminAction,queue:string,success:boolean,jobId?:string)=>{
-    try{await policy?.onAudit?.({action,queue,success,at:new Date().toISOString(),...(jobId?{jobId}:{})});}
+    try{await policy?.onAudit?.({action,queue,success,at:new Date().toISOString(),...(jobId&&validJobId(jobId)?{jobId}:{})});}
     catch{/* Audit hook cannot cause a successful state transition to be retried. */}
   };
   const perform=async(action:QueueAdminAction,name:string,context:unknown,operation:()=>Promise<void>,id?:string)=>{
     await authorize(action,name,context);
     try{await operation();await audit(action,name,true,id);}
+    catch(error){await audit(action,name,false,id);throw error;}
+  };
+  const performResult=async<T>(action:QueueAdminAction,name:string,context:unknown,operation:()=>Promise<T>,id?:string):Promise<T>=>{
+    await authorize(action,name,context);
+    try{const result=await operation();await audit(action,name,true,id);return result;}
     catch(error){await audit(action,name,false,id);throw error;}
   };
   const operations:QueueOperations={
@@ -226,12 +278,21 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
     resumeWorker(name,context){return perform('resume-worker',name,context,async()=>{
       const worker=workers.get(name);if(!worker?.resume)throw new Error('No local worker for queue');
       await worker.resume();
-    });}
+    });},
+    listSchedules(name,options,context){return performResult('schedule-inspect',name,context,()=>{
+      return manager.schedules(name).list(options?.start??0,options?.limit??20);
+    });},
+    scheduleOnce(name,id,spec,when,context,options){return performResult('schedule-create',name,context,
+      async()=>{const job=await manager.schedules(name).once(id,spec,when,options);return {id:job.id};},id);},
+    scheduleEvery(name,id,spec,interval,context,options){return performResult('schedule-create',name,context,
+      async()=>{const job=await manager.schedules(name).every(id,spec,interval,options);return {id:job.id};},id);},
+    scheduleCron(name,id,spec,pattern,context,options){return performResult('schedule-create',name,context,
+      async()=>{const job=await manager.schedules(name).cron(id,spec,pattern,options);return {id:job.id};},id);},
+    removeSchedule(name,id,context){return performResult('schedule-remove',name,context,
+      ()=>manager.schedules(name).remove(id),id);},
+    cancelOneOff(name,id,context){return performResult('schedule-remove',name,context,
+      ()=>manager.schedules(name).cancelOnce(id),id);}
   };
-  if(config.dashboard){
-    if(!policy?.authorize)throw new TypeError('Queue dashboard requires administrative authorization');
-    createQueueDashboard({names:()=>[...queues.keys()],operations},config.dashboard);
-  }
   const manager={
     operations,
     routes:()=>config.dashboard?createQueueDashboard({names:()=>[...queues.keys()],operations},config.dashboard).routes():[],
@@ -290,12 +351,20 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
         for(const stream of [...eventStreams.values()].reverse()) {try{await deadline(stream.close(),Math.min(grace,5_000),'Queue events shutdown deadline');}catch(error){errors.push(error);}}
         for(const queue of [...queues.values()].reverse()) {try {await deadline(queue.close(),Math.min(grace,5_000),'Queue shutdown deadline');}catch(error){errors.push(error);}}
         workers.clear();eventStreams.clear();queues.clear();
+        if(ownedCluster)for(const cluster of [ownedCluster.worker,ownedCluster.producer]){
+          try{await deadline(cluster.quit(),Math.min(grace,5_000),'Redis Cluster close deadline');}
+          catch(error){errors.push(error);}
+        }
         if(errors.length)throw new AggregateError(errors,'Queue service shutdown failed');
       })();
       return closePromise;
     }
   };
   try {
+    if(config.dashboard){
+      if(!policy?.authorize)throw new TypeError('Queue dashboard requires administrative authorization');
+      createQueueDashboard({names:()=>[...queues.keys()],operations},config.dashboard);
+    }
     for(const def of queueDefs) {
       const q=new bullmq.Queue(def.name,{connection:connection.producer,prefix,defaultJobOptions:{...defaultJobOptions,...def.defaultJobOptions}});
       queues.set(def.name,q);

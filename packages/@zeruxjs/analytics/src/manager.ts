@@ -10,6 +10,8 @@ import {createNumericReconciliationJob} from './jobs.js';
 import type {NumericReconciliationJobOptions,NumericReconciliationJobDocument} from './jobs.js';
 import type {DocumentConnection,VersionedDocument} from './documents.js';
 import {createHash} from 'node:crypto';
+import {purgeAnalyticsEvents,validateRetentionQuery} from './retention.js';
+import type {AnalyticsRetentionQuery} from './retention.js';
 
 /** Analytics is best-effort telemetry: missing storage, invalid samples and DB failures never escape. */
 export function createAnalytics(config:AnalyticsConfig = {}){
@@ -22,7 +24,20 @@ export function createAnalytics(config:AnalyticsConfig = {}){
   };
   let table='analytics_events';let invalidTable=false;
   try{table=validateTableName(config.table??table);}catch{invalidTable=true;warn('invalid table configuration; analytics disabled');}
-  let enabled=config.enabled!==false&&!invalidTable;
+  let configurationValid=!invalidTable;
+  let enabled=config.enabled!==false&&configurationValid;
+  let schemas:AnalyticsConfig['eventSchemas'];
+  try{
+    if(config.eventSchemas!==undefined){
+      if(!config.eventSchemas||typeof config.eventSchemas!=='object'||Array.isArray(config.eventSchemas)||Object.keys(config.eventSchemas).length>100)throw new TypeError();
+      for(const [name,schema] of Object.entries(config.eventSchemas)){
+        if(!/^[A-Za-z][A-Za-z0-9_.:-]{0,95}$/.test(name)||!schema||typeof schema!=='object'||!schema.properties||Object.keys(schema.properties).length>40)throw new TypeError();
+        for(const [key,type] of Object.entries(schema.properties))if(!/^[A-Za-z][A-Za-z0-9_.:-]{0,95}$/.test(key)||!['string','number','boolean','null'].includes(type))throw new TypeError();
+      }
+      schemas=config.eventSchemas;
+    }
+  }catch{warn('invalid event schemas; collection disabled');configurationValid=false;enabled=false;}
+  if(config.webConsent!==undefined&&!['required','optional'].includes(config.webConsent)){warn('invalid web consent configuration; collection disabled');configurationValid=false;enabled=false;}
   // Numeric materialization is explicit. Never silently opt in every property.
   let numericFields:string[]=[];
   try{
@@ -55,7 +70,7 @@ export function createAnalytics(config:AnalyticsConfig = {}){
     get enabled(){return enabled;},
     /** Reports can retain sampled compatibility when no numeric materialization is configured. */
     supportsNumericField(field:string){return numericFields.includes(field);},
-    setEnabled(value:boolean){enabled=value===true;},
+    setEnabled(value:boolean){enabled=value===true&&configurationValid;},
     status(){return {enabled,configured:!!databaseName,connected:!!locate(),initialized,indexesReady,numericReady,numericIndexed,numericDropped,numericUniqueIndexReady,recorded,dropped,warnings:[...warnings]};},
     /** Optional explicit schema migration; failure returns false, never throws. May be retried. */
     async initialize():Promise<boolean>{
@@ -107,10 +122,10 @@ export function createAnalytics(config:AnalyticsConfig = {}){
             const base=`${table.slice(0,43)}_${suffix}`;
             indexesReady=true;
             for(const [kind,columns] of [
-              ['at',['occurred_at']],['event',['event_name','occurred_at']],['site',['site','occurred_at']]
+              ['id',['id']],['at',['occurred_at']],['event',['event_name','occurred_at']],['site',['site','occurred_at']]
             ] as const){
               try{
-                const response=await connection.createIndex({table,name:`${base}_${kind}`,columns:[...columns],ifNotExists:true});
+                const response=await connection.createIndex({table,name:`${base}_${kind}`,columns:[...columns],unique:kind==='id',ifNotExists:true});
                 if(!response?.ok&&!['1061','ER_DUP_KEYNAME'].includes(String(response?.error?.code??'')))indexesReady=false;
               }catch{indexesReady=false;}
             }
@@ -126,8 +141,19 @@ export function createAnalytics(config:AnalyticsConfig = {}){
       if(!enabled)return undefined;
       const connection=locate();if(!connection){dropped++;return undefined;}
       try{
+        if(input?.consent==='denied')return undefined;
         const filtered=config.filter?await config.filter(input):input;
-        if(filtered===null)return undefined;
+        if(filtered===null||filtered.consent==='denied')return undefined;
+        if((filtered.source??'server')==='web'&&config.webConsent==='required'&&filtered.consent!=='granted')return undefined;
+        if(schemas){
+          const schema=Object.hasOwn(schemas,filtered.name)?schemas[filtered.name]:undefined;
+          if(!schema)throw new TypeError('Unregistered event name');
+          for(const [key,value] of Object.entries(filtered.properties??{})){
+            const expected=Object.hasOwn(schema.properties,key)?schema.properties[key]:undefined;
+            if(!expected){if(!schema.allowAdditionalProperties)throw new TypeError('Unregistered event property');}
+            else if((value===null?'null':typeof value)!==expected)throw new TypeError('Event property type mismatch');
+          }
+        }
         const row=validateEvent(filtered);
         const result=await connection.insert({table,values:row as unknown as Record<string,string|number>});
         if(!succeeded(result)){warn('event storage unavailable; event skipped');dropped++;return undefined;}
@@ -196,6 +222,26 @@ export function createAnalytics(config:AnalyticsConfig = {}){
         if(!succeeded(response)){warn('analytics query unavailable');return [];}
         return Array.isArray(response.rows)?response.rows as AnalyticsRow[]:[];
       }catch{warn('analytics query unavailable or invalid');return [];}
+    },
+    /** Legacy compatibility: these are only counts in the most recent <=500 rows. */
+    async countsWithCoverage(query:AnalyticsSummaryQuery={}){
+      const limit=Math.min(query.limit??500,500);
+      const available=!!locate();
+      const rows=await manager.events({...query,limit});
+      const counts:Record<string,number>=Object.create(null) as Record<string,number>;
+      for(const row of rows)if(typeof row.event_name==='string'&&/^[a-zA-Z][a-zA-Z0-9_.:-]{0,95}$/.test(row.event_name))counts[row.event_name]=(counts[row.event_name]??0)+1;
+      return {counts,scanned:rows.length,limit,coverage:available?'sampled-page' as const:'unavailable' as const,possiblyTruncated:!available||rows.length===limit};
+    },
+    /** Trusted operator retention: explicit tenant, cutoff, page size and approval. */
+    async purgePage(query:AnalyticsRetentionQuery){
+      validateRetentionQuery(query);
+      const connection=locate();
+      if(!connection?.delete||!initialized)throw new Error('Retention requires an initialized database with delete support');
+      if(query.dryRun===false){
+        if(!config.approveRetention||!await config.approveRetention({site:query.site,before:query.before}))throw new Error('Retention approval denied');
+        if(numericFields.length&&!numericReady)throw new Error('Numeric facts unavailable; refusing unsafe partial retention');
+      }
+      return purgeAnalyticsEvents(connection,table,numericTable,query,{numericTableReady:numericReady&&numericFields.length>0});
     },
     async counts(query:AnalyticsSummaryQuery={}):Promise<Record<string,number>>{
       try{const rows=await manager.events({...query,limit:Math.min(query.limit??500,500)});const counts:Record<string,number>=Object.create(null) as Record<string,number>;

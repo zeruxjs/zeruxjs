@@ -2,7 +2,6 @@
   "name": "@zeruxjs/hooks",
   "version": "0.0.1-alpha.2",
   "description": "Request-scoped React-style hooks, context, and safe ZeruxJS path registry",
-  "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -25,7 +24,10 @@
     }
   },
   "files": [
-    "dist"
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
   ],
   "scripts": {
     "build": "tsc",

@@ -27,5 +27,11 @@
   },
   "keywords": [
     "File Change Watcher, Optize for multiple watcher together by sharing events"
+  ],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
   ]
 }

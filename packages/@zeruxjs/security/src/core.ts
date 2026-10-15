@@ -3,7 +3,10 @@ import path from "node:path";
 
 const unsafePathPattern = /(^|[\\/])\.\.(?:[\\/]|$)/;
 
-export const createNonce = (size = 16) => crypto.randomBytes(size).toString("base64");
+export const createNonce = (size = 16) => {
+    if (!Number.isSafeInteger(size) || size < 16 || size > 64) throw new RangeError("CSP nonce size must be 16–64 bytes");
+    return crypto.randomBytes(size).toString("base64");
+};
 
 export const escapeHtml = (value: unknown) =>
     String(value ?? "")
@@ -32,7 +35,7 @@ export const sanitizeIdentifier = (value: unknown, fallback = "item") => {
 
 export const sanitizeRelativeAssetPath = (value: unknown) => {
     const target = String(value ?? "").trim();
-    if (!target || path.isAbsolute(target) || /^[A-Za-z]:/.test(target) || target.startsWith("\\\\") || target.startsWith("//") || target.includes("\0") || unsafePathPattern.test(target)) {
+    if (!target || path.isAbsolute(target) || /^[A-Za-z]:/.test(target) || target.startsWith("\\\\") || target.startsWith("//") || target.includes("\0") || /[?#:]|%(?:2e|2f|5c)/i.test(target) || unsafePathPattern.test(target)) {
         return null;
     }
     return target.replace(/\\/g, "/");

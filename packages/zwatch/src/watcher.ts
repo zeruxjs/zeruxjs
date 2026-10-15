@@ -35,6 +35,7 @@ class SharedWatcher {
   private pendingScan: Promise<WatcherEvent[]> = Promise.resolve([]);
   private closed = false;
   private initialized = false;
+  private initialError: Error | undefined;
   readonly ready: Promise<void>;
 
   constructor(readonly root: string, private readonly key: string) {
@@ -45,6 +46,7 @@ class SharedWatcher {
     if (this.closed) throw new Error('Cannot subscribe to a closed watcher');
     const subscription = { callback, options };
     this.subscriptions.add(subscription);
+    if (this.initialError) queueMicrotask(() => {if (this.subscriptions.has(subscription)) {try {options.onError?.(this.initialError!);} catch { /* callback isolation */ }}});
     this.restartPolling();
     let disposed = false;
     return {
@@ -81,8 +83,8 @@ class SharedWatcher {
           this.native?.close();
           this.native = undefined; // periodic scans continue on unsupported platforms
         });
-      } catch (error) { this.report(error); }
-    } catch (error) { this.report(error); }
+      } catch (error) { this.initialError = error instanceof Error?error:new Error(String(error)); this.report(error); }
+    } catch (error) { this.initialError = error instanceof Error?error:new Error(String(error)); this.report(error); }
     this.restartPolling();
   }
 
@@ -143,6 +145,11 @@ class SharedWatcher {
 
 /** Share one native watcher per root while preserving per-subscriber ignore rules. */
 export function watchDirectory(rootDir: string, callback: WatcherCallback, options: WatchOptions = {}): WatchHandle {
+  if (typeof rootDir !== 'string' || !rootDir.trim()) throw new TypeError('Watcher root must be a directory path');
+  if (typeof callback !== 'function') throw new TypeError('Watcher callback is required');
+  for (const [label,value] of [['debounceMs', options.debounceMs],['pollIntervalMs',options.pollIntervalMs]] as const) {
+    if (value !== undefined && (!Number.isSafeInteger(value) || value < 0 || value > 600_000 || (label === 'pollIntervalMs' && value < 100))) throw new RangeError(`Invalid ${label}`);
+  }
   const root = path.resolve(rootDir);
   const key = process.platform === 'win32' ? root.toLowerCase() : root;
   let watcher = active.get(key);

@@ -23,6 +23,6 @@
     "Download and Upload Media, Making them enter only in non-executable area, Download Manager, expiry function and more."
   ],
   "dependencies": {
-    "@zeruxjs/files": "*"
+    "@zeruxjs/files": "0.0.1-alpha.2"
   }
 }

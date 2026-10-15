@@ -60,3 +60,14 @@ test('storage path traversal, symlinks, content types, invalid configuration rej
  await assert.rejects(m.stat(address('photo.jpg')),/Unsafe|symbolic|mismatch|file/i);
  await m.close();
 }));
+test('copy enforces destination content type and size policies before using native copy',async()=>{
+ let copied=0;
+ const source={storage:'one',bucket:'my-bucket',key:'item.txt'};
+ const dest={storage:'one',bucket:'my-bucket',key:'item-copy.txt'};
+ const driver={kind:'native',async stat(a){return a.key===source.key?{...a,size:12,contentType:'text/plain',modifiedAt:new Date().toISOString(),etag:'etag',visibility:'private',metadata:{}}:null},async copy(){copied++;throw new Error('must not copy')},async put(){throw Error('unused')},async read(){throw Error('unused')},async delete(){return false},async list(){return {items:[]}}};
+ const manager=createFileManager({stores:[{name:'one',driver,allowedTypes:['image/*'],maxBytes:10}]});
+ await assert.rejects(manager.copy(source,dest),/Content type not allowed/);
+ await assert.rejects(manager.copy(source,dest,{contentType:'image/png'}),/size exceeds limit/);
+ assert.equal(copied,0);
+ await manager.close();
+});

@@ -18,7 +18,10 @@ export interface ZuixPluginAPI {
   theme(path: string, fallback?: string): string;
 }
 export type ZuixPlugin = (api: ZuixPluginAPI) => void;
+import type {ZuixLimits} from './safety.js';
 export interface ZuixConfig {
+  /** Upper bounds for filesystem scanning and CSS token generation. */
+  limits?: ZuixLimits;
   content?: string[];
   exclude?: string[];
   output?: string;

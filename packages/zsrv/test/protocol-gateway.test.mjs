@@ -161,7 +161,9 @@ test('TLS ALPN HTTP/2 carries gRPC frames to an h2c upstream', { timeout: 8000 }
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', join(dir, 'key.pem'), '-out', join(dir, 'cert.pem'), '-days', '1', '-subj', '/CN=localhost'], { stdio: 'ignore', timeout: 5000 });
   const grpcBackend = http2.createServer();
-  grpcBackend.on('stream', stream => {
+  let grpcAuthority;
+  grpcBackend.on('stream', (stream, headers) => {
+    grpcAuthority = headers[':authority'];
     const data = [];
     stream.on('data', chunk => data.push(chunk));
     stream.on('end', () => {
@@ -187,6 +189,7 @@ test('TLS ALPN HTTP/2 carries gRPC frames to an h2c upstream', { timeout: 8000 }
     stream.on('error', reject); stream.end(frame);
   });
   assert.equal(output.status, 200);
+  assert.equal(grpcAuthority, 'my-app.localhost');
   assert.deepEqual(output.data, frame);
   assert.equal(output.trailers?.['grpc-status'], '0');
   assert.equal(server.capabilities.http2, true);

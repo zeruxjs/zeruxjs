@@ -76,3 +76,13 @@ test('reactive remote resource ignores stale responses and handles disposal', as
   await assert.rejects(resource.refresh(), /disposed/);
   void older;
 });
+
+test('cancelled stale resources reject even if a loader ignores AbortSignal',async()=>{
+  const {createRemoteResource}=await import('../dist/network/index.js');
+  const tasks=[];
+  const state=createRemoteResource(()=>new Promise(resolve=>tasks.push(resolve)));
+  const old=state.refresh();const next=state.refresh();
+  tasks[1]('new');assert.equal(await next,'new');
+  tasks[0]('stale');await assert.rejects(old,{name:'AbortError'});
+  assert.equal(state.data.value,'new');state.dispose();
+});

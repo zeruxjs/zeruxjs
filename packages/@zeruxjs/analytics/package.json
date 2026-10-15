@@ -1,9 +1,40 @@
 {
-  "name":"@zeruxjs/analytics","version":"0.0.1-alpha.2","private":true,"type":"module",
-  "description":"Database-backed application and email event analytics with Fetch endpoints",
-  "license":"(MIT OR Apache-2.0)",
-  "main":"./dist/index.js","types":"./dist/index.d.ts",
-  "exports":{".":{"types":"./dist/index.d.ts","default":"./dist/index.js"},"./http":{"types":"./dist/http.d.ts","default":"./dist/http.js"},"./email":{"types":"./dist/email-tracking.d.ts","default":"./dist/email-tracking.js"},"./browser":{"types":"./dist/browser.d.ts","default":"./dist/browser.js"}},
-  "scripts":{"build":"tsc","test":"npm run build && node --test test/*.test.mjs"},
-  "peerDependencies":{"@zeruxjs/db":"*"},"peerDependenciesMeta":{"@zeruxjs/db":{"optional":true}}
+  "name": "@zeruxjs/analytics",
+  "version": "0.0.1-alpha.2",
+  "private": true,
+  "type": "module",
+  "description": "Database-backed application and email event analytics with Fetch endpoints",
+  "license": "(MIT OR Apache-2.0)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./http": {
+      "types": "./dist/http.d.ts",
+      "default": "./dist/http.js"
+    },
+    "./email": {
+      "types": "./dist/email-tracking.d.ts",
+      "default": "./dist/email-tracking.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "peerDependencies": {
+    "@zeruxjs/db": "0.0.1-alpha.1"
+  },
+  "peerDependenciesMeta": {
+    "@zeruxjs/db": {
+      "optional": true
+    }
+  }
 }

@@ -43,3 +43,23 @@ test('OAuth PKCE flow validates redirect allowlist and state',()=>{
  assert.equal(auth.verifyOAuthState(request.state,'wrong'),false);
  assert.throws(()=>auth.createOAuthAuthorization({...params,redirectUri:'https://evil.example/callback'}));
 });
+
+test('tenant and site permissions refuse cross-scope access even for claimed superuser role',()=>{
+ const p={userId:'u1',tenantId:'tenant-A',permissions:['reports:read','email:read'],siteIds:['s1']};
+ assert.equal(auth.hasTenantPermission(p,{tenantId:'tenant-A',permission:'reports:read',siteId:'s1'}),true);
+ assert.equal(auth.hasTenantPermission({...p,role:'admin'},{tenantId:'tenant-B',permission:'reports:read'}),false);
+ assert.equal(auth.hasTenantPermission(p,{tenantId:'tenant-A',permission:'reports:export'}),false);
+ assert.equal(auth.hasTenantPermission(p,{tenantId:'tenant-A',permission:'reports:read',siteId:'s2'}),false);
+ assert.equal(auth.hasTenantPermission({...p,permissions:['*']},{tenantId:'tenant-A',permission:'reports:read'}),false);
+ assert.throws(()=>auth.requireTenantPermission(p,{tenantId:'tenant-B',permission:'email:read'}),/denied/);
+});
+test('auth configuration protects table mappings and respects organization 0',async()=>{
+ const before=auth.getAuthConfig();
+ assert.throws(()=>auth.setAuthConfig({db:{usersTable:'users; DROP TABLE users'}}),/Unsafe/);
+ assert.throws(()=>auth.setAuthConfig({db:{fields:{role:'x` OR 1=1'}}}),/Unsafe/);
+ assert.throws(()=>auth.setAuthConfig({session:{expiresIn:-2}}),/Invalid session duration/);
+ assert.deepEqual(auth.getAuthConfig(),before);
+ let operation;const adapter={select:async x=>{operation=x;return {rows:[{capabilities:'view'}]};}};
+ await auth.getCapabilities('editor',adapter,0);
+ assert.equal(operation.where.and[1].value,0);
+});

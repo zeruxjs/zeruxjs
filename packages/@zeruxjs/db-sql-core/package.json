@@ -20,6 +20,6 @@
     "test": "npm run build && node --test test/*.test.mjs"
   },
   "dependencies": {
-    "@zeruxjs/db": "*"
+    "@zeruxjs/db": "0.0.1-alpha.1"
   }
 }
