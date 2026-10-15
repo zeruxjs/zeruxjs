@@ -1,0 +1,23 @@
+{
+  "name": "zenix",
+  "version": "0.0.1-alpha.1",
+  "description": "Core of Zenix",
+  "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+  "bugs": {
+    "url": "https://github.com/zeruxjs/zeruxjs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "AI Funtion Provider to easily connect APIs and Front-Backend too"
+  ]
+}

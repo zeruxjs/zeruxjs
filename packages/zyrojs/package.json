@@ -1,0 +1,19 @@
+{
+  "name": "zyrojs",
+  "version": "0.0.1-alpha.2",
+  "description": "Zyro Library",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "bundle": "esbuild src/index.ts --bundle --outfile=dist/zyro.js --format=esm"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./dom": "./dist/dom/index.js",
+    "./network": "./dist/network/index.js"
+  },
+  "license": "MIT"
+}

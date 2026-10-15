@@ -1,0 +1,6 @@
+{
+  "name": "sample-multi-section-module",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.js"
+}

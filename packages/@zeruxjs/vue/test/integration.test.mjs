@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {createVueRef,mapVueRef,toVueReadable,bindVueRef} from '../dist/index.js';
+test('refs and derived refs notify and detach',()=>{const a=createVueRef(2);const b=mapVueRef(a,n=>n*2);let count=0;const stop=b.subscribe(()=>count++);a.value=3;assert.equal(b.value,6);assert.equal(count,1);b.stop();a.value=4;assert.equal(b.value,6);stop()});
+test('subscribe bridge stops',()=>{let notify;let stopped=false;const v=toVueReadable(fn=>{notify=fn;return()=>{stopped=true}},()=>1);notify(4);assert.equal(v.value,4);v.stop();notify(5);assert.equal(v.value,4);assert.equal(stopped,true)});

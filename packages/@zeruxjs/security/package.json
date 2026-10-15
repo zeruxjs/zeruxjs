@@ -1,0 +1,32 @@
+{
+  "name": "@zeruxjs/security",
+  "version": "0.0.1-alpha.1",
+  "description": "A security Plugin to secure application by auto CFSR, XSS and many other attacks, validate schema, escaping, sanitization, CROS, and much more",
+  "private": true,
+  "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+  "bugs": {
+    "url": "https://github.com/zeruxjs/zeruxjs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test test/*.test.cjs"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "keywords": [
+    "A security Plugin to secure application by auto CFSR, XSS and many other attacks, validate schema, escaping, sanitization, CROS, and much more"
+  ]
+}

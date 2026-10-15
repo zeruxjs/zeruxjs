@@ -1,0 +1,142 @@
+.sample-module {
+  display: grid;
+  gap: 18px;
+  font: 400 14px/1.6 "Inter", "Segoe UI", sans-serif;
+}
+
+.sample-hero,
+.sample-panel,
+.sample-card {
+  border: 1px solid rgba(120, 180, 255, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(30, 50, 80, 0.25), rgba(10, 15, 25, 0.35));
+  backdrop-filter: blur(6px);
+}
+
+.sample-hero,
+.sample-panel {
+  padding: 16px;
+}
+
+.sample-hero {
+  display: flex;
+  justify-content: space-between;
+}
+
+.sample-hero h2 {
+  font-size: 22px;
+}
+
+.sample-chip {
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(120, 180, 255, 0.12);
+  font-size: 15px;
+  height: 40px;
+}
+
+.sample-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.sample-card {
+  padding: 16px;
+  transition: 0.2s ease;
+}
+
+.sample-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(120, 180, 255, 0.5);
+}
+
+.sample-card strong {
+  font-size: 26px;
+  margin-top: 6px;
+  display: block;
+}
+
+.sample-layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.sample-panel pre {
+  background: rgba(5, 10, 20, 0.6);
+  padding: 12px;
+  border-radius: 8px;
+  overflow: auto;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+}
+
+.sample-route-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.sample-route-list li {
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(120, 180, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+}
+
+@media (max-width: 720px) {
+
+  .sample-hero,
+  .sample-route-list li {
+    flex-direction: column;
+  }
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  font-size: 13px;
+}
+
+.kv span {
+  color: rgba(200, 220, 255, 0.7);
+}
+
+.kv b {
+  font-weight: 600;
+  text-align: right;
+}
+
+.bar {
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #60a5fa);
+  transition: width 0.3s ease;
+}
+
+.proc {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.proc th,
+.proc td {
+  text-align: left;
+  padding: 6px;
+}
+
+.proc tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}

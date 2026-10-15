@@ -1,0 +1,141 @@
+.sample-module {
+  display: grid;
+  gap: 16px;
+  color: inherit;
+  font: 400 14px/1.6 "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+.sample-hero,
+.sample-panel,
+.sample-card {
+  border: 1px solid rgba(125, 160, 220, 0.18);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(42, 62, 98, 0.16), rgba(12, 18, 30, 0.12));
+}
+
+.sample-hero,
+.sample-panel {
+  padding: 16px;
+}
+
+.sample-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.sample-hero h2,
+.sample-panel h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.sample-hero p,
+.sample-status {
+  margin: 8px 0 0;
+  color: rgba(215, 226, 247, 0.76);
+}
+
+.sample-chip,
+.sample-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sample-chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 160, 220, 0.22);
+  background: rgba(125, 160, 220, 0.08);
+}
+
+.sample-eyebrow,
+.sample-label {
+  color: #8dc1ff;
+}
+
+.sample-grid,
+.sample-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.sample-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.sample-layout {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.sample-card {
+  padding: 14px 16px;
+}
+
+.sample-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+}
+
+.sample-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.sample-panel button {
+  border: 1px solid rgba(141, 193, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(141, 193, 255, 0.08);
+  color: inherit;
+  padding: 9px 12px;
+  font: 600 12px/1 "IBM Plex Sans", "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.sample-panel pre {
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(5, 10, 18, 0.45);
+  color: #dbeafe;
+  font: 12px/1.6 "JetBrains Mono", ui-monospace, monospace;
+}
+
+.sample-route-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sample-route-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(141, 193, 255, 0.06);
+}
+
+.sample-route-list span {
+  color: rgba(215, 226, 247, 0.76);
+}
+
+@media (max-width: 720px) {
+  .sample-hero,
+  .sample-panel-head,
+  .sample-route-list li {
+    flex-direction: column;
+  }
+}

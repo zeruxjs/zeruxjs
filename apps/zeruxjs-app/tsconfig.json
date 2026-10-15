@@ -1,0 +1,32 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "baseUrl": ".",
+        "strict": true,
+        "esModuleInterop": true,
+        "allowJs": true,
+        "checkJs": false,
+        "noEmit": true,
+        "paths": {
+            "db": [
+                "./.zerux/virtual/db/default.d.ts"
+            ],
+            "db:*": [
+                "./.zerux/virtual/db/*.d.ts"
+            ]
+        },
+        "types": [
+            "node"
+        ]
+    },
+    "include": [
+        ".zerux/virtual/db/**/*.d.ts",
+        "app/**/*.ts",
+        "app/**/*.js",
+        "*.ts",
+        "*.js",
+        "*.d.ts"
+    ]
+}

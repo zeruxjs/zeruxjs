@@ -1,0 +1,71 @@
+{
+  "name": "zeruxjs",
+  "version": "0.0.1-alpha.3",
+  "description": "Main application ZeruxJS Framework",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "zerux": "./dist/bin/zerux.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./navigation": "./dist/navigation.js",
+    "./cache": "./dist/cache-api.js",
+    "./loader": "./dist/loader/register-loader.js",
+    "./database": "./dist/bootstrap/database.js",
+    "./cache-runtime": "./dist/bootstrap/cache.js",
+    "./schema/schema.config.json": "./assets/json/schema.config.json",
+    "./theme": "./dist/theme.js",
+    "./protocols": "./dist/protocols.js",
+    "./response": "./dist/response.js",
+    "./fetch-route": "./dist/fetch-route.js",
+    "./services": {
+      "import": "./dist/bootstrap/services.js",
+      "types": "./dist/bootstrap/services.d.ts"
+    },
+    "./build": {
+      "import": "./dist/commands/project-builder.js",
+      "types": "./dist/commands/project-builder.d.ts"
+    },
+    "./variables": {
+      "import": "./dist/variables.js",
+      "types": "./dist/variables.d.ts"
+    }
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "dependencies": {
+    "@zeruxjs/cache": "*",
+    "@zeruxjs/db": "*",
+    "@zeruxjs/lint": "*",
+    "z-dev": "*",
+    "@zeruxjs/hooks": "*",
+    "zwatch": "*",
+    "zsrv": "*",
+    "zcli": "*"
+  },
+  "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+  "bugs": {
+    "url": "https://github.com/zeruxjs/zeruxjs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "keywords": [
+    "Main application ZeruxJS Framework"
+  ],
+  "peerDependencies": {
+    "@zeruxjs/queue": "*"
+  },
+  "peerDependenciesMeta": {
+    "@zeruxjs/queue": {
+      "optional": true
+    }
+  }
+}

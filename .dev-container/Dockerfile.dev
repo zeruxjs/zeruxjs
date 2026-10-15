@@ -1,0 +1,24 @@
+FROM ubuntu:latest
+
+# Set non-interactive to avoid timezone prompts during apt-get
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update system and install curl
+RUN apt-get update && \
+    apt-get install -y curl ca-certificates bash && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install NVM and Node.js latest LTS
+ENV NVM_DIR=/usr/local/nvm
+RUN mkdir -p $NVM_DIR && \
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash && \
+    . $NVM_DIR/nvm.sh && \
+    nvm install --lts && \
+    nvm alias default 'lts/*' && \
+    nvm use default && \
+    ln -s $NVM_DIR/versions/node/$(nvm current)/bin/node /usr/local/bin/node && \
+    ln -s $NVM_DIR/versions/node/$(nvm current)/bin/npm /usr/local/bin/npm && \
+    ln -s $NVM_DIR/versions/node/$(nvm current)/bin/npx /usr/local/bin/npx
+
+WORKDIR /workspace

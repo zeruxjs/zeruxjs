@@ -1,0 +1,27 @@
+{
+  "name": "zyro-single",
+  "version": "1.0.0",
+  "description": "Zyro Single Page Application",
+  "private": "true",
+  "keywords": [
+    "Zyro Single Page Application"
+  ],
+  "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+  "bugs": {
+    "url": "https://github.com/zeruxjs/zeruxjs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "zyrojs": "*"
+  }
+}

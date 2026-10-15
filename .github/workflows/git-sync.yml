@@ -1,0 +1,72 @@
+name: Sync All Repos
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # --------------------------------
+      # 🧠 Skip if already synced
+      # --------------------------------
+      - name: Check commit message
+        id: check
+        run: |
+          msg=$(git log -1 --pretty=%B)
+          echo "MESSAGE=$msg"
+          if [[ "$msg" == *"[skip-sync]"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Stop if skip
+        if: steps.check.outputs.skip == 'true'
+        run: |
+          echo "Skipping sync (already synced commit)"
+          exit 0
+
+      # --------------------------------
+      # 🔐 SSH for GitLab.com
+      # --------------------------------
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GIT_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+
+      # --------------------------------
+      # 🔁 Push to GitLab.com (REQUIRED)
+      # --------------------------------
+      - name: Push to GitLab.com
+        run: |
+          git remote add gitlab git@gitlab.com:zeruxjs/zeruxjs.git || true
+          git commit --allow-empty -m "[skip-sync] sync from github" || true
+          git push --force --all gitlab
+          git push --force --tags gitlab
+
+      # --------------------------------
+      # 🌐 Push to Self-hosted (OPTIONAL)
+      # --------------------------------
+      - name: Push to Self-hosted GitLab
+        env:
+          TOKEN: ${{ secrets.SELF_GITLAB_TOKEN }}
+        run: |
+          set +e
+
+          git remote add self https://oauth2:${TOKEN}@gitlab.shubkb.me/zeruxjs/zeruxjs.git || true
+
+          git push --force --all self
+          git push --force --tags self
+
+          echo "Self-host sync attempted"

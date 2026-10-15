@@ -1,0 +1,3 @@
+export interface SeoConfig { title: string; description?: string; canonical?: string; image?: string; robots?: string; locale?: string; type?: string; siteName?: string; keywords?: string[]; twitterSite?: string; alternates?: Record<string,string>; jsonLd?: unknown | unknown[] }
+export interface SitemapEntry { loc: string; lastmod?: string | Date; changefreq?: 'always'|'hourly'|'daily'|'weekly'|'monthly'|'yearly'|'never'; priority?: number; alternates?: Record<string,string>; images?: string[] }
+export interface RobotsGroup { userAgent: string|string[]; allow?:string[]; disallow?:string[]; crawlDelay?:number }

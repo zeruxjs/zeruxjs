@@ -1,0 +1,2 @@
+export interface FeedItem { id: string; title: string; url: string; description?: string; contentHtml?: string; date?: Date | string; updated?: Date | string; author?: string; tags?: string[]; image?: string; enclosure?: {url:string;type:string;length:number} }
+export interface FeedOptions { title: string; description: string; siteUrl: string; feedUrl?: string; language?: string; copyright?: string; image?: string; updated?: string|Date; items: FeedItem[] }

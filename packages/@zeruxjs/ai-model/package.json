@@ -1,0 +1,25 @@
+{
+  "name": "@zeruxjs/ai-model",
+  "version": "0.0.1-alpha.2",
+  "description": "Light Weight AI Model trained on Docs, to help answer and solve issue on the go, can be used via @zerux/ai.",
+  "private": true,
+  "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+  "bugs": {
+    "url": "https://github.com/zeruxjs/zeruxjs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "keywords": [
+    "Light Weight AI Model trained on Docs, to help answer and solve issue on the go, can be used via @zerux/ai."
+  ]
+}

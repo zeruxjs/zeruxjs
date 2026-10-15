@@ -1,0 +1,157 @@
+# Database API
+
+ZeruxJS now exposes a JSON-driven database abstraction through the `db` virtual import and the `@zeruxjs/db` package.
+
+## Runtime registration
+
+- Configure the manager with `connectorManager` in `zerux.config.ts`. The default manager is `@zeruxjs/db`.
+- Configure connections with `db.default` and `db.connections`.
+- During framework bootstrap ZeruxJS initializes the configured manager and removes `db`, `database`, and `connectorManager` from the runtime config object so raw credentials are not exposed to routes, middleware, controllers, or composables.
+
+## Imports
+
+```ts
+import db, { query, insert, select } from "db";
+import reportingDb from "db:reporting";
+import { dbAccess } from "@zeruxjs/db";
+```
+
+- `db` resolves to the default connection facade.
+- `db:{slug}` resolves to a specific connection facade.
+- `dbAccess(slug)` returns the native connector instance for advanced use cases.
+
+## Config shape
+
+```ts
+import type { ZeruxConfig } from "zeruxjs";
+
+const zeruxConfig: ZeruxConfig = {
+    connectorManager: "@zeruxjs/db",
+    db: {
+        default: "main",
+        connections: [
+            {
+                name: "Main Database",
+                slug: "main",
+                connector: "@zeruxjs/db-pgsql",
+                options: {
+                    host: process.env.DB_HOST,
+                    username: process.env.DB_USER,
+                    password: process.env.DB_PASSWORD,
+                    database: process.env.DB_NAME,
+                    port: Number(process.env.DB_PORT) || 5432
+                }
+            }
+        ]
+    }
+};
+
+export default zeruxConfig;
+```
+
+Compatibility notes:
+
+- `database` is still accepted as an input key for backward compatibility.
+- `connecter` is still accepted as an input key for backward compatibility.
+- When only one connection exists, it becomes the default automatically.
+- When multiple connections exist, `default` is required.
+
+## Supported operations
+
+All abstraction methods accept JSON only.
+
+```ts
+await insert({
+    table: "users",
+    values: {
+        email: "admin@example.com",
+        active: true
+    }
+});
+
+await select({
+    table: "users",
+    columns: ["id", "email"],
+    where: {
+        and: [
+            {
+                field: "active",
+                operator: "eq",
+                value: true
+            },
+            {
+                field: "email",
+                operator: "like",
+                value: "%@example.com"
+            }
+        ]
+    },
+    orderBy: [
+        {
+            by: "id",
+            direction: "desc"
+        }
+    ],
+    limit: 10
+});
+```
+
+Available facade methods:
+
+- `query`
+- `createDb`
+- `dropDb`
+- `switchDB`
+- `createTable`
+- `dropTable`
+- `alterTable`
+- `turcunateTable`
+- `createIndex`
+- `dropIndex`
+- `insert`
+- `select`
+- `update`
+- `delete`
+
+## Batch queries
+
+`query()` accepts either a single operation or an array of operations.
+
+- Independent operations are executed in parallel.
+- Operations with `dependsOn` are executed sequentially.
+- Previous results can be referenced with `$ref`.
+
+```ts
+await query([
+    {
+        op: "insert",
+        table: "users",
+        values: {
+            email: "owner@example.com"
+        }
+    },
+    {
+        op: "insert",
+        table: "profiles",
+        values: {
+            userId: {
+                $ref: {
+                    operation: 0,
+                    path: "insertedIds.0"
+                }
+            },
+            displayName: "Owner"
+        },
+        dependsOn: 0
+    }
+]);
+```
+
+## Connectors
+
+- `@zeruxjs/db-mysql`
+- `@zeruxjs/db-pgsql`
+- `@zeruxjs/db-mongo`
+- `@zeruxjs/db-sqlite`
+
+SQL connectors share the same normalized compiler and execution contract through the internal SQL core package. Mongo converts the normalized JSON directly into collection operations and aggregation pipelines.

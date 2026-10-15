@@ -1,0 +1,11 @@
+[
+    {
+        "name": "Portless",
+        "src": "https://github.com/vercel-labs/portless",
+        "version": "0.7.1",
+        "license": "Apache-2.0",
+        "reason": "To provide Portless expirence.",
+        "modified": true,
+        "modification": "Make it to use with zerux start command directy invoke portless functionality."
+    }
+]

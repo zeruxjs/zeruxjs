@@ -1,0 +1,45 @@
+{
+  "name": "zsrv",
+  "version": "0.0.1-alpha.2",
+  "description": "Server Creator and Handle Auto load and so via @zerux/watcher",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test test/*.test.mjs",
+    "test:fleet": "npm run build && node --test test/fleet-*.test.mjs test/autoscale-policy.test.mjs"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./protocols": {
+      "import": "./dist/protocols/index.js",
+      "types": "./dist/protocols/index.d.ts"
+    }
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "ws": "^8.19.0",
+    "z-dev": "*",
+    "zwatch": "*"
+  },
+  "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+  "bugs": {
+    "url": "https://github.com/zeruxjs/zeruxjs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "keywords": [
+    "Server Creator and Handle Auto load and so via @zerux/watcher"
+  ],
+  "bin": {
+    "zerux-server": "./dist/bin/zerux.js"
+  }
+}

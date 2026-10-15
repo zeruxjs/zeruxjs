@@ -1,0 +1,51 @@
+{
+  "name": "@zeruxjs/lint",
+  "version": "0.0.1-alpha.2",
+  "description": "Composable ESLint, Stylelint and Prettier runners for ZeruxJS",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./files": {
+      "types": "./dist/files.d.ts",
+      "import": "./dist/files.js"
+    }
+  },
+  "dependencies": {
+    "@eslint/js": "^9.39.4",
+    "zwatch": "*",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-vue": "^10.8.0",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1",
+    "stylelint": "^17.6.0",
+    "stylelint-config-standard": "^40.0.0",
+    "stylelint-config-standard-scss": "^17.0.0",
+    "typescript-eslint": "^8.57.0"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+  "bugs": {
+    "url": "https://github.com/zeruxjs/zeruxjs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "keywords": [
+    "Lint JS, cSS and all files"
+  ]
+}

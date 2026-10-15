@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ZeruxJS application configuration",
+  "description": "Editor assistance for serializable portions of zerux.config. Runtime TypeScript config can also contain functions, resolvers and plugins not representable in JSON; the TypeScript types are authoritative.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "type": { "enum": ["fix", "dynamic", "function"] },
+    "entryPoint": { "type": "string" },
+    "outDir": { "type": "string" },
+    "multisite": { "type": "boolean" },
+    "allowedDomains": { "$ref": "#/$defs/stringOrList" },
+    "allowedDevDomain": { "type": "string" },
+    "structure": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "app": { "type": "string" },
+        "middleware": { "$ref": "#/$defs/stringOrList" },
+        "controllers": { "$ref": "#/$defs/stringOrList" },
+        "composables": { "$ref": "#/$defs/stringOrList" },
+        "plugins": { "$ref": "#/$defs/stringOrList" },
+        "public": { "$ref": "#/$defs/stringOrList" },
+        "env": { "$ref": "#/$defs/stringOrList" }
+      }
+    },
+    "server": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "port": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "devPort": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "allowedDomains": { "$ref": "#/$defs/stringOrList" },
+        "allowedDevDomain": { "type": "string" }
+      }
+    },
+    "db": { "$ref": "#/$defs/database" },
+    "database": { "$ref": "#/$defs/database" },
+    "cache": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "connector": { "type": "string" },
+        "prefix": { "type": "string" },
+        "defaultTtlSeconds": { "type": "number", "minimum": 0 },
+        "required": { "type": "boolean" }
+      }
+    },
+    "worker": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "minThreads": { "type": "integer", "minimum": 0 },
+        "maxThreads": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "websocket": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "path": { "type": "string" },
+        "maxPayload": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "files": { "type": "object", "additionalProperties": true },
+    "email": { "type": "object", "additionalProperties": true },
+    "analytics": { "type": "object", "additionalProperties": true },
+    "tags": { "type": "object", "additionalProperties": true },
+    "reports": { "type": "object", "additionalProperties": true },
+    "queue": { "type": "object", "additionalProperties": true },
+    "auth": { "type": "object", "additionalProperties": true },
+    "security": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "stringOrList": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] },
+    "database": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "default": { "type": "string" },
+        "connections": { "type": "array", "items": { "$ref": "#/$defs/connection" } },
+        "connection": { "type": "array", "items": { "$ref": "#/$defs/connection" } }
+      }
+    },
+    "connection": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "connector": { "type": "string" },
+        "connecter": { "type": "string" },
+        "options": { "type": "object" }
+      }
+    }
+  }
+}

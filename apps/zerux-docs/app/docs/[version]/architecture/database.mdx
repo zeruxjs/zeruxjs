@@ -1,0 +1,38 @@
+# Database Architecture
+
+The ZeruxJS database layer is split into three parts so that configuration, routing, and connector-specific translation stay isolated.
+
+## 1. Framework bootstrap
+
+- `packages/zeruxjs/src/bootstrap/database.ts` reads the database config during application bootstrap.
+- The bootstrap loader imports the configured connector manager package.
+- The manager is initialized before routes, middleware, controllers, and composables are imported.
+- After initialization, ZeruxJS deletes the raw DB config keys from the runtime config object.
+
+## 2. Loader registry
+
+- `packages/zeruxjs/src/loader/registry.ts` provides the generic `register(prefix, resolver)` API.
+- The database bootstrap registers the `db` prefix.
+- `db` resolves to the default connection facade.
+- `db:{slug}` resolves to a named connection facade.
+- The loader remains generic and can be reused later for `component:` and `composable:` prefixes.
+
+## 3. Connector manager
+
+- `@zeruxjs/db` is the default connector manager.
+- The manager validates JSON config, loads connector packages, and routes operations to the selected connection.
+- The manager does not contain SQL or engine-specific translation logic.
+- The public exports are bound to the active manager and the default connection facade.
+
+## 4. Connector packages
+
+- SQL connectors compile normalized JSON into parameterized statements.
+- Mongo translates normalized JSON into collection operations and aggregation pipelines.
+- Every connector returns a standardized result shape with connector metadata and execution output.
+
+## Security guarantees
+
+- The framework does not expose raw database credentials through runtime config after bootstrap.
+- Query input is JSON-only and cloned before routing so caller objects are not mutated.
+- SQL connectors build parameterized statements instead of concatenating user values into query text.
+- Identifier fields are validated before translation to reduce injection risk.

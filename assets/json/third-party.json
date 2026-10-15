@@ -1,0 +1,47 @@
+[
+    {
+        "name": "Portless",
+        "src": "https://github.com/vercel-labs/portless",
+        "version": "0.7.1",
+        "license": "Apache-2.0",
+        "reason": "To provide Portless expirence.",
+        "modified": true,
+        "modificationReason": "Make it to use with zerux start command directy invoke portless functionality.",
+        "usedIn": [
+            {
+                "package": "zsrv",
+                "path": "./packages/zsrv/src/portless"
+            }
+        ]
+    },
+    {
+        "name": "Portless",
+        "src": "https://github.com/vercel-labs/portless",
+        "version": "0.7.1",
+        "license": "Apache-2.0",
+        "reason": "To provide Portless expirence.",
+        "modified": true,
+        "modification": "Make it to use with zerux start command directy invoke portless functionality.",
+        "usedIn": [
+            {
+                "package": "zsrv",
+                "path": "./packages/zsrv/src/portless"
+            }
+        ]
+    },
+    {
+        "name": "Valibot",
+        "src": "https://github.com/open-circle/valibot",
+        "version": "1.3.1",
+        "license": "MIT",
+        "reason": "To have validation that can be used with expirence like direclty via framework and library, also add zod and AJV functionality on top.",
+        "modified": true,
+        "modification": "Change project stucture from many folder to files only and add utilites for AJV and Zod Chain like functionality.",
+        "usedIn": [
+            {
+                "package": "@zeruxjs/validator",
+                "path": "./packages/@zeruxjs/validator/src"
+            }
+        ]
+    }
+]

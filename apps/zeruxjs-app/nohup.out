@@ -1,0 +1,26 @@
+
+> zeruxjs-app@1.0.0 dev
+> zerux dev -p 3010
+
+[2026-04-20T03:04:45.907Z] [INFO] Zerux bootstrap ready [{"mode":"dev","appName":"zeruxjs-app","manifestPath":"/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/.zerux/runtime.json","loadedEnvFiles":["/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/.env"],"routes":9}]
+zerux-server: Unable to bind 443; falling back to 1355
+zerux-server: Proxy running on 1355 (HTTPS)
+zerux-server: Alias zerux.localhost -> 127.0.0.1:9000
+zerux-server: Alias zeruxjs-app.localhost -> 127.0.0.1:3010
+Application Started
+- App server started at http://127.0.0.1:3010, https://zeruxjs-app.localhost:1355
+- Dev server is running at http://127.0.0.1:9000/zeruxjs-app, ws://127.0.0.1:9000/__zerux/ws?app=zeruxjs-app, https://zerux.localhost:1355/zeruxjs-app, wss://zerux.localhost:1355/__zerux/ws?app=zeruxjs-app
+[Watcher] Started master watcher daemon for: /home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app
+
+> zeruxjs-app@1.0.0 dev
+> zerux dev -p 3010
+
+[2026-04-20T03:05:04.324Z] [INFO] Zerux bootstrap ready [{"mode":"dev","appName":"zeruxjs-app","manifestPath":"/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/.zerux/runtime.json","loadedEnvFiles":["/home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app/.env"],"routes":9}]
+zerux-server: Unable to bind 443; falling back to 1355
+zerux-server: Proxy running on 1355 (HTTPS)
+zerux-server: Alias zerux.localhost -> 127.0.0.1:9000
+zerux-server: Alias zeruxjs-app.localhost -> 127.0.0.1:3010
+Application Started
+- App server started at http://127.0.0.1:3010, https://zeruxjs-app.localhost:1355
+- Dev server is running at http://127.0.0.1:9000/zeruxjs-app, ws://127.0.0.1:9000/__zerux/ws?app=zeruxjs-app, https://zerux.localhost:1355/zeruxjs-app, wss://zerux.localhost:1355/__zerux/ws?app=zeruxjs-app
+[Watcher] Started master watcher daemon for: /home/shubham/Dev/apps/node/ZeruxJS/apps/zeruxjs-app

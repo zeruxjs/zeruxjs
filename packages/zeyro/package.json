@@ -1,0 +1,26 @@
+{
+  "name": "zeyro",
+  "version": "0.1.0",
+  "description": "Modular testing framework and assertion toolkit for ZeruxJS, ZyroJS and JavaScript",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./jsdom": "./dist/adapters/jsdom/setup.js",
+    "./playwright": "./dist/adapters/playwright/setup.js",
+    "./vitest": "./dist/adapters/vitest/setup.js"
+  },
+  "license": "MIT",
+  "bin": {
+    "zeyro": "./dist/bin/cli.js"
+  }
+}

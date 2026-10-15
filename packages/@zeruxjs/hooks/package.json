@@ -1,0 +1,50 @@
+{
+  "name": "@zeruxjs/hooks",
+  "version": "0.0.1-alpha.2",
+  "description": "Request-scoped React-style hooks, context, and safe ZeruxJS path registry",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./state": {
+      "types": "./dist/state.d.ts",
+      "import": "./dist/state.js"
+    },
+    "./context": {
+      "types": "./dist/context.d.ts",
+      "import": "./dist/context.js"
+    },
+    "./paths": {
+      "types": "./dist/path-registry.d.ts",
+      "import": "./dist/path-registry.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "dependencies": {},
+  "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+  "bugs": {
+    "url": "https://github.com/zeruxjs/zeruxjs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "keywords": [
+    "hooks",
+    "zerux",
+    "zeruxjs"
+  ]
+}

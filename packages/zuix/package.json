@@ -1,0 +1,44 @@
+{
+  "name": "zuix",
+  "version": "0.2.0",
+  "description": "Zero-dependency utility-first CSS compiler for ZeruxJS, ZyroJS, React, Vue, Next and Nuxt",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "zuix": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test:smoke": "npm run build && node tests/smoke.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    },
+    "./vite": {
+      "types": "./dist/adapters.d.ts",
+      "import": "./dist/adapters.js"
+    },
+    "./theme": {
+      "types": "./dist/theme.d.ts",
+      "import": "./dist/theme.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "license": "(MIT OR Apache-2.0)",
+  "engines": {
+    "node": ">=20"
+  }
+}

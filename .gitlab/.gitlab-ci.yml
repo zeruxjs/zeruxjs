@@ -1,0 +1,56 @@
+stages:
+  - git-sync
+
+sync:
+  stage: git-sync
+
+  before_script:
+    # ------------------------------
+    # 🔐 Setup SSH (for GitHub + GitLab.com)
+    # ------------------------------
+    - mkdir -p ~/.ssh
+    - echo "$GIT_SSH_KEY" > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+
+  script:
+    # ------------------------------
+    # 🧠 Prevent loop
+    # ------------------------------
+    - |
+      msg=$(git log -1 --pretty=%B)
+      echo "Commit message: $msg"
+      if [[ "$msg" == *"[skip-sync]"* ]]; then
+        echo "Skipping sync"
+        exit 0
+      fi
+
+    # ------------------------------
+    # 🔁 Add remotes
+    # ------------------------------
+    - git remote add github git@github.com:zeruxjs/zeruxjs.git || true
+    - git remote add gitlab git@gitlab.com:zeruxjs/zeruxjs.git || true
+
+    # ------------------------------
+    # 🚀 Push to GitHub (REQUIRED)
+    # ------------------------------
+    - git push --force --all github
+    - git push --force --tags github
+
+    # ------------------------------
+    # 🚀 Push to GitLab.com (REQUIRED)
+    # ------------------------------
+    - git push --force --all gitlab
+    - git push --force --tags gitlab
+
+    # ------------------------------
+    # 🌐 Push to Self-hosted (OPTIONAL)
+    # ------------------------------
+    - |
+      set +e
+      git remote add self https://oauth2:${SELF_GITLAB_TOKEN}@gitlab.shubkb.me/zeruxjs/zeruxjs.git || true
+      git push --force --all self
+      git push --force --tags self
+      echo "Self-host sync attempted"

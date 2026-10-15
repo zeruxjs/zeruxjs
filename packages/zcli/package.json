@@ -1,0 +1,31 @@
+{
+  "name": "zcli",
+  "version": "0.1.0",
+  "description": "Composable multi-command CLI and secure opt-in plugin registry for ZeruxJS",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
+  "bugs": {
+    "url": "https://github.com/zeruxjs/zeruxjs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "keywords": [
+    "CLI Wrapper to help share CLI keyword and Coloring and other small plugins"
+  ]
+}
