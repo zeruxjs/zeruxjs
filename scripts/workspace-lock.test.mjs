@@ -48,6 +48,34 @@ test('accepts a fully resolved local-only workspace lock', t => {
   assert.equal(report.workspaceCount, 2);
 });
 
+test('does not treat npm field-order changes as stale local workspace metadata', t => {
+  const { root, write } = fixture(t);
+  syncLocalLock(root, { write: true });
+  const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
+  // Reorder top-level fields and every workspace record, preserving values.
+  const reverseKeys = value => Object.fromEntries(Object.entries(value).reverse());
+  lock.packages[''] = reverseKeys(lock.packages['']);
+  lock.packages['packages/alpha'] = reverseKeys(lock.packages['packages/alpha']);
+  lock.packages['node_modules/alpha'] = reverseKeys(lock.packages['node_modules/alpha']);
+  write('package-lock.json', reverseKeys(lock));
+  const before = fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8');
+  assert.equal(inspectWorkspaceLock(root).staleWorkspaceMetadata, false);
+  assert.equal(inspectWorkspaceLock(root).ok, true);
+  assert.equal(syncLocalLock(root, { write: true }).changed, false);
+  assert.equal(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'), before);
+});
+
+test('detects genuine drift even when npm changed property ordering', t => {
+  const { root, write } = fixture(t);
+  syncLocalLock(root, { write: true });
+  const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
+  lock.packages['packages/alpha'] = { ...lock.packages['packages/alpha'], version: '0.0.0' };
+  write('package-lock.json', lock);
+  assert.equal(inspectWorkspaceLock(root).staleWorkspaceMetadata, true);
+  syncLocalLock(root, { write: true });
+  assert.equal(inspectWorkspaceLock(root).staleWorkspaceMetadata, false);
+});
+
 test('detects malformed lockfile version rather than corrupting it', t => {
   const { root, write } = fixture(t);
   write('package-lock.json', { lockfileVersion: 2, packages: {} });
@@ -127,6 +155,7 @@ test('lock recovery automatically proposes reviewed changes, never weakens the r
   assert.match(workflow, /- 'packages\/\*\*\/package\.json'/);
   assert.match(workflow, /- '\.github\/workflows\/package-lock-recovery\.yml'/);
   assert.match(workflow, /run: npm install --package-lock-only --ignore-scripts/);
+  assert.match(workflow, /- name: Synchronize local workspace metadata after npm resolution[\s\S]*?run: npm run deps:sync-local/);
   assert.match(workflow, /- name: Require complete, validated dependency graph\s*\n\s*if: steps\.current\.outcome == 'failure'\s*\n\s*run: npm run deps:check/);
   assert.match(workflow, /git add -- package-lock\.json/);
   assert.match(workflow, /gh pr create/);

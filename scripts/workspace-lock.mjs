@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { discoverWorkspaces } from './workspace-graph.mjs';
 
 /** npm lockfile v3 is the only supported format for deterministic workspace repair. */
@@ -27,7 +28,9 @@ export function syncLocalLock(root, { write = false } = {}) {
   }
   if (!Array.isArray(manifest.workspaces)) throw new Error('Root package.json must declare npm workspaces');
   const entries = discoverWorkspaces(root);
-  const original = JSON.stringify(lock);
+  // Compare JSON data, not insertion order. npm may reorder equivalent lockfile
+  // properties while preserving the same workspace records.
+  const original = JSON.parse(JSON.stringify(lock));
   const rootLock = copyDeclared({ ...lock.packages[''] }, manifest);
   rootLock.name = manifest.name;
   rootLock.workspaces = manifest.workspaces;
@@ -53,7 +56,9 @@ export function syncLocalLock(root, { write = false } = {}) {
       delete lock.packages[key];
     }
   }
-  const changed = JSON.stringify(lock) !== original;
+  // Normalize undefined properties introduced by missing optional manifest
+  // fields before comparison; JSON serialization would omit those on write.
+  const changed = !isDeepStrictEqual(JSON.parse(JSON.stringify(lock)), original);
   if (write && changed) fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
   return { changed, workspaceCount: entries.size, lock };
 }

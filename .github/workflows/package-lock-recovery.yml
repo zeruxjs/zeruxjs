@@ -55,6 +55,9 @@ jobs:
       - name: Resolve real registry metadata (do not run install scripts)
         if: steps.current.outcome == 'failure'
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund --fetch-retries=2
+      - name: Synchronize local workspace metadata after npm resolution
+        if: steps.current.outcome == 'failure'
+        run: npm run deps:sync-local
       - name: Require complete, validated dependency graph
         if: steps.current.outcome == 'failure'
         run: npm run deps:check
