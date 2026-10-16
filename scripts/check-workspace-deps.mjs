@@ -22,7 +22,9 @@ try {
     if (report.unresolvedExternal.length) {
       console.error(`[deps] ${report.unresolvedExternal.length} external packages lack lockfile resolutions:`);
       for (const item of report.unresolvedExternal) console.error(`  ${item.name}: ${item.requiredBy.join(', ')}`);
-      console.error('[deps] With registry access, run: npm install --package-lock-only --ignore-scripts && npm ci && npm run deps:check');
+      console.error('[deps] Restore the committed lockfile via GitHub Actions: Recover package-lock (manual, no publish).');
+      console.error('[deps] On a trusted branch push, recovery now proposes a review-only PR automatically. Merge it after its clean-install job passes.');
+      console.error('[deps] Locally with registry access: npm install --package-lock-only --ignore-scripts --no-audit --no-fund && npm run deps:check && npm ci.');
     }
     if (report.missingDependencies.length) {
       console.error(`[deps] ${report.missingDependencies.length} required dependency edges are missing from the lockfile:`);

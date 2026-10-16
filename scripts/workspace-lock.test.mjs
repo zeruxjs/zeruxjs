@@ -118,3 +118,22 @@ test('removes obsolete workspace links but keeps legitimate downloaded entries',
   assert.equal(next.packages['node_modules/removed-workspace'], undefined);
   assert.deepEqual(next.packages['node_modules/safe-external'], lock.packages['node_modules/safe-external']);
 });
+
+
+test('lock recovery automatically proposes reviewed changes, never weakens the required source lock gate', () => {
+  const workflow = fs.readFileSync(new URL('../.github/workflows/package-lock-recovery.yml', import.meta.url), 'utf8');
+  const sourceWorkflow = fs.readFileSync(new URL('../.github/workflows/package-workspaces.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /push:\s*\n\s*branches: \[master, dev, test\]/);
+  assert.match(workflow, /- 'packages\/\*\*\/package\.json'/);
+  assert.match(workflow, /- '\.github\/workflows\/package-lock-recovery\.yml'/);
+  assert.match(workflow, /run: npm install --package-lock-only --ignore-scripts/);
+  assert.match(workflow, /- name: Require complete, validated dependency graph\s*\n\s*if: steps\.current\.outcome == 'failure'\s*\n\s*run: npm run deps:check/);
+  assert.match(workflow, /git add -- package-lock\.json/);
+  assert.match(workflow, /gh pr create/);
+  assert.match(workflow, /gh workflow run package-workspaces\.yml/);
+  assert.match(workflow, /actions: write/);
+  assert.doesNotMatch(workflow, /git push --force|run:\s*npm publish|--legacy-peer-deps/);
+  assert.match(workflow, /name: Prove resolved lockfile can install and build/);
+  assert.match(workflow, /run: npm ci --no-audit --no-fund/);
+  assert.match(sourceWorkflow, /Check committed lockfile before scheduling six platform installs\s*\n\s*run: npm run deps:check/);
+});
