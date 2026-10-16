@@ -1,6 +1,6 @@
 {
   "name": "zwatch",
-  "version": "0.0.1-alpha.2",
+  "version": "0.0.1",
   "description": "File Change Watcher, Optize for multiple watcher together by sharing events",
   "author": "",
   "type": "module",

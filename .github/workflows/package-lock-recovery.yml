@@ -19,10 +19,14 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
+      - name: Verify approved owned package versions
+        run: npm run versions:check
       - name: Resolve registry metadata without installer side effects
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund --fetch-retries=2
       - name: Save proposed lockfile before further checks
-        run: cp package-lock.json package-lock-proposed.json
+        run: |
+          mkdir -p lockfile-proposal
+          cp package-lock.json lockfile-proposal/package-lock.json
       - run: npm run deps:check
       - run: npm run verify:source
       - name: Prove a clean installation, not an npm install repair
@@ -34,5 +38,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: root-package-lock-proposal
-          path: package-lock-proposed.json
+          path: lockfile-proposal/package-lock.json
           if-no-files-found: warn

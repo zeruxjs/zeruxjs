@@ -48,8 +48,11 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
+      - run: npm run versions:check
       - run: npm run verify:source
       - run: npm run api:freeze:check
+      - name: Check committed lockfile before scheduling six platform installs
+        run: npm run deps:check
       - run: npm run security:source
       - run: npm run test:workspace-tools
       - name: Write read-only release inventory
@@ -84,8 +87,6 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
           cache-dependency-path: package-lock.json
-      - name: Strict source/lock metadata (fails until lock recovery is committed)
-        run: npm run deps:check
       - name: Reproducible root workspace installation
         run: npm ci --no-audit --no-fund
       - run: npm run build:workspaces

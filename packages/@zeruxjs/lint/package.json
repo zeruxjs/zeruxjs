@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/lint",
-  "version": "0.0.1-alpha.2",
+  "version": "0.0.1",
   "description": "Composable ESLint, Stylelint and Prettier runners for ZeruxJS",
   "type": "module",
   "main": "./dist/index.js",
@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@eslint/js": "^9.39.4",
-    "zwatch": "0.0.1-alpha.2",
+    "zwatch": "0.0.1",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",

@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/performance",
-  "version": "0.0.1-alpha.2",
+  "version": "0.0.1",
   "description": "Performance metrics, resource hints, cache directives and timing utilities.",
   "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",

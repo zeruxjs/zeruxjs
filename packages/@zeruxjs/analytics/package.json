@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/analytics",
-  "version": "0.0.1-alpha.2",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "description": "Database-backed application and email event analytics with Fetch endpoints",
@@ -30,7 +30,7 @@
     "test": "npm run build && node --test test/*.test.mjs"
   },
   "peerDependencies": {
-    "@zeruxjs/db": "0.0.1-alpha.1"
+    "@zeruxjs/db": "0.0.1"
   },
   "peerDependenciesMeta": {
     "@zeruxjs/db": {

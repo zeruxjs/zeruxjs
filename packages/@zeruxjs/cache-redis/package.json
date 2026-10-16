@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/cache-redis",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1",
   "description": "Redis cache helper supporting node-redis and ioredis, with BullMQ connection settings.",
   "private": true,
   "main": "./dist/index.js",
@@ -11,7 +11,7 @@
     "test": "npm run build && node --test test/*.test.mjs"
   },
   "dependencies": {
-    "@zeruxjs/cache": "0.0.1-alpha.1",
+    "@zeruxjs/cache": "0.0.1",
     "redis": "^5.8.3",
     "ioredis": "^5.4.0"
   },

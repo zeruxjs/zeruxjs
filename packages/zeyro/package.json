@@ -1,6 +1,6 @@
 {
   "name": "zeyro",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Modular testing framework and assertion toolkit for ZeruxJS, ZyroJS and JavaScript",
   "type": "module",
   "main": "./dist/index.js",

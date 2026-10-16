@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/db-pg",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1",
   "description": "Helper for @zerux/db for Postgre Database.",
   "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
@@ -20,8 +20,8 @@
     "test": "npm run build && node --test test/*.test.mjs"
   },
   "dependencies": {
-    "@zeruxjs/db": "0.0.1-alpha.1",
-    "@zeruxjs/db-sql-core": "0.0.1-alpha.1",
+    "@zeruxjs/db": "0.0.1",
+    "@zeruxjs/db-sql-core": "0.0.1",
     "pg": "^8.16.3"
   },
   "keywords": [

@@ -34,7 +34,8 @@ try {
     if (!json) process.stdout.write(result.stdout);
     return result.stdout;
   };
-  const testOutput = run('workspace tool regressions', ['--test', 'scripts/workspace-build.test.mjs', 'scripts/workspace-lock.test.mjs', 'scripts/workspace-snapshot.test.mjs', 'scripts/workspace-contracts.test.mjs', 'scripts/workspace-release.test.mjs', 'scripts/doctor.test.mjs', 'scripts/workspace-api-freeze.test.mjs', 'scripts/workspace-security-audit.test.mjs', 'scripts/workspace-package-release.test.mjs', 'scripts/workspace-public-consumer.test.mjs', 'scripts/integration-lab-core.test.mjs', 'scripts/workspace-installed-licenses.test.mjs']);
+  run('owned package version policy', ['scripts/check-package-versions.mjs']);
+  const testOutput = run('workspace tool regressions', ['--test', 'scripts/workspace-build.test.mjs', 'scripts/workspace-lock.test.mjs', 'scripts/workspace-snapshot.test.mjs', 'scripts/workspace-contracts.test.mjs', 'scripts/workspace-release.test.mjs', 'scripts/doctor.test.mjs', 'scripts/workspace-api-freeze.test.mjs', 'scripts/workspace-security-audit.test.mjs', 'scripts/workspace-package-release.test.mjs', 'scripts/workspace-public-consumer.test.mjs', 'scripts/integration-lab-core.test.mjs', 'scripts/workspace-installed-licenses.test.mjs', 'scripts/workspace-version-policy.test.mjs']);
   const build = JSON.parse(run('workspace build order', ['scripts/build-workspaces.mjs', '--dry-run', '--json'], { json: true }));
   const report = inspectWorkspaceLock(dest);
   const contracts = inspectWorkspaceContracts(dest);

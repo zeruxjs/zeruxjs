@@ -69,7 +69,9 @@
     "release:graph": "node scripts/package-release-plan.mjs",
     "release:foundation:consumer": "node scripts/test-foundation-consumer.mjs",
     "release:public:consumer": "node scripts/public-package-consumer.mjs",
-    "release:ci:decision": "node scripts/ci-release-decision.mjs"
+    "release:ci:decision": "node scripts/ci-release-decision.mjs",
+    "versions:check": "node scripts/check-package-versions.mjs",
+    "test:versions": "node --test scripts/workspace-version-policy.test.mjs"
   },
   "workspaces": [
     "packages/@zeruxjs/*",

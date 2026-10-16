@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/email",
-  "version": "0.0.1-alpha.2",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "description": "Multi-account SMTP send, IMAP/POP3 receive, parsing, durable inbox, campaigns and tracking",
@@ -31,7 +31,7 @@
     "node-pop3": "^0.15.1"
   },
   "peerDependencies": {
-    "@zeruxjs/files": "0.0.1-alpha.2"
+    "@zeruxjs/files": "0.0.1"
   },
   "peerDependenciesMeta": {
     "@zeruxjs/files": {
