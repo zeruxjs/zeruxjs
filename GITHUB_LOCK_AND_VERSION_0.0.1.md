@@ -17,16 +17,17 @@ The root lockfile has **16 missing external npm package resolutions across 19 ma
 
 A valid lockfile must come from actual npm registry resolutions with verified integrity metadata. Do not add placeholder records or disable the strict gate.
 
-## Required GitHub steps
+## Required GitHub steps (one-click proposal)
 
-1. Commit the updated repository, including all changed package manifests, `api-freeze.json`, `package-lock.json`, and CI tools.
-2. In GitHub, run **Actions → Recover package-lock (manual, no publish) → Run workflow** on the updated branch. This requires access to `registry.npmjs.org`.
-3. From the run's **Artifacts**, download `root-package-lock-proposal`, then extract `lockfile-proposal/package-lock.json` and copy it to the **repository root** as `package-lock.json`.
-4. Review the diff, resolved versions, `resolved` HTTPS URLs and npm-generated `integrity` values. Only the version reset and genuine npm dependency resolution should be present.
-5. Commit the reviewed lockfile and push it. That triggers the source gate and then Linux/Windows/macOS Node 22/24 matrix.
-6. If the recovery workflow fails at a later build, **still retrieve and commit the valid proposed lockfile** and inspect the specific subsequent build error. Correct any genuine registry or peer-dependency conflicts before proceeding.
+1. Commit and push this updated repository, including the revised `.github/workflows/package-lock-recovery.yml`.
+2. In GitHub open **Actions → Recover package-lock (manual, no publish) → Run workflow** on the desired branch, leaving **open_pull_request=true**. This recovery job has scoped `contents: write` and `pull-requests: write`; normal package CI remains read-only.
+3. The recovery job runs real npm registry resolution, then `npm run deps:check`, and immediately uploads `root-package-lock-proposal` containing the root `package-lock.json`. If the lock changed, the job attempts to push a new `automation/npm-lock-recovery-<run-id>` branch and open a PR against the triggering branch. **It never force-pushes, directly commits to the source branch, or publishes npm packages.**
+4. Review the PR diff (only `package-lock.json`) and its actual npm versions, HTTPS `resolved` URLs and integrity hashes. The separate **Prove resolved lockfile can install and build** job downloads exactly this proposed lockfile, runs clean `npm ci`, build, and consumer checks. Wait for and address those results before merging.
+5. If no PR appears, review the workflow log. In repository **Settings → Actions → General → Workflow permissions**, allow GitHub Actions to create pull requests if permitted by your organization. Even without PR permissions the `root-package-lock-proposal` artifact can be downloaded and committed manually. Do not share GitHub tokens or npm credentials in chat.
+6. Merge the reviewed PR or commit the reviewed proposed lockfile. The previous **Source and security contracts** job is correctly red until this happens. After the merge, the normal protected Linux/Windows/macOS Node 22/24 CI is triggered.
 
-The workflow intentionally does not approve stable npm publishing. `0.0.1` is a semver release version, but **changing the manifest is not production acceptance, release authorization, or proof that the version is available on npm**.
+If the recovery job fails while resolving npm registry metadata, check the error there, not six downstream platform logs. If the clean-install job fails after the artifact has been uploaded, the proposal is still available; the clean-install failure is a new, concrete issue to fix, not a reason to fabricate lock entries.
+
 
 ## Local checks
 
