@@ -47,4 +47,4 @@ const {data} = await store.download(metadata.id);
 These are *initial implementations*, not complete feature parity with established production services. In particular, media writes do not implement distributed storage or antivirus scanning; search does not implement linguistic stemming or persistent indexes; AI model is retrieval only and has no trained LLM; MCP only supports in-process tools and not the complete MCP transport/protocol; framework adapters have not been tested against live React or Vue runtimes. The pre-existing blank submodules of `zeyro` still need implementations. Full dependency integration, E2E testing, cross-platform and security review are required before production release.
 
 > **Section 31 migration note:** `@zeruxjs/mcp` has been retired; its tool/resource
-> APIs now live in `zsrv/src/protocols/mcp` and are exported from `zsrv`.
+> APIs now live in `zhost/src/protocols/mcp` and are exported from `zhost`.

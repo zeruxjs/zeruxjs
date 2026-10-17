@@ -15,4 +15,4 @@ Isolated TypeScript builds (using temporary no-Node-types configurations) and 8 
 These packages are not universal AI infrastructure. MCP still requires authenticated transports, complete protocol/version negotiation and full JSON Schema; AI needs streaming and provider-specific capabilities; AI Model needs scalable persistent/semantic indexing and secure retrieval policies. The added README files document public APIs and explicit limitations.
 
 > **Section 31 migration note:** `@zeruxjs/mcp` has been retired; its tool/resource
-> APIs now live in `zsrv/src/protocols/mcp` and are exported from `zsrv`.
+> APIs now live in `zhost/src/protocols/mcp` and are exported from `zhost`.

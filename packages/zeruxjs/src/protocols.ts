@@ -1,11 +1,11 @@
-/** ZeruxJS registration facade for ZSRV's in-process protocol gateway. */
+/** ZeruxJS registration facade for ZHOST's in-process protocol gateway. */
 import type { IncomingMessage } from 'node:http';
 import {
   createProtocolGateway, createMcpServer,
   type ProtocolGatewayOptions, type McpServerOptions,
   type RpcMethod, type ConnectMethod,
   type McpServer
-} from 'zsrv/protocols';
+} from 'zhost/protocols';
 
 export type ZeruxProtocolOptions = Partial<Pick<ProtocolGatewayOptions, 'authorize' | 'allowedOrigins' | 'maxBodyBytes'>> & {
   enabled?: boolean;

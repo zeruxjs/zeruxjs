@@ -51,7 +51,7 @@
     "zforge": "0.0.1",
     "@zeruxjs/hooks": "0.0.1",
     "zlook": "0.0.1",
-    "zsrv": "0.0.1",
+    "zhost": "0.0.1",
     "zclivo": "0.0.1"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",

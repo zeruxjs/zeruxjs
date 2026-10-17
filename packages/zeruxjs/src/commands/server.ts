@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { startServer } from "zsrv";
+import { startServer } from "zhost";
 
 import { loadConfig, resolveDefaultEnvFiles, resolveStructure } from "../bootstrap/config.js";
 import { loadEnvironmentFiles } from "../bootstrap/env.js";

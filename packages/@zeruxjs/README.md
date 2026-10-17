@@ -13,6 +13,6 @@ The modular core of the ZeruxJS ecosystem. Contains the framework's essential ru
 | [`@zeruxjs/auth`](./auth) | Built-in authentication and security modules. |
 | [`@zeruxjs/db`](./db) | Database connectivity (MongoDB, MySQL, SQLite, etc.) and ORM. |
 | [`@zeruxjs/ai`](./ai) | Artificial Intelligence and LLM integration tools. |
-| MCP | MCP server and transport helpers are now built into [`zsrv`](../zsrv). |
+| MCP | MCP server and transport helpers are now built into [`zhost`](../zhost). |
 | [`@zeruxjs/seo`](./seo) | Search engine optimization and metadata management. |
 | [`@zeruxjs/cache`](./cache) | High-performance caching layers and providers. |

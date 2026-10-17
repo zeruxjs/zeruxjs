@@ -10,7 +10,7 @@ This report records the targeted, source-level audit of the package workspace. I
 - `@zeruxjs/db-pg`: replace dynamically evaluated module import with standard dynamic import.
 - `zclivo`: use a null-prototype options map and reject prototype-sensitive CLI argument keys.
 - `zforge`: enforce a 1 MiB request body maximum, return 413 for oversized bodies, catch handler exceptions, and parse IPv6 hostnames consistently.
-- `zsrv`: disable Windows shell execution in the command helper (commands requiring shell syntax must explicitly invoke a shell).
+- `zhost`: disable Windows shell execution in the command helper (commands requiring shell syntax must explicitly invoke a shell).
 
 ## Inventory
 
@@ -20,7 +20,7 @@ The workspace includes the following packages; the status means source inventori
 - `zclivo` — source inventoried; integration checks pending.
 - `zeruxjs` — source inventoried; integration checks pending.
 - `zeyro` — source inventoried; integration checks pending.
-- `zsrv` — source inventoried; integration checks pending.
+- `zhost` — source inventoried; integration checks pending.
 - `zuixs` — source inventoried; integration checks pending.
 - `zlook` — source inventoried; integration checks pending.
 - `zyrojs` — source inventoried; integration checks pending.
@@ -59,10 +59,10 @@ The workspace includes the following packages; the status means source inventori
 1. Install workspace dependencies with the project's lockfile and compile each package in dependency order.
 2. Exercise database adapters against real PostgreSQL, MySQL, MongoDB and SQLite instances; validate escaping and transaction semantics.
 3. Verify Redis cache namespaces: `clear()` currently delegates to `flushDb()` and may affect unrelated tenants if a Redis DB is shared. Use isolated Redis databases until prefix-scoped clearing is implemented.
-4. Exercise `zsrv` process launching on Windows and Unix; shell-based Windows commands may require deliberate execution via `cmd.exe`.
+4. Exercise `zhost` process launching on Windows and Unix; shell-based Windows commands may require deliberate execution via `cmd.exe`.
 5. Perform end-to-end browser and Node testing of ZeruxJS, ZyroJS, Zuix, the devtools and adapters.
 6. Audit `zlook` daemon socket ownership, recovery and event backpressure; audit all package public APIs for version compatibility.
 7. Run dependency and license audits, SAST, fuzz tests, and load tests before claiming production certification.
 
 > **Section 31 migration note:** `@zeruxjs/mcp` has been retired; its tool/resource
-> APIs now live in `zsrv/src/protocols/mcp` and are exported from `zsrv`.
+> APIs now live in `zhost/src/protocols/mcp` and are exported from `zhost`.

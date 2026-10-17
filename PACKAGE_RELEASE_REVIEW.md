@@ -87,7 +87,7 @@ Publish dependencies before their consumers. Required peers are included in the 
 | 35 | `@zeruxjs/zyro` | `packages/@zeruxjs/zyro` |
 | 36 | `zforge` | `packages/zforge` |
 | 37 | `zclivo` | `packages/zclivo` |
-| 38 | `zsrv` | `packages/zsrv` |
+| 38 | `zhost` | `packages/zhost` |
 | 39 | `zeruxjs` | `packages/zeruxjs` |
 | 40 | `zeyro` | `packages/zeyro` |
 | 41 | `zuixs` | `packages/zuixs` |

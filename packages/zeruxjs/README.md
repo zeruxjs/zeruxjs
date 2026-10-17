@@ -16,7 +16,7 @@ ZeruxJS is engine-agnostic, allowing you to build applications using your favori
 ## ✨ Key Features
 
 - **Unified CLI**: A single command-line interface (`zclivo`) to manage your entire lifecycle.
-- **Advanced Server Orchestration**: Powered by `zsrv`, managing both app and dev servers with ease.
+- **Advanced Server Orchestration**: Powered by `zhost`, managing both app and dev servers with ease.
 - **Hot-Module Replacement**: High-performance watching and reloading via `zlook`.
 - **Built-in Security**: Hardened by default with `@zeruxjs/security`.
 - **Performance First**: Native support for Lighthouse reporting, Web-Vitals, and intelligent caching.
@@ -149,7 +149,7 @@ When multisite is enabled and middleware registers mappings, requests that do no
 
 ## Protocol registration, cache control, streams and load metrics
 
-ZeruxJS now integrates the ZSRV protocol gateway without importing ZSRV's CLI/dev server. In your application's entry module or plugin registration function:
+ZeruxJS now integrates the ZHOST protocol gateway without importing ZHOST's CLI/dev server. In your application's entry module or plugin registration function:
 
 ```ts
 import { cached, stream, type ZeruxPluginApi } from 'zeruxjs';
@@ -181,7 +181,7 @@ export default function register(api: ZeruxPluginApi) {
 }
 ```
 
-`/rpc`, `/mcp`, `/events`, `/trpc/<name>`, and registered Connect endpoints are routed through the gateway before file routes or the normal 1 MiB buffered-body parser. **They are local-only by default**, and requests containing proxy forwarding headers are rejected unless `protocols.authorize` explicitly authorizes them. For deployments behind ZSRV/Nginx, configure authentication and trusted proxy controls yourself (do not trust `X-Forwarded-*` blindly). Limit `protocols.allowedOrigins` for cross-origin browser clients. MCP provides tools/resources and JSON transport subset, not the complete MCP transport surface.
+`/rpc`, `/mcp`, `/events`, `/trpc/<name>`, and registered Connect endpoints are routed through the gateway before file routes or the normal 1 MiB buffered-body parser. **They are local-only by default**, and requests containing proxy forwarding headers are rejected unless `protocols.authorize` explicitly authorizes them. For deployments behind ZHOST/Nginx, configure authentication and trusted proxy controls yourself (do not trust `X-Forwarded-*` blindly). Limit `protocols.allowedOrigins` for cross-origin browser clients. MCP provides tools/resources and JSON transport subset, not the complete MCP transport surface.
 
 `cached(payload, policy)` sets HTTP cache headers and optionally a content SHA-256 ETag. `Cache-Control: public` is an explicit decision: never use it for user-specific responses. `ctx.setCache(policy)` allows routes to manage response headers directly. `stream(...)` streams with backpressure, client-disconnect cancellation, byte ceilings and `no-store, no-transform`; for SSE use `api.protocols().publish` with the built-in replay-capable `/events` endpoint.
 
