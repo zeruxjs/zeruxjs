@@ -5,7 +5,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { finalizeWorkspaceRelease, RELEASE_STEPS } from './workspace-release.mjs';
 import { writePublicApiFreeze } from './workspace-api-freeze.mjs';
-import { selectPublishCandidates, compareReleaseVersions, summarizePublication, waitForRegistryPublication, comparePublishedContract, isReservedVersionConflict } from './workspace-publish.mjs';
+import { selectPublishCandidates, compareReleaseVersions, summarizePublication, waitForRegistryPublication, comparePublishedContract, isReservedVersionConflict, validateProvenanceRepository } from './workspace-publish.mjs';
+
+test('npm provenance requires a matching repository before any upload',()=>{
+  const pkg={name:'@test/example'};
+  assert.throws(()=>validateProvenanceRepository(pkg,'owner/repo'),/repository.url/);
+  pkg.repository={type:'git',url:'git+https://github.com/owner/repo.git'};
+  assert.doesNotThrow(()=>validateProvenanceRepository(pkg,'owner/repo'));
+  pkg.repository='https://github.com/owner/repo';assert.doesNotThrow(()=>validateProvenanceRepository(pkg,'owner/repo'));
+  pkg.repository={url:'git+https://github.com/another/repo.git'};assert.throws(()=>validateProvenanceRepository(pkg,'owner/repo'),/must identify/);
+  pkg.repository={url:'https://github.com/owner/repo?other=repo'};assert.throws(()=>validateProvenanceRepository(pkg,'owner/repo'),/must identify/);
+});
 
 test('published contract comparisons ignore npm normalization and retain genuine dependency changes',()=>{
   const local={name:'x',dependencies:{b:'0.0.2',a:'0.0.2'},bin:{x:'./dist/cli.js'}};

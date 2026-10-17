@@ -119,3 +119,7 @@ another package version bump.
 
 Packing logs `START` and `READY` for each numbered package, streams npm prepack
 and build output, and reports archive size, elapsed time and recorded integrity.
+
+All public package manifests must declare a `repository.url` matching the
+GitHub source repository. Planning and packing validate this before any upload,
+so missing repository metadata cannot cause a late npm provenance rejection.

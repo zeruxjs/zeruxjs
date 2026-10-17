@@ -2,6 +2,17 @@ import path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
 import { planPublicReleases } from './workspace-release-plan.mjs';
 
+/** Verify each release identifies the GitHub source repository used for provenance; reads no globals. */
+export function validateProvenanceRepository(pkg, repository) {
+  const raw=typeof pkg.repository==='string'?pkg.repository:pkg.repository?.url;
+  let url;
+  try { url=new URL((raw??'').replace(/^git\+/,'')); } catch { throw Error(`${pkg.name}: missing or invalid repository.url required for npm provenance`); }
+  const source=url.pathname.replace(/\.git\/?$/,'').replace(/\/$/,'').slice(1);
+  if (url.protocol!=='https:'||url.hostname!=='github.com'||url.username||url.password||url.search||url.hash||source.toLowerCase()!==repository.toLowerCase()) {
+    throw Error(`${pkg.name}: repository.url must identify https://github.com/${repository} for npm provenance`);
+  }
+}
+
 /**
  * Summarize confirmed registry publication, keeping failures and unattempted packages visible.
  * @param plan Selected releases and their recorded publication statuses; reads no globals.

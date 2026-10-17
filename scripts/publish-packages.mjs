@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 import { discoverWorkspaces } from './workspace-graph.mjs';
-import { selectPublishCandidates, compareReleaseVersions, summarizePublication, waitForRegistryPublication, comparePublishedContract, isReservedVersionConflict } from './workspace-publish.mjs';
+import { selectPublishCandidates, compareReleaseVersions, summarizePublication, waitForRegistryPublication, comparePublishedContract, isReservedVersionConflict, validateProvenanceRepository } from './workspace-publish.mjs';
 import { checkEntryTargets } from './workspace-public-consumer.mjs';
 import { npmCommand } from './npm-command.mjs';
 
@@ -14,6 +14,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(root, '.npm-release');
 const planFile = path.join(output, 'plan.json');
 const registry = 'https://registry.npmjs.org/';
+const repository=process.env.GITHUB_REPOSITORY??'zeruxjs/zeruxjs';
 const args = process.argv.slice(2);
 let publishingPlan, activePublication;
 if (args.length !== 1 || !['--plan', '--pack', '--publish'].includes(args[0])) {
@@ -79,6 +80,7 @@ try {
       }
     }
     const candidates = selectPublishCandidates(root,entries,previous,true);
+    for (const item of candidates) validateProvenanceRepository(entries.get(item.name).pkg,repository);
     const packages = [], skipped = [], issues = [], comparisons = [];
     // Independent public metadata reads are bounded and parallel; retain dependency order in the result.
     for (let offset = 0; offset < candidates.length; offset += 6) {
@@ -132,6 +134,7 @@ try {
       const entry = entries.get(item.name);
       if (!entry || entry.pkg.private || entry.pkg.version !== item.version || path.relative(root,entry.dir).split(path.sep).join('/') !== item.directory ||
         item.directory.split('/').some(part=>part.startsWith('sample'))) throw Error('Release plan no longer matches public package manifests');
+      validateProvenanceRepository(entry.pkg,repository);
       if (args[0] === '--pack') {
         const position=plan.packages.indexOf(item)+1;
         const started=Date.now();
