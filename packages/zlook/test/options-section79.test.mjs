@@ -12,7 +12,7 @@ test('invalid watcher options are rejected before resource allocation',()=>{
  assert.equal(activeWatcherCount(),0);
 });
 test('missing watcher root reports its native error and disposes cleanly',async()=>{
- const root=await mkdtemp(join(tmpdir(),'zwatch-options-'));const errors=[];
+ const root=await mkdtemp(join(tmpdir(),'zlook-options-'));const errors=[];
  const handle=watchDirectory(join(root,'missing'),()=>{},{onError:err=>errors.push(err)});
  try {await handle.ready;assert.ok(errors.length>0);}
  finally {handle.close();await rm(root,{recursive:true,force:true});}

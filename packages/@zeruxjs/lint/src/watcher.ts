@@ -1,4 +1,4 @@
-import { startWatcher } from 'zwatch';
+import { startWatcher } from 'zlook';
 import path from 'node:path';
 /** Debounced and serialized watcher with a disposer. */
 export function watchFiles(callback: () => Promise<void> | void, options: { cwd?: string; debounceMs?: number; onError?: (error: Error) => void } = {}): () => void {

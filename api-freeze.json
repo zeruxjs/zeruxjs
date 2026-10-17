@@ -902,7 +902,7 @@
       "peerDependenciesMeta": null
     },
     {
-      "name": "zwatch",
+      "name": "zlook",
       "version": "0.0.1",
       "private": false,
       "main": "./dist/index.js",

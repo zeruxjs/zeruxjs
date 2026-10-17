@@ -22,7 +22,7 @@ The workspace includes the following packages; the status means source inventori
 - `zeyro` — source inventoried; integration checks pending.
 - `zsrv` — source inventoried; integration checks pending.
 - `zuixs` — source inventoried; integration checks pending.
-- `zwatch` — source inventoried; integration checks pending.
+- `zlook` — source inventoried; integration checks pending.
 - `zyrojs` — source inventoried; integration checks pending.
 - `@zeruxjs/accessibility` — source inventoried; integration checks pending.
 - `@zeruxjs/ai` — source inventoried; integration checks pending.
@@ -61,7 +61,7 @@ The workspace includes the following packages; the status means source inventori
 3. Verify Redis cache namespaces: `clear()` currently delegates to `flushDb()` and may affect unrelated tenants if a Redis DB is shared. Use isolated Redis databases until prefix-scoped clearing is implemented.
 4. Exercise `zsrv` process launching on Windows and Unix; shell-based Windows commands may require deliberate execution via `cmd.exe`.
 5. Perform end-to-end browser and Node testing of ZeruxJS, ZyroJS, Zuix, the devtools and adapters.
-6. Audit `zwatch` daemon socket ownership, recovery and event backpressure; audit all package public APIs for version compatibility.
+6. Audit `zlook` daemon socket ownership, recovery and event backpressure; audit all package public APIs for version compatibility.
 7. Run dependency and license audits, SAST, fuzz tests, and load tests before claiming production certification.
 
 > **Section 31 migration note:** `@zeruxjs/mcp` has been retired; its tool/resource

@@ -9,7 +9,7 @@ The core server orchestration engine for **ZeruxJS**. `zsrv` manages the lifecyc
 ## Features
 
 - **Dual Server Management**: Starts and manages your application server alongside a dedicated developer tools server.
-- **Hot-Reloading**: Integrated with `zwatch` for intelligent, fast restarts on file changes.
+- **Hot-Reloading**: Integrated with `zlook` for intelligent, fast restarts on file changes.
 - **Zero-Port Management**: Automatically finds available ports for your services to avoid "Address in Use" errors.
 - **Portless Proxies**: Support for local domain aliases (e.g., `my-app.localhost`) for a production-like local development experience.
 - **WebSocket Gateway**: Built-in WS server for real-time communication between the framework and devtools.
@@ -40,7 +40,7 @@ await startServer({
 ## Integrations
 
 `zsrv` acts as the glue between several core components:
-- **`zwatch`**: For monitoring source changes.
+- **`zlook`**: For monitoring source changes.
 - **`z-dev`**: For devtools registration and dashboard management.
 - **`ws`**: For the real-time event pipeline.
 - **`portless`**: For internal local-domain routing.

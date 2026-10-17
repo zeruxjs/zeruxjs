@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import net from "node:net";
 import process from "node:process";
-import { startWatcher } from "zwatch";
+import { startWatcher } from "zlook";
 import { WebSocketServer, WebSocket } from "ws";
 import {
     closeSharedDevServer,

@@ -91,8 +91,8 @@ test('private optional peers are documented but do not block a public core tarba
 });
 test('local dependency version skew is an error, even with non-wildcard semver', t => {
   const { dir, pkg } = fixture(t);
-  pkg.dependencies = { zwatch: '0.3.0' };
-  const entries = new Map([['zwatch', { pkg: { private: false, version: '0.0.1-alpha.2' } }]]);
+  pkg.dependencies = { 'zlook': '0.3.0' };
+  const entries = new Map([['zlook', { pkg: { private: false, version: '0.0.1-alpha.2' } }]]);
   const result = inspectPublishablePackage({ name: 'example', dir, pkg, entries, packedFiles: expected, built: true });
   assert.ok(result.errors.some(x => x.code === 'WORKSPACE_VERSION_MISMATCH'));
 });

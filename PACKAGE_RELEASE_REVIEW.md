@@ -69,7 +69,7 @@ Publish dependencies before their consumers. Required peers are included in the 
 | 17 | `@zeruxjs/files` | `packages/@zeruxjs/files` |
 | 18 | `@zeruxjs/font` | `packages/@zeruxjs/font` |
 | 19 | `@zeruxjs/hooks` | `packages/@zeruxjs/hooks` |
-| 20 | `zwatch` | `packages/zwatch` |
+| 20 | `zlook` | `packages/zlook` |
 | 21 | `@zeruxjs/lint` | `packages/@zeruxjs/lint` |
 | 22 | `@zeruxjs/media` | `packages/@zeruxjs/media` |
 | 23 | `@zeruxjs/performance` | `packages/@zeruxjs/performance` |

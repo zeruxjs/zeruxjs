@@ -1,9 +1,9 @@
-# zwatch
+# zlook
 
 Filesystem watcher for ZeruxJS, with **shared in-process subscriptions**, native notifications and a polling fallback. File updates are reported once after debouncing, and watchers are disposed when the last subscriber unsubscribes.
 
 ```ts
-import { startWatcher } from 'zwatch';
+import { startWatcher } from 'zlook';
 const stop = startWatcher('src', (event) => console.log(event.file, event.type), {
   debounceMs: 75,
   pollIntervalMs: 1500,
@@ -22,7 +22,7 @@ Events: `new`, `update`, `delete`; paths are relative to the watched root. Defau
 Use `watchDirectory()` when you need to await the baseline scan or force reconciliation:
 
 ```ts
-import { watchDirectory } from 'zwatch';
+import { watchDirectory } from 'zlook';
 const watcher = watchDirectory('./src', (event) => console.log(event), {
   ignored: file => file === '.cache' || file.startsWith('.cache/'),
   pollIntervalMs: 2000,

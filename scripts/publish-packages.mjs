@@ -32,7 +32,9 @@ async function metadata(name, version) {
   const response = await fetch(`${registry}${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {signal:AbortSignal.timeout(30000)});
   if (response.status === 404) return null;
   if (!response.ok) throw Error(`Registry lookup failed for ${name}@${version}: HTTP ${response.status}`);
-  return response.json();
+  const manifest = await response.json();
+  // npm's temporary staged holding package is not a published application release.
+  return manifest.stub === true || manifest.version === '0.0.0-stage' ? null : manifest;
 }
 /** Persist the reviewable release plan, including packed archive integrity. */
 function save(plan) { fs.mkdirSync(output,{recursive:true}); fs.writeFileSync(planFile,JSON.stringify(plan,null,2)+'\n'); }
@@ -104,6 +106,13 @@ try {
         const latest = await metadata(item.name,'latest');
         if (latest && compareReleaseVersions(latest.version,item.version) >= 0) throw Error(`${item.name}: refusing a stale release`);
         npm(['publish',path.join(output,item.archive),'--access','public','--tag','latest','--provenance','--ignore-scripts','--registry',registry],entry.dir,true);
+        let published;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          published = await metadata(item.name,item.version);
+          if (published) break;
+          await new Promise(resolve=>setTimeout(resolve,2000));
+        }
+        if (!published) throw Error(`${item.name}@${item.version} is not publicly available; check npm stage list and approve the pending release before retrying`);
         console.log(`Published ${item.name}@${item.version}`);
       }
     }
