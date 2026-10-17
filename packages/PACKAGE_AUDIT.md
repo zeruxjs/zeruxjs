@@ -21,7 +21,7 @@ The workspace includes the following packages; the status means source inventori
 - `zeruxjs` — source inventoried; integration checks pending.
 - `zeyro` — source inventoried; integration checks pending.
 - `zsrv` — source inventoried; integration checks pending.
-- `zuix` — source inventoried; integration checks pending.
+- `zuixs` — source inventoried; integration checks pending.
 - `zwatch` — source inventoried; integration checks pending.
 - `zyrojs` — source inventoried; integration checks pending.
 - `@zeruxjs/accessibility` — source inventoried; integration checks pending.

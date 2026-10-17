@@ -1,15 +1,15 @@
-# Zuix
+# Zuixs
 
-**Zuix** (Zerux User Interface and Experience) is a utility-first, on-demand CSS compiler. It has no runtime framework dependency and is designed for **ZeruxJS**, **ZyroJS**, React, Vue, Next.js, Nuxt and plain HTML.
+**Zuixs** (Zerux User Interface and Experience) is a utility-first, on-demand CSS compiler. It has no runtime framework dependency and is designed for **ZeruxJS**, **ZyroJS**, React, Vue, Next.js, Nuxt and plain HTML.
 
 ## Getting started
 
 ```sh
-npm run build -w zuix
-node apps/proworkspace/packages/zuix/dist/cli.js build --cwd apps/proworkspace -o public/zuix.css
+npm run build -w zuixs
+node apps/proworkspace/packages/zuixs/dist/cli.js build --cwd apps/proworkspace -o public/zuix.css
 ```
 
-In a consuming package, install `zuix` and use the `zuix` binary. Add the generated stylesheet in the application's HTML root/layout. For dev regeneration, use `zuix watch -c zuix.config.mjs`. The CLI scans `html`, `js`, `jsx`, `ts`, `tsx`, `vue`, `svelte`, `astro`, `md` and `mdx` by default and skips common build directories. Set `content` to constrain scanning on large projects.
+In a consuming package, install `zuixs` and use the `zuix` binary. Add the generated stylesheet in the application's HTML root/layout. For dev regeneration, use `zuix watch -c zuix.config.mjs`. The CLI scans `html`, `js`, `jsx`, `ts`, `tsx`, `vue`, `svelte`, `astro`, `md` and `mdx` by default and skips common build directories. Set `content` to constrain scanning on large projects.
 
 ```js
 // zuix.config.mjs
@@ -31,22 +31,22 @@ export default {
 ## API
 
 ```ts
-import { createZuix, generateCSS, extractClasses, injectZuix } from 'zuix';
-import { buildZuix, watchZuix, scanProject } from 'zuix/node';
+import { createZuix, generateCSS, extractClasses, injectZuix } from 'zuixs';
+import { buildZuix, watchZuix, scanProject } from 'zuixs/node';
 
 const result = createZuix({ preflight: false }).generate(['p-4','hover:bg-blue-600']);
 console.log(result.css, result.unmatched);
 // SSR: renderZuixStyle(classes); Browser/ZyroJS: injectZuix(classes)
 ```
 
-For a Vite-based app (including Vue, React, or Nuxt in Vite mode), use `zuixVite()` from `zuix/vite`, and import `virtual:zuix.css`. The plugin is an early integration point; for reliable production builds with dynamically generated strings, prefer the CLI scanner and explicit `safelist` values.
+For a Vite-based app (including Vue, React, or Nuxt in Vite mode), use `zuixVite()` from `zuixs/vite`, and import `virtual:zuix.css`. The plugin is an early integration point; for reliable production builds with dynamically generated strings, prefer the CLI scanner and explicit `safelist` values.
 
 ## Utilities
 
 Includes spacing, sizes, flex/grid/layout, typography, colors, palette shades, background, border, shadow, radii, positioning, overflow, display, responsive breakpoints, dark mode, pseudo states, group/peer states, arbitrary values (`w-[35px]`) and property utilities (`[scroll-margin-top:2rem]`). Variants can be chained, e.g. `md:dark:hover:bg-blue-700`. The `!` modifier marks declarations important. Responsive defaults: `sm` 640px, `md` 768px, `lg` 1024px, `xl` 1280px, `2xl` 1536px.
 
 ```ts
-import type { ZuixPlugin } from 'zuix';
+import type { ZuixPlugin } from 'zuixs';
 const plugin: ZuixPlugin = ({addUtilities,addBase,theme}) => {
  addUtilities({'.text-brand':{color:theme('colors.brand','#2563eb')}});
  addBase(':root { --app-radius: 8px; }');
@@ -112,4 +112,4 @@ npm run test:workspace-tools
 npm run verify:source            # source-only; does not certify npm ci
 ```
 
-`npm run test:zuix` checks tarball contents and installs the packed `zuix` offline in an isolated consumer, importing `zuix`, `zuix/node`, `zuix/vite`, and `zuix/theme`. It does not certify a clean workspace installation or actual Vite/Next/Nuxt applications. Chromium fails to render in the current environment; real computed-style screenshots, CSSOM validation across browsers, large-scale memory/load profiling, and full cross-OS tests remain release gates for Sections 82–85. The existing 14 unresolved external workspace dependency resolutions also remain outstanding.
+`npm run test:zuix` checks tarball contents and installs the packed `zuixs` offline in an isolated consumer, importing `zuixs`, `zuix/node`, `zuix/vite`, and `zuix/theme`. It does not certify a clean workspace installation or actual Vite/Next/Nuxt applications. Chromium fails to render in the current environment; real computed-style screenshots, CSSOM validation across browsers, large-scale memory/load profiling, and full cross-OS tests remain release gates for Sections 82–85. The existing 14 unresolved external workspace dependency resolutions also remain outstanding.

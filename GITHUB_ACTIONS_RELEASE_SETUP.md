@@ -14,7 +14,7 @@ This guide applies to the **uploaded ZeruxJS repository layout** (`packages/` an
 | `git-sync.yml` | Push | Optional *fast-forward-only* GitLab branch mirror; refuses remote-divergent force pushes | No |
 | `github-pages-deploy.yml` | Master/docs changes/manual | Site pages only | No |
 
-The public package candidate set is **13**: `@zeruxjs/cache`, `@zeruxjs/db`, `@zeruxjs/hooks`, `@zeruxjs/lint`, `@zeruxjs/security`, `z-dev`, `zcli`, `zsrv`, `zeruxjs`, `zeyro`, `zuix`, `zwatch`, `zyrojs`. Other `packages/` are private, including `zenix` (not yet separately certified), samples and three nested `create-*` packages. The example `apps/` remain root npm workspaces but are not part of package-only release qualification. The original app sources, VS Code extension and docs have been preserved.
+The public package candidate set is **13**: `@zeruxjs/cache`, `@zeruxjs/db`, `@zeruxjs/hooks`, `@zeruxjs/lint`, `@zeruxjs/security`, `z-dev`, `zcli`, `zsrv`, `zeruxjs`, `zeyro`, `zuixs`, `zwatch`, `zyrojs`. Other `packages/` are private, including `zenix` (not yet separately certified), samples and three nested `create-*` packages. The example `apps/` remain root npm workspaces but are not part of package-only release qualification. The original app sources, VS Code extension and docs have been preserved.
 
 ## Your initial steps after uploading this ZIP
 
@@ -37,7 +37,7 @@ npm run release:ci:decision    # local invocation always NO_GO by design
 
 ## npm ownership and trusted publishing
 
-You indicated control of npm organizations `@zeruxjs`, `@zyrojs` and `@zenixjs`. This is necessary for scoped packages using those organizations. **Control of the organizations does not prove ownership of *unscoped* names** `zyrojs`, `zuix`, `zeruxjs`, `zsrv`, `zcli`, `zwatch`, `zeyro` or `z-dev`: verify those names individually before publishing. `@zyrojs` and `@zenixjs` are not automatically substituted for current package names; that would be an API migration.
+You indicated control of npm organizations `@zeruxjs`, `@zyrojs` and `@zenixjs`. This is necessary for scoped packages using those organizations. **Control of the organizations does not prove ownership of *unscoped* names** `zyrojs`, `zuixs`, `zeruxjs`, `zsrv`, `zcli`, `zwatch`, `zeyro` or `z-dev`: verify those names individually before publishing. `@zyrojs` and `@zenixjs` are not automatically substituted for current package names; that would be an API migration.
 
 Once you approve each release candidate and namespace, configure npm **Trusted Publishing** for the exact repository/workflow to publish. It uses GitHub OIDC, requires `id-token: write` in the **future manual publish job**, and a sufficiently recent Node/npm. Apply a protected `npm-release` GitHub environment with required reviewers and branch restrictions. No npm publish workflow or privileged token is included here to avoid accidental release before GO. Do not share credentials in chat.
 

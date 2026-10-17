@@ -5,7 +5,7 @@ import {mkdtempSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {createZuix} from '../packages/zuix/dist/index.js';
+import {createZuix} from '../packages/zuixs/dist/index.js';
 const tmp=mkdtempSync(join(tmpdir(),'zuix-browser-'));
 try{
  const css=createZuix({preflight:false}).generate(['p-4','text-blue-500','dark:bg-slate-900','motion-reduce:duration-0']).css;

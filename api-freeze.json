@@ -868,7 +868,7 @@
       "peerDependenciesMeta": null
     },
     {
-      "name": "zuix",
+      "name": "zuixs",
       "version": "0.0.1",
       "private": false,
       "main": "./dist/index.js",

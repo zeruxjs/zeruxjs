@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
-const project=join(root,'packages/zuix');
+const project=join(root,'packages/zuixs');
 const npm=process.platform==='win32'?'npm.cmd':'npm';
 const tsc=process.platform==='win32'?'tsc.cmd':'tsc';
 function run(bin,args,cwd=root,capture=false){
@@ -14,8 +14,8 @@ function run(bin,args,cwd=root,capture=false){
  if(r.error||r.status!==0)throw new Error(`${bin} ${args.join(' ')} failed: ${r.error?.message??r.status}`);
  return r.stdout??'';
 }
-run(tsc,['-p','packages/zuix/tsconfig.json','--pretty','false']);
-run(process.execPath,['--test',...readdirSync(join(project,'tests')).filter(n=>n.endsWith('.mjs')).map(n=>'packages/zuix/tests/'+n)]);
+run(tsc,['-p','packages/zuixs/tsconfig.json','--pretty','false']);
+run(process.execPath,['--test',...readdirSync(join(project,'tests')).filter(n=>n.endsWith('.mjs')).map(n=>'packages/zuixs/tests/'+n)]);
 const tmp=mkdtempSync(join(tmpdir(),'zuix-pack-'));
 try{
  const pack=JSON.parse(run(npm,['pack','--ignore-scripts','--json','--pack-destination',tmp],project,true));
@@ -26,10 +26,10 @@ try{
  writeFileSync(join(consumer,'package.json'),' {"private":true,"type":"module"}\n');
  run(npm,['install','--offline','--ignore-scripts','--no-audit','--no-fund','--no-package-lock',join(tmp,pack[0].filename)],consumer);
  writeFileSync(join(consumer,'check.mjs'),`import assert from 'node:assert/strict';
-import {createZuix,extractClasses,renderZuixStyle} from 'zuix';
-import {buildZuix,scanProject} from 'zuix/node';
-import {zuixVite} from 'zuix/vite';
-import {resolveTheme} from 'zuix/theme';
+import {createZuix,extractClasses,renderZuixStyle} from 'zuixs';
+import {buildZuix,scanProject} from 'zuixs/node';
+import {zuixVite} from 'zuixs/vite';
+import {resolveTheme} from 'zuixs/theme';
 const css=createZuix({preflight:false}).generate(['p-4']).css;
 assert.match(css,/padding:1rem/);
 assert(extractClasses('<div class="p-4"></div>').includes('p-4'));
