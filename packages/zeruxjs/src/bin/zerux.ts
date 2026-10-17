@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { registerLoader } from "../loader/register-loader.js";
-import { cli } from "zcli";
+import { cli } from "zargv";
 
 // Core commands
 import { server } from "../commands/server.js";

@@ -1,11 +1,11 @@
-# ZCLI — composable CLI toolkit
+# ZARGV — composable CLI toolkit
 
 Command registry and explicit plugin discovery for ZeruxJS, ZyroJS, and other JavaScript applications. **This is an evolving 0.x package.** Commands can be shared under a common keyword without requiring plugins to mutate a global command map or immediately call `process.exit()`.
 
 ## Programmatic command registry
 
 ```ts
-import { CommandRegistry } from 'zcli';
+import { CommandRegistry } from 'zargv';
 
 const commands = new CommandRegistry();
 commands.registerKey('zerux', 'ZeruxJS commands');
@@ -57,7 +57,7 @@ Plugins are **trusted executable code**, not sandboxed extensions. Entry paths a
 
 ## Existing ZeruxJS compatibility
 
-`import { cli } from 'zcli'` still exposes `cli.addKey(keyword, {func,description})` and `cli.addCommand(keyword, name, handler, options)` with the same parsed argument structure. Legacy handlers no longer cause an immediate `process.exit()`; set `process.exitCode` if an explicit exit status is needed. Asynchronous development servers continue to run while they have active handles.
+`import { cli } from 'zargv'` still exposes `cli.addKey(keyword, {func,description})` and `cli.addCommand(keyword, name, handler, options)` with the same parsed argument structure. Legacy handlers no longer cause an immediate `process.exit()`; set `process.exitCode` if an explicit exit status is needed. Asynchronous development servers continue to run while they have active handles.
 
 ## Validation
 
@@ -68,12 +68,12 @@ node --test test/*.test.mjs
 
 ## Section 79 — safe app starter
 
-After installing/building this package, use `zcli create my-app` (TypeScript),
-`zcli create my-app --js` (JavaScript), or `zcli create my-app --dry-run` to inspect
+After installing/building this package, use `zargv create my-app` (TypeScript),
+`zargv create my-app --js` (JavaScript), or `zargv create my-app --dry-run` to inspect
 what will be written. Programmatic usage:
 
 ```ts
-import { createZeruxProject } from 'zcli';
+import { createZeruxProject } from 'zargv';
 const result = createZeruxProject('./my-app', { language: 'typescript' });
 console.log(result.files);
 ```

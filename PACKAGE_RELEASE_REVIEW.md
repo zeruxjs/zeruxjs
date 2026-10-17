@@ -86,7 +86,7 @@ Publish dependencies before their consumers. Required peers are included in the 
 | 34 | `@zeruxjs/vue` | `packages/@zeruxjs/vue` |
 | 35 | `@zeruxjs/zyro` | `packages/@zeruxjs/zyro` |
 | 36 | `zforge` | `packages/zforge` |
-| 37 | `zcli` | `packages/zcli` |
+| 37 | `zargv` | `packages/zargv` |
 | 38 | `zsrv` | `packages/zsrv` |
 | 39 | `zeruxjs` | `packages/zeruxjs` |
 | 40 | `zeyro` | `packages/zeyro` |

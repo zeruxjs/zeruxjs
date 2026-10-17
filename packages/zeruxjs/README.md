@@ -15,7 +15,7 @@ ZeruxJS is engine-agnostic, allowing you to build applications using your favori
 
 ## ✨ Key Features
 
-- **Unified CLI**: A single command-line interface (`zcli`) to manage your entire lifecycle.
+- **Unified CLI**: A single command-line interface (`zargv`) to manage your entire lifecycle.
 - **Advanced Server Orchestration**: Powered by `zsrv`, managing both app and dev servers with ease.
 - **Hot-Module Replacement**: High-performance watching and reloading via `zlook`.
 - **Built-in Security**: Hardened by default with `@zeruxjs/security`.
