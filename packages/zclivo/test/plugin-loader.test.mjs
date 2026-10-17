@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {CommandRegistry,loadConfiguredPlugins,loadPlugins} from '../dist/index.js';
 test('explicit workspace plugins share a keyword; npm package exports hide package.json',async()=>{
- const root=mkdtempSync(join(tmpdir(),'zargv-explicit-'));
+ const root=mkdtempSync(join(tmpdir(),'zclivo-explicit-'));
  try {
   const pkg=join(root,'node_modules','cli-extra');mkdirSync(pkg,{recursive:true});
   writeFileSync(join(root,'package.json'),JSON.stringify({name:'fixture',zeruxCli:{plugins:['cli-extra']}}));

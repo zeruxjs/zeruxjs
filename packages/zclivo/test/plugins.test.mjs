@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { resolvePluginEntry } from '../dist/plugins.js';
 
 function fixture(testFn) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zargv-plugins-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zclivo-plugins-'));
   const pkg = path.join(root, 'package');
   fs.mkdirSync(pkg);
   fs.mkdirSync(path.join(pkg, 'dist'));

@@ -1,5 +1,5 @@
 {
-  "name": "zargv",
+  "name": "zclivo",
   "version": "0.0.1",
   "description": "Composable multi-command CLI and secure opt-in plugin registry for ZeruxJS",
   "type": "module",
@@ -30,7 +30,7 @@
     "CLI Wrapper to help share CLI keyword and Coloring and other small plugins"
   ],
   "bin": {
-    "zargv": "./dist/bin.js"
+    "zclivo": "./dist/bin.js"
   },
   "files": [
     "dist/",

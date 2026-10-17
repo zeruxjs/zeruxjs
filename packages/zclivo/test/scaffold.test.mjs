@@ -8,7 +8,7 @@ import {createZeruxProject} from '../dist/index.js';
 import {runZcli} from '../dist/bin.js';
 
 test('generates JavaScript starter in new directory with smoke test and refuses overwrite',()=>{
- const root=mkdtempSync(join(tmpdir(),'zargv-scaffold-'));const dir=join(root,'demo-js');
+ const root=mkdtempSync(join(tmpdir(),'zclivo-scaffold-'));const dir=join(root,'demo-js');
  try {
   const result=createZeruxProject(dir,{language:'javascript'});
   assert.equal(result.created,true);assert.ok(result.files.includes('tests/smoke.test.mjs'));
@@ -20,7 +20,7 @@ test('generates JavaScript starter in new directory with smoke test and refuses 
  } finally {rmSync(root,{recursive:true,force:true});}
 });
 test('TypeScript starter and dry-run do not create files and JS CLI validates flags',()=>{
- const root=mkdtempSync(join(tmpdir(),'zargv-scaffold-'));const dir=join(root,'demo-ts'),messages=[],errors=[];
+ const root=mkdtempSync(join(tmpdir(),'zclivo-scaffold-'));const dir=join(root,'demo-ts'),messages=[],errors=[];
  try {
   const planned=createZeruxProject(dir,{dryRun:true});assert.equal(planned.created,false);assert.equal(existsSync(dir),false);
   assert.equal(runZcli(['create',dir,'--ts'],s=>messages.push(s),s=>errors.push(s)),0);
@@ -32,7 +32,7 @@ test('TypeScript starter and dry-run do not create files and JS CLI validates fl
  } finally {rmSync(root,{recursive:true,force:true});}
 });
 test('dangling symlink target is treated as occupied and never followed',()=>{
- const root=mkdtempSync(join(tmpdir(),'zargv-link-'));
+ const root=mkdtempSync(join(tmpdir(),'zclivo-link-'));
  try {
   symlinkSync(join(root,'nonexistent'),join(root,'taken'));
   assert.throws(()=>createZeruxProject(join(root,'taken')),/already exists/);

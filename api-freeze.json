@@ -739,7 +739,7 @@
       "peerDependenciesMeta": null
     },
     {
-      "name": "zargv",
+      "name": "zclivo",
       "version": "0.0.1",
       "private": false,
       "main": "./dist/index.js",
@@ -752,7 +752,7 @@
         }
       },
       "bin": {
-        "zargv": "./dist/bin.js"
+        "zclivo": "./dist/bin.js"
       },
       "engines": null,
       "peerDependencies": null,
