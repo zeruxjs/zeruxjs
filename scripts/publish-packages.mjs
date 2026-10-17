@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { discoverWorkspaces } from './workspace-graph.mjs';
-import { selectPublishCandidates, compareReleaseVersions, summarizePublication } from './workspace-publish.mjs';
+import { selectPublishCandidates, compareReleaseVersions, summarizePublication, waitForRegistryPublication, comparePublishedContract, isReservedVersionConflict } from './workspace-publish.mjs';
 import { checkEntryTargets } from './workspace-public-consumer.mjs';
 import { npmCommand } from './npm-command.mjs';
 
@@ -21,16 +21,29 @@ if (args.length !== 1 || !['--plan', '--pack', '--publish'].includes(args[0])) {
 }
 
 /** Run literal arguments without a shell; npm secrets stay in the inherited environment. */
-function run(command, callArgs, cwd = root, inherit = false) {
-  const result = spawnSync(command, callArgs, {cwd, encoding:'utf8', stdio:inherit?'inherit':'pipe', maxBuffer:16*1024*1024, timeout:600000});
+function run(command, callArgs, cwd = root, inherit = false, streamStderr = false) {
+  const result = spawnSync(command, callArgs, {cwd, encoding:'utf8', stdio:inherit?'inherit':['ignore','pipe',streamStderr?'inherit':'pipe'], maxBuffer:16*1024*1024, timeout:600000});
   if (result.error || result.status !== 0) throw Error(`${command} ${callArgs[0]} failed${result.error ? `: ${result.error.message}` : ''}`);
   return result.stdout?.trim();
 }
 /** Invoke npm through its JavaScript CLI on every platform. */
-function npm(callArgs, cwd, inherit) { const cmd = npmCommand(callArgs); return run(cmd.command, cmd.args, cwd, inherit); }
+function npm(callArgs, cwd, inherit) { const cmd = npmCommand(callArgs); return run(cmd.command, cmd.args, cwd, inherit,callArgs[0]==='pack'); }
+/** Stream publish progress while retaining a bounded error tail for explicit reserved-version conflicts. */
+async function uploadArchive(callArgs,cwd) {
+  const command=npmCommand(callArgs);
+  return new Promise((resolve,reject)=>{
+    const child=spawn(command.command,command.args,{cwd,stdio:['ignore','pipe','pipe'],timeout:600000});
+    let tail='';
+    for (const [stream,destination] of [[child.stdout,process.stdout],[child.stderr,process.stderr]]) {
+      stream.on('data',chunk=>{destination.write(chunk);tail=(tail+chunk.toString()).slice(-65536);});
+    }
+    child.on('error',reject);
+    child.on('close',(status,signal)=>resolve({status,signal,tail}));
+  });
+}
 /** Read public registry metadata; only a confirmed 404 is considered unpublished. */
 async function metadata(name, version) {
-  const response = await fetch(`${registry}${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {signal:AbortSignal.timeout(30000)});
+  const response = await fetch(`${registry}${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {cache:'no-store',signal:AbortSignal.timeout(30000)});
   if (response.status === 404) return null;
   if (!response.ok) throw Error(`Registry lookup failed for ${name}@${version}: HTTP ${response.status}`);
   const manifest = await response.json();
@@ -47,27 +60,42 @@ try {
   const entries = discoverWorkspaces(root);
   if (args[0] === '--plan') {
     const event = process.env.GITHUB_EVENT_PATH ? JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8')) : {};
-    const all = process.env.PUBLISH_UNPUBLISHED === 'true';
     const previous = new Map();
-    if (!all) {
-      if (!/^[a-f0-9]{40}$/.test(event.before ?? '') || /^0+$/.test(event.before)) throw Error('No valid push base; use the manual publish-unpublished workflow for the initial release');
-      run('git',['cat-file','-e',`${event.before}^{commit}`]);
+    const changedSinceBase=new Map();
+    // Git provides change context; registry availability selects releases, including failures from earlier commits.
+    const parent=spawnSync('git',['rev-parse','--verify','HEAD^'],{cwd:root,encoding:'utf8'});
+    const base=/^[a-f0-9]{40}$/.test(event.before??'')&&!/^0+$/.test(event.before)?event.before:
+      parent.status===0?parent.stdout.trim():null;
+    if (base) {
+      run('git',['cat-file','-e',`${base}^{commit}`]);
       for (const entry of entries.values()) {
         const directory = path.relative(root,entry.dir).split(path.sep).join('/');
-        const result = spawnSync('git',['show',`${event.before}:${directory}/package.json`],{cwd:root,encoding:'utf8'});
+        const result = spawnSync('git',['show',`${base}:${directory}/package.json`],{cwd:root,encoding:'utf8'});
         if (result.status === 0) previous.set(directory,JSON.parse(result.stdout));
         else if (result.error || !/does not exist in|exists on disk, but not in/.test(result.stderr ?? '')) throw Error(`Cannot read previous manifest: ${directory}`);
+        const changed=spawnSync('git',['diff','--quiet',base,commit,'--',directory],{cwd:root,encoding:'utf8'});
+        if (changed.error || ![0,1].includes(changed.status)) throw Error(`Cannot compare Git changes: ${directory}`);
+        changedSinceBase.set(directory,changed.status===1);
       }
     }
-    const candidates = selectPublishCandidates(root,entries,previous,all);
-    const packages = [], skipped = [], issues = [];
+    const candidates = selectPublishCandidates(root,entries,previous,true);
+    const packages = [], skipped = [], issues = [], comparisons = [];
     // Independent public metadata reads are bounded and parallel; retain dependency order in the result.
     for (let offset = 0; offset < candidates.length; offset += 6) {
       const checked = await Promise.all(candidates.slice(offset,offset+6).map(async item=>({
         item, published:await metadata(item.name,item.version), latest:await metadata(item.name,'latest')
       })));
       for (const {item,published,latest} of checked) {
-        if (published) skipped.push(`${item.name}@${item.version}`);
+        const available=published??(latest?.version===item.version?latest:null);
+        const old=previous.get(item.directory);
+        const contractDifferences=available?comparePublishedContract(entries.get(item.name).pkg,available):[];
+        comparisons.push({name:item.name,localVersion:item.version,publishedExactVersion:available?.version??null,
+          registryLatest:latest?.version??null,previousGitVersion:old?.version??null,changedSinceGitBase:changedSinceBase.get(item.directory)??null,contractDifferences,
+          reason:available?'already-published':old?.name===item.name&&old.version===item.version?'retry-unpublished-version':'new-or-bumped-version'});
+        if (available) {
+          skipped.push(`${item.name}@${item.version}`);
+          if (contractDifferences.length) issues.push(`${item.name}@${item.version}: published contract differs in ${contractDifferences.join(', ')}; bump the version instead of overwriting npm`);
+        }
         else if (latest && compareReleaseVersions(latest.version,item.version) >= 0) {
           issues.push(`${item.name}: refusing to move latest backwards; bump above ${latest.version} if you own it, otherwise choose another name`);
         } else packages.push(item);
@@ -80,10 +108,10 @@ try {
         issues.push(`${item.name}: ${dependency} must be published first; use the manual publish-unpublished run`);
       }
     }
-    const plan={schemaVersion:1,commit,packages,skipped,issues,releaseTargets:candidates.map(({name,version})=>({name,version}))};
+    const plan={schemaVersion:1,commit,gitBase:base,comparisons,packages,skipped,issues,releaseTargets:candidates.map(({name,version})=>({name,version}))};
     save(plan);
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT,`has_releases=${packages.length>0 && issues.length===0}\n`);
-    console.log(JSON.stringify({packages,skipped,issues},null,2));
+    console.log(JSON.stringify({comparisonSource:'npm registry (authoritative), Git base (context)',gitBase:base,comparisons,packages,skipped,issues},null,2));
     if (issues.length) throw Error('Release plan blocked: '+issues.join('; '));
     if (!packages.length && candidates.length) {
       const summary=summarizePublication(plan);
@@ -105,6 +133,9 @@ try {
       if (!entry || entry.pkg.private || entry.pkg.version !== item.version || path.relative(root,entry.dir).split(path.sep).join('/') !== item.directory ||
         item.directory.split('/').some(part=>part.startsWith('sample'))) throw Error('Release plan no longer matches public package manifests');
       if (args[0] === '--pack') {
+        const position=plan.packages.indexOf(item)+1;
+        const started=Date.now();
+        console.log(`[pack] ${position}/${plan.packages.length} START: ${item.name}@${item.version}`);
         const missing = checkEntryTargets(entry.dir,entry.pkg);
         if (missing.length) throw Error(`${item.name}: missing entrypoints: ${missing.join(', ')}`);
         const report = JSON.parse(npm(['pack','--json','--pack-destination',output],entry.dir));
@@ -113,28 +144,48 @@ try {
         item.archive = packed[0].filename;
         item.integrity = integrity(path.join(output,item.archive));
         save(plan);
+        console.log(`[pack] ${position}/${plan.packages.length} READY: ${item.archive} (${Math.ceil(fs.statSync(path.join(output,item.archive)).size/1024)} KiB, ${((Date.now()-started)/1000).toFixed(1)}s); integrity recorded.`);
       } else {
         if (process.env.GITHUB_ACTIONS !== 'true' || process.env.GITHUB_REF !== 'refs/heads/master') throw Error('Registry writes are restricted to GitHub Actions on master');
         if (!/^[\w.-]+\.tgz$/.test(item.archive ?? '') || integrity(path.join(output,item.archive)) !== item.integrity) throw Error('Release archive missing or changed');
         const position=plan.packages.indexOf(item)+1;
         console.log(`[publish] ${position}/${plan.packages.length}: ${item.name}@${item.version}`);
-        if (await metadata(item.name,item.version)) {
+        let current=await metadata(item.name,item.version);
+        const latest=current?null:await metadata(item.name,'latest');
+        if (!current&&latest?.version===item.version) current=latest;
+        if (current) {
+          const differences=comparePublishedContract(entry.pkg,current);
+          if (differences.length) throw Error(`${item.name}@${item.version}: published contract changed in ${differences.join(', ')}; a new version is required`);
           activePublication.status='already-published';save(plan);
           console.log(`[publish] ${position}/${plan.packages.length} ALREADY PUBLISHED: ${item.name}@${item.version}`);continue;
         }
-        const latest = await metadata(item.name,'latest');
         if (latest && compareReleaseVersions(latest.version,item.version) >= 0) throw Error(`${item.name}: refusing a stale release`);
-        npm(['publish',path.join(output,item.archive),'--access','public','--tag','latest','--provenance','--ignore-scripts','--registry',registry],entry.dir,true);
-        let published;
-        for (let attempt = 0; attempt < 5; attempt++) {
-          published = await metadata(item.name,item.version);
-          if (published) break;
-          await new Promise(resolve=>setTimeout(resolve,2000));
-        }
-        if (!published) throw Error(`${item.name}@${item.version} is not publicly available; check npm stage list and approve the pending release before retrying`);
-        activePublication.status='published';save(plan);
-        console.log(`[publish] ${position}/${plan.packages.length} PUBLISHED AND VERIFIED: ${item.name}@${item.version}`);
+        const upload=await uploadArchive(['publish',path.join(output,item.archive),'--access','public','--tag','latest','--provenance','--ignore-scripts','--registry',registry],entry.dir);
+        const reserved=isReservedVersionConflict(upload.tail,item.version);
+        if (upload.signal || (upload.status!==0&&!reserved)) throw Error(`${item.name}: npm publish failed${upload.signal?` (${upload.signal})`:''}`);
+        activePublication.status='processing';save(plan);
+        console.log(`[publish] ${position}/${plan.packages.length} ${reserved?'VERSION ALREADY RESERVED ON NPM':'UPLOAD ACCEPTED'}: ${item.name}@${item.version}; public registry verification will follow without another upload.`);
       }
+    }
+    if (publishingPlan) {
+      activePublication=null;
+      const pending=await waitForRegistryPublication(plan.publicationResults.filter(item=>item.status==='processing'),{
+        lookup:async(name,version)=>{
+          const manifest=await metadata(name,version);
+          if (manifest) {
+            const differences=comparePublishedContract(entries.get(name).pkg,manifest);
+            if (differences.length) throw Error(`${name}@${version}: published contract differs in ${differences.join(', ')}`);
+          }
+          return manifest;
+        },
+        onConfirmed:item=>{
+          plan.publicationResults.find(result=>result.name===item.name).status='published';save(plan);
+          const summary=summarizePublication(plan);
+          console.log(`[publish] ${summary.confirmed}/${summary.total} VERIFIED ON NPM: ${item.name}@${item.version}`);
+        },
+        onWaiting:(items,remaining)=>console.log(`[publish] Waiting for npm registry processing: ${items.length} accepted upload(s), up to ${Math.ceil(remaining/60000)} minute(s) remaining.`)
+      });
+      if (pending.length) throw Error(`npm accepted these uploads but they are not public after 15 minutes: ${pending.map(item=>`${item.name}@${item.version}`).join(', ')}. Check npm processing status before retrying; this alone does not imply a staged release.`);
     }
   }
 } catch (error) {

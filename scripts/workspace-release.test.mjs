@@ -5,7 +5,29 @@ import os from 'node:os';
 import path from 'node:path';
 import { finalizeWorkspaceRelease, RELEASE_STEPS } from './workspace-release.mjs';
 import { writePublicApiFreeze } from './workspace-api-freeze.mjs';
-import { selectPublishCandidates, compareReleaseVersions, summarizePublication } from './workspace-publish.mjs';
+import { selectPublishCandidates, compareReleaseVersions, summarizePublication, waitForRegistryPublication, comparePublishedContract, isReservedVersionConflict } from './workspace-publish.mjs';
+
+test('published contract comparisons ignore npm normalization and retain genuine dependency changes',()=>{
+  const local={name:'x',dependencies:{b:'0.0.2',a:'0.0.2'},bin:{x:'./dist/cli.js'}};
+  const remote={name:'x',dependencies:{a:'0.0.2',b:'0.0.2'},bin:{x:'dist/cli.js'}};
+  assert.deepEqual(comparePublishedContract(local,remote),[]);
+  remote.dependencies.a='0.0.1';assert.deepEqual(comparePublishedContract(local,remote),['dependencies']);
+  assert.equal(isReservedVersionConflict('npm error E409 Cannot publish over previously staged version "0.0.2".','0.0.2'),true);
+  assert.equal(isReservedVersionConflict('npm error E409 Cannot publish over previously staged version "0.0.1".','0.0.2'),false);
+  assert.equal(isReservedVersionConflict('npm error E403 Forbidden','0.0.2'),false);
+});
+
+test('accepted uploads tolerate registry processing and never report a timeout as verified',async()=>{
+  const packages=[{name:'slow',version:'0.0.2'},{name:'fast',version:'0.0.2'}];
+  let clock=0,checks=0,waiting=0;const confirmed=[];
+  const pending=await waitForRegistryPublication(packages,{now:()=>clock,wait:async ms=>{clock+=ms;},timeoutMs:120000,intervalMs:10000,
+    lookup:async name=>name==='fast'||++checks>=5,onConfirmed:item=>confirmed.push(item.name),onWaiting:()=>waiting++});
+  assert.deepEqual(pending,[]);assert.deepEqual(confirmed,['fast','slow']);assert.equal(clock,40000);assert.equal(waiting,4);
+  const expired=await waitForRegistryPublication(packages,{now:()=>clock,wait:async ms=>{clock+=ms;},timeoutMs:10000,
+    lookup:async()=>false,onConfirmed:()=>assert.fail('An unconfirmed upload must not be verified')});
+  assert.deepEqual(expired,packages);
+  await assert.rejects(waitForRegistryPublication(packages,{lookup:async()=>{throw Error('registry unavailable');}}),/registry unavailable/);
+});
 
 test('publication summaries confirm all selected versions and expose partial failures',()=>{
   const plan={packages:[{name:'a',version:'0.0.2'},{name:'b',version:'0.0.2'}],publicationResults:[]};
@@ -36,10 +58,14 @@ test('npm publishing selects stable version bumps in dependency order and exclud
   const previous=new Map([...entries.values()].map(e=>[path.relative(root,e.dir).split(path.sep).join('/'),{...e.pkg,version:'0.0.1'}]));
   assert.deepEqual(selectPublishCandidates(root,entries,previous).map(x=>x.name),['a','b']);
   assert.deepEqual(selectPublishCandidates(root,entries,previous,true).map(x=>x.name),['a','b','unchanged']);
+  // An unchanged manifest from a failed earlier run remains eligible for registry-based retry selection.
+  previous.get('packages/@scope/a').version='0.0.2';
+  assert.deepEqual(selectPublishCandidates(root,entries,previous,true).map(x=>x.name),['a','b','unchanged']);
   assert.equal(compareReleaseVersions('1.9.9','1.10.0'),-1);
   assert.throws(()=>compareReleaseVersions('1.0.0-beta.1','1.0.0'),/stable/);
   previous.get('packages/b').version='0.0.3';
   assert.throws(()=>selectPublishCandidates(root,entries,previous),/decreased/);
+  assert.throws(()=>selectPublishCandidates(root,entries,previous,true),/decreased/);
   previous.delete('packages/b');
   entries.get('a').pkg.dependencies={sample:'0.0.2'};
   assert.throws(()=>selectPublishCandidates(root,entries,previous,true),/PRIVATE_REQUIRED_DEPENDENCY/);

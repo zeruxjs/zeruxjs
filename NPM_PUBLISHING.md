@@ -4,7 +4,9 @@
 `packages/` when their manifest version increases in a push to `master`.
 It excludes private packages, applications, and any package directory segment
 starting with `sample`. Newly added package names are also eligible.
-Unchanged versions are never published by a normal push.
+Every run checks all eligible current package versions against npm. Versions
+that are already public are skipped. Missing versions are retried even when
+the package version did not change in the latest Git commit.
 
 The workflow checks source contracts, installs the committed lockfile, requires
 zero production audit findings and complete license evidence, builds workspaces
@@ -40,11 +42,11 @@ and [granular access tokens](https://docs.npmjs.com/creating-and-viewing-access-
 
 After committing and pushing the workflow, open GitHub Actions →
 **Publish version-bumped packages to npm** → Run workflow, selecting `master`.
-Leave **Include all missing public package versions** enabled. Enable **Build
-and pack without publishing** for a preview, or leave it disabled to publish.
+Enable **Build and pack without publishing** for a preview, or leave it
+disabled to publish. Every run reconciles all eligible versions with npm.
 The prepared `0.0.2` release validates the configured trusted publishers.
 
-The manual missing-version run is also useful if GitHub coalesces queued runs.
+The manual run is also useful if GitHub coalesces queued runs.
 The shared concurrency group prevents overlapping publishers, but GitHub may
 replace a pending run when several pushes arrive during an active release.
 
@@ -83,3 +85,37 @@ selected versions are confirmed. The Actions job summary lists every result;
 `plan.json` and `publication-summary.md` are included with the release artifacts.
 A partial release fails the job and lists failed/pending packages rather than
 claiming completion.
+
+npm may accept an upload and spend several minutes processing it before the
+version becomes public. Accepted uploads are logged as `UPLOAD ACCEPTED` and
+recorded as `processing`. After submission, the workflow checks the registry in
+bounded parallel batches for up to 15 minutes, logging each confirmed version.
+An upload acceptance alone never produces the final `COMPLETE` message; a
+processing delay is also not automatically classified as a staged release.
+
+## Registry comparisons and failed-release recovery
+
+npm is the publication source of truth. The plan records each local version,
+its exact published version (if available), npm's latest version, its version
+at the Git base, and whether the package changed between the Git base and HEAD.
+For pushes the Git base is the pre-push commit; manual runs use HEAD's parent.
+Git changes provide context, not an exclusion filter for unfinished releases.
+
+Published consumer contracts are compared without depending on JSON key order
+or npm's normalization of binary paths. If an already published version has
+different dependencies or entrypoints, the run fails and requests a new version;
+it never overwrites an immutable version. This is a manifest-contract check, not
+a byte-for-byte comparison of source code with the published tarball.
+
+A failed publish remains eligible on the next run. A version npm has already
+accepted but still reserves may return the explicit previously-staged-version
+409 conflict. The workflow waits for that version instead of uploading it again
+or treating it as complete. If it truly needs staged approval or remains
+unavailable, the run stays incomplete and requires attention; it never approves
+stages automatically. Authentication, name restrictions and unrelated conflicts
+still stop the release. Publisher-script, workflow and root-lockfile fixes also
+trigger reconciliation on master, so they can resume a failed release without
+another package version bump.
+
+Packing logs `START` and `READY` for each numbered package, streams npm prepack
+and build output, and reports archive size, elapsed time and recorded integrity.
