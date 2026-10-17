@@ -48,7 +48,7 @@
     "@zeruxjs/cache": "0.0.1",
     "@zeruxjs/db": "0.0.1",
     "@zeruxjs/lint": "0.0.1",
-    "z-dev": "0.0.1",
+    "zforge": "0.0.1",
     "@zeruxjs/hooks": "0.0.1",
     "zlook": "0.0.1",
     "zsrv": "0.0.1",

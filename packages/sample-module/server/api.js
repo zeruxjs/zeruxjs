@@ -1,4 +1,4 @@
-import { defineDevtoolsModuleApiHandlers } from "z-dev";
+import { defineDevtoolsModuleApiHandlers } from "zforge";
 
 export default defineDevtoolsModuleApiHandlers({
   inspect({ app, snapshot, identifier, body, module }) {

@@ -1,10 +1,10 @@
 > [!WARNING]
 > This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
 
-# z-dev
+# zforge
 
 
-The internal development toolkit for **Zdev**. `z-dev` provides the foundational infrastructure for developer tools, including the shared dev server, dev-client injection, and the devtools module registry.
+The internal development toolkit for **Zdev**. `zforge` provides the foundational infrastructure for developer tools, including the shared dev server, dev-client injection, and the devtools module registry.
 
 ## Core Capabilities
 
@@ -18,7 +18,7 @@ The internal development toolkit for **Zdev**. `z-dev` provides the foundational
 
 ### App Registration
 ```typescript
-import { registerSharedDevApp } from 'z-dev';
+import { registerSharedDevApp } from 'zforge';
 
 const devInfo = await registerSharedDevApp({
     appName: 'my-app',
@@ -29,7 +29,7 @@ const devInfo = await registerSharedDevApp({
 
 ### Client Injection
 ```typescript
-import { injectDevClient } from 'z-dev';
+import { injectDevClient } from 'zforge';
 
 const polyfilledHtml = injectDevClient(originalHtml, {
     routeName: 'my-app',
@@ -39,7 +39,7 @@ const polyfilledHtml = injectDevClient(originalHtml, {
 
 ### Module Definition
 ```typescript
-import { defineDevtoolsModule } from 'z-dev';
+import { defineDevtoolsModule } from 'zforge';
 
 export default defineDevtoolsModule({
     name: 'my-module',
@@ -49,7 +49,7 @@ export default defineDevtoolsModule({
 
 ## Internal Architecture
 
-`z-dev` is designed to be the "brain" behind the Zdev development experience. It manages the lifecycle of the dev server and provides the bridge between the framework's internal services and the developer-facing dashboard.
+`zforge` is designed to be the "brain" behind the Zdev development experience. It manages the lifecycle of the dev server and provides the bridge between the framework's internal services and the developer-facing dashboard.
 
 ---
 

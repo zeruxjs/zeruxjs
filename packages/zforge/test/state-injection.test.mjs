@@ -9,7 +9,7 @@ import { injectDevClient } from '../dist/inject.js';
 import { readTailLines } from '../dist/state.js';
 
 test('private atomic devtools state never follows an existing symlink', () => {
-  const dir = mkdtempSync(path.join(os.tmpdir(), 'z-dev-state-'));
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'zforge-state-'));
   try {
     const file = path.join(dir, 'snapshot.json');
     writeJsonFile(file, { live: 1 });
@@ -28,7 +28,7 @@ test('private atomic devtools state never follows an existing symlink', () => {
 });
 
 test('log tail is bounded and does not load the entire file', () => {
-  const dir = mkdtempSync(path.join(os.tmpdir(), 'z-dev-tail-'));
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'zforge-tail-'));
   try {
     const file = path.join(dir, 'app.log');
     writeFileSync(file, 'first\n' + ('long line\n').repeat(35000) + 'last\n');

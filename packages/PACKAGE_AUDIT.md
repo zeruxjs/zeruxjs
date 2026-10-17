@@ -9,14 +9,14 @@ This report records the targeted, source-level audit of the package workspace. I
 - `@zeruxjs/db-mysql`: support clients exposing `query()` rather than `execute()`; replace evaluated dynamic import with standard dynamic import.
 - `@zeruxjs/db-pg`: replace dynamically evaluated module import with standard dynamic import.
 - `zcli`: use a null-prototype options map and reject prototype-sensitive CLI argument keys.
-- `z-dev`: enforce a 1 MiB request body maximum, return 413 for oversized bodies, catch handler exceptions, and parse IPv6 hostnames consistently.
+- `zforge`: enforce a 1 MiB request body maximum, return 413 for oversized bodies, catch handler exceptions, and parse IPv6 hostnames consistently.
 - `zsrv`: disable Windows shell execution in the command helper (commands requiring shell syntax must explicitly invoke a shell).
 
 ## Inventory
 
 The workspace includes the following packages; the status means source inventoried only unless it appears above or was updated in an earlier delivery.
 
-- `z-dev` — source inventoried; integration checks pending.
+- `zforge` — source inventoried; integration checks pending.
 - `zcli` — source inventoried; integration checks pending.
 - `zeruxjs` — source inventoried; integration checks pending.
 - `zeyro` — source inventoried; integration checks pending.

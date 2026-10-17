@@ -1,4 +1,4 @@
-import { defineDevtoolsModule } from "z-dev";
+import { defineDevtoolsModule } from "zforge";
 
 export default defineDevtoolsModule({
   id: "sample-module",

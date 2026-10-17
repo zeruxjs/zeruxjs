@@ -15,7 +15,7 @@ import {
     resolveSharedDevModuleSocketRequest,
     setSharedDevEventBroadcaster,
     unregisterSharedDevApp
-} from "z-dev";
+} from "zforge";
 
 import { createInjectedAppHandler } from './injection.js';
 import {

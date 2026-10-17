@@ -1,4 +1,4 @@
-import { defineDevtoolsModuleSocketHandlers } from "z-dev";
+import { defineDevtoolsModuleSocketHandlers } from "zforge";
 
 export default defineDevtoolsModuleSocketHandlers({
   ping({ app, snapshot, identifier, clientType, payload, module }) {

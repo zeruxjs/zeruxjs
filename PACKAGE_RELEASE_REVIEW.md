@@ -11,7 +11,7 @@ Reviewed on 2026-10-17. Scope: every package under `packages/` except names/dire
 - Updated Nodemailer to `^10.1.2` and esbuild to `^0.28.2` after checking the complete installed production graph.
 - Restored Stylelint with standard CSS and SCSS configs, `stylelint-scss` and `postcss-scss`. Packaged defaults, project configuration discovery, explicit configuration overrides and autofix support CSS/SCSS consumers. Updated compatible dependencies and bundled a locked Stylelint/SCSS tree using inspected `@zklogic/braces@3.0.7`, including its nesting-depth guard. The published archive carries the fix without consumer overrides or post-install scripts. The compressed lint archive is about 2.5 MB.
 - Added a checked-in JS/TS correctness lint configuration, corrected dev-client template regex escaping, scoped a Mongo switch declaration, cleaned redundant regex escapes, and documented intentional control-character filters, cleanup propagation, and optional failure handling.
-- Included all five devtools runtime assets in the `z-dev` archive and corrected file-URL decoding for package paths.
+- Included all five devtools runtime assets in the `zforge` archive and corrected file-URL decoding for package paths.
 - Renamed `packages/zenixjs` from `zenix` to `zenixjs` as requested, avoiding an npm package owned by someone else.
 - Removed obsolete AWS module shims, letting the storage package compile against real SDK declarations. Updated its existing offline client fixture to supply the configuration consumed by the real SDK uploader.
 - Fixed the Zenix creator's duplicate binary name (`create-zenix`), added executable-entry shebangs to empty creator CLIs, and documented their actual placeholder status.
@@ -85,7 +85,7 @@ Publish dependencies before their consumers. Required peers are included in the 
 | 33 | `@zeruxjs/validator` | `packages/@zeruxjs/validator` |
 | 34 | `@zeruxjs/vue` | `packages/@zeruxjs/vue` |
 | 35 | `@zeruxjs/zyro` | `packages/@zeruxjs/zyro` |
-| 36 | `z-dev` | `packages/z-dev` |
+| 36 | `zforge` | `packages/zforge` |
 | 37 | `zcli` | `packages/zcli` |
 | 38 | `zsrv` | `packages/zsrv` |
 | 39 | `zeruxjs` | `packages/zeruxjs` |

@@ -1,4 +1,4 @@
-import { defineDevtoolsModule } from "z-dev";
+import { defineDevtoolsModule } from "zforge";
 
 const bar = () => `
   <div class="bar">

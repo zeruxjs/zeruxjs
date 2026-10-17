@@ -1,4 +1,4 @@
-import { injectDevClient, isPrimaryHtmlRequest } from 'z-dev';
+import { injectDevClient, isPrimaryHtmlRequest } from 'zforge';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 /** Only buffer small, identity-encoded HTML pages. Large pages and streaming

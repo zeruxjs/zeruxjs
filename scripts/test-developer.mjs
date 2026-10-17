@@ -5,7 +5,7 @@ import {readdirSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const packages=['zcli','zeyro','zlook','z-dev'];
+const packages=['zcli','zeyro','zlook','zforge'];
 // One dependency-aware plan builds each selected package once, with the shared concurrency limit.
 const result=spawnSync(process.execPath,['scripts/build-workspaces.mjs',...packages.flatMap(name=>['--scope',name]),'--verify'],{cwd:root,stdio:'inherit',timeout:600_000});
 if(result.error || result.status!==0) {console.error('[developer] Package builds failed. Install dependencies with npm ci first.');process.exit(1);}

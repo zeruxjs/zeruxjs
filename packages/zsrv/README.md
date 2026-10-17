@@ -41,7 +41,7 @@ await startServer({
 
 `zsrv` acts as the glue between several core components:
 - **`zlook`**: For monitoring source changes.
-- **`z-dev`**: For devtools registration and dashboard management.
+- **`zforge`**: For devtools registration and dashboard management.
 - **`ws`**: For the real-time event pipeline.
 - **`portless`**: For internal local-domain routing.
 

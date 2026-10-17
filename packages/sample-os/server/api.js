@@ -1,6 +1,6 @@
 import os from "os";
 import si from "systeminformation";
-import { defineDevtoolsModuleApiHandlers } from "z-dev";
+import { defineDevtoolsModuleApiHandlers } from "zforge";
 
 const format_bytes = (bytes) => (bytes / 1e9).toFixed(1) + " GB";
 const percent = (val, total) => ((val / total) * 100).toFixed(1);
