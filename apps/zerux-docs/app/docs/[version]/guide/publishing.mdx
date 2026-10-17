@@ -1,0 +1,39 @@
+# Package publication
+
+All non-sample packages declare public npm access, an explicit distributable file allowlist, and a `prepack` build. Sample packages remain private.
+
+Run these checks from the package being released:
+
+```sh
+npm run build
+npm pack --dry-run --json
+```
+
+Check that every `main`, `types`, `exports`, and `bin` target is in the archive. Publish local dependencies and required peers before their consumers. Scoped packages declare `publishConfig.access` as `public`.
+
+Versions below `1.0.0` may change; review compatibility and use an unused npm version for every release. A successful local build or tarball inspection does not verify registry ownership, browser compatibility, or live service behavior.
+
+The `@zenix/core` and `zenixjs` packages currently export no CMS API. The CMS placeholders export `version` and `status` metadata. The three creator packages support `--help` and `--version`; generation requests report that generation is unavailable and exit with status 1. Their current releases do not scaffold projects.
+
+SQLite's `better-sqlite3` integration is an optional peer. Install it explicitly if selecting that driver; supported runtimes can use the built-in Node SQLite driver instead.
+
+## Linting and type checking
+
+`@zeruxjs/lint` uses ESLint for JavaScript/TypeScript, Stylelint for CSS/SCSS, and Prettier for formatting. Standard CSS and SCSS configs, the SCSS plugin, and the SCSS parser are included.
+
+```ts
+import { lintCss } from '@zeruxjs/lint';
+
+const result = await lintCss({
+  cwd: process.cwd(),
+  files: ['src/styles'],
+  cssConfigFile: 'stylelint.config.mjs'
+});
+if (!result.ok) throw new Error(result.output);
+```
+
+CSS/SCSS inputs are explicit files or directories. Existing Stylelint configs and plugins are supported, and results use `engine: 'stylelint'`. If no project configuration is available, the packaged standard configs select the SCSS syntax/plugin for `.scss` files. Source text is passed directly to Stylelint instead of expanding input filenames as glob patterns.
+
+The lint archive bundles a locked Stylelint/SCSS dependency tree with inspected `@zklogic/braces@3.0.7`, whose nesting-depth guard addresses the upstream stack-exhaustion advisory. The patch travels with the published archive without requiring consumer overrides or post-install scripts. Prepack prepares this bundle using the committed private dependency lock with lifecycle scripts disabled. The current fresh consumer production audit reports zero known vulnerabilities; the fork still requires maintenance. The two CMS packages and three creator packages are public `0.0.1` placeholders intended to establish their package names; working CMS and generation features are not included.
+
+For this repository, use `scripts/package-lint.config.mjs` from each package directory for JS/TS correctness checks and run `npm exec -- tsc --noEmit` for type checking. The lint configuration reports unused bindings as warnings.

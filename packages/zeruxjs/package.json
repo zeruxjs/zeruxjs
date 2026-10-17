@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "npm run build"
   },
   "exports": {
     ".": "./dist/index.js",
@@ -30,16 +31,16 @@
     "./response": "./dist/response.js",
     "./fetch-route": "./dist/fetch-route.js",
     "./services": {
-      "import": "./dist/bootstrap/services.js",
-      "types": "./dist/bootstrap/services.d.ts"
+      "types": "./dist/bootstrap/services.d.ts",
+      "import": "./dist/bootstrap/services.js"
     },
     "./build": {
-      "import": "./dist/commands/project-builder.js",
-      "types": "./dist/commands/project-builder.d.ts"
+      "types": "./dist/commands/project-builder.d.ts",
+      "import": "./dist/commands/project-builder.js"
     },
     "./variables": {
-      "import": "./dist/variables.js",
-      "types": "./dist/variables.d.ts"
+      "types": "./dist/variables.d.ts",
+      "import": "./dist/variables.js"
     }
   },
   "license": "(MIT OR Apache-2.0)",
@@ -78,5 +79,12 @@
     "LICENSE-MIT",
     "LICENSE-APACHE",
     "assets/json/schema.config.json"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
+  }
 }

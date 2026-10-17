@@ -84,7 +84,9 @@ export async function reconcileNumericFacts(
 ):Promise<NumericReconciliationResult>{
   if(!query||!Number.isSafeInteger(query.since)||!Number.isSafeInteger(query.until)||
     query.since<0||query.until<query.since)throw new RangeError('Numeric reconciliation requires a valid closed time window');
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   if(query.site!==undefined&&(typeof query.site!=='string'||query.site.length>200||/[\x00-\x1f]/.test(query.site)))throw new TypeError('Invalid reconciliation site');
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   if(query.cursor!==undefined&&(typeof query.cursor!=='string'||query.cursor.length>36||/[\x00-\x20\x7f]/.test(query.cursor)))throw new TypeError('Invalid reconciliation cursor');
   const batchSize=query.batchSize??100;
   if(!Number.isInteger(batchSize)||batchSize<1||batchSize>200)throw new RangeError('Invalid reconciliation batch size');

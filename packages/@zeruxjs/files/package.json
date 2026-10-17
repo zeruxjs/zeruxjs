@@ -1,7 +1,6 @@
 {
   "name": "@zeruxjs/files",
   "version": "0.0.1",
-  "private": true,
   "description": "Multi-store filesystem, S3-compatible object storage and streaming Fetch file APIs",
   "type": "module",
   "main": "./dist/index.js",
@@ -18,7 +17,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.900.0",
@@ -27,5 +27,18 @@
     "@aws-sdk/lib-storage": "^3.900.0",
     "@aws-sdk/s3-request-presigner": "^3.900.0"
   },
-  "license": "(MIT OR Apache-2.0)"
+  "license": "(MIT OR Apache-2.0)",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
+  }
 }

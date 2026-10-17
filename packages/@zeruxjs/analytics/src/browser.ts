@@ -43,7 +43,7 @@ export function createEventClient(options:{
         const response=await fetcher(endpoint.href,{method:'POST',headers:{'content-type':'application/json'},body,signal,credentials:'omit',cache:'no-store'});
         if(response.ok)return true;
       }catch{/* Network loss and aborts are expected for best-effort telemetry. */}
-      if(!warningSent){warningSent=true;try{(options.onWarning??console.warn)('[analytics] Browser event delivery unavailable; skipped');}catch{}}
+      if(!warningSent){warningSent=true;try{(options.onWarning??console.warn)('[analytics] Browser event delivery unavailable; skipped');}catch{ /* This optional failure is intentionally ignored. */ }}
       return false;
     }
   };

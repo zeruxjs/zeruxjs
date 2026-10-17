@@ -85,7 +85,7 @@ const PROVIDER_REGEX_LIST = [
   // JCB
   /^(?:2131|1800|35\d{3})\d{11}$/u,
   // Mastercard
-  // eslint-disable-next-line redos-detector/no-unsafe-regex
+  // Compatibility expression; previous external ReDoS lint exclusions are not used here.
   /^5[1-5]\d{2}|(?:222\d|22[3-9]\d|2[3-6]\d{2}|27[01]\d|2720)\d{12}$/u,
   // UnionPay
   /^(?:6[27]\d{14,17}|81\d{14,17})$/u,

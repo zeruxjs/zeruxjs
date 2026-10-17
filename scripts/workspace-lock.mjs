@@ -10,8 +10,12 @@ function readJson(file) { return JSON.parse(fs.readFileSync(file, 'utf8')); }
 function normalize(obj) { return JSON.stringify(obj ?? {}); }
 function copyDeclared(target, manifest) {
   for (const key of declaredFields) {
-    if (manifest[key] === undefined) delete target[key];
-    else target[key] = manifest[key];
+    const value = manifest[key];
+    // npm omits empty dependency maps and normalizes bin paths in lockfiles.
+    if (value === undefined || (key.toLowerCase().endsWith('dependencies') && Object.keys(value).length === 0)) delete target[key];
+    else if (key === 'bin' && value && typeof value === 'object') {
+      target[key] = Object.fromEntries(Object.entries(value).map(([name, file]) => [name, file.replace(/^\.\//, '')]));
+    } else target[key] = value;
   }
   target.version = manifest.version;
   if (manifest.license === undefined) delete target.license;
@@ -27,7 +31,7 @@ export function syncLocalLock(root, { write = false } = {}) {
     throw new Error('Expected package-lock.json lockfileVersion 3 with packages; use npm install --package-lock-only to migrate');
   }
   if (!Array.isArray(manifest.workspaces)) throw new Error('Root package.json must declare npm workspaces');
-  const entries = discoverWorkspaces(root);
+  const entries = discoverWorkspaces(root, { release: false });
   // Compare JSON data, not insertion order. npm may reorder equivalent lockfile
   // properties while preserving the same workspace records.
   const original = JSON.parse(JSON.stringify(lock));
@@ -43,7 +47,6 @@ export function syncLocalLock(root, { write = false } = {}) {
     const relative = path.relative(root, dir).split(path.sep).join('/');
     const current = lock.packages[relative] ?? {};
     const workspace = copyDeclared({ ...current }, pkg);
-    if (name.startsWith('@')) workspace.name = name;
     lock.packages[relative] = workspace;
     const linkPath = `node_modules/${name}`;
     lock.packages[linkPath] = { resolved: relative, link: true };
@@ -111,7 +114,7 @@ export function inspectLockedExternalGraph(lock) {
 /** Strictly diagnoses stale workspace sections and absent EXTERNAL resolutions. */
 export function inspectWorkspaceLock(root) {
   const { changed, workspaceCount, lock } = syncLocalLock(root);
-  const entries = discoverWorkspaces(root);
+  const entries = discoverWorkspaces(root, { release: false });
   const manifest = readJson(path.join(root, 'package.json'));
   const external = new Map();
   const externalOptional = new Map();

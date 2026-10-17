@@ -42,7 +42,7 @@ export const isAllowedHost = (
     allowedDevDomain?: string
 ): boolean => {
     const hostname = normalizeHost(host);
-    if (!hostname || /[\s\/\\@]/.test(hostname)) return false;
+    if (!hostname || /[\s/\\@]/.test(hostname)) return false;
     if (isLocalHost(hostname)) return true;
     if (allowedDevDomain && hostname === normalizeHost(allowedDevDomain)) return true;
     const domains = Array.isArray(allowedDomains) ? allowedDomains : [allowedDomains];

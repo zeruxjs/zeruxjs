@@ -10,6 +10,7 @@ export interface MediaResponseOptions {
 }
 
 function quotedFilename(name: string): string {
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   const normalized = name.replace(/[\\/\x00-\x1f\x7f]/g, '_').slice(0, 255) || 'download';
   return `"${normalized.replace(/["\\]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(normalized)}`;
 }

@@ -30,6 +30,7 @@ export function createMediaFilesService(manager: StorageManager, options: MediaF
       const id=randomUUID(), target=address(id);
       if(!options.authorize||!await options.authorize(request,target,'write'))throw Object.assign(new Error('Media upload forbidden'),{code:'FORBIDDEN'});
       const rawName=uploadOptions.name??'upload';
+      // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
       if(rawName.length>180||/[\x00-\x1f\x7f]/.test(rawName))throw new TypeError('Unsafe upload name');
       const info=await uploadFileRequest(manager,target,request,{
         maxBytes:Math.min(uploadOptions.maxBytes??Number.MAX_SAFE_INTEGER,options.maxUploadBytes??16*1024*1024),

@@ -11,6 +11,7 @@ export function resolveLimits(input:ZuixLimits={}):Record<keyof typeof DEFAULT_L
  return result;
 }
 export function safeCssValue(value:string):boolean {
+ // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
  if(!value||value.length>512||/[\u0000-\u001f\u007f{};<>\\"'`]/.test(value)||/\/\*|\*\/|!\s*important|@(?:import|charset)|\b(?:url|image-set|expression|behavior)\s*\(/i.test(value))return false;
  // Parentheses must balance. Disallow closing out of the active declaration.
  let depth=0;
@@ -21,7 +22,7 @@ export function safeDeclaration(property:string,value:string):boolean {
  return /^(?:--[\w-]+|-?[a-z][a-z0-9-]*)$/i.test(property)&&property.length<=100&&safeCssValue(value);
 }
 export function safeCondition(value:string):boolean {
- return value.length>0&&value.length<=160&&/^[a-zA-Z0-9\s:.,#%()\[\]_<>=!+-]+$/.test(value)&&!/(?:url|expression)\s*\(/i.test(value);
+ return value.length>0&&value.length<=160&&/^[a-zA-Z0-9\s:.,#%()[\]_<>=!+-]+$/.test(value)&&!/(?:url|expression)\s*\(/i.test(value);
 }
 export function cssEscapeClass(name:string):string {
  return [...name].map((c,i)=>{

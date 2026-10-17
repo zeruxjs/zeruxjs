@@ -1,6 +1,7 @@
 import type {TagContainer,TagContainerStore,Scalar,TagGovernance} from './types.js';
 const ident=/^[A-Za-z][A-Za-z0-9_.:-]{0,95}$/;
 const valid=(name:unknown)=>typeof name==='string'&&ident.test(name);
+// eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
 const label=(s:unknown)=>typeof s==='string'&&s.length>=1&&s.length<=128&&!/[\x00-\x1f]/.test(s);
 const scalar=(v:unknown):v is Scalar=>v===null||typeof v==='boolean'||(typeof v==='string'&&v.length<=1024)||(typeof v==='number'&&Number.isFinite(v));
 export function validateContainer(data:unknown):TagContainer {

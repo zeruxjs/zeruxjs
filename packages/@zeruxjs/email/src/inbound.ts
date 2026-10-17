@@ -151,6 +151,7 @@ function emails(value?:{value?:{address?:string;name?:string}[]}):string[]{
 }
 function safeFilename(value:unknown):string{
   const leaf=String(value??'attachment').split(/[\\/]/).at(-1)??'attachment';
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   const cleaned=leaf.replace(/[\x00-\x1f\x7f]/g,'_').trim().slice(0,255);
   return cleaned&&!/^\.+$/.test(cleaned)?cleaned:'attachment';
 }

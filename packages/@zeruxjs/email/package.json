@@ -1,7 +1,6 @@
 {
   "name": "@zeruxjs/email",
   "version": "0.0.1",
-  "private": true,
   "type": "module",
   "description": "Multi-account SMTP send, IMAP/POP3 receive, parsing, durable inbox, campaigns and tracking",
   "license": "(MIT OR Apache-2.0)",
@@ -19,16 +18,17 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "npm run build"
   },
   "dependencies": {
-    "nodemailer": "^7.0.0",
-    "juice": "^11.0.0",
-    "sanitize-html": "^2.13.0",
     "html-to-text": "^9.0.0",
     "imapflow": "^1.0.0",
+    "juice": "^11.0.0",
     "mailparser": "^3.7.0",
-    "node-pop3": "^0.15.1"
+    "node-pop3": "^0.15.1",
+    "nodemailer": "^10.1.2",
+    "sanitize-html": "^2.13.0"
   },
   "peerDependencies": {
     "@zeruxjs/files": "0.0.1"
@@ -37,5 +37,18 @@
     "@zeruxjs/files": {
       "optional": true
     }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
   }
 }

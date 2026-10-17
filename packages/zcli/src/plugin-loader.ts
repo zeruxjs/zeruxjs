@@ -15,7 +15,7 @@ function readManifest(file:string): Record<string,unknown> {
 function locateManifest(name:string,require:ReturnType<typeof createRequire>):string {
   try {return require.resolve(`${name}/package.json`);} catch(error) {
     const entry=require.resolve(name);let cursor=dirname(realpathSync(entry));
-    while(true){const candidate=join(cursor,'package.json');try{if(readManifest(candidate).name===name)return candidate;}catch{}
+    while(true){const candidate=join(cursor,'package.json');try{if(readManifest(candidate).name===name)return candidate;}catch{ /* This optional failure is intentionally ignored. */ }
       const parent=dirname(cursor);if(parent===cursor)break;cursor=parent;
     }
     throw new Error(`Unable to locate package manifest for ${name}`);

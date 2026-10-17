@@ -35,10 +35,10 @@ test('CSV parser handles escaped quotes, JSON, empty cells, malformed and oversi
  const csv='email,name,data,data.tier\r\na@example.com,"Sam ""The Ace""","{""level"":2}",pro\r\n';
  const values=[];for await(const v of parseMarketingRecipientCSV(csv))values.push(v);
  assert.equal(values[0].name,'Sam "The Ace"');assert.deepEqual(values[0].data,{level:2,tier:'pro'});
- const read=async source=>{for await(const _row of parseMarketingRecipientCSV(source)){};};
+ const read=async source=>{for await(const _row of parseMarketingRecipientCSV(source)){ /* Consume the stream so parser failures reach the assertion. */ };};
  await assert.rejects(read('email,name\na@example.com,"unterminated'),/Unterminated/);
  await assert.rejects(read('email,data.__proto__\na@example.com,bad'),/safe names|Unsafe/);
  await assert.rejects(read('email,email\na@example.com,b@example.com'),/safe names/);
  await assert.rejects(read('email,name\na@example.com,Sam,extra'),/header/);
- await assert.rejects((async()=>{for await(const _ of parseMarketingRecipientCSV('email\na@example.com\nb@example.com',{maxRows:1})){};})(),/limit/);
+ await assert.rejects((async()=>{for await(const _ of parseMarketingRecipientCSV('email\na@example.com\nb@example.com',{maxRows:1})){ /* Consume the stream so parser failures reach the assertion. */ };})(),/limit/);
 });

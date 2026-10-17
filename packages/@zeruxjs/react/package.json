@@ -2,7 +2,6 @@
   "name": "@zeruxjs/react",
   "version": "0.0.1",
   "description": "External stores, stable selectors and React useSyncExternalStore bridge without bundled React.",
-  "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
     "url": "https://github.com/zeruxjs/zeruxjs/issues"
@@ -17,9 +16,23 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "prepack": "npm run build"
   },
   "keywords": [
     "Library - ReactJS support"
-  ]
+  ],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
+  }
 }

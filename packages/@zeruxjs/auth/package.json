@@ -2,7 +2,6 @@
   "name": "@zeruxjs/auth",
   "version": "0.0.1",
   "description": "Provide all AUth option from Password, OTP Verification, Reverification, Password Change, Oauth, Third-Party Provider (Add more option), Login/Register/Reset Form (with @zerux/form), Passkey, Authanticator Apps, Session Management, App passwords, API keys and more.",
-  "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
     "url": "https://github.com/zeruxjs/zeruxjs/issues"
@@ -17,9 +16,23 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.cjs"
+    "test": "npm run build && node --test test/*.test.cjs",
+    "prepack": "npm run build"
   },
   "keywords": [
     "Provide all AUth option from Password, OTP Verification, Reverification, Password Change, Oauth, Third-Party Provider (Add more option), Login/Register/Reset Form (with @zerux/form), Passkey, Authanticator Apps, Session Management, App passwords, API keys and more."
-  ]
+  ],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
+  }
 }

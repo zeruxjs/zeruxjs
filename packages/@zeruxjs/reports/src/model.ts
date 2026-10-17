@@ -11,6 +11,7 @@ export function validateReports(input:unknown):ReportsDocument{
   for(const report of doc.reports){unique(report.id);if(typeof report.name!=='string'||report.name.length<1||report.name.length>128||report.description!==undefined&&(typeof report.description!=='string'||report.description.length>1024)||!Array.isArray(report.pages)||report.pages.length>50)throw new TypeError('Invalid report');
     for(const page of report.pages){unique(page.id);if(typeof page.name!=='string'||page.name.length<1||page.name.length>128||!Array.isArray(page.charts)||page.charts.length>50)throw new TypeError('Invalid report page');
       for(const chart of page.charts){unique(chart.id);if(typeof chart.title!=='string'||chart.title.length<1||chart.title.length>128||!chartTypes.includes(chart.type)||!metrics.includes(chart.metric)||!['event','day','source','site','pathname'].includes(chart.groupBy)&&!/^property:[A-Za-z][A-Za-z0-9_.:-]{0,95}$/.test(chart.groupBy)||chart.groupBy.startsWith('property:')&&!isReportId(chart.groupBy.slice(9)))throw new TypeError('Invalid chart');
+        // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
         if(chart.valueField!==undefined&&!isReportId(chart.valueField)||chart.eventName!==undefined&&!isReportId(chart.eventName)||chart.source!==undefined&&!['web','server','email','system'].includes(chart.source)||chart.site!==undefined&&(typeof chart.site!=='string'||chart.site.length>200||/[\x00-\x1f]/.test(chart.site))||chart.limit!==undefined&&(!Number.isSafeInteger(chart.limit)||chart.limit<1||chart.limit>500)||['since','until'].some(k=>{const n=chart[k as 'since'|'until'];return n!==undefined&&(!Number.isSafeInteger(n)||n<0);})||chart.since!==undefined&&chart.until!==undefined&&chart.since>chart.until)throw new TypeError('Invalid chart query');
       }
     }
@@ -64,7 +65,7 @@ export async function queryChart(source:AnalyticsReportSource,chart:ChartDefinit
   const all={count:0,numericCount:0,sum:0,min:Infinity,max:-Infinity,unique:new Set<string>()};
   for(const row of rows){
     let props:Record<string,unknown>={};try{const parsed:unknown=JSON.parse(row.properties_json);
-      if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))props=parsed as Record<string,unknown>;}catch{}
+      if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))props=parsed as Record<string,unknown>;}catch{ /* This optional failure is intentionally ignored. */ }
     if(scopedSite!==undefined&&row.site!==scopedSite)throw new Error('Analytics source violated enforced site scope');
     const raw=chart.groupBy==='event'?row.event_name:chart.groupBy==='day'?new Date(Number(row.occurred_at)).toISOString().slice(0,10):chart.groupBy==='source'?row.source:chart.groupBy==='site'?row.site:chart.groupBy==='pathname'?row.pathname:props[chart.groupBy.slice(9)];
     const category=String(raw??'(not set)').slice(0,150);

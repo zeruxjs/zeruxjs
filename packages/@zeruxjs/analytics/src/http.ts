@@ -82,6 +82,7 @@ export function createAnalyticsCollector(options:CollectorOptions){
   if(origins.has('invalid'))throw new TypeError('Invalid allowed origin');
   const siteByOrigin=new Map<string,string>();
   for(const [origin,site] of Object.entries(options.siteByOrigin??{})){
+    // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
     if(!origins.has(origin)||typeof site!=='string'||!site||site.length>200||/[\x00-\x1f]/.test(site))throw new TypeError('Invalid analytics origin-to-site mapping');
     siteByOrigin.set(origin,site);
   }

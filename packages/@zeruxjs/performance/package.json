@@ -2,7 +2,6 @@
   "name": "@zeruxjs/performance",
   "version": "0.0.1",
   "description": "Performance metrics, resource hints, cache directives and timing utilities.",
-  "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
     "url": "https://github.com/zeruxjs/zeruxjs/issues"
@@ -17,7 +16,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "prepack": "npm run build"
   },
   "keywords": [
     "Web-Vitals, PWA, CDN, Optimize Dilevery, Server side Cache (Redis/Memcache) and more."
@@ -25,5 +25,18 @@
   "optionalDependencies": {
     "lighthouse": "^13.1.0",
     "web-vitals": "^5.2.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
   }
 }

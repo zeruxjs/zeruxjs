@@ -4,6 +4,7 @@ export const MEDIA_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f
 export function assertId(id: string): void { if (typeof id !== 'string' || !MEDIA_ID.test(id)) throw new TypeError('Invalid media id'); }
 export function safePath(root: string, id: string): string { assertId(id); const file = resolve(root, id); if (!file.startsWith(resolve(root) + sep)) throw new Error('Unsafe path'); return file; }
 export function validateUpload(options: UploadOptions, defaultMax: number): {max: number; expiresAt?: string} {
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   if (!options || typeof options.name !== 'string' || !options.name.trim() || /[\x00-\x1f\x7f]/.test(options.name) || options.name.length > 255) throw new TypeError('Invalid media name');
   if (typeof options.contentType !== 'string' || !/^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i.test(options.contentType)) throw new TypeError('Invalid MIME type');
   const max = options.maxBytes ?? defaultMax;

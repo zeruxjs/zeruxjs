@@ -12,7 +12,8 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "test:smoke": "npm run build && node tests/smoke.mjs",
-    "test": "npm run build && node --test tests/*.mjs"
+    "test": "npm run build && node --test tests/*.mjs",
+    "prepack": "npm run build"
   },
   "exports": {
     ".": {
@@ -41,5 +42,12 @@
   "license": "(MIT OR Apache-2.0)",
   "engines": {
     "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
   }
 }

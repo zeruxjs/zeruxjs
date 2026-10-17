@@ -63,7 +63,7 @@ export async function acquireOperationLock(stateDir: string, options: OperationL
     try {
       const fd = fs.openSync(filename, 'wx', 0o600);
       try { fs.writeFileSync(fd, raw); fs.fsyncSync(fd); }
-      catch (error) { fs.closeSync(fd); try { fs.unlinkSync(filename); } catch {} throw error; }
+      catch (error) { fs.closeSync(fd); try { fs.unlinkSync(filename); } catch { /* This optional failure is intentionally ignored. */ } throw error; }
       fs.closeSync(fd);
       let released = false;
       return { filename, release() {

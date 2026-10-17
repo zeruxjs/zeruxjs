@@ -72,7 +72,7 @@ function writePrivate(filename: string, payload: string): void {
     try { if (fs.lstatSync(filename).isSymbolicLink()) throw new Error('Unsafe control descriptor symlink'); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     fs.renameSync(temporary, filename);
-  } finally { try { fs.unlinkSync(temporary); } catch {} }
+  } finally { try { fs.unlinkSync(temporary); } catch { /* This optional failure is intentionally ignored. */ } }
 }
 export type ControlHandler = (action: string, data: unknown) => Promise<unknown> | unknown;
 /** Serve JSON-line requests on an ephemeral IPv4 loopback port. Auth is required

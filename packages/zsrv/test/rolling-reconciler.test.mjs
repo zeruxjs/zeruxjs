@@ -55,7 +55,7 @@ test('reconcile dry-run does not terminate orphans; real reconciliation cleans v
   assert.deepEqual(live.items[0].recovery.terminated,[fixtureProcess.pid]);
   assert.equal(inspectRollingControllers(state).length,0);
  }finally {
-  if(fixtureProcess){try{process.kill(-fixtureProcess.pid,'SIGKILL');}catch{}}
+  if(fixtureProcess){try{process.kill(-fixtureProcess.pid,'SIGKILL');}catch{ /* This optional failure is intentionally ignored. */ }}
   fs.rmSync(state,{recursive:true,force:true});
  }
 });

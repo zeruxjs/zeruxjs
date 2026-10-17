@@ -38,6 +38,7 @@ export function validateEvent(input:AnalyticsEventInput):AnalyticsRow {
   if(input.consent==='granted'){if(Object.hasOwn(clean,'zConsent'))throw new TypeError('Reserved consent property');clean.zConsent='granted';}
   const properties_json=JSON.stringify(clean);
   if(Buffer.byteLength(properties_json)>8192)throw new RangeError('Event properties exceed limit');
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   const string=(v:unknown,max:number)=>{if(v===undefined)return '';if(typeof v!=='string'||v.length>max||/[\x00-\x1f]/.test(v))throw new TypeError('Invalid analytics field');return v;};
   const at=input.occurredAt??Date.now();
   if(!Number.isSafeInteger(at)||at<Date.now()-30*86_400_000||at>Date.now()+5*60_000)throw new RangeError('Event timestamp outside accepted window');

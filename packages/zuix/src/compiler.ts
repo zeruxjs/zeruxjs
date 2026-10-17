@@ -9,7 +9,7 @@ function splitVariants(input:string):string[] {const result:string[]=[];let buf=
 function cssDeclarations(decls:Declarations,important:boolean):string|undefined{const entries=Object.entries(decls);if(!entries.length||entries.some(([prop,val])=>!safeDeclaration(prop,String(val))))return;return entries.map(([prop,val])=>`${prop}:${String(val)}${important?' !important':''};`).join('');}
 const pseudo:Record<string,string>={ 'first-letter':'::first-letter','first-line':'::first-line',marker:'::marker',backdrop:'::backdrop','file':'::file-selector-button','open':':is([open],:popover-open)',target:':target','only':':only-child','first-of-type':':first-of-type','last-of-type':':last-of-type','only-of-type':':only-of-type','read-only':':read-only','read-write':':read-write','autofill':':autofill','indeterminate':':indeterminate','in-range':':in-range','out-of-range':':out-of-range','placeholder-shown':':placeholder-shown',default:':default',optional:':optional',autofocus:':focus-visible',hover:':hover',focus:':focus','focus-visible':':focus-visible','focus-within':':focus-within',active:':active',disabled:':disabled',enabled:':enabled',checked:':checked',required:':required',invalid:':invalid',valid:':valid',first:':first-child',last:':last-child',odd:':nth-child(odd)',even:':nth-child(even)',visited:':visited',empty:':empty',before:'::before',after:'::after',placeholder:'::placeholder',selection:'::selection'};
 function safeQuery(value:string):boolean{return safeCondition(value);}
-function safeSelector(value:string):boolean{return value.length<=120&&/^[a-zA-Z0-9.#:[\]_'\"()=~+* >|-]+$/.test(value);}
+function safeSelector(value:string):boolean{return value.length<=120&&/^[a-zA-Z0-9.#:[\]_'"()=~+* >|-]+$/.test(value);}
 export function createZuix(config:ZuixConfig={}) {
  const theme=resolveTheme(config);const limits=resolveLimits(config.limits);const utilities:Record<string,Declarations>={};const components:Record<string,Declarations>={};const base:string[]=[];
  const api:ZuixPluginAPI={
@@ -19,6 +19,7 @@ export function createZuix(config:ZuixConfig={}) {
   theme(path,fallback=''){const [category,...rest]=path.split('.');return String(theme[category]?.[rest.join('.')]??fallback);}
  };for(const plugin of config.plugins??[])plugin(api);
  function compileClass(token:string):string|undefined {
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   if(typeof token!=='string'||!token||token.length>limits.maxTokenLength||/[\u0000-\u001f\u007f{};\\]/.test(token))return;
   const chunks=splitVariants(token);if(chunks.length>12)return;let name=chunks.pop()??'';const variants=chunks;
   if(config.prefix){if(!name.startsWith(config.prefix))return;name=name.slice(config.prefix.length);}

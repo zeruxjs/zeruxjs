@@ -2,7 +2,6 @@
   "name": "@zeruxjs/typescript",
   "version": "0.0.1",
   "description": "TypeScript transpilation, typechecking, loaders and fast builds for ZeruxJS",
-  "private": true,
   "author": "",
   "type": "module",
   "main": "./dist/index.js",
@@ -10,12 +9,13 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "npm run build"
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./loader": {
       "types": "./dist/loader.d.ts",
@@ -30,7 +30,7 @@
   "dependencies": {
     "@types/node": "^25.4.0",
     "@types/ws": "^8.18.1",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.28.2",
     "typescript": "^5.9.3"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
@@ -43,5 +43,14 @@
   },
   "keywords": [
     "Typescript Support"
-  ]
+  ],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

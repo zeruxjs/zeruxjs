@@ -69,6 +69,7 @@ function writeCheckpoint(file: string, record: FleetCheckpoint): void {
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     fs.renameSync(temporary, file);
     try { const fd = fs.openSync(path.dirname(file), 'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } catch { /* unsupported filesystems */ }
+  // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
   } finally { try { fs.unlinkSync(temporary); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; } }
 }
 export function createFleetCheckpointWriter(stateDir: string, hostname: string, configuration: string, identity: string) {

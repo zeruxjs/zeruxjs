@@ -1,29 +1,17 @@
-> [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
+# zenixjs
 
-# Zenix CMS
+Public `0.0.1` placeholder release to establish the package name for future development.
 
-**Zenix** is a modern, developer-centric Content Management System built on the powerful foundation of the **ZeruxJS Framework** and the **ZyroJS Library**.
+Version `0.0.1` is a placeholder for the future Zenix CMS. This package exports only `version` and `status` metadata (`"placeholder"`). It does not include a CMS, admin dashboard, authentication, or a project generator.
 
-## 🏗️ Built on Modern Foundations
+## Development
 
-Zenix leverages the best of the ZeruxJS ecosystem to deliver a CMS experience that is both fast for users and delightful for developers:
+Run `npm run build` from this package directory.
 
-- **Framework Powered**: Uses **ZeruxJS** for robust server-side logic, routing, and security.
-- **Library Driven**: Uses **ZyroJS** for high-performance, reactive administrative interfaces and frontend delivery.
-- **Extensible**: Easily add features using the ZeruxJS module system.
+## License
 
-## ✨ Features
+MIT OR Apache-2.0.
 
-- **Headless & Hybrid**: Flexibility to serve content via APIs or through integrated Zyro/React/Vue frontends.
-- **Blazing Fast**: Benefit from the performance optimizations inherent in the ZyroJS rendering engine.
-- **Developer First**: Clean APIs, intuitive data modeling, and a powerful CLI for management.
-- **Enterprise Ready**: Built-in authentication, role-based access control, and audit logging.
+## Future project generator
 
-## 🚀 Quick Start
-
-Initialize a new Zenix instance:
-
-```bash
-npm create zenix-app@latest
-```
+[`create-zenix-js`](../create/create-zenix-app/README.md) is reserved for this package's future project generator. Version `0.0.1` provides placeholder help/version output only; project scaffolding is planned for a future release.

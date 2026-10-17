@@ -1,4 +1,1 @@
-/** @type {import("stylelint").Config} */
-export default {
-  "extends": ["stylelint-config-standard"]
-};
+export { default } from './dist/stylelint.config.js';

@@ -57,6 +57,7 @@ export function appendFleetHistory(stateDir: string, hostname: string, event: Om
     try { if (fs.lstatSync(filename).isSymbolicLink()) throw new Error('Unsafe fleet history symlink'); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     fs.renameSync(temp, filename);
+  // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
   } finally { try { fs.unlinkSync(temp); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; } }
   return entry;
 }

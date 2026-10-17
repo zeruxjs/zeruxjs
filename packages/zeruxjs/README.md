@@ -1,5 +1,5 @@
 > [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
+> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. This release uses version `0.0.1`.
 
 # ZeruxJS Framework
 
@@ -23,11 +23,7 @@ ZeruxJS is engine-agnostic, allowing you to build applications using your favori
 
 ## 📦 Getting Started
 
-The easiest way to start a new ZeruxJS project is using the official scaffolder:
-
-```bash
-npm create zerux-app@latest
-```
+The future official scaffolder is `create-zerux-js`. Its `0.0.1` release is a placeholder supporting help/version only; it does not generate a project. Use the applications under `apps/` as development examples.
 
 ## Runtime Workers and Thread Workers
 
@@ -225,3 +221,7 @@ See `SECTION_42_BUILD_LIFECYCLE_INTEGRATION.md` at the project root for configur
 `zeruxjs/accessibility` exposes `bindAccessibleTabs(tabList)` and `prefersReducedMotion()`. It is safe to **import on the server** (DOM globals are only read inside browser-only functions). For tabs, author actual buttons under `role="tablist"`, give each a unique ID and `aria-controls` pointing to a `role="tabpanel"` element whose `aria-labelledby` points back. The binder enforces matching references, disabled tabs, roving tab index, focus and arrow/Home/End keyboard operation; call `destroy()` on route unmount. Orientation and RTL handling can be supplied explicitly. It never overwrites arbitrary HTML or dynamically generates IDs.
 
 A browser fixture (under `tests/browser/`) covers bridge snapshot projection, explicit subscription teardown, keyboard focus, ARIA panel selection and reduced-motion styles. Run `npm run test:frontend`; opt into live Chromium checks with `npm run test:frontend:browser` when a functioning browser is installed. This does not certify standalone ZyroJS or Zuix; see Sections 81 and 82.
+
+## Future project generator
+
+[`create-zerux-js`](../create/create-zerux-app/README.md) is reserved for this package's future project generator. Version `0.0.1` provides placeholder help/version output only; project scaffolding is planned for a future release.

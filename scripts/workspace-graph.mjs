@@ -1,10 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** Deterministic dependency graph for npm workspaces (no external dependencies). */
-export function discoverWorkspaces(root) {
+/**
+ * Title: Discover npm workspaces.
+ * Description: Reads release packages by default, or every workspace for lock validation.
+ * Global Variables: none; reads package manifests below the supplied filesystem root.
+ * @param {string} root Repository directory.
+ * @param {{release?: boolean}} options Select release patterns or installation patterns.
+ * @returns {Map<string, {name: string, dir: string, pkg: object}>} Workspace manifests by name.
+ */
+export function discoverWorkspaces(root, { release = true } = {}) {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-  const patterns = manifest.releaseWorkspaces ?? manifest.workspaces ?? [];
+  const patterns = (release ? manifest.releaseWorkspaces : manifest.workspaces) ?? manifest.workspaces ?? [];
   if (!Array.isArray(patterns)) throw new Error('Expected a workspace array');
   const entries = new Map();
   for (const pattern of patterns) {

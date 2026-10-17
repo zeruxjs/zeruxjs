@@ -14,22 +14,14 @@ This repository is a monorepo containing several interconnected packages:
 | ------- | ----------- | ------- |
 | [`zyro`](./packages/zyrojs) | Library for building fast and scalable applications. | yet to be released |
 | [`@zeruxjs`](./packages/@zeruxjs) | The core Node.js framework. Contains the main runtime, API, and core logic. | yet to be released |
-| [`create-zerux-js`](./packages/create-zerux-js) | The CLI tool to scaffold and bootstrap new ZeruxJS projects globally via `npm create npm create zerux-js`. | yet to be released |
+| [`create-zerux-js`](./packages/create/create-zerux-app) | Placeholder for a future ZeruxJS project generator; currently supports help/version only. | yet to be released |
 | [`zerux-js-dev`](./vs-ext/zerux-js-dev) | The official Visual Studio Code extension providing intelligent code completion, snippets, and framework integration. | yet to be released |
 
 ## 🚀 Getting Started
 
-To create a new ZeruxJS project, you don't need to install anything globally. Simply run the `create-zerux-js` CLI using `npm`, `yarn`, or `pnpm`:
+The two CMS packages and three creator packages are public `0.0.1` placeholders for future development. The creator packages currently contain placeholder CLIs; project generation is not implemented in version `0.0.1`. Use the applications under `apps/` as development examples, and read the individual package READMEs for available APIs.
 
-```bash
-npm create zerux-js@latest my-app
-# or
-yarn create zerux-js my-app
-# or
-pnpm create zerux-js my-app
-```
-
-This will run an interactive prompt to set up a new project tailored to your requirements!
+See [the package release review](PACKAGE_RELEASE_REVIEW.md) for publication checks, release order, and known limitations.
 
 ## ✨ Features
 

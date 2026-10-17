@@ -1,25 +1,23 @@
-> [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
+# create-zerux-js
 
-# create-zerux-app
+Public `0.0.1` placeholder release to establish the package name for future development.
 
-The official CLI tool to scaffold and bootstrap new **ZeruxJS Framework** projects. Choose your engine and get started in seconds.
+Version `0.0.1` is a placeholder. Project generation is not implemented. The CLI supports `--help` and `--version` (exit status 0). Requests to generate a project report the limitation and exit with status 1 without creating files.
 
-## 🚀 Quick Start
+## Future implementation
 
-```bash
-npm create zerux-app@latest
+This package is intended to generate projects using [`zeruxjs`](../../zeruxjs/README.md). Scaffolding will be added in a future release; `0.0.1` only provides placeholder help/version output.
+
+## Invocation
+
+```sh
+npm create zerux-js@latest
 ```
 
-## 🛠️ Supported Engines
+## Development
 
-During the setup process, you can choose the frontend engine that fits your project:
-- **Zyro**: The native, high-performance engine for ZeruxJS.
-- **React**: Standard React setup with ZeruxJS server benefits.
-- **Vue**: Standard Vue setup with ZeruxJS server benefits.
+Run `npm run build` from this package directory.
 
-## ✨ Features
+## License
 
-- **Multi-Engine Scaffolding**: Automatically configures the project based on your chosen library.
-- **Ready-to-Go**: Pre-configured with server commands (`zsrv`), watcher, and shared devtools.
-- **Optimized Structure**: Generates a clean, scalable folder hierarchy by default.
+MIT OR Apache-2.0.

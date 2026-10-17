@@ -17,7 +17,7 @@ function launch(args,env){
   const completed=new Promise(r=>child.once('close',(code,signal)=>r({code,signal})));
   return {child,completed,output:()=>out};
 }
-async function waitUntil(check,ms=7000){const end=Date.now()+ms;while(Date.now()<end){try{if(await check())return;}catch{}await sleep(35);}throw Error('Timed out waiting for state');}
+async function waitUntil(check,ms=7000){const end=Date.now()+ms;while(Date.now()<end){try{if(await check())return;}catch{ /* This optional failure is intentionally ignored. */ }await sleep(35);}throw Error('Timed out waiting for state');}
 async function get(portNumber,host){return new Promise((res,rej)=>{const req=http.get({host:'127.0.0.1',port:portNumber,headers:{Host:host},timeout:500},response=>{let body='';response.on('data',x=>body+=x);response.on('end',()=>res({status:response.statusCode,body}));});req.on('error',rej);req.on('timeout',()=>req.destroy());});}
 async function status(env){const cliProcess=launch(['status','demo','--json'],env);const done=await cliProcess.completed;assert.equal(done.code,0,cliProcess.output());return JSON.parse(cliProcess.output());}
 

@@ -67,6 +67,7 @@ export class FleetMetricHistory {
       fs.renameSync(temporary,file);
       this.lastSaved = now;
       return true;
+    // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
     } finally { try { fs.unlinkSync(temporary); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; } }
   }
 }

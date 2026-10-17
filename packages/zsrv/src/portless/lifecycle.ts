@@ -85,6 +85,7 @@ export function writeProcessMarker(filename: string, marker: ProcessMarker): voi
     fs.renameSync(temp, filename);
   } finally {
     try { fs.unlinkSync(temp); } catch (error) {
+      // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
   }

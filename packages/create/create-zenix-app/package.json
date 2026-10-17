@@ -1,14 +1,11 @@
 {
   "name": "create-zenix-js",
   "version": "0.0.1",
-  "description": "CLI Creater for Zyro CMS",
+  "description": "Placeholder CLI for the future Zenix CMS project generator",
   "bin": {
-    "create-zerux": "./dist/index.js"
+    "create-zenix": "./dist/index.js"
   },
   "type": "module",
-  "dependencies": {
-    "prompts": "^2.4.2"
-  },
   "license": "(MIT OR Apache-2.0)",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -22,10 +19,24 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "prepack": "npm run build"
   },
   "keywords": [
-    "CLI Creater for Zyro CMS"
+    "placeholder",
+    "zenix"
   ],
-  "private": true
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
+  }
 }

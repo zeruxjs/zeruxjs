@@ -18,9 +18,9 @@ test('streamed completion decodes fragmented SSE, unicode and DONE',async()=>{
 test('stream enforces cumulative response bytes, event size and MIME',async()=>{
  const payload='data: {"choices":[{"delta":{"content":"123456789"}}]}\n\n';
  const provider=createOpenAICompatibleProvider({apiKey:'secret',baseUrl:'https://provider.test/v1',model:'a',maxResponseBytes:20,fetch:async()=>new Response(chunks(payload),{headers:{'Content-Type':'text/event-stream'}})});
- await assert.rejects(async()=>{for await(const _ of provider.stream([{role:'user',content:'hi'}])){}},/size limit/);
+ await assert.rejects(async()=>{for await(const _ of provider.stream([{role:'user',content:'hi'}])){ /* Consume the stream so parser failures reach the assertion. */ }},/size limit/);
  const invalid=createOpenAICompatibleProvider({apiKey:'secret',baseUrl:'https://provider.test/v1',model:'a',fetch:async()=>new Response('plain',{headers:{'content-type':'text/plain'}})});
- await assert.rejects(async()=>{for await(const _ of invalid.stream([{role:'user',content:'hi'}])){}},/event-stream/);
+ await assert.rejects(async()=>{for await(const _ of invalid.stream([{role:'user',content:'hi'}])){ /* Consume the stream so parser failures reach the assertion. */ }},/event-stream/);
 });
 test('provider refuses redirect and prevents Authorization override',async()=>{
  let authorization,redirect;

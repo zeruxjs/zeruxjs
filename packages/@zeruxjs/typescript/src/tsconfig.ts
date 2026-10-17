@@ -23,6 +23,7 @@ export function createTsConfig(rootDir: string, options: TsConfigOptions = {}): 
     fs.writeFileSync(temp, JSON.stringify(config, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
     fs.renameSync(temp, file);
   } finally {
+    // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
     try { fs.unlinkSync(temp); } catch (err) { if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err; }
   }
   return file;

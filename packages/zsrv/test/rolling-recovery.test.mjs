@@ -53,7 +53,7 @@ test('crashed controller can recover identified detached child without leaving a
   assert.equal((await recoverRollingGenerationsLocked(state,'orphan.localhost')).recovered,false);
  }finally{
   fixture?.owner.kill('SIGKILL');
-  if(fixture?.pid && alive(fixture.pid)) {try{process.kill(-fixture.pid,'SIGKILL');}catch{}}
+  if(fixture?.pid && alive(fixture.pid)) {try{process.kill(-fixture.pid,'SIGKILL');}catch{ /* This optional failure is intentionally ignored. */ }}
   fs.rmSync(state,{recursive:true,force:true});
  }
 });
@@ -83,7 +83,7 @@ test('unidentifiable PID is never signalled; reused PID fingerprint is ignored',
   assert.deepEqual(result.alreadyExited,[fixture.pid]);
   assert.ok(alive(fixture.pid));
  }finally{
-  if(fixture?.pid && alive(fixture.pid)) {try{process.kill(-fixture.pid,'SIGKILL');}catch{}}
+  if(fixture?.pid && alive(fixture.pid)) {try{process.kill(-fixture.pid,'SIGKILL');}catch{ /* This optional failure is intentionally ignored. */ }}
   fs.rmSync(state,{recursive:true,force:true});
  }
 });
@@ -133,7 +133,7 @@ test('recovery cannot delete a route registered by a newer owner', {timeout:2000
   assert.equal(new RouteStore(state).loadRoutes()[0].port,4500);
   newer.release();
  }finally{
-  if(fixture?.pid && alive(fixture.pid)) {try{process.kill(-fixture.pid,'SIGKILL');}catch{}}
+  if(fixture?.pid && alive(fixture.pid)) {try{process.kill(-fixture.pid,'SIGKILL');}catch{ /* This optional failure is intentionally ignored. */ }}
   fs.rmSync(state,{recursive:true,force:true});
  }
 });
@@ -152,7 +152,7 @@ test('untracked child cannot be hidden by a premature registry close',async()=>{
   tracker.untrack(child.pid);
   assert.equal(tracker.close(),true);
  }finally{
-  if(child?.pid && alive(child.pid)) {try{process.kill(-child.pid,'SIGKILL');}catch{}}
+  if(child?.pid && alive(child.pid)) {try{process.kill(-child.pid,'SIGKILL');}catch{ /* This optional failure is intentionally ignored. */ }}
   fs.rmSync(state,{recursive:true,force:true});
  }
 });

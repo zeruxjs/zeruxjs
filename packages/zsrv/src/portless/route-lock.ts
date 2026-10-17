@@ -58,7 +58,7 @@ export function acquireRouteLock(directory: string, options: RouteLockOptions = 
     try {
       fs.mkdirSync(lockDir, 0o700);
       try { fs.writeFileSync(markerPath, raw, { flag: 'wx', mode: 0o600 }); }
-      catch (error) { try { fs.rmdirSync(lockDir); } catch {} throw error; }
+      catch (error) { try { fs.rmdirSync(lockDir); } catch { /* This optional failure is intentionally ignored. */ } throw error; }
       const stat = fs.lstatSync(lockDir);
       let released = false;
       return { release() {

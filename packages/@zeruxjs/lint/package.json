@@ -1,19 +1,20 @@
 {
   "name": "@zeruxjs/lint",
   "version": "0.0.1",
-  "description": "Composable ESLint, Stylelint and Prettier runners for ZeruxJS",
+  "description": "Composable ESLint, Stylelint CSS/SCSS and Prettier runners for ZeruxJS",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "node scripts/prepare-stylelint-bundle.mjs && npm run build"
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./files": {
       "types": "./dist/files.d.ts",
@@ -22,18 +23,20 @@
   },
   "dependencies": {
     "@eslint/js": "^9.39.4",
-    "zwatch": "0.0.1",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-vue": "^10.8.0",
     "globals": "^17.4.0",
+    "postcss-scss": "4.0.9",
     "prettier": "^3.8.1",
-    "stylelint": "^17.6.0",
-    "stylelint-config-standard": "^40.0.0",
-    "stylelint-config-standard-scss": "^17.0.0",
-    "typescript-eslint": "^8.57.0"
+    "stylelint": "17.16.0",
+    "stylelint-config-standard": "40.0.0",
+    "stylelint-config-standard-scss": "17.0.0",
+    "stylelint-scss": "7.3.0",
+    "typescript-eslint": "^8.57.0",
+    "zwatch": "0.0.1"
   },
   "license": "(MIT OR Apache-2.0)",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
@@ -52,5 +55,19 @@
     "README.md",
     "LICENSE-MIT",
     "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
+  },
+  "bundleDependencies": [
+    "stylelint",
+    "stylelint-config-standard",
+    "stylelint-config-standard-scss",
+    "stylelint-scss",
+    "postcss-scss"
   ]
 }

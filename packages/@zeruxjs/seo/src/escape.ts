@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
 export const escapeHtml = (value: string): string => String(value).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 export function safeUrl(value:string):string { const url = new URL(value); if (!['https:','http:'].includes(url.protocol) || url.username || url.password) throw new TypeError('Expected an HTTP(S) URL without credentials'); return url.href; }
 export function iso(value: Date|string):string { const date = new Date(value); if (!Number.isFinite(date.getTime())) throw new TypeError('Invalid sitemap date'); return date.toISOString().slice(0,10); }

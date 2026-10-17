@@ -5,6 +5,8 @@ export interface LintOptions {
   maxFiles?: number;
   quiet?: boolean;
   configFile?: string;
+  /** Stylelint configuration for CSS/SCSS checks; overrides configFile for that engine. */
+  cssConfigFile?: string;
 }
 export interface LintResult {
   engine: 'eslint' | 'stylelint' | 'prettier';

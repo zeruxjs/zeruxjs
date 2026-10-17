@@ -15,12 +15,13 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "prepack": "npm run build"
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "type": "module",
@@ -34,6 +35,18 @@
     "dist/",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
-  ]
+    "LICENSE-APACHE",
+    "assets/app.js",
+    "assets/style.css",
+    "assets/favicon.ico",
+    "assets/favicon.png",
+    "assets/robots.txt"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
+  }
 }

@@ -20,6 +20,7 @@ const flat = (items: VNodeChild[]): VNodeChild[] => {
   return result;
 };
 const isVNode = (value: VNodeChild): value is VNode => !!value && typeof value === 'object' && !Array.isArray(value) && 'type' in value;
+// eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
 const safeUrl = (value: string): boolean => !/^(?:javascript|vbscript|data|file):/i.test(value.replace(/[\u0000-\u0020\u007f]+/g, ''));
 const dangerousAttr = (key: string): boolean => /^(?:innerhtml|outerhtml|srcdoc|srcset|formaction)$/i.test(key) || (/^on/i.test(key) && !/^on[A-Z]/.test(key));
 const uriAttr = (key: string): boolean => /^(?:href|src|action|poster|cite|background|xlink:href)$/i.test(key);

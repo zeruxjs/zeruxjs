@@ -172,9 +172,10 @@ const executeWithDb = async (
         }
         case "alterTable":
             throw createDatabaseError({ code: "UNSUPPORTED_OPERATION", message: "Mongo alterTable is not supported; perform an explicit schema migration" });
-        case "turcunateTable":
+        case "turcunateTable": {
             const collection = getDatabase(options, databaseName).collection(operation.table);
             return normalizeResult(operation, context, await requireMethod(collection.deleteMany, "deleteMany").call(collection, {}));
+        }
         case "createIndex": {
             const collection = getDatabase(options, databaseName).collection(operation.table);
             if (operation.columns.some(column => typeof column !== "string")) throw createDatabaseError({ code: "INVALID_INDEX", message: "Mongo indexes require plain named columns" });

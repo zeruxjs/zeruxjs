@@ -101,6 +101,7 @@ export class BackendHealthStore {
         const fd = fs.openSync(path.dirname(this.file), 'r');
         try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
       } catch { /* Directory fsync unavailable on some platforms. */ }
+    // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
     } finally { try { fs.unlinkSync(temporary); } catch (error) { if (errno(error) !== 'ENOENT') throw error; } }
   }
 }

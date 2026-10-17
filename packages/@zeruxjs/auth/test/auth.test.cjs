@@ -1,5 +1,5 @@
 const {test} = require('node:test'); const assert=require('node:assert/strict');
-const crypto=require('node:crypto'); const auth=require('../dist/index.js');
+const nodeCrypto=require('node:crypto'); const auth=require('../dist/index.js');
 test('password policy and legacy session can roundtrip',()=>{
  assert.equal(auth.validatePasswordStrength('short').valid,false);
  const hash=auth.hashPassword('this is a secret password');
@@ -29,7 +29,7 @@ test('scoped API tokens, expiry and revocation',()=>{
 });
 test('in-process session revocation works with expiry',()=>{
  let now=1000; const store=auth.createSessionRevocationStore({now:()=>now});
- const jti=crypto.randomBytes(16).toString('base64url');
+ const jti=nodeCrypto.randomBytes(16).toString('base64url');
  store.revoke(jti,2); assert.equal(store.isRevoked({jti}),true);
  now=2001; assert.equal(store.isRevoked({jti}),false);
 });

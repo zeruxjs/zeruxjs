@@ -45,5 +45,5 @@ test('identified child can be stopped and removed only after exit', {skip: proce
     writeProcessMarker(file, createProcessMarker(child.pid));
     assert.equal(await stopMarkedProcess(file, async()=>true,{waitMs:3000,pollMs:20}), 'stopped');
     assert.equal(fs.existsSync(file), false);
-  } finally { try { child.kill('SIGKILL'); } catch {} fs.rmSync(dir, {recursive:true,force:true}); }
+  } finally { try { child.kill('SIGKILL'); } catch { /* This optional failure is intentionally ignored. */ } fs.rmSync(dir, {recursive:true,force:true}); }
 });

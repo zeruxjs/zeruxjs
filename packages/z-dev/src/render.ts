@@ -1,13 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { getDevtoolsApiHandler } from "./api/registry.js";
 import { loadApplicationSections as loadResolvedApplicationSections } from "./module-loader.js";
 import type { DevtoolsModuleDefinition, DevtoolsSectionDefinition } from "./module-registry.js";
 import type { SharedDevRegistration, SharedDevSnapshot } from "./types.js";
 
-const packageRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+// Decode file URLs correctly for package paths containing spaces and Windows paths.
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const runtimeRoot = path.join(packageRoot, "dist");
 const assetsRoot = path.join(packageRoot, "assets");
 const appRoot = path.join(runtimeRoot, "app");

@@ -105,7 +105,7 @@ export function createTagManager(options:TagRuntimeOptions){
       }catch{failures.push(tag.id);warn(`Destination failed for tag ${tag.id}`);} // Tags are isolated, never block other tags.
     }
     const result={requestId:event.requestId,requestUtcDay:event.requestUtcDay,matchedTriggers:[...ids],firedTags,failures};
-    if(options.debug)try{options.onDebug?.({requestId:event.requestId,event:event.name,matchedTriggers:result.matchedTriggers,firedTags,failures});}catch{}
+    if(options.debug)try{options.onDebug?.({requestId:event.requestId,event:event.name,matchedTriggers:result.matchedTriggers,firedTags,failures});}catch{ /* This optional failure is intentionally ignored. */ }
     return result;
   }
   /** Server-side event entry point; request IDs may be shared within a single caller request scope. */
@@ -153,7 +153,7 @@ export function createTagManager(options:TagRuntimeOptions){
   const endpoint=options.publicOrigin?new URL(prefix+'/collect',options.publicOrigin).href:prefix+'/collect';
   const scriptHandler=async(_request:Request)=>{
     let activeTypes:string[]=[];
-    try{const container=publishedContainer(await store.load());activeTypes=[...new Set(container.triggers.filter(t=>t.enabled!==false).map(t=>t.type))];}catch{}
+    try{const container=publishedContainer(await store.load());activeTypes=[...new Set(container.triggers.filter(t=>t.enabled!==false).map(t=>t.type))];}catch{ /* This optional failure is intentionally ignored. */ }
     const js=browserScript({endpoint,site:options.site??'',debug:options.debug===true,autoEvents:activeTypes,defaultConsent:options.defaultConsent??'granted'});
     return new Response(js,{headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','cross-origin-resource-policy':'cross-origin'}});
   };

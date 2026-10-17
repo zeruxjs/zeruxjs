@@ -444,7 +444,7 @@ export async function initializeRuntimeServices(config: ZeruxConfig, rootDir: st
       catch(error){
         if(queue.required === true) throw error;
         scope.markDegraded('queue');
-        try{console.warn('[zerux queue] Service unavailable:',error instanceof Error?error.message:String(error));}catch{}
+        try{console.warn('[zerux queue] Service unavailable:',error instanceof Error?error.message:String(error));}catch{ /* This optional failure is intentionally ignored. */ }
       }
     }
     if (analytics?.enabled !== false && analytics) {
@@ -471,7 +471,7 @@ export async function initializeRuntimeServices(config: ZeruxConfig, rootDir: st
         scope.addHttpRoutes('tags',tagService.routes());
         scope.add('tags',tagService);
       } catch(error){scope.markDegraded('tags');
-        try{console.warn('[zerux tags] Service unavailable:',error instanceof Error?error.message:String(error));}catch{}
+        try{console.warn('[zerux tags] Service unavailable:',error instanceof Error?error.message:String(error));}catch{ /* This optional failure is intentionally ignored. */ }
       }
     }
     if (reports?.enabled === true) {
@@ -481,7 +481,7 @@ export async function initializeRuntimeServices(config: ZeruxConfig, rootDir: st
         scope.addHttpRoutes('reports',reportService.routes());
         scope.add('reports',reportService);
       } catch(error){scope.markDegraded('reports');
-        try{console.warn('[zerux reports] Service unavailable:',error instanceof Error?error.message:String(error));}catch{}
+        try{console.warn('[zerux reports] Service unavailable:',error instanceof Error?error.message:String(error));}catch{ /* This optional failure is intentionally ignored. */ }
       }
     }
     let tracking: EndpointProvider | undefined;

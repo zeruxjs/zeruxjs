@@ -42,6 +42,7 @@ function validateJob(id:string,query:NumericReconciliationQuery):NumericReconcil
   if(!query||!Number.isSafeInteger(query.since)||query.since<0||!Number.isSafeInteger(query.until)||query.until<query.since)
     throw new RangeError('Reconciliation job requires an explicit closed time window');
   if(query.cursor!==undefined)throw new TypeError('Job cursor is managed by the durable checkpoint');
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   if(query.site!==undefined&&(typeof query.site!=='string'||query.site.length>200||/[\x00-\x1f]/.test(query.site)))throw new TypeError('Invalid reconciliation job site');
   const batchSize=query.batchSize??100;
   if(!Number.isSafeInteger(batchSize)||batchSize<1||batchSize>200)throw new RangeError('Invalid reconciliation job batch size');
@@ -116,6 +117,7 @@ export function createNumericReconciliationJob(options:NumericReconciliationJobO
       if(!Number.isSafeInteger(page[key])||page[key]<0)throw new Error('Invalid reconciliation page metrics');
     if(page.created+page.existing!==page.expectedFacts||page.hasMore===page.windowExhausted||
       (page.hasMore&&(!page.nextCursor||typeof page.nextCursor!=='string'||page.nextCursor.length>36||
+      // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
       /[\x00-\x20\x7f]/.test(page.nextCursor)||
       (current.cursor!==null&&page.nextCursor<=current.cursor)))||
       (!page.hasMore&&page.nextCursor!==null)||page.scanned<1&&page.hasMore)

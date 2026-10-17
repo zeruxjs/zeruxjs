@@ -44,5 +44,6 @@ export const writeJsonFile = (filePath: string, value: unknown): void => {
     // Close the gap where another process might replace the target with a link.
     unsafeFile(filePath);
     fs.renameSync(temp, filePath);
+  // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
   } finally { try { fs.unlinkSync(temp); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; } }
 };

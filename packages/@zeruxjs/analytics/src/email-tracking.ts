@@ -66,7 +66,7 @@ export function createEmailTrackingService(config:EmailTrackingOptions){
   const activityStore=config.activityStore??createMemoryEmailActivityStore();
   let pending=0;
   let enabled=config.enabled!==false;let warned=false;
-  function warn(){if(warned)return;warned=true;try{(config.onWarning??console.warn)('[analytics] Email tracking telemetry unavailable; event skipped');}catch{}}
+  function warn(){if(warned)return;warned=true;try{(config.onWarning??console.warn)('[analytics] Email tracking telemetry unavailable; event skipped');}catch{ /* This optional failure is intentionally ignored. */ }}
   async function telemetry(action:()=>Promise<unknown>|unknown):Promise<void>{
     if(pending>=maxPending){warn();return;}
     pending++;

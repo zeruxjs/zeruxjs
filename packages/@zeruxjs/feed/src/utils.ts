@@ -1,4 +1,5 @@
 import type { FeedOptions } from './types.js';
+// eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
 export const escapeXml = (value:string):string => String(value).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
 export function safeFeedUrl(value:string):string { const u=new URL(value);if(!['http:','https:'].includes(u.protocol)||u.username||u.password)throw new TypeError('Invalid feed URL');return u.href; }
 export function date(value?:string|Date):string|undefined {if(!value)return undefined;const d=new Date(value);if(!Number.isFinite(d.getTime()))throw new TypeError('Invalid feed date');return d.toISOString();}

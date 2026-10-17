@@ -117,7 +117,7 @@ const normalizeMultisiteFolder = (folderName: string) => {
         throw new Error(`Invalid multisite folder name "${folderName}". Use a single root app folder segment.`);
     }
 
-    if (!/^[a-zA-Z0-9._~\{\}\[\]\-]+$/.test(normalized)) {
+    if (!/^[a-zA-Z0-9._~{}[\]-]+$/.test(normalized)) {
         throw new Error(`Invalid multisite folder name "${folderName}". Use URL-safe characters only.`);
     }
 

@@ -37,5 +37,6 @@ export function writeRuntimeJson(file: string, value: unknown): void {
     fs.writeFileSync(temp, data, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
     inspect(file);
     fs.renameSync(temp, file);
+  // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
   } finally { try { fs.unlinkSync(temp); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; } }
 }

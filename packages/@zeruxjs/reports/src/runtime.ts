@@ -10,6 +10,7 @@ import {reportDashboard} from './dashboard.js';
 const headers={'cache-control':'private, no-store','x-content-type-options':'nosniff','vary':'Cookie, Authorization'};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...headers,'content-type':'application/json; charset=utf-8'}});
 const error=(message:string,status:number)=>json({error:message},status);
+// eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
 const validSite=(site:unknown):site is string=>typeof site==='string'&&site.length>0&&site.length<=200&&!/[\x00-\x1f]/.test(site);
 const date=(s:string|null)=>{
   if(!s||!/^\d{4}-\d{2}-\d{2}$/.test(s)||new Date(s+'T00:00:00Z').toISOString().slice(0,10)!==s)throw new TypeError('Invalid UTC date');

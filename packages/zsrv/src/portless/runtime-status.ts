@@ -52,6 +52,7 @@ function writeAtomically(filename: string, value: string): void {
         fs.renameSync(temporary, filename);
     } finally {
         if (fd !== undefined) fs.closeSync(fd);
+        // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
         try { fs.unlinkSync(temporary); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     }
 }

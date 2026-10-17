@@ -2,7 +2,6 @@
   "name": "@zeruxjs/vue",
   "version": "0.0.1",
   "description": "Reactive ref compatibility, derived refs and Vue state adapters.",
-  "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
     "url": "https://github.com/zeruxjs/zeruxjs/issues"
@@ -17,9 +16,23 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "prepack": "npm run build"
   },
   "keywords": [
     "Library - VueJS support"
-  ]
+  ],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
+  }
 }

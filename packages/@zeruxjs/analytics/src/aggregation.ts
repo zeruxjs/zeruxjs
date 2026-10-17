@@ -22,6 +22,7 @@ export function validateAggregateQuery(query:AnalyticsAggregateQuery){
   if(query.since!==undefined&&query.until!==undefined&&query.since>query.until)throw new RangeError('Reversed analytics time range');
   if(query.name!==undefined&&!/^[A-Za-z][A-Za-z0-9_.:-]{0,95}$/.test(query.name))throw new TypeError('Invalid event name');
   if(query.source!==undefined&&!['web','email','server','system'].includes(query.source))throw new TypeError('Invalid event source');
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   if(query.site!==undefined&&(typeof query.site!=='string'||query.site.length>200||/[\x00-\x1f]/.test(query.site)))throw new TypeError('Invalid site');
 }
 /** Native COUNT with DB-side filters. Throws on query errors; a failed report must never be displayed as zero.

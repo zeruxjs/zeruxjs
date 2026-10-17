@@ -9,7 +9,8 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "bundle": "esbuild src/index.ts --bundle --outfile=dist/zyro.js --format=esm",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "npm run build"
   },
   "exports": {
     ".": {
@@ -34,5 +35,12 @@
   ],
   "engines": {
     "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
   }
 }

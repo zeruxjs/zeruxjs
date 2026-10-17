@@ -43,6 +43,7 @@ export function atomicStateWrite(file: string, bytes: Buffer | null): void {
     fs.renameSync(tmp, file);
     syncDirectory(dir);
   } finally {
+    // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
     try { fs.unlinkSync(tmp); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
   }
 }

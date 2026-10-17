@@ -216,6 +216,7 @@ export function createAnalytics(config:AnalyticsConfig = {}){
         const conditions:Array<{field:string;operator:'eq'|'gte'|'lte';value:string|number}>=[];
         if(query.name)conditions.push({field:'event_name',operator:'eq',value:validateEvent({name:query.name}).event_name});
         if(query.source){if(!['web','email','server','system'].includes(query.source))throw new TypeError('Invalid source');conditions.push({field:'source',operator:'eq',value:query.source});}
+        // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
         if(query.site!==undefined){if(typeof query.site!=='string'||query.site.length>200||/[\x00-\x1f]/.test(query.site))throw new TypeError('Invalid site');conditions.push({field:'site',operator:'eq',value:query.site});}
         for(const [key,op] of [['since','gte'],['until','lte']] as const){const value=query[key];if(value!==undefined){if(!Number.isSafeInteger(value)||value<0)throw new RangeError('Invalid timestamp');conditions.push({field:'occurred_at',operator:op,value});}}
         const response=await connection.select({table,columns:['id','event_name','source','site','pathname','session_id','occurred_at','properties_json'],...(conditions.length?{where:conditions.length===1?conditions[0]:{and:conditions}}:{}),orderBy:[{by:'occurred_at',direction:'desc'}],limit});

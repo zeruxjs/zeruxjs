@@ -47,6 +47,7 @@ export function createPathRegistry(options: PathRegistryOptions = {}) {
       finally { fs.closeSync(handle); }
       fs.renameSync(temp, filename);
     } finally {
+      // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
       try { fs.unlinkSync(temp); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     }
   };

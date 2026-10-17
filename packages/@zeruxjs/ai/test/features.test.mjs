@@ -9,5 +9,5 @@ test('stream fallback handles a non-streaming provider failure before yielding',
  assert.equal(result,'secondary answer');
  const controller=new AbortController();controller.abort();
  const aborted=withFallback({async chat(){throw Error('failed')}},{async chat(){return 'unsafe retry'}});
- await assert.rejects(async()=>{for await(const _ of aborted.stream([],{signal:controller.signal})){}},/failed/);
+ await assert.rejects(async()=>{for await(const _ of aborted.stream([],{signal:controller.signal})){ /* Consume the stream so parser failures reach the assertion. */ }},/failed/);
 });

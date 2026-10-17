@@ -1,6 +1,7 @@
 import type {EmailAddress, EmailRecipients, SmtpSettings, EmailMessage} from './types.js';
 
 const badLine=/[\r\n\0]/;
+// eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
 const emailPattern=/^[^\s@<>\u0000-\u001f\u007f]+@[^\s@<>\u0000-\u001f\u007f]+\.[^\s@<>\u0000-\u001f\u007f]+$/;
 export function validateEmailAddress(input:EmailAddress):EmailAddress{
   const address=typeof input==='string'?input:input?.address;

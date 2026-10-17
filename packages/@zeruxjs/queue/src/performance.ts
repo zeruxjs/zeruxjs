@@ -79,7 +79,7 @@ export function createDatabaseProviderOutcomeLedger(db:DeliveryDatabase,table='z
     }
   })().catch(error=>{ready=undefined;throw error;});
   const normalized=(event:ProviderOutcomeEvent)=>{
-    if(!event||typeof event.eventId!=='string'||!/^[-A-Za-z0-9:_.\/]{1,160}$/.test(event.eventId)||!providerId.test(event.provider)||
+    if(!event||typeof event.eventId!=='string'||!/^[-A-Za-z0-9:_./]{1,160}$/.test(event.eventId)||!providerId.test(event.provider)||
       !campaignId.test(event.campaignId)||!messageId.test(event.messageId)||!providerOutcomes.includes(event.kind)||!validTime(event.occurredAt))throw new TypeError('Invalid provider outcome');
     const id=createHash('sha256').update(JSON.stringify([event.provider,event.eventId])).digest('hex');
     return {id,provider:event.provider,campaign_id:event.campaignId,message_id:event.messageId,kind:event.kind,occurred_at:event.occurredAt};

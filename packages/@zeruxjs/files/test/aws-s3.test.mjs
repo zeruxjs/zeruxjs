@@ -2,10 +2,18 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createS3Storage,createFileManager,validateAwsCredentialOptions,resolveAwsCredentials} from '../dist/index.js';
 const addr={bucket:'demo-bucket',key:'pictures/example.webp'};
+/**
+ * Title: Offline AWS SDK client fixture.
+ * Description: Implements SDK commands and the configuration read by lib-storage.
+ * Global Variables: none.
+ * @returns {object} An in-memory SDK-compatible client with observable requests.
+ */
 function sdkClient(){
  const files=new Map(),requests=[];let closed=false;
  return {
    requests,files,
+   // lib-storage reads client configuration even when send() is injected.
+   config:{requestHandler:{},forcePathStyle:true,endpoint:async()=>({protocol:'https:',hostname:'minio.example.com'})},
    get closed(){return closed;},destroy(){closed=true;},
    async send(cmd){const name=cmd.constructor.name,params=cmd.input;requests.push({name,params});const k=`${params.Bucket}/${params.Key}`;
      if(name==='HeadObjectCommand') {if(!files.has(k))throw {name:'NotFound',$metadata:{httpStatusCode:404}};const f=files.get(k);return {ContentLength:f.body.length,ContentType:f.ContentType,Metadata:f.Metadata,ETag:'"etag"',LastModified:new Date(),ServerSideEncryption:f.ServerSideEncryption};}

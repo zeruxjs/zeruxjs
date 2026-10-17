@@ -80,6 +80,7 @@ function atomicWrite(file: string, value: GenerationRecord): void {
     try { assertPrivate(file); } catch (error) { if (!isGone(error)) throw error; }
     fs.renameSync(tmp, file);
     try { const fd = fs.openSync(path.dirname(file), 'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } catch { /* Unsupported on some filesystems. */ }
+  // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
   } finally { try { fs.unlinkSync(tmp); } catch (error) { if (!isGone(error)) throw error; } }
 }
 /** Delete only if contents and inode are still the observed record. */

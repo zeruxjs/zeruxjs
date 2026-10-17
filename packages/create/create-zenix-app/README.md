@@ -1,25 +1,23 @@
-> [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
+# create-zenix-js
 
-# create-zenix-app
+Public `0.0.1` placeholder release to establish the package name for future development.
 
-The official CLI tool to scaffold and bootstrap a new **Zenix CMS** instance.
+Version `0.0.1` is a placeholder. Project generation is not implemented. The CLI supports `--help` and `--version` (exit status 0). Requests to generate a project report the limitation and exit with status 1 without creating files.
 
-## 🚀 Quick Start
+## Future implementation
 
-```bash
-npm create zenix-app@latest
+This package is intended to generate projects using [`zenixjs`](../../zenixjs/README.md). Scaffolding will be added in a future release; `0.0.1` only provides placeholder help/version output.
+
+## Invocation
+
+```sh
+npm create zenix-js@latest
 ```
 
-## 🛠️ What's Included
+## Development
 
-- **Full CMS Core**: Scaffolds the Zenix CMS core on top of ZeruxJS.
-- **Admin Dashboard**: Pre-configured admin interface powered by ZyroJS.
-- **Database Adapters**: Options to configure Mongo, MySQL, PostgreSQL, or SQLite.
-- **Module System**: Pre-configured for Zenix/ZeruxJS extensions.
+Run `npm run build` from this package directory.
 
-## ✨ Features
+## License
 
-- **Interactive Setup**: Configure your CMS name, database, and initial admin settings.
-- **Best Practices**: Generates a project structure optimized for CMS performance and security.
-- **Integrated Tooling**: Immediate access to the Zenix developer ecosystem.
+MIT OR Apache-2.0.

@@ -18,4 +18,4 @@ export const counterAmount = (amount: number): number => {
     return amount;
 };
 /** Escape Redis glob wildcards for SCAN MATCH; also filter results by literal prefix. */
-export const prefixGlob = (prefix: string): string => prefix.replace(/[\\*?\[\]]/g, "\\$&") + ":*";
+export const prefixGlob = (prefix: string): string => prefix.replace(/[\\*?[\]]/g, "\\$&") + ":*";

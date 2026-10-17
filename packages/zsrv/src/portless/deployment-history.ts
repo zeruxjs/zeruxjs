@@ -80,7 +80,7 @@ function atomicWrite(file: string, text: string): void {
     try { if (fs.lstatSync(file).isSymbolicLink()) throw new Error('Unsafe deployment history symlink'); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     fs.renameSync(tmp, file);
-  } finally { try { fs.unlinkSync(tmp); } catch {} }
+  } finally { try { fs.unlinkSync(tmp); } catch { /* This optional failure is intentionally ignored. */ } }
 }
 export function createDeploymentHistory(stateDir: string, hostname: string, initial: RollingStatus, options: HistoryRetentionOptions = {}) {
   retention(options);

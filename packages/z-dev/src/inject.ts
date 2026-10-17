@@ -27,7 +27,7 @@ const buildInjectedClient = ({ routeName, devServerUrl, allowedDevDomain, devPor
     const currentProtocol = window.location.protocol;
     const currentHostname = window.location.hostname;
     const currentPort = window.location.port ? ':' + window.location.port : '';
-    const isLocalHostOrPrivate = /^(localhost|127\.0\.0\.1|::1|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|169\.254\.|f[cd][0-9a-f]{0,2}:|fe80:)/.test(currentHostname);
+    const isLocalHostOrPrivate = /^(localhost|127\\.0\\.0\\.1|::1|10\\.|192\\.168\\.|172\\.(1[6-9]|2\\d|3[0-1])\\.|169\\.254\\.|f[cd][0-9a-f]{0,2}:|fe80:)/.test(currentHostname);
     if (isLocalHostOrPrivate) {
       return Object.assign(new URL(devMainServerUrl), { hostname: currentHostname }).toString();
     } else if (currentHostname.endsWith(".localhost")) {

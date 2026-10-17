@@ -82,7 +82,7 @@ export function createS3Storage(options:S3StorageOptions):S3StorageDriver {
     const data=head.Metadata??{};
     const user={...data};delete user['zfiles-visibility'];delete user['zfiles-expires'];
     const visibility=data['zfiles-visibility']==='public'?'public':'private';
-    return {bucket:a.bucket,key:a.key,size:Number(head.ContentLength??head.Size??0),etag:String(head.ETag??'').replace(/^\"|\"$/g,'')?String(head.ETag):'',contentType:head.ContentType??'application/octet-stream',modifiedAt:(head.LastModified instanceof Date?head.LastModified:new Date(head.LastModified??Date.now())).toISOString(),visibility,metadata:user,cacheControl:head.CacheControl,contentDisposition:head.ContentDisposition,versionId:head.VersionId,rangeSupported:true,encryption:options.encryption?.mode==='SSE-C'?'SSE-C':head.ServerSideEncryption,expiresAt:data['zfiles-expires']};
+    return {bucket:a.bucket,key:a.key,size:Number(head.ContentLength??head.Size??0),etag:String(head.ETag??'').replace(/^"|"$/g,'')?String(head.ETag):'',contentType:head.ContentType??'application/octet-stream',modifiedAt:(head.LastModified instanceof Date?head.LastModified:new Date(head.LastModified??Date.now())).toISOString(),visibility,metadata:user,cacheControl:head.CacheControl,contentDisposition:head.ContentDisposition,versionId:head.VersionId,rangeSupported:true,encryption:options.encryption?.mode==='SSE-C'?'SSE-C':head.ServerSideEncryption,expiresAt:data['zfiles-expires']};
   }
   async function stat(a:FileAddress):Promise<FileInfo|null>{
     validateAddress(a);const {HeadObjectCommand}=await import('@aws-sdk/client-s3');

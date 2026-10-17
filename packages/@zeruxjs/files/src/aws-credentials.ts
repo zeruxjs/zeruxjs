@@ -26,7 +26,7 @@ export interface AwsCredentialOptions {
   assumeRole?: AssumeRoleOptions;
   webIdentity?: WebIdentityOptions;
 }
-const rolePattern = /^arn:(aws|aws-cn|aws-us-gov):iam::\d{12}:role\/[A-Za-z0-9_+=,.@\/-]{1,512}$/;
+const rolePattern = /^arn:(aws|aws-cn|aws-us-gov):iam::\d{12}:role\/[A-Za-z0-9_+=,.@/-]{1,512}$/;
 export function assertRoleArn(value: string): void {
   if (typeof value !== 'string' || !rolePattern.test(value)) throw new TypeError('A valid IAM role ARN is required');
 }

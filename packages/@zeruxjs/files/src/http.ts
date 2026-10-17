@@ -7,6 +7,7 @@ export interface FileHttpOptions {
   storage?: string; bucket:string; prefix?:string;
   maxUploadBytes?:number; cacheControl?:string; allowDelete?:boolean;
 }
+// eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
 function filename(value:string){const safe=value.replace(/[\x00-\x1f\x7f"\\/]/g,'_').slice(0,180)||'file';return `attachment; filename="${safe}"; filename*=UTF-8''${encodeURIComponent(safe)}`;}
 function rangeFrom(header:string,size:number):{start:number,end:number}|null{
   const found=/^bytes=(\d*)-(\d*)$/.exec(header.trim());if(!found||(!found[1]&&!found[2])||size===0)return null;

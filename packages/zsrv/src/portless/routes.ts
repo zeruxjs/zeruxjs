@@ -96,6 +96,7 @@ function writeRoutesAtomic(filename: string, routes: RouteMapping[], mode: numbe
   } finally {
     if (fd !== undefined) fs.closeSync(fd);
     try { fs.unlinkSync(tmp); } catch (err) {
+      // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
       if (!isErrnoException(err) || err.code !== 'ENOENT') throw err;
     }
   }

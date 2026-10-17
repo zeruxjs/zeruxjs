@@ -17,7 +17,7 @@ async function request(port, path, { method = 'GET', body, headers = {} } = {}) 
     const req = http.request({ hostname: '127.0.0.1', port, path, method,
       headers: { Host: 'my-app.localhost', ...(data ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } : {}), ...headers } }, res => {
       const chunks = []; res.on('data', chunk => chunks.push(chunk));
-      res.once('end', () => { const text = Buffer.concat(chunks).toString(); let json; try { json = JSON.parse(text); } catch {} resolve({ status: res.statusCode, text, json, headers: res.headers }); });
+      res.once('end', () => { const text = Buffer.concat(chunks).toString(); let json; try { json = JSON.parse(text); } catch { /* This optional failure is intentionally ignored. */ } resolve({ status: res.statusCode, text, json, headers: res.headers }); });
     }); req.on('error', reject); req.end(data);
   });
 }
@@ -116,7 +116,7 @@ test('Connect stream JSON framing works over HTTP/1.1', async t => {
   const decoded = [];
   for await (const item of readConnectEnvelopes([encodeConnectEnvelope({ a: 1 }), encodeConnectEnvelope({ a: 2 })])) decoded.push(item);
   assert.deepEqual(decoded, [{ a: 1 }, { a: 2 }]);
-  await assert.rejects(async () => { for await (const _ of readConnectEnvelopes([Buffer.from([1, 0, 0, 0, 0])])) {} });
+  await assert.rejects(async () => { for await (const _ of readConnectEnvelopes([Buffer.from([1, 0, 0, 0, 0])])) { /* Consume the stream so parser failures reach the assertion. */ } });
   const gateway = createProtocolGateway();
   gateway.connectStream.register('service.v1.Echo', 'Stream', async function* (messages) {
     for await (const msg of messages) yield { echoed: msg };

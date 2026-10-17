@@ -74,6 +74,7 @@
     "test:versions": "node --test scripts/workspace-version-policy.test.mjs"
   },
   "workspaces": [
+    "packages/@zenix/*",
     "packages/@zeruxjs/*",
     "packages/*",
     "packages/create/*",
@@ -83,8 +84,12 @@
     "better-sqlite3": "^12.6.2"
   },
   "releaseWorkspaces": [
+    "packages/@zenix/*",
     "packages/@zeruxjs/*",
     "packages/*",
     "packages/create/*"
-  ]
+  ],
+  "overrides": {
+    "braces": "npm:@zklogic/braces@3.0.7"
+  }
 }

@@ -1,3 +1,5 @@
+import type { PoolOptions } from "mysql2/promise";
+
 type MySqlExecutorResult = unknown;
 
 type MySqlPoolLike = {
@@ -20,7 +22,7 @@ export interface MySqlConnectorOptions extends Record<string, unknown> {
     port?: number;
     connectionLimit?: number;
     waitForConnections?: boolean;
-    ssl?: unknown;
+    ssl?: PoolOptions["ssl"];
     executor?: (statement: string, params: unknown[]) => Promise<unknown> | unknown;
 }
 
@@ -73,6 +75,7 @@ export const createManagedPool = async (
         ssl: options.ssl
     });
 
-    return { pool, owned: true };
+    // The shared SQL executor accepts unknown parameters; mysql2 performs the
+    // final runtime validation. Preserve the native pool for getNativeConnection().
+    return { pool: pool as unknown as MySqlPoolLike, owned: true };
 };
-

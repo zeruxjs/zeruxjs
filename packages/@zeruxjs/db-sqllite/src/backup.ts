@@ -29,6 +29,7 @@ export async function createSqliteConsistentBackup(database: SqliteDatabase, des
         await link(temp, destination); // hard-link fails with EEXIST instead of replacing existing destination
         return { destination, integrity: "ok" };
     } finally {
+        // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
         try { await unlink(temp); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
     }
 }

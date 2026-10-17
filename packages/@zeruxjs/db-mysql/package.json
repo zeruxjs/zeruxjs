@@ -2,7 +2,6 @@
   "name": "@zeruxjs/db-mysql",
   "version": "0.0.1",
   "description": "Helper for @zerux/db for MySQL Database.",
-  "private": true,
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
     "url": "https://github.com/zeruxjs/zeruxjs/issues"
@@ -17,14 +16,28 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "@zeruxjs/db": "0.0.1",
     "@zeruxjs/db-sql-core": "0.0.1",
-    "mysql2": "^3.15.2"
+    "mysql2": "^3.24.6"
   },
   "keywords": [
     "Helper for @zerux/db for MySQL Database."
-  ]
+  ],
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
+  }
 }

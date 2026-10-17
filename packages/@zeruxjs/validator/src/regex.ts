@@ -17,7 +17,7 @@ export const CUID2_REGEX: RegExp = /^[a-z][\da-z]*$/u;
 /**
  * [Decimal](https://en.wikipedia.org/wiki/Decimal) regex.
  */
-// eslint-disable-next-line redos-detector/no-unsafe-regex -- false positive
+// Compatibility expression; previous external ReDoS lint exclusions are not used here.
 export const DECIMAL_REGEX: RegExp = /^[+-]?(?:\d*\.)?\d+$/u;
 
 /**
@@ -48,7 +48,7 @@ export const EMAIL_REGEX: RegExp =
  * not supported in older runtimes and does not match all emoji.
  */
 export const EMOJI_REGEX: RegExp =
-  // eslint-disable-next-line redos-detector/no-unsafe-regex -- false positives
+  // Compatibility expression; previous external ReDoS lint exclusions are not used here.
   /^(?:[\u{1F1E6}-\u{1F1FF}]{2}|\u{1F3F4}[\u{E0061}-\u{E007A}]{2}[\u{E0030}-\u{E0039}\u{E0061}-\u{E007A}]{1,3}\u{E007F}|(?:\p{Emoji}\uFE0F\u20E3?|\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|(?![\p{Emoji_Modifier_Base}\u{1F1E6}-\u{1F1FF}])\p{Emoji_Presentation})(?:\u200D(?:\p{Emoji}\uFE0F\u20E3?|\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|(?![\p{Emoji_Modifier_Base}\u{1F1E6}-\u{1F1FF}])\p{Emoji_Presentation}))*)+$/u;
 
 /**
@@ -75,7 +75,7 @@ export const IMEI_REGEX: RegExp = /^\d{15}$|^\d{2}-\d{6}-\d{6}-\d$/u;
  * [IPv4](https://en.wikipedia.org/wiki/IPv4) regex.
  */
 export const IPV4_REGEX: RegExp =
-  // eslint-disable-next-line redos-detector/no-unsafe-regex -- false positive
+  // Compatibility expression; previous external ReDoS lint exclusions are not used here.
   /^(?:(?:[1-9]|1\d|2[0-4])?\d|25[0-5])(?:\.(?:(?:[1-9]|1\d|2[0-4])?\d|25[0-5])){3}$/u;
 
 /**
@@ -182,7 +182,7 @@ export const OCTAL_REGEX: RegExp = /^(?:0o)?[0-7]+$/u;
  * Hint: This regex was taken from the [HTML Living Standard Specification](https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address) and does not perfectly represent RFC 5322.
  */
 export const RFC_EMAIL_REGEX: RegExp =
-  // eslint-disable-next-line regexp/prefer-w, no-useless-escape, regexp/no-useless-escape, regexp/require-unicode-regexp
+  // eslint-disable-next-line no-useless-escape -- Preserve the compatibility expression.
   /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
 /**

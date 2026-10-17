@@ -92,10 +92,16 @@ export function inspectPublishablePackage({ pkg, name, dir, entries, packedFiles
     }
     if (!fileSet.has('README.md')) error('README_NOT_PACKED', 'README.md missing from tarball');
     if (!licenses.some(license => fileSet.has(license))) error('LICENSE_NOT_PACKED', 'No declared license included in tarball');
-    if (paths.length > 2000) error('EXCESSIVE_FILES', `${paths.length} tarball entries`);
+    // Explicit npm bundles include reviewed third-party runtime trees, unlike ordinary source packages.
+    const hasBundles = Array.isArray(pkg.bundleDependencies) && pkg.bundleDependencies.length > 0;
+    if (paths.length > (hasBundles ? 10000 : 2000)) error('EXCESSIVE_FILES', `${paths.length} tarball entries`);
     for (const entry of paths) {
       if (typeof entry !== 'string' || entry.includes('..') || entry.startsWith('/') || entry.includes('\\')) { error('UNSAFE_PACK_PATH', String(entry)); continue; }
-      if (/(^|\/)(?:\.env(?:\..*)?|node_modules|\.git|tests?|__tests__|coverage|\.npmrc|\.netrc|\.pypirc)(\/|$)/i.test(entry) || /(?:\.pem|\.key|\.p12|\.tsbuildinfo)$/i.test(entry) || entry.startsWith('src/')) {
+      const bundledRuntime = hasBundles && entry.startsWith('node_modules/');
+      if ((!hasBundles && /(^|\/)node_modules(\/|$)/i.test(entry)) ||
+        /(^|\/)(?:\.env(?:\..*)?|\.git|\.npmrc|\.netrc|\.pypirc)(\/|$)/i.test(entry) ||
+        (!bundledRuntime && /(^|\/)(?:tests?|__tests__|coverage)(\/|$)/i.test(entry)) ||
+        /(?:\.pem|\.key|\.p12|\.tsbuildinfo)$/i.test(entry) || entry.startsWith('src/')) {
         error('UNWANTED_PACK_FILE', entry);
       }
     }
@@ -110,8 +116,10 @@ export function npmPackDryRun(dir, { timeout = 30_000 } = {}) {
     env: { ...process.env, npm_config_audit: 'false', npm_config_fund: 'false', npm_config_ignore_scripts: 'true', npm_config_offline: 'true' },
   });
   if (result.error || result.status !== 0) throw new Error(`npm pack dry-run failed: ${String(result.error?.message ?? result.stderr ?? result.status).slice(0, 300)}`);
-  const data = JSON.parse(result.stdout);
-  if (!Array.isArray(data) || data.length !== 1 || !Array.isArray(data[0].files)) throw new Error('npm pack returned an invalid file inventory');
+  const parsed = JSON.parse(result.stdout);
+  // npm versions may return an array or an object keyed by workspace name.
+  const data = Array.isArray(parsed) ? parsed : parsed && typeof parsed === 'object' ? Object.values(parsed) : [];
+  if (data.length !== 1 || !Array.isArray(data[0]?.files)) throw new Error('npm pack returned an invalid file inventory');
   return data[0].files;
 }
 

@@ -1,7 +1,6 @@
 {
   "name": "@zeruxjs/reports",
   "version": "0.0.1",
-  "private": true,
   "type": "module",
   "description": "Authenticated report builder backed by internal Zerux analytics",
   "main": "./dist/index.js",
@@ -14,9 +13,24 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "npm run build"
   },
   "peerDependencies": {
     "@zeruxjs/analytics": "0.0.1"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
   }
 }

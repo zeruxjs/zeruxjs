@@ -4,6 +4,7 @@ export function validateBucket(bucket: string): string {
   return bucket;
 }
 export function validateKey(key: string): string {
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   if (typeof key !== 'string' || !key || key.length > 1024 || /[\\\x00-\x1f\x7f]/.test(key) || key.startsWith('/') || key.endsWith('/') || key.split('/').some(p => p === '' || p === '.' || p === '..')) throw new TypeError('Unsafe file key');
   return key;
 }
@@ -17,9 +18,11 @@ export function validatePut(options: PutFileOptions = {}): void {
   if (options.maxBytes !== undefined && (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 1)) throw new RangeError('Invalid upload size');
   if (options.contentType !== undefined && !/^[\w!#$&^.+-]+\/[\w!#$&^.+-]+$/.test(options.contentType)) throw new TypeError('Invalid content type');
   if (options.visibility !== undefined && options.visibility !== 'public' && options.visibility !== 'private') throw new TypeError('Invalid visibility');
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   for (const x of [options.cacheControl,options.contentDisposition]) if (x !== undefined && (x.length > 512 || /[\r\n\x00]/.test(x))) throw new TypeError('Unsafe header value');
   if (options.expiresAt !== undefined && (!Number.isFinite(Date.parse(options.expiresAt)) || Date.parse(options.expiresAt) <= Date.now())) throw new RangeError('Invalid expiration');
   const entries = Object.entries(options.metadata ?? {});
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   if (entries.length > 32 || entries.some(([k,v]) => k.startsWith('zfiles-') || !/^[a-zA-Z0-9_-]{1,64}$/.test(k) || typeof v !== 'string' || v.length > 1024 || /[\r\n\x00]/.test(v))) throw new TypeError('Invalid metadata');
 }
 export function validateRange(options: ReadFileOptions = {}): void {

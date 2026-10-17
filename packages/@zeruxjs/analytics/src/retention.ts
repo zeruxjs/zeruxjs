@@ -23,6 +23,7 @@ export interface AnalyticsRetentionResult {
 const eventId=/^[A-Za-z0-9_-]{1,64}$/;
 /** Explicit site + cutoff required, avoids full-table deletion on malformed options. */
 export function validateRetentionQuery(query:AnalyticsRetentionQuery):void {
+  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   if(!query||typeof query.site!=='string'||query.site.length<1||query.site.length>200||/[\x00-\x1f]/.test(query.site))throw new TypeError('Retention requires a valid tenant site');
   if(!Number.isSafeInteger(query.before)||query.before<0||query.before>Date.now()-86400000)throw new RangeError('Retention cutoff must be at least one day old');
   if(query.cursor!==undefined&&!eventId.test(query.cursor))throw new TypeError('Invalid retention cursor');
