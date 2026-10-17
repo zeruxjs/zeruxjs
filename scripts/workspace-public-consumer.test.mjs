@@ -18,6 +18,11 @@ test('exports, bins, declarations and all conditional targets must be built',t=>
  assert.deepEqual(checkEntryTargets(dir,pkg).sort(),['./dist/bin.js','./dist/index.d.ts','./dist/index.js','./dist/node.js'].sort());
  fs.mkdirSync(path.join(dir,'dist'));for(const name of ['index.js','index.d.ts','node.js','bin.js'])fs.writeFileSync(path.join(dir,'dist',name),'');
  assert.deepEqual(checkEntryTargets(dir,pkg),[]);
+ pkg.exports['./schema']='./assets/json/schema.config.json';
+ assert.deepEqual(checkEntryTargets(dir,pkg),['./assets/json/schema.config.json']);
+ fs.mkdirSync(path.join(dir,'assets/json'),{recursive:true});
+ fs.writeFileSync(path.join(dir,'assets/json/schema.config.json'),'{}');
+ assert.deepEqual(checkEntryTargets(dir,pkg),[]);
  pkg.exports['./evil']='../../outside.js';
  pkg.exports['./escape']='./dist/../../outside.js';
  assert.ok(checkEntryTargets(dir,pkg).includes('../../outside.js'));

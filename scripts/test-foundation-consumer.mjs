@@ -8,12 +8,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { npmCommand } from './npm-command.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const names = ['cache', 'db', 'hooks', 'security'];
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'zerux-foundations-'));
-const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npm = 'npm';
 function run(bin, args, cwd) {
-  const child = spawnSync(bin, args, {
+  const invocation = bin === npm ? npmCommand(args) : {command: bin, args};
+  const child = spawnSync(invocation.command, invocation.args, {
     cwd, encoding: 'utf8', timeout: 90_000, maxBuffer: 2 * 1024 * 1024,
     env: { ...process.env, npm_config_offline: 'true', npm_config_audit: 'false', npm_config_fund: 'false', npm_config_ignore_scripts: 'true' }
   });

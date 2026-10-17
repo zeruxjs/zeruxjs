@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { discoverWorkspaces, planWorkspaces, executeWorkspacePlan } from './workspace-graph.mjs';
+import { npmCommand } from './npm-command.mjs';
 
 export function parseBuildOptions(args) {
   const options = { scopes: [], dryRun: false, verify: false, includeDependents: false, concurrency: 2, timeoutMs: 300_000, json: false };
@@ -62,7 +63,8 @@ export function runNpmWorkspaceBuild(root, name, signal, timeoutMs = 300_000) {
   }
   return new Promise((resolve, reject) => {
     const controller = new AbortController();
-    const child = spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build', '--workspace', name], {
+    const npm = npmCommand(['run', 'build', '--workspace', name]);
+    const child = spawn(npm.command, npm.args, {
       cwd: root, stdio: 'inherit', shell: false, detached: process.platform !== 'win32'
     });
     let settled = false;

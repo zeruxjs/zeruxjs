@@ -10,6 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { npmCommand } from './npm-command.mjs';
 import { createCleanWorkspaceSnapshot } from './workspace-snapshot.mjs';
 import { inspectWorkspaceLock } from './workspace-lock.mjs';
 import { inspectWorkspaceContracts } from './workspace-contracts.mjs';
@@ -37,8 +38,8 @@ function hashFile(file) {
 }
 
 function defaultRun(step, cwd) {
-  const executable = step.bin === 'node' ? process.execPath : process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const result = spawnSync(executable, step.args, {
+  const invocation = step.bin === 'node' ? {command: process.execPath, args: step.args} : npmCommand(step.args);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd, stdio: 'inherit', timeout: step.timeout,
     env: { ...process.env, CI: 'true', npm_config_audit: 'false', npm_config_fund: 'false' },
   });

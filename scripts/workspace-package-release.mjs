@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { npmCommand } from './npm-command.mjs';
 import { discoverWorkspaces } from './workspace-graph.mjs';
 
 const hasFile = (dir, file) => fs.statSync(path.join(dir, file), { throwIfNoEntry: false })?.isFile() === true;
@@ -110,8 +111,8 @@ export function inspectPublishablePackage({ pkg, name, dir, entries, packedFiles
 }
 
 export function npmPackDryRun(dir, { timeout = 30_000 } = {}) {
-  const command = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const result = spawnSync(command, ['pack', '--dry-run', '--json', '--ignore-scripts', '--offline'], {
+  const npm = npmCommand(['pack', '--dry-run', '--json', '--ignore-scripts', '--offline']);
+  const result = spawnSync(npm.command, npm.args, {
     cwd: dir, encoding: 'utf8', timeout, maxBuffer: 4 * 1024 * 1024,
     env: { ...process.env, npm_config_audit: 'false', npm_config_fund: 'false', npm_config_ignore_scripts: 'true', npm_config_offline: 'true' },
   });

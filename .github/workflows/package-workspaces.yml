@@ -91,7 +91,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - run: npm run build:workspaces
       - run: npm run release:graph
-      - name: Test all 13 actual tarball consumers, not local symlinks
+      - name: Test all public packages from actual tarballs, not local symlinks
         run: npm run release:public:consumer
       - run: npm run release:foundation:consumer
       - run: npm run release:pack

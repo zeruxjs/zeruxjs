@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
+import { npmCommand } from './npm-command.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -70,6 +72,14 @@ test('dry run does not run build commands and CLI options are strictly validated
     assert.deepEqual(result.completed, []);
     assert.throws(() => parseBuildOptions(['--something']), /Unknown/);
     assert.throws(() => parseBuildOptions(['--concurrency', '0']), /Concurrency/);
+    // Exercise Windows launch selection with spaces and shell metacharacters as literal arguments.
+    const cli=path.join(f.root,'npm with spaces','npm-cli.js');
+    fs.mkdirSync(path.dirname(cli));
+    fs.writeFileSync(cli,'process.stdout.write(JSON.stringify(process.argv.slice(2)))');
+    const args=['run','build','--workspace','package with spaces & echo injected'];
+    const invocation=npmCommand(args,{platform:'win32',npmExecPath:cli});
+    assert.equal(invocation.command,process.execPath);
+    assert.deepEqual(JSON.parse(execFileSync(invocation.command,invocation.args,{encoding:'utf8'})),args);
   } finally { f.close(); }
 });
 

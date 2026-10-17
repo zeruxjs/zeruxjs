@@ -18,11 +18,15 @@ function collect(record,output=[]) {
 export function checkEntryTargets(dir,pkg) {
   const targets=[...new Set([...collect(pkg.main),...collect(pkg.types),...collect(pkg.bin),...collect(pkg.exports)])];
   if (!targets.length) return ['No declared package entry points'];
-  const dist=path.resolve(dir,'dist');
+  const root=path.resolve(dir);
   return targets.filter(target=>{
-    if(typeof target!=='string'||!target.startsWith('./dist/'))return true;
+    if(typeof target!=='string'||!target.startsWith('./')||target.includes('\\')||target.includes('\0'))return true;
+    const segments=target.slice(2).split('/');
+    if(segments.some(segment=>segment==='.'||segment==='..'||segment===''))return true;
     const output=path.resolve(dir,target);
-    return !output.startsWith(dist+path.sep)||!fs.lstatSync(output,{throwIfNoEntry:false})?.isFile();
+    // Assets such as JSON schemas are valid exports; reject symlinks and escapes for every target.
+    return !output.startsWith(root+path.sep)||!fs.lstatSync(output,{throwIfNoEntry:false})?.isFile()||
+      !fs.realpathSync(output).startsWith(fs.realpathSync(root)+path.sep);
   })
     .map(target=>String(target));
 }

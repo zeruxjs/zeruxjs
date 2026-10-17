@@ -18,8 +18,11 @@ async function prepareStylelintBundle() {
       await fs.copyFile(path.join(root, 'stylelint-bundle', name), path.join(temporary, name));
     }
     // Published overrides are ignored by consumers; bundle the actual patched dependency files instead.
-    execFileSync(process.platform === 'win32' ? 'npm.cmd' : 'npm',
-      ['ci', '--ignore-scripts', '--omit=dev', '--no-audit', '--no-fund', '--workspaces=false', '--json=false'],
+    const npmCli=process.env.npm_execpath;
+    if(!npmCli || path.basename(npmCli)!=='npm-cli.js') throw new Error('Run bundle preparation through npm pack so npm-cli.js is available');
+    execFileSync(process.execPath,
+      // The outer npm pack --dry-run flag must not turn dependency preparation into a no-op.
+      [npmCli, 'ci', '--ignore-scripts', '--omit=dev', '--no-audit', '--no-fund', '--workspaces=false', '--json=false', '--dry-run=false'],
       { cwd: temporary, stdio: ['ignore', 2, 2] });
     const modules = path.join(temporary, 'node_modules');
     const braces = JSON.parse(await fs.readFile(path.join(modules, 'braces/package.json'), 'utf8'));
