@@ -25,7 +25,7 @@
   "license": "(MIT OR Apache-2.0)",
   "dependencies": {
     "chalk": "^4.1.2",
-    "ws": "^8.19.0",
+    "ws": "^8.22.0",
     "z-dev": "0.0.1",
     "zwatch": "0.0.1"
   },

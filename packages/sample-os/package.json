@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./index.js",
   "dependencies": {
-    "systeminformation": "^5.31.5",
+    "systeminformation": "^5.33.15",
     "z-dev": "0.0.1"
   }
 }
