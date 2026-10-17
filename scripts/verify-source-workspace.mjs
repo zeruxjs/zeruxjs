@@ -29,13 +29,15 @@ try {
   const run = (label, commandArgs, { json = false } = {}) => {
     const result = spawnSync(process.execPath, commandArgs, { cwd: dest, encoding: 'utf8', timeout: 120_000 });
     if (result.error || result.status !== 0) {
-      throw new Error(`${label}: ${result.error?.message ?? result.stderr ?? result.stdout ?? `exit ${result.status}`}`);
+      // Node's test reporter writes failures to stdout; an empty stderr must not hide them.
+      const details = [result.error?.message, result.stderr?.trim(), result.stdout?.trim()].filter(Boolean).join('\n');
+      throw new Error(`${label} (exit ${result.status}, signal ${result.signal ?? 'none'}):\n${details}`);
     }
     if (!json) process.stdout.write(result.stdout);
     return result.stdout;
   };
   run('owned package version policy', ['scripts/check-package-versions.mjs']);
-  const testOutput = run('workspace tool regressions', ['--test', 'scripts/workspace-build.test.mjs', 'scripts/workspace-lock.test.mjs', 'scripts/workspace-snapshot.test.mjs', 'scripts/workspace-contracts.test.mjs', 'scripts/workspace-release.test.mjs', 'scripts/doctor.test.mjs', 'scripts/workspace-api-freeze.test.mjs', 'scripts/workspace-security-audit.test.mjs', 'scripts/workspace-package-release.test.mjs', 'scripts/workspace-public-consumer.test.mjs', 'scripts/integration-lab-core.test.mjs', 'scripts/workspace-installed-licenses.test.mjs', 'scripts/workspace-version-policy.test.mjs']);
+  const testOutput = run('workspace tool regressions', ['--test', '--test-reporter=tap', 'scripts/workspace-build.test.mjs', 'scripts/workspace-lock.test.mjs', 'scripts/workspace-snapshot.test.mjs', 'scripts/workspace-contracts.test.mjs', 'scripts/workspace-release.test.mjs', 'scripts/doctor.test.mjs', 'scripts/workspace-api-freeze.test.mjs', 'scripts/workspace-security-audit.test.mjs', 'scripts/workspace-package-release.test.mjs', 'scripts/workspace-public-consumer.test.mjs', 'scripts/integration-lab-core.test.mjs', 'scripts/workspace-installed-licenses.test.mjs', 'scripts/workspace-version-policy.test.mjs']);
   const build = JSON.parse(run('workspace build order', ['scripts/build-workspaces.mjs', '--dry-run', '--json'], { json: true }));
   const report = inspectWorkspaceLock(dest);
   const contracts = inspectWorkspaceContracts(dest);
