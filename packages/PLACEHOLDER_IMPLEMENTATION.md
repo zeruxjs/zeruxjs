@@ -1,6 +1,6 @@
 # Formerly empty package entry points
 
-This pass replaces the empty `src/index.ts` files in 15 @zeruxjs packages and the `zeyro` testing entry point with initial working APIs. All APIs are provisional and remain at alpha package version.
+This pass replaces the empty `src/index.ts` files in 15 @zeruxjs packages and the `ztrial` testing entry point with initial working APIs. All APIs are provisional and remain at alpha package version.
 
 | Package | Implemented entry-point functionality |
 | --- | --- |
@@ -19,7 +19,7 @@ This pass replaces the empty `src/index.ts` files in 15 @zeruxjs packages and th
 | `@zeruxjs/mcp` | Local tool registry (not network MCP protocol transport) |
 | `@zeruxjs/zyro` | Framework-neutral observable and selectors |
 | `@zeruxjs/performance` | PerformanceObserver helper, navigation timings, caching and resource hints |
-| `zeyro` | Test registration, suites, assertion and asynchronous test runner |
+| `ztrial` | Test registration, suites, assertion and asynchronous test runner |
 
 ## Usage
 
@@ -44,7 +44,7 @@ const {data} = await store.download(metadata.id);
 
 ## Scope and limits
 
-These are *initial implementations*, not complete feature parity with established production services. In particular, media writes do not implement distributed storage or antivirus scanning; search does not implement linguistic stemming or persistent indexes; AI model is retrieval only and has no trained LLM; MCP only supports in-process tools and not the complete MCP transport/protocol; framework adapters have not been tested against live React or Vue runtimes. The pre-existing blank submodules of `zeyro` still need implementations. Full dependency integration, E2E testing, cross-platform and security review are required before production release.
+These are *initial implementations*, not complete feature parity with established production services. In particular, media writes do not implement distributed storage or antivirus scanning; search does not implement linguistic stemming or persistent indexes; AI model is retrieval only and has no trained LLM; MCP only supports in-process tools and not the complete MCP transport/protocol; framework adapters have not been tested against live React or Vue runtimes. The pre-existing blank submodules of `ztrial` still need implementations. Full dependency integration, E2E testing, cross-platform and security review are required before production release.
 
 > **Section 31 migration note:** `@zeruxjs/mcp` has been retired; its tool/resource
 > APIs now live in `zhost/src/protocols/mcp` and are exported from `zhost`.

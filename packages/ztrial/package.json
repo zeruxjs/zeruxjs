@@ -1,5 +1,5 @@
 {
-  "name": "zeyro",
+  "name": "ztrial",
   "version": "0.0.1",
   "description": "Modular testing framework and assertion toolkit for ZeruxJS, ZyroJS and JavaScript",
   "type": "module",
@@ -22,7 +22,7 @@
   },
   "license": "MIT",
   "bin": {
-    "zeyro": "./dist/bin/cli.js"
+    "ztrial": "./dist/bin/cli.js"
   },
   "files": [
     "dist/",

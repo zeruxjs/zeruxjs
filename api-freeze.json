@@ -821,7 +821,7 @@
       }
     },
     {
-      "name": "zeyro",
+      "name": "ztrial",
       "version": "0.0.1",
       "private": false,
       "main": "./dist/index.js",
@@ -837,7 +837,7 @@
         "./vitest": "./dist/adapters/vitest/setup.js"
       },
       "bin": {
-        "zeyro": "./dist/bin/cli.js"
+        "ztrial": "./dist/bin/cli.js"
       },
       "engines": null,
       "peerDependencies": null,

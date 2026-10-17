@@ -6,7 +6,7 @@ import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {main} from '../dist/bin/cli.js';
 test('cli finds nested tests, filters by name and reports failing exit status',async()=>{
- const dir=mkdtempSync(join(tmpdir(),'zeyro-cli-'));mkdirSync(join(dir,'deep'));
+ const dir=mkdtempSync(join(tmpdir(),'ztrial-cli-'));mkdirSync(join(dir,'deep'));
  const entry=pathToFileURL(new URL('../dist/index.js',import.meta.url).pathname).href;
  try {
   writeFileSync(join(dir,'deep','sample.test.mjs'),`import {test,expect} from '${entry}';test('works',()=>expect(2).toBe(2));test('fails',()=>expect(2).toBe(3));`);

@@ -1,11 +1,11 @@
-# Zeyro — test runner and assertion toolkit
+# Ztrial — test runner and assertion toolkit
 
-Zeyro is a dependency-light test library for ZeruxJS, ZyroJS and ordinary JavaScript/TypeScript packages. It is **not** the ZyroJS UI runtime. The new API is modular, and existing `describe`, `test`, `expect` and `runTests` entry points remain available.
+Ztrial is a dependency-light test library for ZeruxJS, ZyroJS and ordinary JavaScript/TypeScript packages. It is **not** the ZyroJS UI runtime. The new API is modular, and existing `describe`, `test`, `expect` and `runTests` entry points remain available.
 
 ## Writing tests
 
 ```ts
-import { describe, test, expect, beforeEach, runTests, fn } from 'zeyro';
+import { describe, test, expect, beforeEach, runTests, fn } from 'ztrial';
 
 describe('cart', () => {
   beforeEach(() => { /* reset fixture */ });
@@ -31,7 +31,7 @@ Build first, then run `.test.js`, `.spec.js`, `.test.mjs`, or `.spec.mjs` files:
 npm run build
 node dist/bin/cli.js --reporter pretty
 node dist/bin/cli.js --match "cart" --reporter tap
-node dist/bin/cli.js --config zeyro.config.json --reporter json
+node dist/bin/cli.js --config ztrial.config.json --reporter json
 ```
 
 Example JSON configuration:
@@ -48,7 +48,7 @@ Example JSON configuration:
 }
 ```
 
-The CLI has zero mandatory browser/test-runner dependencies. It imports runnable JavaScript test files; TypeScript test files must be transpiled or run through a separately configured TypeScript loader. JSON and TAP output are supported. Modules exported by `zeyro/jsdom` and `zeyro/playwright` are **optional adapters**; the environment packages must be separately installed if those features are used. Vitest-shaped helpers do not replace Vitest's full mocking engine.
+The CLI has zero mandatory browser/test-runner dependencies. It imports runnable JavaScript test files; TypeScript test files must be transpiled or run through a separately configured TypeScript loader. JSON and TAP output are supported. Modules exported by `ztrial/jsdom` and `ztrial/playwright` are **optional adapters**; the environment packages must be separately installed if those features are used. Vitest-shaped helpers do not replace Vitest's full mocking engine.
 
 ### Important limitations
 

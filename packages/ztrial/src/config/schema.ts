@@ -1,5 +1,5 @@
-import type { ZeyroConfig } from '../types/config.js';
-export function validateConfig(value: unknown): ZeyroConfig {
+import type { ZtrialConfig } from '../types/config.js';
+export function validateConfig(value: unknown): ZtrialConfig {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('Config must be an object');
   const config=value as Record<string,unknown>;
   const permitted = ['timeoutMs','retries','reporter','files','root','bail','allowOnly','match','throwOnFailure'];
@@ -14,5 +14,5 @@ export function validateConfig(value: unknown): ZeyroConfig {
   if(config.files!==undefined && (!Array.isArray(config.files)||config.files.some(s=>typeof s!=='string'||!s||s.length>256))) throw new TypeError('Invalid files');
   if(config.bail !== undefined && typeof config.bail !== 'boolean') throw new TypeError('Invalid bail');
   if(config.allowOnly !== undefined && typeof config.allowOnly !== 'boolean') throw new TypeError('Invalid allowOnly');
-  return value as ZeyroConfig;
+  return value as ZtrialConfig;
 }

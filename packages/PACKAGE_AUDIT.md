@@ -19,7 +19,7 @@ The workspace includes the following packages; the status means source inventori
 - `zforge` — source inventoried; integration checks pending.
 - `zclivo` — source inventoried; integration checks pending.
 - `zeruxjs` — source inventoried; integration checks pending.
-- `zeyro` — source inventoried; integration checks pending.
+- `ztrial` — source inventoried; integration checks pending.
 - `zhost` — source inventoried; integration checks pending.
 - `zuixs` — source inventoried; integration checks pending.
 - `zlook` — source inventoried; integration checks pending.

@@ -28,15 +28,15 @@ test('failure in emergency afterAll reports a failed cleanup and never reports g
  assert.equal(summary.failed,2);assert.ok(summary.results.some(r=>r.name.startsWith('afterAll') && r.error.message==='cleanup failed'));
 });
 test('CLI fails on empty discovery, absent values, invalid reporter; config root resolves relative to config',async()=>{
- const root=mkdtempSync(join(tmpdir(),'zeyro-sec79-'));const old=process.stderr.write,oldOut=process.stdout.write;
+ const root=mkdtempSync(join(tmpdir(),'ztrial-sec79-'));const old=process.stderr.write,oldOut=process.stdout.write;
  let errors='';process.stderr.write=(v)=>{errors+=String(v);return true;};process.stdout.write=()=>true;
  try {
-  mkdirSync(join(root,'tests'));writeFileSync(join(root,'zeyro.json'),JSON.stringify({root:'tests',files:['**/*.test.mjs'],reporter:'json'}));
-  assert.equal(await main(['--config',join(root,'zeyro.json')]),2);
+  mkdirSync(join(root,'tests'));writeFileSync(join(root,'ztrial.json'),JSON.stringify({root:'tests',files:['**/*.test.mjs'],reporter:'json'}));
+  assert.equal(await main(['--config',join(root,'ztrial.json')]),2);
   assert.match(errors,/No test files/);
   assert.equal(await main(['--timeout','wat']),2);
   writeFileSync(join(root,'tests','one.test.mjs'),"export const harmless = true;\n");
-  assert.equal(await main(['--config',join(root,'zeyro.json')]),2);
+  assert.equal(await main(['--config',join(root,'ztrial.json')]),2);
   assert.match(errors,/No registered test cases/);
   assert.equal(await main(['--reporter','invalid']),2);
   assert.equal(await main(['--config']),2);

@@ -1,6 +1,6 @@
 # Section 34 — Cache & Database Reliability
 
-Baseline: Section 33 full project ZIP. This section moves from ZCLI/Zeyro to the database and cache subsystem.
+Baseline: Section 33 full project ZIP. This section moves from ZCLI/Ztrial to the database and cache subsystem.
 
 ## Delivered
 
