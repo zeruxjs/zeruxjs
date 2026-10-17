@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import {inspectInstalledLicenses} from './workspace-installed-licenses.mjs';
 test('installed license review requires matching package manifests and notice files',t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'installed-license-'));
@@ -15,6 +16,11 @@ test('installed license review requires matching package manifests and notice fi
  fs.writeFileSync(path.join(p,'LICENSE-MIT'),'MIT license terms');
  result=inspectInstalledLicenses(root,{packages:{'node_modules/sample':{version:'1.2.3'}}});
  assert.equal(result.ok,true);assert.equal(result.checked,1);
+ const optional=inspectInstalledLicenses(root,{packages:{'node_modules/sample':{version:'1.2.3'},'node_modules/platform-binary':{version:'1.0.0',optional:true}}});
+ assert.equal(optional.ok,true);assert.deepEqual(optional.optionalNotInstalled,['node_modules/platform-binary']);
+ fs.writeFileSync(path.join(p,'package.json'),JSON.stringify({name:'sample',version:'1.2.3',licenses:[{type:'MIT'}]}));
+ assert.equal(inspectInstalledLicenses(root,{packages:{'node_modules/sample':{version:'1.2.3'}}}).ok,true);
+ fs.writeFileSync(path.join(p,'package.json'),JSON.stringify({name:'sample',version:'1.2.3',license:'MIT'}));
  result=inspectInstalledLicenses(root,{packages:{'node_modules/sample':{version:'1.2.4'}}});
  assert.equal(result.discrepancies.length,1);
  const escaped=inspectInstalledLicenses(root,{packages:{'node_modules/../../../elsewhere':{version:'1.0.0'}}});
@@ -29,4 +35,18 @@ test('invalid installed package.json and unlicensed packages fail closed',t=>{
  assert.equal(inspectInstalledLicenses(root,lock).discrepancies.length,1);
  fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify({name:'bad',version:'2.0.0'}));
  assert.equal(inspectInstalledLicenses(root,lock).missing.length,1);
+ // Exact version bindings and immutable contents are required for supplemental evidence.
+ fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify({name:'bad',version:'2.0.0',license:'MIT'}));
+ const catalog=path.join(root,'third-party-licenses');
+ fs.mkdirSync(path.join(catalog,'notices'),{recursive:true});
+ const terms='Upstream full notice fixture';
+ const sha256=crypto.createHash('sha256').update(terms).digest('hex');
+ const file=`notices/${sha256}.txt`;
+ fs.writeFileSync(path.join(catalog,file),terms);
+ const entry={name:'bad',version:'2.0.0',license:'MIT',file,sha256,source:'https://raw.githubusercontent.com/example/project/commit/LICENSE'};
+ const save=()=>fs.writeFileSync(path.join(catalog,'manifest.json'),JSON.stringify({schemaVersion:1,entries:[entry]}));
+ save();assert.equal(inspectInstalledLicenses(root,lock).ok,true);
+ entry.version='2.0.1';save();assert.equal(inspectInstalledLicenses(root,lock).ok,false);
+ entry.version='2.0.0';save();fs.appendFileSync(path.join(catalog,file),'tampered');
+ assert.equal(inspectInstalledLicenses(root,lock).discrepancies.length,1);
 });

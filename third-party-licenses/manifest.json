@@ -1,0 +1,464 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "name": "@aws-sdk/credential-provider-http",
+      "version": "3.972.76",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/aws/aws-sdk-js-v3/412d1362e9d60979d3e11e7396e2598872b55773/LICENSE",
+      "sha256": "edea91454b811f127fbdea3d86f378f6719bd372ed440abf82b232f6fca06c3d",
+      "file": "notices/edea91454b811f127fbdea3d86f378f6719bd372ed440abf82b232f6fca06c3d.txt",
+      "binding": "source package version match"
+    },
+    {
+      "name": "@aws-sdk/credential-provider-login",
+      "version": "3.972.81",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/aws/aws-sdk-js-v3/412d1362e9d60979d3e11e7396e2598872b55773/LICENSE",
+      "sha256": "edea91454b811f127fbdea3d86f378f6719bd372ed440abf82b232f6fca06c3d",
+      "file": "notices/edea91454b811f127fbdea3d86f378f6719bd372ed440abf82b232f6fca06c3d.txt",
+      "binding": "source package version match"
+    },
+    {
+      "name": "@esbuild/aix-ppc64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/android-arm",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/android-arm64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/android-x64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/darwin-arm64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/darwin-x64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/freebsd-arm64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/freebsd-x64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/linux-arm",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/linux-arm64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/linux-ia32",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/linux-loong64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/linux-mips64el",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/linux-ppc64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/linux-riscv64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/linux-s390x",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/linux-x64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/netbsd-arm64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/netbsd-x64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/openbsd-arm64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/openbsd-x64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/openharmony-arm64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/sunos-x64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/win32-arm64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/win32-ia32",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@esbuild/win32-x64",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/evanw/esbuild/609683d892977362a0f99026cb74b96263d728a9/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+      "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+    },
+    {
+      "name": "@msgpackr-extract/msgpackr-extract-darwin-arm64",
+      "version": "3.0.4",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/kriszyp/msgpackr-extract/71def7bd969e5c88d2c918e0d81ee2ba3155d19c/LICENSE",
+      "sha256": "d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3",
+      "file": "notices/d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3.txt"
+    },
+    {
+      "name": "@msgpackr-extract/msgpackr-extract-darwin-x64",
+      "version": "3.0.4",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/kriszyp/msgpackr-extract/71def7bd969e5c88d2c918e0d81ee2ba3155d19c/LICENSE",
+      "sha256": "d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3",
+      "file": "notices/d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3.txt"
+    },
+    {
+      "name": "@msgpackr-extract/msgpackr-extract-linux-arm",
+      "version": "3.0.4",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/kriszyp/msgpackr-extract/71def7bd969e5c88d2c918e0d81ee2ba3155d19c/LICENSE",
+      "sha256": "d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3",
+      "file": "notices/d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3.txt"
+    },
+    {
+      "name": "@msgpackr-extract/msgpackr-extract-linux-arm64",
+      "version": "3.0.4",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/kriszyp/msgpackr-extract/71def7bd969e5c88d2c918e0d81ee2ba3155d19c/LICENSE",
+      "sha256": "d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3",
+      "file": "notices/d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3.txt"
+    },
+    {
+      "name": "@msgpackr-extract/msgpackr-extract-linux-x64",
+      "version": "3.0.4",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/kriszyp/msgpackr-extract/71def7bd969e5c88d2c918e0d81ee2ba3155d19c/LICENSE",
+      "sha256": "d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3",
+      "file": "notices/d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3.txt"
+    },
+    {
+      "name": "@msgpackr-extract/msgpackr-extract-win32-x64",
+      "version": "3.0.4",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/kriszyp/msgpackr-extract/71def7bd969e5c88d2c918e0d81ee2ba3155d19c/LICENSE",
+      "sha256": "d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3",
+      "file": "notices/d00470775464c789c7ac04cfba3bf1b79ef149790eb72556d1c51d8f50c8e7f3.txt"
+    },
+    {
+      "name": "@pkgr/core",
+      "version": "0.2.9",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/un-ts/pkgr/e1420c99e44d8a2ae949381f9fbe1af5ba9cb1dd/LICENSE",
+      "sha256": "82a222189ab9764f8ec1c052b9661f2c9f12db52387312acbf73b2be5b8b6c32",
+      "file": "notices/82a222189ab9764f8ec1c052b9661f2c9f12db52387312acbf73b2be5b8b6c32.txt"
+    },
+    {
+      "name": "@puppeteer/browsers",
+      "version": "3.2.5",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/puppeteer/puppeteer/d1b9a2162a0113356db5093f055b4a2e1979c6a8/LICENSE",
+      "sha256": "a27ca07269b3518550b2e83aed13eadd7d14d924b5864e14889b40cf227530ca",
+      "file": "notices/a27ca07269b3518550b2e83aed13eadd7d14d924b5864e14889b40cf227530ca.txt",
+      "binding": "published gitHead"
+    },
+    {
+      "name": "@redis/bloom",
+      "version": "5.12.1",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/redis/node-redis/838c28d9f55d13a7933e650b9f7782fdb5af4f71/LICENSE",
+      "sha256": "a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8",
+      "file": "notices/a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8.txt"
+    },
+    {
+      "name": "@redis/client",
+      "version": "5.12.1",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/redis/node-redis/789d6d5c5c774fda24257ce1fc7f4f66b80ae689/LICENSE",
+      "sha256": "a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8",
+      "file": "notices/a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8.txt"
+    },
+    {
+      "name": "@redis/json",
+      "version": "5.12.1",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/redis/node-redis/02cfd5ad4c07ef6c1d703e25d3c2076eacfb4b45/LICENSE",
+      "sha256": "a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8",
+      "file": "notices/a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8.txt"
+    },
+    {
+      "name": "@redis/search",
+      "version": "5.12.1",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/redis/node-redis/9e7767c5bf2cb06bcce872fe99e5dbb349e3a074/LICENSE",
+      "sha256": "a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8",
+      "file": "notices/a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8.txt"
+    },
+    {
+      "name": "@redis/time-series",
+      "version": "5.12.1",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/redis/node-redis/de70920ecb4caf2a9c871a24cf08f1fcb41b1d2d/LICENSE",
+      "sha256": "a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8",
+      "file": "notices/a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8.txt"
+    },
+    {
+      "name": "@sentry/server-utils",
+      "version": "10.76.2",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/getsentry/sentry-javascript/10.76.2/LICENSE",
+      "sha256": "497d5a7036220d5763088d161612f9f7f2e499fe3ce186826f4369b465769312",
+      "file": "notices/497d5a7036220d5763088d161612f9f7f2e499fe3ce186826f4369b465769312.txt",
+      "binding": "release tag"
+    },
+    {
+      "name": "esrecurse",
+      "version": "4.3.0",
+      "license": "BSD-2-Clause",
+      "source": "https://raw.githubusercontent.com/estools/esrecurse/8ceb63797813d9ac69572a671b95cf58ffdf35b6/README.md",
+      "sha256": "a7007c78c9d9da690ef6cdb0e7a3427d05832edb00abd1f5a9882700d73be4ad",
+      "file": "notices/a7007c78c9d9da690ef6cdb0e7a3427d05832edb00abd1f5a9882700d73be4ad.txt"
+    },
+    {
+      "name": "imurmurhash",
+      "version": "0.1.4",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/jensyt/imurmurhash-js/0.1.4/LICENSE",
+      "sha256": "fa0943ddcaa857d901a9eb92254d89876297ecdfbc884d294a927df08ebcbbe8",
+      "file": "notices/fa0943ddcaa857d901a9eb92254d89876297ecdfbc884d294a927df08ebcbbe8.txt",
+      "binding": "release tag"
+    },
+    {
+      "name": "legacy-javascript",
+      "version": "0.0.3",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/GoogleChrome/lighthouse/eb1e7c42c50347de25a6e92be7e29eb0ddf9f53e/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "file": "notices/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt"
+    },
+    {
+      "name": "lookup-closest-locale",
+      "version": "6.2.0",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/format-message/format-message/v6.2.0/LICENSE-MIT",
+      "sha256": "60a3946f201f9fa04ad5b02f24c5d92f07ccfdee3948900723c70ca23e4055fd",
+      "file": "notices/60a3946f201f9fa04ad5b02f24c5d92f07ccfdee3948900723c70ca23e4055fd.txt"
+    },
+    {
+      "name": "pg-types",
+      "version": "2.2.0",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/brianc/node-pg-types/d9d9dfb87eb50914043cbc178c301b7dd3b0c50d/README.md",
+      "sha256": "ecda9bca71d3f0cee4e600d1dd2bef336213f39ef2e8fca6a1a1c1c8723f643a",
+      "file": "notices/ecda9bca71d3f0cee4e600d1dd2bef336213f39ef2e8fca6a1a1c1c8723f643a.txt"
+    },
+    {
+      "name": "pgpass",
+      "version": "1.0.5",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/hoegaarden/pgpass/4230ed5e417ba6044ea7eb80b7c33db9ec301398/README.md",
+      "sha256": "62549909404b5a0dcb2b4b74c9a930baf8095dbcfa1543c4ffc79378acd22b57",
+      "file": "notices/62549909404b5a0dcb2b4b74c9a930baf8095dbcfa1543c4ffc79378acd22b57.txt"
+    },
+    {
+      "name": "puppeteer-core",
+      "version": "25.14.0",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/puppeteer/puppeteer/d1b9a2162a0113356db5093f055b4a2e1979c6a8/LICENSE",
+      "sha256": "a27ca07269b3518550b2e83aed13eadd7d14d924b5864e14889b40cf227530ca",
+      "file": "notices/a27ca07269b3518550b2e83aed13eadd7d14d924b5864e14889b40cf227530ca.txt",
+      "binding": "published gitHead"
+    },
+    {
+      "name": "redis",
+      "version": "5.12.1",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/redis/node-redis/6a447261fc77c4577aa5127fb269f8b69cfe6732/LICENSE",
+      "sha256": "a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8",
+      "file": "notices/a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8.txt"
+    },
+    {
+      "name": "speedline-core",
+      "version": "1.4.3",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/paulirish/speedline/v1.4.3/license",
+      "sha256": "b00891eed6af8209b62d55813d49905a78becc38116244881a6498a13cf6ae4a",
+      "file": "notices/b00891eed6af8209b62d55813d49905a78becc38116244881a6498a13cf6ae4a.txt"
+    },
+    {
+      "name": "@humanfs/types",
+      "version": "0.15.0",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/humanwhocodes/humanfs/85069f193cbacc371c3beb649ce746f8c5a493be/packages/core/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "file": "notices/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
+      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
+    },
+    {
+      "name": "@aws-sdk/nested-clients",
+      "version": "3.997.48",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/aws/aws-sdk-js-v3/v3.1152.0/LICENSE",
+      "sha256": "edea91454b811f127fbdea3d86f378f6719bd372ed440abf82b232f6fca06c3d",
+      "file": "notices/edea91454b811f127fbdea3d86f378f6719bd372ed440abf82b232f6fca06c3d.txt",
+      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
+    },
+    {
+      "name": "boolbase",
+      "version": "1.0.0",
+      "license": "ISC",
+      "source": "https://raw.githubusercontent.com/fb55/boolbase/54811f01c797a6bb1c263183ae90b7dd627e0638/LICENSE",
+      "sha256": "cdf4d87ae0a6c160227263bf4e39a0a10e30e89ae7256e0f7ac7bde0836552c6",
+      "file": "notices/cdf4d87ae0a6c160227263bf4e39a0a10e30e89ae7256e0f7ac7bde0836552c6.txt",
+      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
+    },
+    {
+      "name": "natural-compare",
+      "version": "1.4.0",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/litejs/natural-compare-lite/a8e1e32c85713ba7d079445207a808ce6f4852f9/LICENSE",
+      "sha256": "353fe762ba595bf1ffe786acf0f5984bb164205901d74f258af195fc8228c67d",
+      "file": "notices/353fe762ba595bf1ffe786acf0f5984bb164205901d74f258af195fc8228c67d.txt",
+      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
+    },
+    {
+      "name": "slick",
+      "version": "1.12.2",
+      "license": "MIT (http://mootools.net/license.txt)",
+      "source": "https://raw.githubusercontent.com/mootools/mootools-core/187a16bae2d7144ea4b81aa5c0586498f0fe17c7/Source/license.txt",
+      "sha256": "a4aa4de43bf68b49bd32fc46868437d83c00ab3fc29350f0a69e354b3e3b2547",
+      "file": "notices/a4aa4de43bf68b49bd32fc46868437d83c00ab3fc29350f0a69e354b3e3b2547.txt",
+      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
+    }
+  ]
+}
