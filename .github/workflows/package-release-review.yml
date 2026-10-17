@@ -110,7 +110,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          package-manager-cache: false
       - name: Produce fail-closed release verdict from CI job status
         shell: bash
         env:

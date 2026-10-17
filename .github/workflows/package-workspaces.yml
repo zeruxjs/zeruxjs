@@ -47,7 +47,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          package-manager-cache: false
       - run: npm run versions:check
       - run: npm run verify:source
       - run: npm run api:freeze:check

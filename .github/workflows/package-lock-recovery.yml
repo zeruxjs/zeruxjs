@@ -45,7 +45,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          package-manager-cache: false
       - name: Validate owned package version policy
         run: npm run versions:check
       - name: Check whether committed lockfile already passes
@@ -141,7 +140,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          package-manager-cache: false
       - name: Use recovered artifact, not stale committed lockfile
         uses: actions/download-artifact@v4
         with:
