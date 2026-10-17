@@ -53,7 +53,7 @@ try {
   }
   const framework=entries.get('zeruxjs');
   const sourceLock=JSON.parse(fs.readFileSync(path.join(root,'package-lock.json'),'utf8'));
-  const locked=createConsumerLock(sourceLock,archives);
+  const locked=createConsumerLock(sourceLock,archives,{sourceRoot:root});
   fs.writeFileSync(path.join(consumer,'package.json'),JSON.stringify(locked.manifest,null,2)+'\n');
   fs.writeFileSync(path.join(consumer,'package-lock.json'),JSON.stringify(locked.lock,null,2)+'\n');
   log('isolated offline install',npm,['ci','--offline','--no-audit','--no-fund','--ignore-scripts'],consumer,300000);

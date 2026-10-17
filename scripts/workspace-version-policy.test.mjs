@@ -14,7 +14,7 @@ function withFixture(run) {
   };
   try {
     save('packages/core/package.json', { name: '@zeruxjs/core', version: '0.0.1' });
-    save('packages/@zenix/core/package.json', { name: '@zenix/core', version: '0.0.1', private: true });
+    save('packages/@zenixjs/core/package.json', { name: '@zenixjs/core', version: '0.0.1', private: true });
     save('apps/sample/package.json', { name: 'sample', version: '1.0.0', dependencies: { '@zeruxjs/core': '0.0.1', 'third-party': '^9.0.0' } });
     run(root, save);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }

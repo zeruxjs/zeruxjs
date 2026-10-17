@@ -7,9 +7,11 @@
     "stylelint-config-standard": "40.0.0",
     "stylelint-config-standard-scss": "17.0.0",
     "stylelint-scss": "7.3.0",
-    "postcss-scss": "4.0.9"
+    "postcss-scss": "4.0.9",
+    "postcss-media-query-parser": "file:../../../../vendor/zeruxjs-scss-media-parser-0.2.3.tgz"
   },
   "overrides": {
-    "braces": "npm:@zklogic/braces@3.0.7"
+    "braces": "npm:@zklogic/braces@3.0.7",
+    "postcss-media-query-parser": "$postcss-media-query-parser"
   }
 }

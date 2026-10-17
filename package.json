@@ -74,22 +74,24 @@
     "test:versions": "node --test scripts/workspace-version-policy.test.mjs"
   },
   "workspaces": [
-    "packages/@zenix/*",
+    "packages/@zenixjs/*",
     "packages/@zeruxjs/*",
     "packages/*",
     "packages/create/*",
     "apps/*"
   ],
   "devDependencies": {
-    "better-sqlite3": "^12.6.2"
+    "better-sqlite3": "^12.6.2",
+    "postcss-media-query-parser": "file:vendor/zeruxjs-scss-media-parser-0.2.3.tgz"
   },
   "releaseWorkspaces": [
-    "packages/@zenix/*",
+    "packages/@zenixjs/*",
     "packages/@zeruxjs/*",
     "packages/*",
     "packages/create/*"
   ],
   "overrides": {
-    "braces": "npm:@zklogic/braces@3.0.7"
+    "braces": "npm:@zklogic/braces@3.0.7",
+    "postcss-media-query-parser": "$postcss-media-query-parser"
   }
 }

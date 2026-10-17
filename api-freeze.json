@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "packages": [
     {
-      "name": "@zenix/core",
+      "name": "@zenixjs/core",
       "version": "0.0.1",
       "private": false,
       "main": "./dist/index.js",

@@ -9,9 +9,10 @@ import { pathToFileURL } from 'node:url';
  * Global Variables: None; filesystem paths are converted to portable file URLs without reading files or environment variables.
  * @param sourceLock Committed package-lock v3 data.
  * @param archives Packed workspace manifests, original relative directories, tarball paths and npm integrity hashes.
+ * @param options.sourceRoot Repository directory for resolving committed local archive paths.
  * @returns Consumer manifest and lockfile containing no workspace symlinks.
  */
-export function createConsumerLock(sourceLock, archives) {
+export function createConsumerLock(sourceLock, archives, { sourceRoot } = {}) {
   if (sourceLock.lockfileVersion !== 3 || !sourceLock.packages) throw Error('Consumer requires the committed v3 workspace lock');
   const packageName = location => location.slice(location.lastIndexOf('node_modules/') + 'node_modules/'.length);
   const resolutions = new Map();
@@ -59,6 +60,13 @@ export function createConsumerLock(sourceLock, archives) {
       if (!resolution) throw Error(`Consumer dependency lacks a complete committed resolution: ${location}`);
       locked.resolved ??= resolution.resolved;
       locked.integrity ??= resolution.integrity;
+    }
+    // A committed build-input archive lives in the source repository, not in the isolated consumer.
+    if (locked.resolved.startsWith('file:') && !locked.resolved.startsWith('file://')) {
+      if (!sourceRoot) throw Error(`Local consumer archive requires sourceRoot: ${location}`);
+      const local = path.resolve(sourceRoot, locked.resolved.slice('file:'.length));
+      if (!local.startsWith(path.resolve(sourceRoot) + path.sep)) throw Error(`Local consumer archive escapes sourceRoot: ${location}`);
+      locked.resolved = pathToFileURL(local).href;
     }
     // These are production consumer dependencies even if used only for development in the source workspace.
     delete locked.dev;

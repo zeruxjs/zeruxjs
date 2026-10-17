@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {checkConsumerSelection,checkEntryTargets,createConsumerLock} from './workspace-public-consumer.mjs';
 const plan={ok:true,publicPackages:2,order:[{name:'pkg-a'},{name:'pkg-b'}]};
 test('default requires every public package; scopes are explicit',()=>{
@@ -49,4 +50,12 @@ test('consumer lock keeps reviewed external resolutions and replaces workspace l
  assert.deepEqual(lock.packages['node_modules/undici-types'],undici);
  assert.equal(JSON.stringify(source),before);
  assert.throws(()=>createConsumerLock({lockfileVersion:3,packages:{}},archives),/committed resolution|baseline/);
+ const sourceRoot=path.resolve(os.tmpdir(),'reviewed source');
+ external.resolved='file:vendor/external.tgz';
+ assert.throws(()=>createConsumerLock(source,archives),/requires sourceRoot/);
+ const local=createConsumerLock(source,archives,{sourceRoot});
+ assert.equal(local.lock.packages['node_modules/pkg-a/node_modules/external'].resolved,
+   pathToFileURL(path.join(sourceRoot,'vendor/external.tgz')).href);
+ external.resolved='file:../outside.tgz';
+ assert.throws(()=>createConsumerLock(source,archives,{sourceRoot}),/escapes sourceRoot/);
 });

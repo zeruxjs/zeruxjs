@@ -13,9 +13,15 @@ import { execFileSync } from 'node:child_process';
 async function prepareStylelintBundle() {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'zerux-stylelint-bundle-'));
+  // Mirror repository depth so the locked local parser archive resolves unchanged.
+  const installRoot = path.join(temporary, 'packages/@zeruxjs/lint/stylelint-bundle');
   try {
+    await fs.mkdir(installRoot, { recursive: true });
+    await fs.mkdir(path.join(temporary, 'vendor'), { recursive: true });
+    await fs.copyFile(new URL('../../../../vendor/zeruxjs-scss-media-parser-0.2.3.tgz', import.meta.url),
+      path.join(temporary, 'vendor/zeruxjs-scss-media-parser-0.2.3.tgz'));
     for (const name of ['package.json', 'package-lock.json']) {
-      await fs.copyFile(path.join(root, 'stylelint-bundle', name), path.join(temporary, name));
+      await fs.copyFile(path.join(root, 'stylelint-bundle', name), path.join(installRoot, name));
     }
     // Published overrides are ignored by consumers; bundle the actual patched dependency files instead.
     const npmCli=process.env.npm_execpath;
@@ -23,18 +29,22 @@ async function prepareStylelintBundle() {
     execFileSync(process.execPath,
       // The outer npm pack --dry-run flag must not turn dependency preparation into a no-op.
       [npmCli, 'ci', '--ignore-scripts', '--omit=dev', '--no-audit', '--no-fund', '--workspaces=false', '--json=false', '--dry-run=false'],
-      { cwd: temporary, stdio: ['ignore', 2, 2] });
-    const modules = path.join(temporary, 'node_modules');
+      { cwd: installRoot, stdio: ['ignore', 2, 2] });
+    const modules = path.join(installRoot, 'node_modules');
     const braces = JSON.parse(await fs.readFile(path.join(modules, 'braces/package.json'), 'utf8'));
     if (braces.name !== '@zklogic/braces' || braces.version !== '3.0.7') {
       throw new Error('Refusing to pack an unexpected braces implementation');
+    }
+    const parser = JSON.parse(await fs.readFile(path.join(modules, 'postcss-media-query-parser/package.json'), 'utf8'));
+    if (parser.name !== '@zeruxjs/scss-media-parser' || parser.version !== '0.2.3') {
+      throw new Error('Refusing to pack an unexpected SCSS media parser');
     }
     // Retain unrelated package-local build dependencies; npm bundles only the declared Stylelint roots.
     for (const entry of await fs.readdir(modules)) {
       if (entry.startsWith('.')) continue;
       await fs.cp(path.join(modules, entry), path.join(root, 'node_modules', entry), { recursive: true });
     }
-    console.error('Prepared locked Stylelint/SCSS bundle with @zklogic/braces@3.0.7');
+    console.error('Prepared locked Stylelint/SCSS bundle with licensed media adapter and @zklogic/braces@3.0.7');
   } finally {
     await fs.rm(temporary, { recursive: true, force: true });
   }

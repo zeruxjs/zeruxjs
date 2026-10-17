@@ -1,0 +1,9 @@
+{
+  "name": "@zeruxjs/scss-media-parser",
+  "version": "0.2.3",
+  "private": true,
+  "description": "Internal media parameter adapter for bundled Stylelint SCSS rules",
+  "main": "index.cjs",
+  "license": "(MIT OR Apache-2.0)",
+  "files": ["index.cjs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
+}

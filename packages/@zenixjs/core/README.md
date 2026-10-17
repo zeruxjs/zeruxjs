@@ -1,4 +1,4 @@
-# @zenix/core
+# @zenixjs/core
 
 Public `0.0.1` placeholder release to establish the package name for future development.
 

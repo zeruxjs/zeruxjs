@@ -19,10 +19,10 @@ Keyv 4.5.4 uses a complete historical project MIT notice, with the original
 copyright preserved. Its binding explicitly identifies that this is historical
 project evidence rather than an exact release source match.
 
-Current unresolved upstream omissions:
-
-- `postcss-media-query-parser@0.2.3`: declares MIT, but its published artifact and
-  upstream source contain no full license notice.
+`postcss-media-query-parser@0.2.3` has been replaced in the locked Stylelint
+SCSS tree by the independently implemented private adapter in
+`vendor/scss-media-parser`. Its full project license texts are included in
+the installed and bundled artifact; no license exception is required.
 
 When updating dependencies, obtain the complete notice from the publisher,
 preserve its text verbatim, and update the exact version binding and digest.
