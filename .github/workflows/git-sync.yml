@@ -1,8 +1,9 @@
-name: Safe GitLab branch mirror (optional)
+name: GitHub to GitLab branch mirror
 
 on:
   push:
     branches: ['**']
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,6 +14,7 @@ concurrency:
 
 jobs:
   mirror:
+    if: startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -20,7 +22,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Fast-forward only to GitLab (no branch/tag force or empty commits)
+          ref: ${{ github.ref_name }}
+      - name: Mirror GitHub files to GitLab and preserve both histories
         shell: bash
         env:
           MIRROR_SSH_KEY: ${{ secrets.GIT_SSH_KEY }}
@@ -35,15 +38,17 @@ jobs:
             echo 'Mirror skipped for [skip-sync] commit.'
             exit 0
           fi
-          if [[ -z "$GITLAB_KNOWN_HOSTS" ]]; then
-            echo 'GitLab mirror blocked: add a verified GITLAB_KNOWN_HOSTS secret.' >&2
-            exit 1
-          fi
           install -d -m 700 ~/.ssh
           printf '%s\n' "$MIRROR_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$GITLAB_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          if [[ -n "$GITLAB_KNOWN_HOSTS" ]]; then
+            printf '%s\n' "$GITLAB_KNOWN_HOSTS" > ~/.ssh/known_hosts
+            echo 'Using configured GitLab host keys.'
+          else
+            cp .github/gitlab_known_hosts ~/.ssh/known_hosts
+            echo 'Using GitLab.com host key pinned from official GitLab documentation.'
+          fi
           chmod 600 ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND='ssh -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=30 -i ~/.ssh/id_ed25519 -o UserKnownHostsFile=~/.ssh/known_hosts'
           git remote add gitlab git@gitlab.com:zeruxjs/zeruxjs.git
-          git push gitlab "HEAD:refs/heads/${GITHUB_REF_NAME}"
-          echo 'Mirrored using fast-forward-only push; remote divergences are intentionally not overwritten.'
+          bash .github/scripts/mirror-gitlab.sh

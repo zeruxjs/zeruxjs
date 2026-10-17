@@ -3,6 +3,11 @@ stages:
 
 sync:
   stage: git-sync
+  rules:
+    # GitHub mirror commits already contain the desired files; do not sync them back.
+    - if: '$CI_COMMIT_MESSAGE =~ /\[skip-sync\]/'
+      when: never
+    - when: on_success
 
   before_script:
     # ------------------------------
