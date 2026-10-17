@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/files",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Multi-store filesystem, S3-compatible object storage and streaming Fetch file APIs",
   "type": "module",
   "main": "./dist/index.js",

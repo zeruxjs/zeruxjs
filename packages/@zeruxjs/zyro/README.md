@@ -30,3 +30,7 @@ scope.destroy(); // idempotent; unsubscribes even if other disposers throw
 ```
 
 `observe(...,{immediate:false})` skips the initial read. Synchronous subscription callbacks are not duplicated by the initial read. Manual unsubscribers returned by `observe()` and `add()` are idempotent. `destroy()` drains **all** disposers and aggregates failures. Scope ownership is independent of React/Vue and can manage `@zeruxjs/zyro` observables or structurally compatible source objects. The standalone **`zyrojs`** package is deliberately handled in the dedicated Section 81 release gate; this bridge alone does not certify that runtime.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

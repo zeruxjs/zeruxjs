@@ -11,3 +11,7 @@ createTsConfig(process.cwd()); // leaves an existing config untouched
 ```
 
 `registerTypescript()` installs and returns a disposer for **CommonJS require** hooks only. ESM TypeScript loading uses `@zeruxjs/typescript/loader` with Node's custom ESM loader mechanism. Transpilation does *not* typecheck; call `checkTypes` separately. `buildTypescript` requires esbuild, which is an explicit package dependency.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

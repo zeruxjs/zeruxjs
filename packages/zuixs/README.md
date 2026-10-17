@@ -113,3 +113,7 @@ npm run verify:source            # source-only; does not certify npm ci
 ```
 
 `npm run test:zuix` checks tarball contents and installs the packed `zuixs` offline in an isolated consumer, importing `zuixs`, `zuix/node`, `zuix/vite`, and `zuix/theme`. It does not certify a clean workspace installation or actual Vite/Next/Nuxt applications. Chromium fails to render in the current environment; real computed-style screenshots, CSSOM validation across browsers, large-scale memory/load profiling, and full cross-OS tests remain release gates for Sections 82–85. The existing 14 unresolved external workspace dependency resolutions also remain outstanding.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

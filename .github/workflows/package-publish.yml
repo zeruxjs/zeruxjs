@@ -40,7 +40,6 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: package-lock.json
-          registry-url: https://registry.npmjs.org/
       - name: Use npm with trusted publishing support
         run: npm install --global npm@11
       - name: Select unpublished version bumps in dependency order
@@ -66,11 +65,8 @@ jobs:
       - name: Pack selected releases and record archive integrity
         if: steps.plan.outputs.has_releases == 'true'
         run: node scripts/publish-packages.mjs --pack
-      - name: Publish exact verified archives
+      - name: Publish exact verified archives through npm trusted publishing
         if: steps.plan.outputs.has_releases == 'true' && inputs.dry_run != true
-        env:
-          # Optional bootstrap credential; omit after configuring npm trusted publishing.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: node scripts/publish-packages.mjs --publish
       - uses: actions/upload-artifact@v4
         if: always()

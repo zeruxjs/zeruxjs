@@ -1,5 +1,5 @@
 > [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
+> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. This release uses version `0.0.2`.
 
 # zforge
 
@@ -67,3 +67,7 @@ The HTTP devtools server enforces a 1 MiB streamed request-body limit via `src/r
 The shared development server is loopback-only by default. To listen on a different interface, set `ZDEV_BIND_HOST` **only with trusted access controls**, such as an authenticated reverse proxy. Devtools and its APIs are not an Internet-facing administration service.
 
 State and registry JSON files are private, bounded, atomic and reject symlink destinations. Client HTML injection escapes script-breaking values. Snapshot and bootstrap JSON include a `reload` status object containing the attempt count, generation and last failure message when available.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

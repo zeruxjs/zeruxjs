@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/email",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "description": "Multi-account SMTP send, IMAP/POP3 receive, parsing, durable inbox, campaigns and tracking",
   "license": "(MIT OR Apache-2.0)",
@@ -31,7 +31,7 @@
     "sanitize-html": "^2.13.0"
   },
   "peerDependencies": {
-    "@zeruxjs/files": "0.0.1"
+    "@zeruxjs/files": "0.0.2"
   },
   "peerDependenciesMeta": {
     "@zeruxjs/files": {

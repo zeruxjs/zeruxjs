@@ -6,8 +6,8 @@
   "type": "module",
   "main": "index.js",
   "dependencies": {
-    "zeruxjs": "0.0.1",
-    "@zeruxjs/typescript": "0.0.1"
+    "zeruxjs": "0.0.2",
+    "@zeruxjs/typescript": "0.0.2"
   },
   "private": true,
   "scripts": {

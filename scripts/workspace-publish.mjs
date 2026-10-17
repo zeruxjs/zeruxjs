@@ -1,6 +1,27 @@
 import path from 'node:path';
 import { planPublicReleases } from './workspace-release-plan.mjs';
 
+/**
+ * Summarize confirmed registry publication, keeping failures and unattempted packages visible.
+ * @param plan Selected releases and their recorded publication statuses; reads no globals.
+ * @returns Counts and Markdown for the GitHub Actions job summary.
+ */
+export function summarizePublication(plan) {
+  const rows = (plan.releaseTargets ?? plan.packages).map(item => ({name:item.name,version:item.version,
+    status:plan.publicationResults?.find(result=>result.name===item.name&&result.version===item.version)?.status ??
+      (plan.skipped?.includes(`${item.name}@${item.version}`)?'already-published':'pending')}));
+  const count = status => rows.filter(row=>row.status===status).length;
+  const published=count('published'), alreadyPublished=count('already-published');
+  const confirmed=published+alreadyPublished, total=rows.length;
+  const complete=total>0&&confirmed===total;
+  const markdown = `## npm publication: ${complete?'complete':'incomplete'}\n\n`+
+    `**${confirmed}/${total} selected package versions confirmed on npm.**\n\n`+
+    `Newly published: ${published}. Already published: ${alreadyPublished}. Failed: ${count('failed')}. Pending: ${count('pending')}.\n\n`+
+    '| Package | Version | Result |\n| --- | --- | --- |\n'+rows.map(row=>
+      `| [${row.name}](https://www.npmjs.com/package/${row.name}/v/${row.version}) | ${row.version} | ${row.status} |`).join('\n')+'\n';
+  return {complete,total,confirmed,published,alreadyPublished,markdown};
+}
+
 /** Compare stable release versions without numeric precision loss; reads no globals. */
 export function compareReleaseVersions(before, after) {
   const stable = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;

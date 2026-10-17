@@ -62,3 +62,7 @@ Install official AWS SDK modules including `@aws-sdk/client-s3`, `@aws-sdk/lib-s
 ### Section 80 streamed request/copy safety
 
 Fetch uploads validate a declared `Content-Length` **inside the stream** and reject missing/excess bytes before storage commits; they do not delete already-committed keys as cleanup. All manager copies, including storage-native copies, enforce destination `allowedTypes` and `maxBytes`. Do not use a signed PUT or raw driver call as a substitute for tenant authorization. Native S3 multipart create-only behavior needs real-provider concurrency tests.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

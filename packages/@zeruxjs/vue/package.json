@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/vue",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Reactive ref compatibility, derived refs and Vue state adapters.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

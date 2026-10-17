@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { discoverWorkspaces } from './workspace-graph.mjs';
-import { selectPublishCandidates, compareReleaseVersions } from './workspace-publish.mjs';
+import { selectPublishCandidates, compareReleaseVersions, summarizePublication } from './workspace-publish.mjs';
 import { checkEntryTargets } from './workspace-public-consumer.mjs';
 import { npmCommand } from './npm-command.mjs';
 
@@ -15,6 +15,7 @@ const output = path.join(root, '.npm-release');
 const planFile = path.join(output, 'plan.json');
 const registry = 'https://registry.npmjs.org/';
 const args = process.argv.slice(2);
+let publishingPlan, activePublication;
 if (args.length !== 1 || !['--plan', '--pack', '--publish'].includes(args[0])) {
   console.error('Usage: node scripts/publish-packages.mjs --plan|--pack|--publish'); process.exit(2);
 }
@@ -79,14 +80,27 @@ try {
         issues.push(`${item.name}: ${dependency} must be published first; use the manual publish-unpublished run`);
       }
     }
-    save({schemaVersion:1,commit,packages,skipped,issues});
+    const plan={schemaVersion:1,commit,packages,skipped,issues,releaseTargets:candidates.map(({name,version})=>({name,version}))};
+    save(plan);
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT,`has_releases=${packages.length>0 && issues.length===0}\n`);
     console.log(JSON.stringify({packages,skipped,issues},null,2));
     if (issues.length) throw Error('Release plan blocked: '+issues.join('; '));
+    if (!packages.length && candidates.length) {
+      const summary=summarizePublication(plan);
+      fs.writeFileSync(path.join(output,'publication-summary.md'),summary.markdown);
+      if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,summary.markdown);
+      console.log(`[publish] COMPLETE: ${summary.confirmed}/${summary.total} selected package versions already verified on npm.`);
+    }
   } else {
     const plan = JSON.parse(fs.readFileSync(planFile,'utf8'));
     if (plan.schemaVersion !== 1 || plan.commit !== commit || plan.issues?.length) throw Error('Release plan is blocked or does not match this commit');
+    if (args[0] === '--publish') {
+      publishingPlan=plan;
+      plan.publicationResults=plan.packages.map(({name,version})=>({name,version,status:'pending'}));
+      save(plan);
+    }
     for (const item of plan.packages) {
+      if (publishingPlan) activePublication=plan.publicationResults.find(result=>result.name===item.name);
       const entry = entries.get(item.name);
       if (!entry || entry.pkg.private || entry.pkg.version !== item.version || path.relative(root,entry.dir).split(path.sep).join('/') !== item.directory ||
         item.directory.split('/').some(part=>part.startsWith('sample'))) throw Error('Release plan no longer matches public package manifests');
@@ -102,7 +116,12 @@ try {
       } else {
         if (process.env.GITHUB_ACTIONS !== 'true' || process.env.GITHUB_REF !== 'refs/heads/master') throw Error('Registry writes are restricted to GitHub Actions on master');
         if (!/^[\w.-]+\.tgz$/.test(item.archive ?? '') || integrity(path.join(output,item.archive)) !== item.integrity) throw Error('Release archive missing or changed');
-        if (await metadata(item.name,item.version)) { console.log(`Already published: ${item.name}@${item.version}`); continue; }
+        const position=plan.packages.indexOf(item)+1;
+        console.log(`[publish] ${position}/${plan.packages.length}: ${item.name}@${item.version}`);
+        if (await metadata(item.name,item.version)) {
+          activePublication.status='already-published';save(plan);
+          console.log(`[publish] ${position}/${plan.packages.length} ALREADY PUBLISHED: ${item.name}@${item.version}`);continue;
+        }
         const latest = await metadata(item.name,'latest');
         if (latest && compareReleaseVersions(latest.version,item.version) >= 0) throw Error(`${item.name}: refusing a stale release`);
         npm(['publish',path.join(output,item.archive),'--access','public','--tag','latest','--provenance','--ignore-scripts','--registry',registry],entry.dir,true);
@@ -113,8 +132,21 @@ try {
           await new Promise(resolve=>setTimeout(resolve,2000));
         }
         if (!published) throw Error(`${item.name}@${item.version} is not publicly available; check npm stage list and approve the pending release before retrying`);
-        console.log(`Published ${item.name}@${item.version}`);
+        activePublication.status='published';save(plan);
+        console.log(`[publish] ${position}/${plan.packages.length} PUBLISHED AND VERIFIED: ${item.name}@${item.version}`);
       }
     }
   }
-} catch (error) { console.error(`[publish] ${error.message}`); process.exitCode = 1; }
+} catch (error) {
+  if (activePublication) activePublication.status='failed';
+  console.error(`[publish] ${error.message}`);process.exitCode = 1;
+} finally {
+  if (publishingPlan) {
+    save(publishingPlan);
+    const summary=summarizePublication(publishingPlan);
+    fs.writeFileSync(path.join(output,'publication-summary.md'),summary.markdown);
+    if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,summary.markdown);
+    console.log(`[publish] ${summary.complete?'COMPLETE':'INCOMPLETE'}: ${summary.confirmed}/${summary.total} selected package versions verified on npm (${summary.published} newly published; ${summary.alreadyPublished} already available).`);
+    if (!summary.complete) process.exitCode=1;
+  }
+}

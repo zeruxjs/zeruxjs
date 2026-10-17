@@ -1,6 +1,6 @@
 {
   "name": "create-zenix-js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Placeholder CLI for the future Zenix CMS project generator",
   "bin": {
     "create-zenix": "./dist/index.js"

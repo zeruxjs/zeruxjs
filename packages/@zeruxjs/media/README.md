@@ -23,3 +23,7 @@ const response = await createMediaResponse(media, record.id, {request});
 ### Section 80 HTTP safety
 
 For the files-backed media service, use `statAuthorized(id, request)` and `listAuthorized(request, {limit,cursor})` when returning metadata to clients. Both call `authorize` per object, suppressing a backend continuation cursor when unauthorized objects were encountered. For complete paginated tenant listings, partition by bucket/key prefix; the older `stat`/`list` methods are server-trusted only. The request upload helper validates declared length during streaming; legacy media inline responses allow only inert MIME types and force potentially executable content to download.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

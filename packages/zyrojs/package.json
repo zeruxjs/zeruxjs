@@ -1,6 +1,6 @@
 {
   "name": "zyrojs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Standalone signal reactivity, lifecycle-managed DOM rendering, and abortable network clients",
   "type": "module",
   "main": "./dist/index.js",

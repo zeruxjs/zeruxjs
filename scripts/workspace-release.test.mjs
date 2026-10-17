@@ -5,7 +5,21 @@ import os from 'node:os';
 import path from 'node:path';
 import { finalizeWorkspaceRelease, RELEASE_STEPS } from './workspace-release.mjs';
 import { writePublicApiFreeze } from './workspace-api-freeze.mjs';
-import { selectPublishCandidates, compareReleaseVersions } from './workspace-publish.mjs';
+import { selectPublishCandidates, compareReleaseVersions, summarizePublication } from './workspace-publish.mjs';
+
+test('publication summaries confirm all selected versions and expose partial failures',()=>{
+  const plan={packages:[{name:'a',version:'0.0.2'},{name:'b',version:'0.0.2'}],publicationResults:[]};
+  assert.equal(summarizePublication(plan).complete,false);
+  plan.publicationResults=[{name:'a',version:'0.0.2',status:'published'},{name:'b',version:'0.0.2',status:'failed'}];
+  let summary=summarizePublication(plan);
+  assert.equal(summary.confirmed,1);assert.equal(summary.complete,false);assert.match(summary.markdown,/Failed: 1/);
+  plan.publicationResults[1].status='already-published';summary=summarizePublication(plan);
+  assert.equal(summary.complete,true);assert.equal(summary.confirmed,2);assert.match(summary.markdown,/2\/2/);
+  plan.publicationResults[1].version='0.0.1';assert.equal(summarizePublication(plan).complete,false);
+  const retry={packages:[{name:'b',version:'0.0.2'}],releaseTargets:plan.packages,
+    skipped:['a@0.0.2'],publicationResults:[{name:'b',version:'0.0.2',status:'published'}]};
+  assert.equal(summarizePublication(retry).confirmed,2);assert.equal(summarizePublication(retry).complete,true);
+});
 
 test('npm publishing selects stable version bumps in dependency order and excludes samples, private packages and apps',()=>{
   const root=path.resolve('/release-fixture');

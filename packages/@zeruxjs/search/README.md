@@ -35,3 +35,7 @@ await loadSearchSnapshot('/private/data/search.json', index);
 HTTP search bounds pagination and query length; supports GET, HEAD, search suggestions, projection, `ETag`/304, and explicit cache lifetimes. **Never use a shared cache with a visibility filter**, and suggestions are disabled for filtered indexes to avoid revealing hidden vocabulary. Authenticated requests use `Cache-Control: no-store`. Without a field projection, the entire matching document is returned; do not index private fields for a public endpoint.
 
 Atomic filesystem snapshots are single-writer and local; the parent directory must exist and must not contain symlinks. They are not distributed transactions or a database replacement.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

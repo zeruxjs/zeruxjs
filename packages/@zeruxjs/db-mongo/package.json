@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/db-mongo",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Helper for @zerux/db for MongoDB Database.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -20,7 +20,7 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@zeruxjs/db": "0.0.1"
+    "@zeruxjs/db": "0.0.2"
   },
   "keywords": [
     "Helper for @zerux/db for MongoDB Database."

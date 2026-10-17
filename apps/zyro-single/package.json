@@ -22,6 +22,6 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "zyrojs": "0.0.1"
+    "zyrojs": "0.0.2"
   }
 }

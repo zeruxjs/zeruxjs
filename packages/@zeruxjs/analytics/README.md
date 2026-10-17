@@ -122,3 +122,7 @@ For shared collectors, `siteByOrigin:{'https://app.example':'site-tenant'}` bind
 `analytics.purgePage({site,before,limit?,cursor?,dryRun?:true})` is a **trusted administrative** paged retention API requiring a site and cutoff at least 24 hours old. Actual deletion requires `dryRun:false` and an `approveRetention` hook in `createAnalytics()`. It deletes numeric facts before source events and rejects unsafe deletion if the sidecar state is unknown; when numeric fields are not configured, explicitly attest `numericSidecar:'present'|'absent'`. It does not erase email, request-ID, suppression, external sinks, browser or provider records. Read the full [Section 71 technical guide](../../../../../SECTION_71_ANALYTICS_COLLECTION_IDENTITY_RETENTION.md) before deploying or deleting data.
 
 Opt-in live database parity tests require dedicated disposable PG, MySQL or Mongo databases; the default local suite verifies real SQLite. No live cluster parity or Section 66 registry clean build is claimed until those gates actually run.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

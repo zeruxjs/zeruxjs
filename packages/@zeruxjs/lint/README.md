@@ -44,3 +44,7 @@ distribution omits a complete license notice. The adapter preserves the
 Stylelint SCSS operator-spacing interface and source offsets and includes full
 MIT and Apache-2.0 license texts. It is bundled internally, requires no consumer
 override or install hook, and is not a separately published package.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

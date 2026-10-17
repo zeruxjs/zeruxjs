@@ -45,3 +45,7 @@ errors are reported through `onError`, and handles must be closed during hot
 reload/unmount. Filesystem symlinks are never traversed by the recursive scan.
 The fallback polling path is retained for hosts where recursive `fs.watch`
 is unsupported. Test with `node --test test/*.test.mjs` after building.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

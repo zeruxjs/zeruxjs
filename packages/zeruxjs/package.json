@@ -1,6 +1,6 @@
 {
   "name": "zeruxjs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Main application ZeruxJS Framework",
   "type": "module",
   "main": "./dist/index.js",
@@ -45,14 +45,14 @@
   },
   "license": "(MIT OR Apache-2.0)",
   "dependencies": {
-    "@zeruxjs/cache": "0.0.1",
-    "@zeruxjs/db": "0.0.1",
-    "@zeruxjs/lint": "0.0.1",
-    "zforge": "0.0.1",
-    "@zeruxjs/hooks": "0.0.1",
-    "zlook": "0.0.1",
-    "zhost": "0.0.1",
-    "zclivo": "0.0.1"
+    "@zeruxjs/cache": "0.0.2",
+    "@zeruxjs/db": "0.0.2",
+    "@zeruxjs/lint": "0.0.2",
+    "zforge": "0.0.2",
+    "@zeruxjs/hooks": "0.0.2",
+    "zlook": "0.0.2",
+    "zhost": "0.0.2",
+    "zclivo": "0.0.2"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -66,7 +66,7 @@
     "Main application ZeruxJS Framework"
   ],
   "peerDependencies": {
-    "@zeruxjs/queue": "0.0.1"
+    "@zeruxjs/queue": "0.0.2"
   },
   "peerDependenciesMeta": {
     "@zeruxjs/queue": {

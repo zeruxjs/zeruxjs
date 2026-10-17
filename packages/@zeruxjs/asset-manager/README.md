@@ -20,3 +20,7 @@ const loaded = await loadAssetCatalog('./private/assets.json');
 `addMany`, `import`, and `apply` stage and validate all changes before publishing. Values returned by `get`, `list`, `resolve` and `snapshot` are defensive copies. `AssetSnapshot` stays version 1 with an optional monotonic `revision`, compatible with earlier files. Variants are URL/value overrides, validated with the same restrictions as the base asset. Catalog files have an 8 MiB limit, restricted permissions, symlink checks and atomic replace; the directory must be trusted.
 
 This is **single-process revision control**, not a distributed lock: concurrent file writers still require a lock or database transaction. URLs are metadata, not fetch permissions; the application must enforce any outbound network/SSRF and SVG sanitization policy.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/tags",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "description": "Server and browser tag manager with versioned containers, triggers and destinations",
   "main": "./dist/index.js",
@@ -17,7 +17,7 @@
     "prepack": "npm run build"
   },
   "peerDependencies": {
-    "@zeruxjs/analytics": "0.0.1"
+    "@zeruxjs/analytics": "0.0.2"
   },
   "files": [
     "dist/",

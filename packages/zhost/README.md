@@ -1,5 +1,5 @@
 > [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. All current versions follow the `0.0.1-alpha.x` pattern.
+> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. This release uses version `0.0.2`.
 
 # zhost
 
@@ -1011,3 +1011,7 @@ Or set `createProxyServer({ getRoutes, proxyPort, cache: { enabled: true } })`. 
 ### Reloading the development HTTP server
 
 Development reloads now replace the active request handler without unbinding the application's HTTP port. In-flight requests retain their old handler, new requests use the new handler, and a failed `watchFunc` leaves the previous handler serving. This is local development lifecycle behavior, not a guarantee of zero-downtime production deployment.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

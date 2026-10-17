@@ -3,7 +3,7 @@
   "packages": [
     {
       "name": "@zenixjs/core",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -16,7 +16,7 @@
     },
     {
       "name": "@zeruxjs/accessibility",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -29,7 +29,7 @@
     },
     {
       "name": "@zeruxjs/ai",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -42,7 +42,7 @@
     },
     {
       "name": "@zeruxjs/ai-model",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -55,7 +55,7 @@
     },
     {
       "name": "@zeruxjs/analytics",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -81,7 +81,7 @@
       "bin": null,
       "engines": null,
       "peerDependencies": {
-        "@zeruxjs/db": "0.0.1"
+        "@zeruxjs/db": "0.0.2"
       },
       "peerDependenciesMeta": {
         "@zeruxjs/db": {
@@ -91,7 +91,7 @@
     },
     {
       "name": "@zeruxjs/asset-manager",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -104,7 +104,7 @@
     },
     {
       "name": "@zeruxjs/auth",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -117,7 +117,7 @@
     },
     {
       "name": "@zeruxjs/cache",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -135,7 +135,7 @@
     },
     {
       "name": "@zeruxjs/cache-redis",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -148,7 +148,7 @@
     },
     {
       "name": "@zeruxjs/db",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -166,7 +166,7 @@
     },
     {
       "name": "@zeruxjs/db-mongo",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -185,7 +185,7 @@
     },
     {
       "name": "@zeruxjs/db-mysql",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -198,7 +198,7 @@
     },
     {
       "name": "@zeruxjs/db-pg",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -211,7 +211,7 @@
     },
     {
       "name": "@zeruxjs/db-sql-core",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -224,7 +224,7 @@
     },
     {
       "name": "@zeruxjs/db-sqlite",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -243,7 +243,7 @@
     },
     {
       "name": "@zeruxjs/email",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -261,7 +261,7 @@
       "bin": null,
       "engines": null,
       "peerDependencies": {
-        "@zeruxjs/files": "0.0.1"
+        "@zeruxjs/files": "0.0.2"
       },
       "peerDependenciesMeta": {
         "@zeruxjs/files": {
@@ -271,7 +271,7 @@
     },
     {
       "name": "@zeruxjs/feed",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -287,7 +287,7 @@
     },
     {
       "name": "@zeruxjs/files",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -309,7 +309,7 @@
     },
     {
       "name": "@zeruxjs/font",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -325,7 +325,7 @@
     },
     {
       "name": "@zeruxjs/hooks",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -355,7 +355,7 @@
     },
     {
       "name": "@zeruxjs/lint",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -377,7 +377,7 @@
     },
     {
       "name": "@zeruxjs/media",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -390,7 +390,7 @@
     },
     {
       "name": "@zeruxjs/performance",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -403,7 +403,7 @@
     },
     {
       "name": "@zeruxjs/queue",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -421,7 +421,7 @@
     },
     {
       "name": "@zeruxjs/react",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -434,7 +434,7 @@
     },
     {
       "name": "@zeruxjs/reports",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -448,13 +448,13 @@
       "bin": null,
       "engines": null,
       "peerDependencies": {
-        "@zeruxjs/analytics": "0.0.1"
+        "@zeruxjs/analytics": "0.0.2"
       },
       "peerDependenciesMeta": null
     },
     {
       "name": "@zeruxjs/search",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -471,7 +471,7 @@
     },
     {
       "name": "@zeruxjs/security",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -489,7 +489,7 @@
     },
     {
       "name": "@zeruxjs/seo",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -505,7 +505,7 @@
     },
     {
       "name": "@zeruxjs/share",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -518,7 +518,7 @@
     },
     {
       "name": "@zeruxjs/tags",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -532,13 +532,13 @@
       "bin": null,
       "engines": null,
       "peerDependencies": {
-        "@zeruxjs/analytics": "0.0.1"
+        "@zeruxjs/analytics": "0.0.2"
       },
       "peerDependenciesMeta": null
     },
     {
       "name": "@zeruxjs/typescript",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -564,7 +564,7 @@
     },
     {
       "name": "@zeruxjs/validator",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -586,7 +586,7 @@
     },
     {
       "name": "@zeruxjs/vue",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -599,7 +599,7 @@
     },
     {
       "name": "@zeruxjs/zyro",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -612,7 +612,7 @@
     },
     {
       "name": "create-zenix-js",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -627,7 +627,7 @@
     },
     {
       "name": "create-zerux-js",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -642,7 +642,7 @@
     },
     {
       "name": "create-zyro-app",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -721,26 +721,8 @@
       "peerDependenciesMeta": null
     },
     {
-      "name": "zforge",
-      "version": "0.0.1",
-      "private": false,
-      "main": "./dist/index.js",
-      "module": null,
-      "types": "./dist/index.d.ts",
-      "exports": {
-        ".": {
-          "types": "./dist/index.d.ts",
-          "import": "./dist/index.js"
-        }
-      },
-      "bin": null,
-      "engines": null,
-      "peerDependencies": null,
-      "peerDependenciesMeta": null
-    },
-    {
       "name": "zclivo",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -760,7 +742,7 @@
     },
     {
       "name": "zenixjs",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -773,7 +755,7 @@
     },
     {
       "name": "zeruxjs",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -812,7 +794,7 @@
       },
       "engines": null,
       "peerDependencies": {
-        "@zeruxjs/queue": "0.0.1"
+        "@zeruxjs/queue": "0.0.2"
       },
       "peerDependenciesMeta": {
         "@zeruxjs/queue": {
@@ -821,8 +803,8 @@
       }
     },
     {
-      "name": "ztrial",
-      "version": "0.0.1",
+      "name": "zforge",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -831,21 +813,16 @@
         ".": {
           "types": "./dist/index.d.ts",
           "import": "./dist/index.js"
-        },
-        "./jsdom": "./dist/adapters/jsdom/setup.js",
-        "./playwright": "./dist/adapters/playwright/setup.js",
-        "./vitest": "./dist/adapters/vitest/setup.js"
+        }
       },
-      "bin": {
-        "ztrial": "./dist/bin/cli.js"
-      },
+      "bin": null,
       "engines": null,
       "peerDependencies": null,
       "peerDependenciesMeta": null
     },
     {
       "name": "zhost",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -868,8 +845,49 @@
       "peerDependenciesMeta": null
     },
     {
+      "name": "zlook",
+      "version": "0.0.2",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        }
+      },
+      "bin": null,
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
+      "name": "ztrial",
+      "version": "0.0.2",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "./jsdom": "./dist/adapters/jsdom/setup.js",
+        "./playwright": "./dist/adapters/playwright/setup.js",
+        "./vitest": "./dist/adapters/vitest/setup.js"
+      },
+      "bin": {
+        "ztrial": "./dist/bin/cli.js"
+      },
+      "engines": null,
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
       "name": "zuixs",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,
@@ -902,26 +920,8 @@
       "peerDependenciesMeta": null
     },
     {
-      "name": "zlook",
-      "version": "0.0.1",
-      "private": false,
-      "main": "./dist/index.js",
-      "module": null,
-      "types": "./dist/index.d.ts",
-      "exports": {
-        ".": {
-          "types": "./dist/index.d.ts",
-          "import": "./dist/index.js"
-        }
-      },
-      "bin": null,
-      "engines": null,
-      "peerDependencies": null,
-      "peerDependenciesMeta": null
-    },
-    {
       "name": "zyrojs",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "private": false,
       "main": "./dist/index.js",
       "module": null,

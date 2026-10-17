@@ -38,3 +38,7 @@ Concurrent misses for the same key **within one manager process** share one pend
 - Conditional writes are atomic only when the provider supports them. `setMany` across multiple keys is not guaranteed atomic.
 
 Run package tests after building: `npm run build && node --test test/*.test.mjs`.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

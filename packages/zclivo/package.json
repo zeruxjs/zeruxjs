@@ -1,6 +1,6 @@
 {
   "name": "zclivo",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Composable multi-command CLI and secure opt-in plugin registry for ZeruxJS",
   "type": "module",
   "main": "./dist/index.js",

@@ -28,3 +28,7 @@ const feed = createFeedFetchHandler({
 ```
 
 Supports GET/HEAD/405, quality-weighted Accept negotiation (406 for unacceptable types), ETag/304, Last-Modified conditional responses, representation-aware `Vary: Accept`, public caching and input limits. Supply only public feed content; personalized or authenticated feeds should be handled by application-specific private routes instead of these public helpers. This does not push SSE/WebSocket updates.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

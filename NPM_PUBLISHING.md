@@ -17,18 +17,9 @@ Builds are parallel; publication is sequential to respect package dependencies.
 
 ## One-time npm authentication setup
 
-Enable 2FA and ensure your npm account has publishing rights to the package
-names and organizations. The workflow supports npm trusted publishing (OIDC),
-with an optional `NPM_TOKEN` secret for bootstrapping packages that do not yet
-exist. Do not commit credentials or put them in workflow files.
-
-For the first release from GitHub Actions, create a granular npm access token
-with package read/write access, permission to create the required scoped and
-unscoped packages, and bypass 2FA for automation. Check the token's organization
-and package restrictions and expiration. An organization-administration grant
-alone does not grant package publishing rights. Save it in GitHub repository
-Settings → Secrets and variables → Actions → New repository secret as
-`NPM_TOKEN`. The workflow exposes it only to the publish step.
+All 47 public packages now have an initial npm release. The workflow uses only
+npm trusted publishing (OIDC), with Node 24, npm 11 and `id-token: write`.
+It does not read `NPM_TOKEN` or configure token-based npm authentication.
 
 For each published package, configure npm Settings → Trusted Publisher:
 
@@ -38,8 +29,7 @@ For each published package, configure npm Settings → Trusted Publisher:
 - Environment: leave blank; this workflow does not declare an environment.
 - Allow direct `npm publish`.
 
-Then remove the bootstrap secret and revoke that token. Node 24 and npm 11 in
-the workflow support OIDC. Packages' `repository.url` must identify the actual
+Remove any old bootstrap secret and revoke its token after configuring trust. Packages' `repository.url` must identify the actual
 GitHub repository for provenance. Source repository access/visibility must also
 meet npm's provenance requirements.
 
@@ -52,7 +42,7 @@ After committing and pushing the workflow, open GitHub Actions →
 **Publish version-bumped packages to npm** → Run workflow, selecting `master`.
 Leave **Include all missing public package versions** enabled. Enable **Build
 and pack without publishing** for a preview, or leave it disabled to publish.
-This can publish the current `0.0.1` packages without artificially bumping them.
+The prepared `0.0.2` release validates the configured trusted publishers.
 
 The manual missing-version run is also useful if GitHub coalesces queued runs.
 The shared concurrency group prevents overlapping publishers, but GitHub may
@@ -79,3 +69,17 @@ prereleases, create Git commits/tags, or publish applications and sample package
 The workflow and scripts are ready for review locally, but successful registry
 authentication and publication can only be confirmed by a configured Actions
 run. No npm packages are published merely by adding these files locally.
+
+## Release 0.0.2: validate npm trusted publishing
+
+All 47 public packages are prepared at `0.0.2`, with matching internal dependency
+references and a release note. Push the release commit to `master` so the Actions
+workflow publishes these versions through OIDC; a local publish does not validate
+the GitHub trust relationship. Existing `0.0.1` releases cannot be republished.
+
+Each publish logs its position and package name, then confirms that exact version
+is available from npm. The final log reports `COMPLETE: 47/47` only when all 47
+selected versions are confirmed. The Actions job summary lists every result;
+`plan.json` and `publication-summary.md` are included with the release artifacts.
+A partial release fails the job and lists failed/pending packages rather than
+claiming completion.

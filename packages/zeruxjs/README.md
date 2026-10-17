@@ -1,5 +1,5 @@
 > [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. This release uses version `0.0.1`.
+> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. This release uses version `0.0.2`.
 
 # ZeruxJS Framework
 
@@ -23,7 +23,7 @@ ZeruxJS is engine-agnostic, allowing you to build applications using your favori
 
 ## 📦 Getting Started
 
-The future official scaffolder is `create-zerux-js`. Its `0.0.1` release is a placeholder supporting help/version only; it does not generate a project. Use the applications under `apps/` as development examples.
+The future official scaffolder is `create-zerux-js`. Its `0.0.2` release is a placeholder supporting help/version only; it does not generate a project. Use the applications under `apps/` as development examples.
 
 ## Runtime Workers and Thread Workers
 
@@ -224,4 +224,8 @@ A browser fixture (under `tests/browser/`) covers bridge snapshot projection, ex
 
 ## Future project generator
 
-[`create-zerux-js`](../create/create-zerux-app/README.md) is reserved for this package's future project generator. Version `0.0.1` provides placeholder help/version output only; project scaffolding is planned for a future release.
+[`create-zerux-js`](../create/create-zerux-app/README.md) is reserved for this package's future project generator. Version `0.0.2` provides placeholder help/version output only; project scaffolding is planned for a future release.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

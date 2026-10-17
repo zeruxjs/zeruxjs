@@ -75,3 +75,7 @@ node --test test/*.test.mjs
 
 Verify with `npm run build && node --test test/*.test.mjs`. No browser/runtime
 certification is inferred from source-only tests.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

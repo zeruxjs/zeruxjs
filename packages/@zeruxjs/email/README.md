@@ -89,3 +89,7 @@ for test-server setup, replay/authorization requirements and production limits.
 `createMarketingCampaignService` includes `schedule`, `report`, `finalize`, `exportPage`, `archive` and opt-in archival `redactArchived` in addition to existing create/preview/import/queue/paused operations. Configure `renderer:createVariableRegistry()` for globally registered subject/HTML/text variables; `segment` supports the Section 55 `all`/`any` primitive conditions. Require durable `onAudit:createDatabaseMarketingAuditLog(db).record` for PII-free audit trails, real `verifyMissingJob`/`queue.getJob` before redrive, and consent/suppression policies both at queue and SMTP boundaries. Use the Section 69 durable outbox for Redis outage recovery. The dashboard presents paginated, privacy-limited reports/exports with per-action host authorization and CSRF.
 
 **Important:** `archive` is not a deletion operation: it accepts only cancelled or safely finalized campaigns with no nonterminal/uncertain delivery. `redactArchived` defaults to dry-run, requires a legal-hold approval hook and a DB delete capability, and erases only campaign-specific template/recipient data, not durable mail activity or consent/suppression stores. For an API-only example and full limitations, see root `SECTION_70_COMPLETE_MARKETING_CAMPAIGNS.md`.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

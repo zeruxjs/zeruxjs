@@ -209,3 +209,7 @@ CACHE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --te
 ```
 
 Use dedicated throwaway test Redis instances, correct authentication and TLS as appropriate. Live tests do not intentionally stop Redis: a full outage/restart and worker crash-injection rehearsal, DST boundary verification, cluster resharding, and long-running load/retention/ACL testing are **separate operational gates**. In an offline environment these suites are intentionally skipped; mocked tests are not live certification. The Section 66 `npm ci` gate is also not satisfied by locally generated `dist` files.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

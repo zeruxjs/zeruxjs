@@ -31,3 +31,7 @@ function Counter(){
 ```
 
 `createReactBindings` invokes the real React Hooks only inside components. The standalone `useReactSelector` convenience helper uses a weak cache and needs a stable selector. When passing an explicit `serverSnapshot` callback, return stable data; React requires consistent snapshots across SSR, hydration and the first client commit. Unsubscribe is idempotent; the external store does not own React's component lifecycle. React itself is **not installed, vendored or automatically registered** by this package.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

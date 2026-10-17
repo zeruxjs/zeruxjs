@@ -79,3 +79,7 @@ The Section 81 suite uses a deterministic DOM fixture in Node and an offline tar
 ## Future project generator
 
 [`create-zyro-app`](../create/create-zyro-app/README.md) is reserved for this package's future project generator. Version `0.0.1` provides placeholder help/version output only; project scaffolding is planned for a future release.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.

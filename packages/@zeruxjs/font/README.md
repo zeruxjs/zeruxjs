@@ -22,3 +22,7 @@ const endpoint = createFontStylesheetHandler({ registry, preloadKeys: ['ui'], ca
 ```
 
 Generates a CSS `@font-face` stylesheet with ETag/304 and HEAD, optional bounded `Link: preload` headers and cache policy. Font binary hosting, licensing, Content Security Policy and font optimization remain application/deployment responsibilities. Only trusted font definitions should be registered.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.
