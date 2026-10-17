@@ -164,3 +164,4 @@ vite.config.ts.timestamp-*
 
 # Reviewed local adapter archive required by npm ci and lint bundle preparation.
 !vendor/zeruxjs-scss-media-parser-0.2.3.tgz
+.npm-release/

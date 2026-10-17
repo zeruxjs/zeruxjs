@@ -5,6 +5,31 @@ import os from 'node:os';
 import path from 'node:path';
 import { finalizeWorkspaceRelease, RELEASE_STEPS } from './workspace-release.mjs';
 import { writePublicApiFreeze } from './workspace-api-freeze.mjs';
+import { selectPublishCandidates, compareReleaseVersions } from './workspace-publish.mjs';
+
+test('npm publishing selects stable version bumps in dependency order and excludes samples, private packages and apps',()=>{
+  const root=path.resolve('/release-fixture');
+  const entry=(directory,name,version,extra={})=>({name,dir:path.join(root,directory),pkg:{name,version,publishConfig:{access:'public'},...extra}});
+  const entries=new Map([
+    ['a',entry('packages/@scope/a','a','0.0.2')],
+    ['b',entry('packages/b','b','0.0.2',{dependencies:{a:'0.0.2'}})],
+    ['unchanged',entry('packages/unchanged','unchanged','0.0.1')],
+    ['sample',entry('packages/sample-example','sample','0.0.2')],
+    ['nested-sample',entry('packages/@scope/sample-child','nested-sample','0.0.2')],
+    ['internal',entry('packages/internal','internal','0.0.2',{private:true})],
+    ['app',entry('apps/app','app','0.0.2')]
+  ]);
+  const previous=new Map([...entries.values()].map(e=>[path.relative(root,e.dir).split(path.sep).join('/'),{...e.pkg,version:'0.0.1'}]));
+  assert.deepEqual(selectPublishCandidates(root,entries,previous).map(x=>x.name),['a','b']);
+  assert.deepEqual(selectPublishCandidates(root,entries,previous,true).map(x=>x.name),['a','b','unchanged']);
+  assert.equal(compareReleaseVersions('1.9.9','1.10.0'),-1);
+  assert.throws(()=>compareReleaseVersions('1.0.0-beta.1','1.0.0'),/stable/);
+  previous.get('packages/b').version='0.0.3';
+  assert.throws(()=>selectPublishCandidates(root,entries,previous),/decreased/);
+  previous.delete('packages/b');
+  entries.get('a').pkg.dependencies={sample:'0.0.2'};
+  assert.throws(()=>selectPublishCandidates(root,entries,previous,true),/PRIVATE_REQUIRED_DEPENDENCY/);
+});
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zerux-release-test-'));

@@ -1,0 +1,81 @@
+name: Publish version-bumped packages to npm
+
+on:
+  push:
+    branches: [master]
+    paths: ['packages/**/package.json']
+  workflow_dispatch:
+    inputs:
+      publish_unpublished:
+        description: 'Include all missing public package versions (initial release or retry)'
+        type: boolean
+        default: true
+      dry_run:
+        description: 'Build and pack without publishing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-production-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: package-lock.json
+          registry-url: https://registry.npmjs.org/
+      - name: Use npm with trusted publishing support
+        run: npm install --global npm@11
+      - name: Select unpublished version bumps in dependency order
+        id: plan
+        env:
+          PUBLISH_UNPUBLISHED: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_unpublished }}
+        run: node scripts/publish-packages.mjs --plan
+      - name: Check source and version contracts
+        if: steps.plan.outputs.has_releases == 'true'
+        run: npm run verify:source
+      - name: Install locked dependencies
+        if: steps.plan.outputs.has_releases == 'true'
+        run: npm ci --no-audit --no-fund
+      - name: Require zero production audit findings
+        if: steps.plan.outputs.has_releases == 'true'
+        run: npm audit --omit=dev --audit-level=low
+      - name: Require complete license evidence
+        if: steps.plan.outputs.has_releases == 'true'
+        run: npm run license:installed
+      - name: Build workspaces in parallel
+        if: steps.plan.outputs.has_releases == 'true'
+        run: npm run build:workspaces -- --concurrency auto
+      - name: Pack selected releases and record archive integrity
+        if: steps.plan.outputs.has_releases == 'true'
+        run: node scripts/publish-packages.mjs --pack
+      - name: Publish exact verified archives
+        if: steps.plan.outputs.has_releases == 'true' && inputs.dry_run != true
+        env:
+          # Optional bootstrap credential; omit after configuring npm trusted publishing.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node scripts/publish-packages.mjs --publish
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-release-${{ github.sha }}
+          path: .npm-release/
+          include-hidden-files: true
+          if-no-files-found: warn

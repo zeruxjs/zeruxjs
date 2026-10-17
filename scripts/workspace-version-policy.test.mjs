@@ -41,3 +41,13 @@ test('application references to owned packages must be exact, not wildcard', () 
     assert.ok(inspectOwnedPackageVersions(root).issues.some(item => item.issue === 'owned dependency version mismatch'));
   });
 });
+
+test('independent stable version bumps require matching internal references',()=>{
+  withFixture((root,save)=>{
+    save('packages/core/package.json',{name:'@zeruxjs/core',version:'0.0.2'});
+    assert.equal(inspectOwnedPackageVersions(root).ok,false);
+    save('apps/sample/package.json',{name:'sample',version:'1.0.0',dependencies:{'@zeruxjs/core':'0.0.2'}});
+    assert.equal(inspectOwnedPackageVersions(root).ok,true);
+    assert.equal(inspectOwnedPackageVersions(root,'0.0.1').ok,false);
+  });
+});

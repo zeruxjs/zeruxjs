@@ -22,6 +22,7 @@ This repository is a monorepo containing several interconnected packages:
 The two CMS packages and three creator packages are public `0.0.1` placeholders for future development. The creator packages currently contain placeholder CLIs; project generation is not implemented in version `0.0.1`. Use the applications under `apps/` as development examples, and read the individual package READMEs for available APIs.
 
 See [the package release review](PACKAGE_RELEASE_REVIEW.md) for publication checks, release order, and known limitations.
+See [automatic npm publishing](NPM_PUBLISHING.md) for GitHub Actions setup and version-bump releases.
 
 ## ✨ Features
 

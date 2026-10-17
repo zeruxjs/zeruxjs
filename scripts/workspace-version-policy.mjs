@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 /** Check every owned package, including packages nested outside root npm workspaces. */
-export function inspectOwnedPackageVersions(root, expectedVersion = '0.0.1') {
+export function inspectOwnedPackageVersions(root, expectedVersion = null) {
   const packageRoot = path.join(root, 'packages');
   const manifests = [];
   function visit(folder) {
@@ -25,7 +25,8 @@ export function inspectOwnedPackageVersions(root, expectedVersion = '0.0.1') {
       continue;
     }
     packages.set(pkg.name, { file: location, version: pkg.version });
-    if (pkg.version !== expectedVersion) {
+    if ((expectedVersion !== null && pkg.version !== expectedVersion) ||
+      typeof pkg.version !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(pkg.version)) {
       issues.push({ file: location, issue: 'owned package version mismatch', found: pkg.version ?? null, expected: expectedVersion });
     }
   }
@@ -37,8 +38,8 @@ export function inspectOwnedPackageVersions(root, expectedVersion = '0.0.1') {
     const location = path.relative(root, file).split(path.sep).join('/');
     for (const field of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
       for (const [name, version] of Object.entries(pkg[field] ?? {})) {
-        if (packages.has(name) && version !== expectedVersion) {
-          issues.push({ file: location, field, dependency: name, found: version, expected: expectedVersion, issue: 'owned dependency version mismatch' });
+        if (packages.has(name) && version !== packages.get(name).version) {
+          issues.push({ file: location, field, dependency: name, found: version, expected: packages.get(name).version, issue: 'owned dependency version mismatch' });
         }
       }
     }
