@@ -15,13 +15,14 @@ optional native packages are reported separately because npm legitimately omits
 them on other platforms. Legacy npm `licenses` metadata is accepted as declared.
 Missing full notices still fail the strict check.
 
+Keyv 4.5.4 uses a complete historical project MIT notice, with the original
+copyright preserved. Its binding explicitly identifies that this is historical
+project evidence rather than an exact release source match.
+
 Current unresolved upstream omissions:
 
 - `postcss-media-query-parser@0.2.3`: declares MIT, but its published artifact and
   upstream source contain no full license notice.
-- `keyv@4.5.4`: its installed artifact omits a notice; the currently inspected
-  upstream notice omits the MIT permission grant, so it is not accepted as full
-  evidence for this release.
 
 When updating dependencies, obtain the complete notice from the publisher,
 preserve its text verbatim, and update the exact version binding and digest.

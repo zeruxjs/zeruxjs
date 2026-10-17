@@ -459,6 +459,15 @@
       "sha256": "a4aa4de43bf68b49bd32fc46868437d83c00ab3fc29350f0a69e354b3e3b2547",
       "file": "notices/a4aa4de43bf68b49bd32fc46868437d83c00ab3fc29350f0a69e354b3e3b2547.txt",
       "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
+    },
+    {
+      "name": "keyv",
+      "version": "4.5.4",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/jaredwray/keyv/e02ef9b9271fe48d8e1da6561f18e055995bfb1f/LICENSE",
+      "sha256": "1f7dca26d2d328c3dbb9b6fe3b15ec3cda08ffe2288e47b73d617454b256f959",
+      "file": "notices/1f7dca26d2d328c3dbb9b6fe3b15ec3cda08ffe2288e47b73d617454b256f959.txt",
+      "binding": "Historical upstream project full MIT notice; installed 4.5.4 declares MIT. Preserve original upstream attribution verbatim; this is project evidence, not an exact release source match."
     }
   ]
 }
