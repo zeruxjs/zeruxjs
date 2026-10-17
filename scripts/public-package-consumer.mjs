@@ -12,7 +12,7 @@ import { createRequire } from 'node:module';
 import { npmCommand } from './npm-command.mjs';
 import { planPublicReleasesFromRoot } from './workspace-release-plan.mjs';
 import { discoverWorkspaces } from './workspace-graph.mjs';
-import { checkConsumerSelection, checkEntryTargets } from './workspace-public-consumer.mjs';
+import { checkConsumerSelection, checkEntryTargets, createConsumerLock } from './workspace-public-consumer.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const allowed = /^--only=[@a-z0-9./,_-]+$/;
@@ -39,7 +39,7 @@ const log = (name, bin, callArgs, cwd, timeout = 180000) => {
 try {
   fs.mkdirSync(consumer);
   fs.writeFileSync(path.join(consumer,'package.json'), JSON.stringify({ name:'zerux-public-package-consumer',private:true,type:'module' }));
-  const tarballs=[];
+  const archives=[];
   for (const name of selected) {
     const {dir,pkg}=entries.get(name);
     const missing=checkEntryTargets(dir,pkg);
@@ -49,13 +49,14 @@ try {
     if (packed.length!==1 || !packed[0].filename) throw Error(`${name}: malformed pack report`);
     const tarball=path.join(temp,packed[0].filename);
     if (!fs.statSync(tarball,{throwIfNoEntry:false})?.isFile()) throw Error(`${name}: tarball not produced`);
-    tarballs.push(tarball);
+    archives.push({ pkg, relativeDir: path.relative(root,dir).split(path.sep).join('/'), tarball, integrity: packed[0].integrity });
   }
-  const rootManifest=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   const framework=entries.get('zeruxjs');
-  const nodeTypes=rootManifest.devDependencies?.['@types/node'] ?? framework?.pkg.devDependencies?.['@types/node'];
-  if (!nodeTypes) throw Error('Missing declared @types/node consumer baseline');
-  log('isolated offline install',npm,['install','--offline','--no-audit','--no-fund','--ignore-scripts',...tarballs,`@types/node@${nodeTypes}`],consumer,300000);
+  const sourceLock=JSON.parse(fs.readFileSync(path.join(root,'package-lock.json'),'utf8'));
+  const locked=createConsumerLock(sourceLock,archives);
+  fs.writeFileSync(path.join(consumer,'package.json'),JSON.stringify(locked.manifest,null,2)+'\n');
+  fs.writeFileSync(path.join(consumer,'package-lock.json'),JSON.stringify(locked.lock,null,2)+'\n');
+  log('isolated offline install',npm,['ci','--offline','--no-audit','--no-fund','--ignore-scripts'],consumer,300000);
   // Placeholder creators are CLIs, so verify their installed executables instead of importing CLI side effects.
   const creators=selected.filter(name=>name.startsWith('create-'));
   const runtime=selected.filter(name=>!creators.includes(name));

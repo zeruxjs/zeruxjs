@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {checkConsumerSelection,checkEntryTargets} from './workspace-public-consumer.mjs';
+import {checkConsumerSelection,checkEntryTargets,createConsumerLock} from './workspace-public-consumer.mjs';
 const plan={ok:true,publicPackages:2,order:[{name:'pkg-a'},{name:'pkg-b'}]};
 test('default requires every public package; scopes are explicit',()=>{
  assert.deepEqual(checkConsumerSelection(plan),['pkg-a','pkg-b']);
@@ -27,4 +27,26 @@ test('exports, bins, declarations and all conditional targets must be built',t=>
  pkg.exports['./escape']='./dist/../../outside.js';
  assert.ok(checkEntryTargets(dir,pkg).includes('../../outside.js'));
  assert.ok(checkEntryTargets(dir,pkg).includes('./dist/../../outside.js'));
+});
+
+// Locked installs must work with a tarball-only npm cache, without range metadata.
+test('consumer lock keeps reviewed external resolutions and replaces workspace links with real archives',()=>{
+ const types={version:'25.6.0',resolved:'https://registry.npmjs.org/@types/node/-/node-25.6.0.tgz',integrity:'sha512-bm9kZQ==',dependencies:{'undici-types':'~7.19.0'}};
+ const undici={version:'7.19.2',resolved:'https://registry.npmjs.org/undici-types/-/undici-types-7.19.2.tgz',integrity:'sha512-dHlwZXM='};
+ const external={version:'1.2.3',resolved:'https://registry.npmjs.org/external/-/external-1.2.3.tgz',integrity:'sha512-ZXh0ZXJuYWw='};
+ const pkg={name:'pkg-a',version:'0.0.1',dependencies:{external:'^1.0.0'},devDependencies:{typescript:'^5.9.3'}};
+ const source={lockfileVersion:3,packages:{'':{workspaces:['packages/*']},'node_modules/pkg-a':{link:true,resolved:'packages/pkg-a'},'packages/pkg-a':pkg,'node_modules/@types/node':types,'node_modules/undici-types':undici,'packages/pkg-a/node_modules/external':{version:external.version},'packages/build-only/node_modules/external':external}};
+ const before=JSON.stringify(source);
+ const archives=[{pkg,relativeDir:'packages/pkg-a',tarball:path.resolve(os.tmpdir(),'pkg with spaces.tgz'),integrity:'sha512-YXJjaGl2ZQ=='}];
+ const {manifest,lock}=createConsumerLock(source,archives);
+ assert.equal(manifest.dependencies['@types/node'],'25.6.0');
+ assert.equal(lock.packages['node_modules/pkg-a'].resolved,manifest.dependencies['pkg-a']);
+ assert.equal(lock.packages['node_modules/pkg-a'].integrity,archives[0].integrity);
+ assert.equal(lock.packages['node_modules/pkg-a'].link,undefined);
+ assert.equal(lock.packages['node_modules/pkg-a'].devDependencies,undefined);
+ assert.deepEqual(lock.packages['node_modules/pkg-a/node_modules/external'],external);
+ assert.deepEqual(lock.packages['node_modules/@types/node'],types);
+ assert.deepEqual(lock.packages['node_modules/undici-types'],undici);
+ assert.equal(JSON.stringify(source),before);
+ assert.throws(()=>createConsumerLock({lockfileVersion:3,packages:{}},archives),/committed resolution|baseline/);
 });
