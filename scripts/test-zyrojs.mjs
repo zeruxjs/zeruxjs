@@ -5,26 +5,27 @@ import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readdirSync } from 'node
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { npmCommand } from './npm-command.mjs';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const project = join(root, 'packages/zyrojs');
-const tsc = process.platform === 'win32' ? 'tsc.cmd' : 'tsc';
-const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npm = 'npm';
 function run(bin, args, cwd = root, capture = false) {
-  const result = spawnSync(bin, args, { cwd, encoding: 'utf8', stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit' });
+  const invocation=bin===npm?npmCommand(args):{command:bin,args};
+  const result = spawnSync(invocation.command, invocation.args, { cwd, encoding: 'utf8', stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit' });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`${bin} ${args.join(' ')} exited ${result.status}`);
   return result.stdout ?? '';
 }
-run(tsc, ['-p', 'packages/zyrojs/tsconfig.json', '--pretty', 'false']);
+run(process.execPath,['scripts/build-workspaces.mjs','--scope','zyrojs','--scope','@zeruxjs/zyro','--verify']);
 run(process.execPath, ['--test', ...readdirSync(join(project, 'test')).filter(name => name.endsWith('.test.mjs')).map(name => `packages/zyrojs/test/${name}`)]);
-run(tsc, ['-p', 'packages/@zeruxjs/zyro/tsconfig.json', '--pretty', 'false']);
 run(process.execPath, ['--test',
   'packages/@zeruxjs/zyro/test/advanced.test.mjs',
   'packages/@zeruxjs/zyro/test/integration.test.mjs',
   'packages/@zeruxjs/zyro/test/section78-scope.test.mjs']);
 const temp = mkdtempSync(join(tmpdir(), 'zyrojs-release-'));
 try {
-  const pack = JSON.parse(run(npm, ['pack', '--ignore-scripts', '--json', '--pack-destination', temp], project, true));
+  const report = JSON.parse(run(npm, ['pack', '--ignore-scripts', '--json', '--pack-destination', temp], project, true));
+  const pack=Array.isArray(report)?report:Object.values(report);
   if (!Array.isArray(pack) || pack.length !== 1 || !pack[0].filename) throw new Error('Invalid npm pack manifest');
   const paths = new Set(pack[0].files.map(file => file.path));
   for (const name of ['dist/index.js', 'dist/index.d.ts', 'dist/dom/index.js', 'dist/dom/index.d.ts', 'dist/network/index.js', 'dist/network/index.d.ts']) {

@@ -151,7 +151,7 @@ jobs:
       - name: Clean installation from recovered lockfile
         run: npm ci --no-audit --no-fund
       - run: npm run verify:source
-      - run: npm run build:workspaces
+      - run: npm run build:workspaces -- --concurrency auto
       - run: npm run release:public:consumer
       - name: Record provisional qualification status
         if: always()

@@ -1,5 +1,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { availableParallelism, totalmem } from 'node:os';
+
+/**
+ * Title: Choose automatic build concurrency.
+ * Description: Uses available CPU parallelism and the effective memory limit, reserving one quarter of RAM and budgeting 512 MiB per compiler; supports up to 32 builds.
+ * Global Variables: Reads OS CPU/RAM information and process.constrainedMemory() only.
+ * @param options Optional machine capacity values for deterministic verification.
+ * @returns Maximum independent compiler processes for this runner.
+ */
+export function getDefaultBuildConcurrency({ parallelism = availableParallelism(), memoryBytes = totalmem(), memoryLimitBytes = process.constrainedMemory?.() ?? 0 } = {}) {
+  const memory = memoryLimitBytes > 0 ? Math.min(memoryBytes, memoryLimitBytes) : memoryBytes;
+  const memorySlots = Math.max(1, Math.floor(memory * 0.75 / (512 * 1024 * 1024)));
+  return Math.max(1, Math.min(32, parallelism, memorySlots));
+}
+
+/** Shared automatic limit for local, test and CI builds. */
+export const DEFAULT_BUILD_CONCURRENCY = getDefaultBuildConcurrency();
 
 /**
  * Title: Discover npm workspaces.
@@ -80,7 +97,7 @@ export function planWorkspaces(entries, { scopes = [], includeDependents = false
   return { ordered, dependencies: new Map(ordered.map(name => [name, dependencies.get(name).filter(dep => ordered.includes(dep))])) };
 }
 
-export async function executeWorkspacePlan(plan, { concurrency = 2, run, onEvent = () => {} } = {}) {
+export async function executeWorkspacePlan(plan, { concurrency = DEFAULT_BUILD_CONCURRENCY, run, onEvent = () => {} } = {}) {
   if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 32) throw new RangeError('Concurrency must be between 1 and 32');
   if (typeof run !== 'function') throw new TypeError('A build executor is required');
   const pending = new Set(plan.ordered), finished = new Set(), running = new Map(), results = [];

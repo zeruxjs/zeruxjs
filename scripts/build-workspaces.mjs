@@ -6,6 +6,7 @@ import { parseBuildOptions, runWorkspaceBuild } from './workspace-build.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 try {
   const options = parseBuildOptions(process.argv.slice(2));
+  if (!options.json && !options.dryRun) console.log(`[workspaces] concurrency: ${options.concurrency}`);
   const result = await runWorkspaceBuild(root, options, {
     onEvent: event => { if (!options.json) console.log(`[workspaces] ${event.type}: ${event.name}`); }
   });

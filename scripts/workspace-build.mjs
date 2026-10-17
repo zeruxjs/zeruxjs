@@ -1,15 +1,16 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { discoverWorkspaces, planWorkspaces, executeWorkspacePlan } from './workspace-graph.mjs';
+import { discoverWorkspaces, planWorkspaces, executeWorkspacePlan, DEFAULT_BUILD_CONCURRENCY } from './workspace-graph.mjs';
 import { npmCommand } from './npm-command.mjs';
 
 export function parseBuildOptions(args) {
-  const options = { scopes: [], dryRun: false, verify: false, includeDependents: false, concurrency: 2, timeoutMs: 300_000, json: false };
+  const options = { scopes: [], dryRun: false, verify: false, includeDependents: false, concurrency: DEFAULT_BUILD_CONCURRENCY, timeoutMs: 300_000, json: false };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--scope') { if (!args[i + 1]) throw new Error('Missing --scope value'); options.scopes.push(args[++i]); }
     else if (arg === '--concurrency') {
+      if (args[i + 1] === 'auto') { options.concurrency = DEFAULT_BUILD_CONCURRENCY; i++; continue; }
       if (!/^[0-9]+$/.test(args[i + 1] ?? '')) throw new Error('Invalid --concurrency value');
       options.concurrency = Number(args[++i]);
     } else if (arg === '--timeout-ms') {

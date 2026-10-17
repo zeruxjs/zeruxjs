@@ -70,3 +70,9 @@ more info on all at [Third-Party Dependencies](./assets/json/third-party.json)
 ## Package release readiness (CI)
 
 GitHub Actions source checks, clean cross-platform builds, npm tarball consumers, lockfile recovery and the real-service acceptance lab are documented in [GITHUB_ACTIONS_RELEASE_SETUP.md](GITHUB_ACTIONS_RELEASE_SETUP.md). The package candidates are **not yet certified for stable public npm release**; checks fail closed until registry, provider, browser and semver evidence passes. Existing application workspaces are preserved but outside the package-only gate.
+
+## Parallel package builds
+
+Workspace builds automatically run independent packages in parallel based on the runner's available CPUs and effective RAM limit, completing dependencies before their consumers. An 8-core runner can use eight parallel builds; larger runners can use more, up to 32. The memory budget reserves one quarter of RAM and allows 512 MiB per compiler. GitHub Actions and the scoped test/build runners share this default. Developer and ZyroJS test runners build their selected packages in one plan, avoiding repeated dependency builds; frontend test compilation also uses the shared limit. Tests wait for their required builds to finish.
+
+GitHub Actions explicitly uses `--concurrency auto`. Set a specific count with `npm run build:workspaces -- --concurrency 8`; automatic sizing is the default everywhere. Individual package builds remain unchanged.

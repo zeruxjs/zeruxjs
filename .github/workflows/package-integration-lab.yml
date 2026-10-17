@@ -27,7 +27,7 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: npm run deps:check
       - run: npm ci --no-audit --no-fund
-      - run: npm run build:workspaces
+      - run: npm run build:workspaces -- --concurrency auto
       - name: Offline acceptance (must have test passes)
         run: node scripts/integration-lab.mjs --offline --require=source,sqlite,auth,pipeline,content --report=integration-lab/reports/offline.json
       - name: Start isolated services (never production)

@@ -36,7 +36,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run security:online
       - run: npm run license:installed
-      - run: npm run build:workspaces
+      - run: npm run build:workspaces -- --concurrency auto
       - run: npm run release:public:consumer
       - run: npm run release:foundation:consumer
       - run: npm run release:pack
@@ -58,7 +58,7 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci --no-audit --no-fund
-      - run: npm run build:workspaces
+      - run: npm run build:workspaces -- --concurrency auto
       - name: Run actual full lab; every named suite required
         env:
           RUN_BROWSER_TESTS: '1'

@@ -23,7 +23,7 @@
     "Web-Vitals, PWA, CDN, Optimize Dilevery, Server side Cache (Redis/Memcache) and more."
   ],
   "optionalDependencies": {
-    "lighthouse": "^13.1.0",
+    "lighthouse": "^13.5.0",
     "web-vitals": "^5.2.0"
   },
   "files": [

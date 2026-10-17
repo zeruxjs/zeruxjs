@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { discoverWorkspaces, planWorkspaces, executeWorkspacePlan } from './workspace-graph.mjs';
+import { discoverWorkspaces, planWorkspaces, executeWorkspacePlan, DEFAULT_BUILD_CONCURRENCY, getDefaultBuildConcurrency } from './workspace-graph.mjs';
 import { parseBuildOptions, runWorkspaceBuild, verifyWorkspaceArtifacts, runNpmWorkspaceBuild } from './workspace-build.mjs';
 
 function fixture(defs) {
@@ -37,19 +37,25 @@ test('cycles and unknown scopes produce actionable errors', () => {
 });
 
 test('parallel scheduler never builds a dependent before dependencies finish', async () => {
-  const f = fixture({ base: [], ui: ['base'], app: ['ui'], other: [] });
+  const f = fixture({ base: [], ui: ['base'], app: ['ui'], other: [], free1: [], free2: [], free3: [], free4: [] });
   try {
     const done = new Set(), started = [];
+    let active=0,peak=0;
     await executeWorkspacePlan(planWorkspaces(f.entries), {
-      concurrency: 3,
       run: async name => {
+        active++;peak=Math.max(peak,active);
         if (name === 'app') assert.ok(done.has('ui'));
         if (name === 'ui') assert.ok(done.has('base'));
         started.push(name);
-        await new Promise(resolve => setTimeout(resolve, 2)); done.add(name);
+        await new Promise(resolve => setTimeout(resolve, 10)); done.add(name);active--;
       }
     });
-    assert.equal(started.length, 4);
+    assert.equal(started.length, 8);
+    assert.equal(peak,Math.min(DEFAULT_BUILD_CONCURRENCY,6));
+    assert.equal(parseBuildOptions([]).concurrency,DEFAULT_BUILD_CONCURRENCY);
+    assert.equal(parseBuildOptions(['--concurrency','auto']).concurrency,DEFAULT_BUILD_CONCURRENCY);
+    assert.equal(getDefaultBuildConcurrency({parallelism:16,memoryBytes:32*1024**3,memoryLimitBytes:0}),16);
+    assert.equal(getDefaultBuildConcurrency({parallelism:64,memoryBytes:64*1024**3,memoryLimitBytes:4*1024**3}),6);
   } finally { f.close(); }
 });
 
