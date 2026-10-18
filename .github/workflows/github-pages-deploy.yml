@@ -3,22 +3,8 @@ name: Build and deploy ecosystem sites
 on:
   push:
     branches: [master, "version/*"]
-    paths:
-      - "pages/**"
-      - "apps/**"
-      - "packages/**"
-      - "package.json"
-      - "package-lock.json"
-      - "sites.config.mjs"
-      - "scripts/build-sites.mjs"
-      - "scripts/publish-sites.mjs"
-      - "scripts/site-preview.mjs"
-      - "scripts/workspace-graph.mjs"
-      - "scripts/static-site-assets.mjs"
-      - "scripts/site-theme.mjs"
-      - "scripts/site-design.mjs"
-      - "scripts/minify-site-html.mjs"
-      - ".github/workflows/github-pages-deploy.yml"
+    # Build every push, including version branches created from an existing commit.
+    # A paths filter can suppress these pushes even when the branch pattern matches.
   workflow_dispatch:
 
 permissions:

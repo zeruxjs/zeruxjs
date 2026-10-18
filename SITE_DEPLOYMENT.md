@@ -40,7 +40,7 @@ The combined build is written to `.site-build/` at the repository root. Each app
 
 ## GitHub Actions
 
-`.github/workflows/github-pages-deploy.yml` runs for relevant changes pushed to `master` and supports manual runs from that branch:
+`.github/workflows/github-pages-deploy.yml` runs for every push to `master` or `version/*` and supports manual runs from those branches:
 
 1. Install locked dependencies with package lifecycle scripts disabled. Build Zuixs and the TypeScript, performance and search workspace tooling in parallel. The exporter does not build the full framework runtime or native database adapters.
 2. Build all apps declared in `sites.config.mjs` concurrently, with live START/READY logs.
@@ -97,3 +97,5 @@ The same workflow also builds pushes to `version/*` branches. For example, `vers
 `SITE_SOURCE_BRANCH` is set from the checked-out branch name by Actions. The combined builder relocates the verified output, rebases local HTML/asset/browser/search/Markdown URLs, recomputes Markdown integrity hashes and adds `noindex,nofollow` metadata. Only safe single-segment branch suffixes (letters, numbers, dots, underscores and hyphens) are accepted; no arbitrary filesystem paths. The publisher replaces only that preview's folder. Production pushes replace only the configured root/site paths, preserving `/branch/`.
 
 All site deployments share a concurrency group, preventing normal pushes from racing over the output branch. Every artifact contains the complete `master-site` tree. Configure the `github-pages` environment's deployment branch policy to permit `version/*` as well as `master` if it currently restricts deployments to selected branches; this repository workflow cannot change account environment settings. Preview cleanup after branch deletion is manual so deleting source branches does not silently delete public snapshots.
+
+The site workflow intentionally has no `push.paths` filter: branch-name matching alone starts the build, including version-branch pushes from existing commits and changes outside site source directories.
