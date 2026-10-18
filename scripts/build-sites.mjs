@@ -1,3 +1,4 @@
+import { previewMount, mountPreview } from "./site-preview.mjs";
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -94,7 +95,7 @@ export async function copyStatic(source, destination) {
 /** Validate all local routes/assets/anchors across the shared tree.
  * @param {string} directory Combined site root. @returns {Promise<object>} Counts. Reads static output only.
  */
-export async function verifySites(directory) {
+export async function verifySites(directory, { mount = "" } = {}) {
   const files = new Map();
   async function walk(base) {
     for (const entry of await fs.readdir(base, { withFileTypes: true })) {
@@ -122,7 +123,7 @@ export async function verifySites(directory) {
   for (const [name, content] of files) {
     if (
       !name.endsWith("/build-manifest.json") &&
-      name !== "/site-manifest.json"
+      !name.endsWith("/site-manifest.json")
     )
       continue;
     const manifest = JSON.parse(content);
@@ -139,9 +140,10 @@ export async function verifySites(directory) {
       markdown++;
     }
   }
-  if (!files.has("/index.html")) throw new Error("Shared homepage is missing");
+  if (!files.has(mount + "/index.html"))
+    throw new Error("Shared homepage is missing");
   for (const app of sites.apps)
-    if (!files.has(app.mount + "/index.html"))
+    if (!files.has(mount + app.mount + "/index.html"))
       throw new Error(`Missing site index: ${app.mount}`);
   const ids = new Map(
     [...files]
@@ -331,7 +333,9 @@ export async function buildSites({ production = true } = {}) {
       zuix,
       production,
     });
-    const checks = await verifySites(staging);
+    const mount = previewMount();
+    await mountPreview(staging, mount);
+    const checks = await verifySites(staging, { mount });
     const existing = await fs.lstat(output).catch((error) => {
       if (error.code !== "ENOENT") throw error;
       return null;

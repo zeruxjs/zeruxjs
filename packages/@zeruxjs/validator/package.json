@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/validator",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Type-safe schema and HTTP input validation for ZeruxJS",
   "author": "",
   "type": "module",

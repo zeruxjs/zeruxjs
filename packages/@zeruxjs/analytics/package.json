@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/analytics",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "description": "Database-backed application and email event analytics with Fetch endpoints",
   "license": "(MIT OR Apache-2.0)",
@@ -30,7 +30,7 @@
     "prepack": "npm run build"
   },
   "peerDependencies": {
-    "@zeruxjs/db": "0.0.2"
+    "@zeruxjs/db": "0.0.3"
   },
   "peerDependenciesMeta": {
     "@zeruxjs/db": {

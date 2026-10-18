@@ -5,8 +5,8 @@
   "author": "Shubham Kumar Bansal",
   "type": "module",
   "dependencies": {
-    "@zeruxjs/typescript": "0.0.2",
-    "zeruxjs": "0.0.2"
+    "@zeruxjs/typescript": "0.0.3",
+    "zeruxjs": "0.0.3"
   },
   "private": true,
   "scripts": {
@@ -33,8 +33,8 @@
   ],
   "devDependencies": {
     "marked": "^18.1.1",
-    "zuixs": "0.0.2",
-    "@zeruxjs/performance": "0.0.2",
-    "@zeruxjs/search": "0.0.2"
+    "zuixs": "0.0.3",
+    "@zeruxjs/performance": "0.0.3",
+    "@zeruxjs/search": "0.0.3"
   }
 }

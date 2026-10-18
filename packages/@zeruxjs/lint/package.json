@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/lint",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Composable ESLint, Stylelint CSS/SCSS and Prettier runners for ZeruxJS",
   "type": "module",
   "main": "./dist/index.js",
@@ -36,7 +36,7 @@
     "stylelint-config-standard-scss": "17.0.0",
     "stylelint-scss": "7.3.0",
     "typescript-eslint": "^8.57.0",
-    "zlook": "0.0.2"
+    "zlook": "0.0.3"
   },
   "license": "(MIT OR Apache-2.0)",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",

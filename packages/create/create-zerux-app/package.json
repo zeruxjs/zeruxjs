@@ -1,6 +1,6 @@
 {
   "name": "create-zerux-js",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Placeholder CLI for the future ZeruxJS project generator",
   "bin": {
     "create-zerux": "./dist/index.js"

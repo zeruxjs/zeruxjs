@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/hooks",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Request-scoped React-style hooks, context, and safe ZeruxJS path registry",
   "type": "module",
   "main": "./dist/index.js",

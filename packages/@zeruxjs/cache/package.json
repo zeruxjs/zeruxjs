@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/cache",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "cache on browser application",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

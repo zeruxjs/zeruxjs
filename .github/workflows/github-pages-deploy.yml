@@ -2,22 +2,23 @@ name: Build and deploy ecosystem sites
 
 on:
   push:
-    branches: [master]
+    branches: [master, "version/*"]
     paths:
-      - 'pages/**'
-      - 'apps/**'
-      - 'packages/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'sites.config.mjs'
-      - 'scripts/build-sites.mjs'
-      - 'scripts/publish-sites.mjs'
-      - 'scripts/workspace-graph.mjs'
-      - 'scripts/static-site-assets.mjs'
-      - 'scripts/site-theme.mjs'
-      - 'scripts/site-design.mjs'
-      - 'scripts/minify-site-html.mjs'
-      - '.github/workflows/github-pages-deploy.yml'
+      - "pages/**"
+      - "apps/**"
+      - "packages/**"
+      - "package.json"
+      - "package-lock.json"
+      - "sites.config.mjs"
+      - "scripts/build-sites.mjs"
+      - "scripts/publish-sites.mjs"
+      - "scripts/site-preview.mjs"
+      - "scripts/workspace-graph.mjs"
+      - "scripts/static-site-assets.mjs"
+      - "scripts/site-theme.mjs"
+      - "scripts/site-design.mjs"
+      - "scripts/minify-site-html.mjs"
+      - ".github/workflows/github-pages-deploy.yml"
   workflow_dispatch:
 
 permissions:
@@ -29,9 +30,11 @@ concurrency:
 
 jobs:
   build-and-publish:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/version/')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      SITE_SOURCE_BRANCH: ${{ github.ref_name }}
     permissions:
       contents: write
     steps:
@@ -44,7 +47,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: "24"
           cache: npm
           cache-dependency-path: package-lock.json
       - name: Install locked build dependencies without package lifecycle scripts
@@ -70,7 +73,8 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import { verifySites, output } from './scripts/build-sites.mjs';
-          const result = await verifySites(output);
+          const { previewMount } = await import('./scripts/site-preview.mjs');
+          const result = await verifySites(output, { mount: previewMount() });
           if (!result.markdown) throw new Error('Raw Markdown exports missing');
           console.log(`[sites] ${result.markdown} unchanged Markdown exports verified; deployment uploads prebuilt static files without Jekyll.`);
           NODE

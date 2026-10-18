@@ -1,6 +1,6 @@
 {
   "name": "ztrial",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Modular testing framework and assertion toolkit for ZeruxJS, ZyroJS and JavaScript",
   "type": "module",
   "main": "./dist/index.js",

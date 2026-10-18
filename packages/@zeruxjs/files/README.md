@@ -66,3 +66,8 @@ Fetch uploads validate a declared `Content-Length` **inside the stream** and rej
 ## Release 0.0.2
 
 Prepared to validate npm trusted publishing through GitHub Actions.
+
+
+## Release 0.0.3
+
+Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

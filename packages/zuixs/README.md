@@ -156,3 +156,63 @@ export default {
 Use literal utility classes in templates as the default workflow. The ecosystem homepage and generated package cards demonstrate this approach: global configuration retains only palette/reset/selection rules, with component styles in `class` attributes. Recipes are an optional Zuixs composition API, not Tailwind syntax or a requirement for ordinary markup. The docs renderer currently also uses recipes for generated Markdown and existing document components.
 
 `media-[max-width:_550px]:p-4` supports bounded arbitrary media conditions. Complete conditions such as `media-[(hover:_hover)_and_(prefers-reduced-motion:_no-preference)]:hover:shadow-lg` keep their logical grouping. Simple max-width variants sort from wider to narrower and min-width variants from narrower to wider so responsive utility precedence remains predictable.
+
+## CSS import workflow (no Zuixs configuration file)
+
+Create `src/styles.css`:
+
+```css
+@import "zuixs";
+
+:root { --brand: #5546d9; --space: 1.5rem; }
+[data-theme="dark"] { --brand: #b6aaff; }
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Optional composition for generated Markdown or reusable elements. */
+.article h2 { @apply text-2xl font-bold mt-8; }
+@media (prefers-reduced-motion: no-preference) {
+  .entrance { animation: reveal 200ms ease-out; }
+}
+@supports (display: grid) { .layout { @apply grid gap-4; } }
+```
+
+Write literal utility classes directly in HTML, JSX/TSX, Vue, Svelte or other scanned templates:
+
+```html
+<main class="grid gap-4 md:grid-cols-2 p-6 bg-[var(--brand)]">
+  <article class="entrance rounded-lg p-4">Content</article>
+</main>
+```
+
+From your application directory:
+
+```sh
+npx zuix build -i src/styles.css -o public/zuix.css
+npx zuix watch -i src/styles.css -o public/zuix.css
+```
+
+Link **the generated output**, not the input CSS. The browser cannot compile utilities itself. Default scanning discovers supported source files under the project directory, excluding build/dependency directories. Watch mode observes both class changes and entry CSS changes; unchanged output is not rewritten. Input and output must be different files inside the project, without symlink paths. `-c` remains optional for recipes, custom theme scales, scanning constraints, plugins or safelists.
+
+With Vite, install `zuixVite()` in the existing Vite configuration and import `./styles.css` from your application entry instead of `virtual:zuix.css`. The plugin processes the Zuixs import before Vite's CSS pipeline. Configure only one generated stylesheet entry to avoid repeating resets/utilities. CLI generation is also suitable for other bundlers without a dedicated adapter.
+
+```ts
+import { compileStylesheet, extractClasses } from 'zuixs';
+import { buildZuixStylesheet } from 'zuixs/node';
+
+const result = compileStylesheet('@import "zuixs";', extractClasses(html));
+// Build-time Node integration: scans templates and writes the output.
+buildZuixStylesheet(process.cwd(), 'src/styles.css', { output: 'public/zuix.css' });
+```
+
+The import expands in place; authored rules after it can override generated utilities through the normal cascade. Native `:root`, custom properties, `@property`, `@keyframes`, `@media`, `@supports`, `@container`, `@layer`, nesting and animation declarations remain intact, including browser-supported future CSS. Native CSS is trusted application source and is not sanitized like arbitrary utility values. `@apply` accepts existing **base** utilities (including important/arbitrary utilities); use CSS selectors and conditions around it for states and responsive composition. Unsupported applications fail explicitly. Keep ordinary CSS imports before the Zuixs import; resolving their files and vendor prefixing belongs to the consuming bundler. CLI compilation does not inline external stylesheets.
+
+This is Zuixs syntax, not full Tailwind compatibility: Tailwind-specific directives such as `@theme`, `@utility`, `@source` and custom variants are not implemented. Variables work through native CSS and arbitrary values; custom utility/theme extensions still use the optional plugin/config API. Recipes remain supported, including the docs application's generated Markdown styling. No claim of complete Tailwind feature parity is made.
+
+
+## Release 0.0.3
+
+Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

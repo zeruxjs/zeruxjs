@@ -6,11 +6,11 @@
   "type": "module",
   "main": "index.js",
   "dependencies": {
-    "@zeruxjs/db": "0.0.2",
-    "zeruxjs": "0.0.2",
+    "@zeruxjs/db": "0.0.3",
+    "zeruxjs": "0.0.3",
     "sample-module": "0.0.1",
     "sample-os": "0.0.1",
-    "@zeruxjs/typescript": "0.0.2"
+    "@zeruxjs/typescript": "0.0.3"
   },
   "private": true,
   "scripts": {

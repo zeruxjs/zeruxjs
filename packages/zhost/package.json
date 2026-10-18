@@ -1,6 +1,6 @@
 {
   "name": "zhost",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Server Creator and Handle Auto load and so via @zerux/watcher",
   "type": "module",
   "main": "./dist/index.js",
@@ -26,8 +26,8 @@
   "dependencies": {
     "chalk": "^4.1.2",
     "ws": "^8.22.0",
-    "zforge": "0.0.2",
-    "zlook": "0.0.2"
+    "zforge": "0.0.3",
+    "zlook": "0.0.3"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

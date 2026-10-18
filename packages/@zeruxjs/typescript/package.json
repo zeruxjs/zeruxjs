@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/typescript",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "TypeScript transpilation, typechecking, loaders and fast builds for ZeruxJS",
   "author": "",
   "type": "module",

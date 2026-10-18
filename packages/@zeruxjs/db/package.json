@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/db",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A powerful library that can connect with database with similar JSON structured query.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

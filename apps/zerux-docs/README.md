@@ -34,7 +34,7 @@ This is build-time server rendering/static generation. It is intentionally an ap
 src/
   site.config.mjs             Reads zerux.config.js and provides URL helpers
   docs/
-    0.0.2/
+    0.0.3/
       introduction.md         One Markdown document per topic
       tutorial.md
       package-cache.md
@@ -97,10 +97,10 @@ The live version reads local public manifests and READMEs. The framework version
 Before bumping live package versions:
 
 ```sh
-npm run snapshot -- 0.0.2
+npm run snapshot -- 0.0.3
 ```
 
-This creates a new `src/docs/0.0.2/reference.snapshot.json` without overwriting an existing snapshot. Commit it, set that version's `reference` to `snapshot`, and pin its `ref` to the release Git tag/commit in `zerux.config.js` under `documentation`. Then add the new version configuration/content folder and update `documentation.latest`. Frozen references are not read from newer workspace manifests. Version switching preserves the current slug when available, falling back to introduction.
+This creates a new `src/docs/0.0.3/reference.snapshot.json` without overwriting an existing snapshot. Commit it, set that version's `reference` to `snapshot`, and pin its `ref` to the release Git tag/commit in `zerux.config.js` under `documentation`. Then add the new version configuration/content folder and update `documentation.latest`. Frozen references are not read from newer workspace manifests. Version switching preserves the current slug when available, falling back to introduction.
 
 Archive sources should use immutable Git refs. Edit links still target the docs source on master so corrections can be contributed.
 
@@ -155,3 +155,6 @@ The Configuration navigation group contains a handbook, complete local/productio
 Every public package now has an authored setup/status page. Preserve established `reference-*` slugs when replacing generated reference content so published URLs remain valid. Package sections cover installation, actual integration path, TypeScript, operations/lifecycle and relevant public option types. Source-backed field tables describe declared values; optional is not a default and a root index signature is not feature activation. Update both prose and option contracts when source APIs change, and freeze release references before a version bump.
 
 Portal learning paths are defined once in `src/lib/learning-paths.mjs` and shared by the HTML and raw Markdown portal, avoiding mismatched navigation as the handbook grows. Validate self-contained examples with the installed public declarations; report real integration/browser checks separately from typechecks.
+
+
+Documentation retention: keep major/minor documentation lines, with only the latest patch for each retained line. The current 0.0 line is documented at 0.0.3; 0.0.2 is removed rather than duplicated.

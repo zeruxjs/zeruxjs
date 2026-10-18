@@ -1,6 +1,6 @@
 {
   "name": "zforge",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Dev tools present here like mapping function and classes and all internal services",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -26,7 +26,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@zeruxjs/security": "0.0.2"
+    "@zeruxjs/security": "0.0.3"
   },
   "keywords": [
     "Dev tools present here like mapping function and classes and all internal services"

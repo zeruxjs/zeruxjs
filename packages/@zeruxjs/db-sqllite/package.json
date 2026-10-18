@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/db-sqlite",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Helper for @zerux/db for SQL-Lite Database.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -20,8 +20,8 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@zeruxjs/db": "0.0.2",
-    "@zeruxjs/db-sql-core": "0.0.2"
+    "@zeruxjs/db": "0.0.3",
+    "@zeruxjs/db-sql-core": "0.0.3"
   },
   "keywords": [
     "Helper for @zerux/db for SQL-Lite Database."

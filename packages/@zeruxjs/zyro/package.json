@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/zyro",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Observable state, selectors, external-store bridges and asynchronous observation.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

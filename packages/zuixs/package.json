@@ -1,6 +1,6 @@
 {
   "name": "zuixs",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Zero-dependency utility-first CSS compiler for ZeruxJS, ZyroJS, React, Vue, Next and Nuxt",
   "type": "module",
   "main": "./dist/index.js",

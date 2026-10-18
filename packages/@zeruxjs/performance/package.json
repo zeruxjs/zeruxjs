@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/performance",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Performance metrics, resource hints, cache directives and timing utilities.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -52,6 +52,36 @@
       "require": "./dist/navigation.js",
       "default": "./dist/navigation.js"
     },
-    "./*": "./*"
+    "./dist/cache.js": "./dist/cache.js",
+    "./dist/cache.js.map": "./dist/cache.js.map",
+    "./dist/cache.d.ts": "./dist/cache.d.ts",
+    "./dist/hints.js": "./dist/hints.js",
+    "./dist/hints.js.map": "./dist/hints.js.map",
+    "./dist/hints.d.ts": "./dist/hints.d.ts",
+    "./dist/index.js": "./dist/index.js",
+    "./dist/index.js.map": "./dist/index.js.map",
+    "./dist/index.d.ts": "./dist/index.d.ts",
+    "./dist/navigation.js": "./dist/navigation.js",
+    "./dist/navigation.js.map": "./dist/navigation.js.map",
+    "./dist/navigation.d.ts": "./dist/navigation.d.ts",
+    "./dist/rum.js": "./dist/rum.js",
+    "./dist/rum.js.map": "./dist/rum.js.map",
+    "./dist/rum.d.ts": "./dist/rum.d.ts",
+    "./dist/timing.js": "./dist/timing.js",
+    "./dist/timing.js.map": "./dist/timing.js.map",
+    "./dist/timing.d.ts": "./dist/timing.d.ts",
+    "./dist/types.js": "./dist/types.js",
+    "./dist/types.js.map": "./dist/types.js.map",
+    "./dist/types.d.ts": "./dist/types.d.ts",
+    "./dist/utils/lighthouse.js": "./dist/utils/lighthouse.js",
+    "./dist/utils/lighthouse.js.map": "./dist/utils/lighthouse.js.map",
+    "./dist/utils/lighthouse.d.ts": "./dist/utils/lighthouse.d.ts",
+    "./dist/utils/webVitals.js": "./dist/utils/webVitals.js",
+    "./dist/utils/webVitals.js.map": "./dist/utils/webVitals.js.map",
+    "./dist/utils/webVitals.d.ts": "./dist/utils/webVitals.d.ts",
+    "./package.json": "./package.json",
+    "./README.md": "./README.md",
+    "./LICENSE-MIT": "./LICENSE-MIT",
+    "./LICENSE-APACHE": "./LICENSE-APACHE"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "zlook",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "File Change Watcher, Optize for multiple watcher together by sharing events",
   "author": "",
   "type": "module",

@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/ai-model",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Document retrieval, bounded evidence excerpts and grounded prompt adapter; does not train model weights.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

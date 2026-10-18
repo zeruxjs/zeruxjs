@@ -11,3 +11,8 @@ Shared parameterized SQL compiler and connector executor for PostgreSQL, MySQL a
 ## Release 0.0.2
 
 Prepared to validate npm trusted publishing through GitHub Actions.
+
+
+## Release 0.0.3
+
+Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
