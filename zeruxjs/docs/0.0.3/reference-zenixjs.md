@@ -1,0 +1,82 @@
+# zenixjs
+
+Current placeholder contract, installation and honest upgrade expectations.
+
+
+## Current release contract
+
+`zenixjs@0.0.3` is a public placeholder. The package exports version/status metadata; it does not provide a working CMS or admin application. The purpose of this guide is to distinguish the published contract from future plans, not to invent setup steps that the release cannot perform.
+
+## Install or inspect
+
+```ts
+import { version, status } from 'zenixjs';
+console.log(version, status);
+```
+
+Read the returned metadata to identify the installed release. There are no database migrations, authentication screens, routing integrations or CMS service options to enable in this placeholder.
+
+## TypeScript and configuration
+
+The installed declarations describe only the metadata export surface. A type assertion cannot create a future CMS API. Keep application configuration typed against the real Zerux runtime if building an application manually.
+
+There is no automatic `zenixjs` key in `zerux.config.js` that activates an unfinished feature. Use the [manual installation guide](/zeruxjs/docs/0.0.3/installation.md) for a working Zerux application and the package guides for implemented storage/cache/queue functionality. Do not copy future-roadmap examples into production and assume package installation supplies their dependencies.
+
+## Upgrading and troubleshooting
+
+Pin the version you actually inspected. When a future release implements functionality, review its changelog, public exports, migration/data policy and configuration contract before adopting it. Existing placeholder imports are not evidence of backward-compatible CMS implementation.
+
+If a command prints help but produces no files, that is the documented placeholder behavior. If an expected factory cannot be imported, inspect the installed version and exports instead of importing internal files. A registry name reservation and a successful tarball install do not certify a working application.
+
+
+## Public entry points
+
+Manifest reference for `zenixjs@0.0.3`.
+
+```json
+{
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "engines": {},
+  "dependencies": {},
+  "peerDependencies": {},
+  "bin": {}
+}
+```
+
+
+## Package README
+
+# zenixjs
+
+Public `0.0.2` placeholder release to establish the package name for future development.
+
+Version `0.0.2` is a placeholder for the future Zenix CMS. This package exports only `version` and `status` metadata (`"placeholder"`). It does not include a CMS, admin dashboard, authentication, or a project generator.
+
+## Development
+
+Run `npm run build` from this package directory.
+
+## License
+
+MIT OR Apache-2.0.
+
+## Future project generator
+
+[`create-zenix-js`](https://github.com/zeruxjs/zeruxjs/blob/master/packages/create/create-zenix-app/README.md) is reserved for this package's future project generator. Version `0.0.2` provides placeholder help/version output only; project scaffolding is planned for a future release.
+
+## Release 0.0.2
+
+Prepared to validate npm trusted publishing through GitHub Actions.
+
+
+## Release 0.0.3
+
+Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
+
+
+## Implementation sources
+
+- [packages/zenixjs/README.md](https://github.com/zeruxjs/zeruxjs/blob/master/packages/zenixjs/README.md)
+- [packages/zenixjs/package.json](https://github.com/zeruxjs/zeruxjs/blob/master/packages/zenixjs/package.json)

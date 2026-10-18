@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "markdownFiles": {
-    "/index.md": "e627674f123e6b6a79c7c973eb09781129219783e002f20d2b8ada86558fb530",
+    "/index.md": "d80b728d6551081fb0c149caf959d273a0857595c56b69f350820fa0a0aca8d3",
     "/404.md": "e52120334649b1d5fabee2df404bc6ba0cd95842e6a87990913b60a773fef211",
-    "/zeruxjs.md": "bb277a426c4464626ec771caad8a08c50a952b47b848cc8652730bb030cb9e86"
+    "/zeruxjs.md": "443827b718f3ea40b234c4203b58dac82165385c91b5d9537216eac1be593c2e"
   },
   "outputBranch": "master-site",
   "rootOwned": [
