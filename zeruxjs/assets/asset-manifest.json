@@ -3,19 +3,19 @@
   "compiler": "zuixs",
   "bundler": "@zeruxjs/typescript",
   "utilities": 15,
-  "recipes": 206,
+  "recipes": 232,
   "assets": [
     {
       "url": "/zeruxjs/assets/docs.css",
-      "version": "be1f30315555",
-      "bytes": 16896,
-      "sourceBytes": 17369
+      "version": "7e88b134416f",
+      "bytes": 20260,
+      "sourceBytes": 20809
     },
     {
       "url": "/zeruxjs/assets/docs.js",
-      "version": "6e6cd21ea3b1",
-      "bytes": 7353,
-      "sourceBytes": 7377
+      "version": "7c5a5146a3a8",
+      "bytes": 8553,
+      "sourceBytes": 7972
     },
     {
       "url": "/zeruxjs/assets/search.js",

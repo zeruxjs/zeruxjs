@@ -3,19 +3,19 @@
   "compiler": "zuixs",
   "bundler": "@zeruxjs/typescript",
   "utilities": 6,
-  "recipes": 77,
+  "recipes": 106,
   "assets": [
     {
       "url": "/site-assets/style.css",
-      "version": "bb250e4d5aaa",
-      "bytes": 5350,
-      "sourceBytes": 5530
+      "version": "6a40cd991305",
+      "bytes": 8752,
+      "sourceBytes": 9020
     },
     {
       "url": "/site-assets/app.js",
-      "version": "d6b02adf259e",
-      "bytes": 3926,
-      "sourceBytes": 923
+      "version": "a41c38d49458",
+      "bytes": 4778,
+      "sourceBytes": 1012
     }
   ]
 }

@@ -1,8 +1,16 @@
 {
   "schema": 1,
+  "markdownFiles": {
+    "/index.md": "e627674f123e6b6a79c7c973eb09781129219783e002f20d2b8ada86558fb530",
+    "/404.md": "e52120334649b1d5fabee2df404bc6ba0cd95842e6a87990913b60a773fef211",
+    "/zeruxjs.md": "2b3030680d5bb6a6d1183b5943b828f36c850c44e52a0645bccc664d5a8c7d46"
+  },
   "outputBranch": "master-site",
   "rootOwned": [
     "index.html",
+    "index.md",
+    "zeruxjs.md",
+    "404.md",
     "404.html",
     "robots.txt",
     "site-assets",
