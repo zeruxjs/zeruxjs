@@ -60,21 +60,17 @@ export async function check(directory = path.join(root, 'dist')) {
   }
   const manifest = JSON.parse(files.get(sitePath('/build-manifest.json')));
   const search = JSON.parse(files.get(sitePath('/assets/search.json')));
+  if(search.schema!==2||!Array.isArray(search.pages)||!Array.isArray(search.sections))throw new Error('Invalid compact search schema');
+  const entries=[...search.pages.map(row=>({url:row[3]})),...search.sections.map(row=>({url:search.pages[row[0]][3]+'#'+row[2]}))];
   for (const page of manifest.pages) {
     if (!files.has(resolve(page))) throw new Error(`Missing page ${page}`);
-    if (!search.some((entry) => entry.url.split('#')[0] === page))
-      throw new Error(`Page absent from search: ${page}`);
+    if (!entries.some(entry=>entry.url.split('#')[0]===page))throw new Error(`Page absent from search: ${page}`);
   }
-  for (const entry of search) {
-    const url = new URL(entry.url, 'https://docs.invalid');
-    const target = resolve(url.pathname);
-    if (
-      !files.has(target) ||
-      (url.hash && !ids.get(target)?.has(url.hash.slice(1)))
-    )
-      throw new Error(`Broken search result ${entry.url}`);
+  for(const entry of entries) {
+    const url=new URL(entry.url,'https://docs.invalid');const target=resolve(url.pathname);
+    if(!files.has(target)||(url.hash&&!ids.get(target)?.has(url.hash.slice(1))))throw new Error(`Broken search result ${entry.url}`);
   }
-  return { pages: html.length, links, searchEntries: search.length };
+  return { pages: html.length, links, searchEntries: entries.length };
 }
 if (
   process.argv[1] &&

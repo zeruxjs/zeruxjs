@@ -82,7 +82,10 @@
   ],
   "devDependencies": {
     "better-sqlite3": "^12.6.2",
-    "postcss-media-query-parser": "file:vendor/zeruxjs-scss-media-parser-0.2.3.tgz"
+    "postcss-media-query-parser": "file:vendor/zeruxjs-scss-media-parser-0.2.3.tgz",
+    "@zeruxjs/typescript": "0.0.2",
+    "@zeruxjs/performance": "0.0.2",
+    "zuixs": "0.0.2"
   },
   "releaseWorkspaces": [
     "packages/@zenixjs/*",

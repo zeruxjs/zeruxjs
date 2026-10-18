@@ -7,7 +7,7 @@ import { build, output, root } from './build.mjs';
 
 const development = process.argv.includes('--dev');
 if (development) {
-  await build();
+  await build({production:false});
   let scheduled;
   let active = false;
   let pending = false;
@@ -23,7 +23,7 @@ if (development) {
     do {
       pending = false;
       try {
-        await build();
+        await build({production:false});
       } catch (error) {
         console.error('[docs] Rebuild failed:', error.message);
       }

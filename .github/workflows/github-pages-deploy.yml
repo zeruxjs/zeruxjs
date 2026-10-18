@@ -13,6 +13,7 @@ on:
       - 'scripts/build-sites.mjs'
       - 'scripts/publish-sites.mjs'
       - 'scripts/workspace-graph.mjs'
+      - 'scripts/static-site-assets.mjs'
       - '.github/workflows/github-pages-deploy.yml'
   workflow_dispatch:
 
@@ -45,6 +46,21 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install locked build dependencies without package lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify site tooling uses checked-out workspace sources
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          for (const name of ['zuixs', '@zeruxjs/typescript', '@zeruxjs/performance', '@zeruxjs/search']) {
+            const actual = fs.realpathSync(path.join('node_modules', name));
+            const expected = fs.realpathSync(path.join('packages', name));
+            assert.equal(actual, expected, `${name} must use the checked-out workspace`);
+            console.log(`[site-tooling] ${name}: local workspace verified`);
+          }
+          NODE
+      - name: Build workspace CSS, browser bundler, search and navigation tooling in parallel
+        run: node scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search
       - name: Build shared homepage and every configured site
         run: node scripts/build-sites.mjs
       - name: Publish generated folders to master-site and prepare complete artifact

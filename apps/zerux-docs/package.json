@@ -15,7 +15,9 @@
     "preview": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
     "check": "node scripts/check.mjs",
-    "snapshot": "node scripts/snapshot.mjs"
+    "snapshot": "node scripts/snapshot.mjs",
+    "prebuild": "node ../../scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search",
+    "predev": "node ../../scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -30,6 +32,9 @@
     "ZeruxJS Documentation"
   ],
   "devDependencies": {
-    "marked": "^18.1.1"
+    "marked": "^18.1.1",
+    "zuixs": "0.0.2",
+    "@zeruxjs/performance": "0.0.2",
+    "@zeruxjs/search": "0.0.2"
   }
 }

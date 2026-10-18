@@ -5,7 +5,7 @@
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    'Segoe UI',
+    "Segoe UI",
     sans-serif;
   color: #21312c;
   background: #fbfcfa;
@@ -172,11 +172,7 @@ main > section:not(.hero) {
   text-align: right;
   margin: 0;
 }
-.projects {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 15px;
-}
+
 .project {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -211,11 +207,7 @@ h3 {
   font-size: 11px;
   font-weight: 650;
 }
-.packages {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
+
 .package {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -299,12 +291,6 @@ footer p {
   top: 10px;
 }
 @media (max-width: 850px) {
-  .projects {
-    grid-template-columns: 1fr;
-  }
-  .packages {
-    grid-template-columns: 1fr 1fr;
-  }
   .project {
     padding: 24px;
   }
@@ -379,9 +365,7 @@ footer p {
   .closing h2 {
     font-size: 25px;
   }
-  .packages {
-    grid-template-columns: 1fr;
-  }
+
   footer {
     flex-wrap: wrap;
   }

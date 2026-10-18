@@ -42,7 +42,7 @@ The combined build is written to `.site-build/` at the repository root. Each app
 
 `.github/workflows/github-pages-deploy.yml` runs for relevant changes pushed to `master` and supports manual runs from that branch:
 
-1. Install locked dependencies with package lifecycle scripts disabled. The docs exporter reads source metadata and does not need framework package compilation or native database builds.
+1. Install locked dependencies with package lifecycle scripts disabled. Build Zuixs and the TypeScript, performance and search workspace tooling in parallel. The exporter does not build the full framework runtime or native database adapters.
 2. Build all apps declared in `sites.config.mjs` concurrently, with live START/READY logs.
 3. Generate the shared homepage and validate cross-site links, assets and anchors.
 4. Create/update `master-site` through a temporary worktree and a **normal push**, preserving its history.
@@ -81,3 +81,5 @@ Mounted paths must be unique single segments: `/{for}`. The root source owns onl
 App builds validate their content. The combined builder checks the complete new site's internal paths, then the publisher checks the merged tree, including preserved sites, **before committing or pushing**. Non-fast-forward pushes fail rather than overwriting concurrent changes. Re-run the workflow to fetch the current output branch and retry. Unchanged output produces no extra commit.
 
 A GitHub Pages settings/deployment failure does not lose the successfully published `master-site` build; fix the setting and rerun. No source branch is force-pushed. `.site-published/` and temporary worktrees are generated staging, not source files to commit.
+
+Site tooling uses the current checkout, including unpublished changes: the locked install links local npm workspaces, CI verifies the real paths of Zuixs and the TypeScript/performance/search packages under `packages/`, then builds those sources before building any site. Only external dependencies come from the npm registry. There is no need to publish these workspace changes first.

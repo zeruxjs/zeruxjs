@@ -5,7 +5,7 @@
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    'Segoe UI',
+    "Segoe UI",
     sans-serif;
   --bg: #fff;
   --text: #202836;
@@ -22,7 +22,7 @@
   line-height: 1.7;
   color-scheme: light;
 }
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   --bg: #10151d;
   --text: #e6edf5;
   --muted: #a0aec1;
@@ -36,7 +36,7 @@
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
+  :root:not([data-theme="light"]) {
     --bg: #10151d;
     --text: #e6edf5;
     --muted: #a0aec1;
@@ -254,7 +254,7 @@ kbd {
   text-decoration: none;
   background: var(--panel);
 }
-.sidebar nav a[aria-current='page'] {
+.sidebar nav a[aria-current="page"] {
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 650;
@@ -295,8 +295,6 @@ main {
   color: var(--muted);
 }
 .article-meta {
-  display: flex;
-  justify-content: space-between;
   font-size: 10px;
   letter-spacing: 0.05em;
   color: var(--muted);
@@ -442,9 +440,6 @@ pre code {
   border-radius: 0;
 }
 .code-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 8px 15px;
   border-bottom: 1px solid #ffffff12;
   font:
@@ -548,11 +543,7 @@ td pre {
 .related h2 {
   font-size: 16px;
 }
-.card-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
+
 .topic-card {
   padding: 17px;
   border: 1px solid var(--line);
@@ -629,9 +620,6 @@ td pre {
   color: var(--muted);
 }
 .neighbors {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
   margin-top: 24px;
 }
 .neighbors a {
@@ -706,9 +694,6 @@ footer {
   line-height: 1.8;
 }
 .hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
   margin: 25px 0 20px;
 }
 .primary-button,
@@ -747,11 +732,7 @@ footer {
   font-size: 17px;
   margin: 25px 0 18px;
 }
-.portal-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 13px;
-}
+
 .portal-card {
   padding: 22px;
   border: 1px solid var(--line);
@@ -937,12 +918,7 @@ dialog::backdrop {
   .header-tools {
     gap: 14px;
   }
-  .card-grid {
-    grid-template-columns: 1fr;
-  }
-  .portal-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+
   .portal-card {
     padding: 17px;
   }
@@ -1037,18 +1013,14 @@ dialog::backdrop {
   .portal .portal-intro h1 {
     font-size: 34px;
   }
-  .portal-grid {
-    grid-template-columns: 1fr;
-  }
+
   .portal-card {
     padding: 20px;
   }
   .portal-card h3 {
     font-size: 16px;
   }
-  .hero-actions {
-    gap: 8px;
-  }
+
   .primary-button,
   .secondary-button {
     font-size: 11px;
@@ -1060,9 +1032,7 @@ dialog::backdrop {
   .page-footer {
     font-size: 9px;
   }
-  .neighbors {
-    gap: 10px;
-  }
+
   .neighbors a {
     padding: 12px;
     font-size: 11px;

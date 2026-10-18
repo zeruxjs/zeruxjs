@@ -59,7 +59,25 @@ export function createZuix(config:ZuixConfig={}) {
  function generate(tokens:Iterable<string>):GenerateResult {
   const classSet=new Set<string>();const add=(token:string)=>{if(typeof token!=='string')throw new Error('zuix: class tokens must be strings');classSet.add(token);if(classSet.size>limits.maxClasses)throw new Error('zuix: maxClasses limit exceeded');};
   for(const token of tokens)add(token);for(const token of config.safelist??[])add(token);
-  const classes=[...classSet].filter(Boolean).sort();const unmatched:string[]=[];const rules:string[]=[];
+  /** Base utilities precede variants; larger min-width breakpoints override smaller ones.
+   * @param token Class token. @returns Cascade ordering tuple. Reads resolved theme only.
+   */
+  const cascadeOrder=(token:string):number[]=>{
+   const variants=splitVariants(token).slice(0,-1);
+   const widths=variants.flatMap(variant=>{
+    const key=variant.startsWith('cq-')?variant.slice(3):variant;
+    const screen=theme.screens[key];
+    if(screen===undefined)return [];
+    const match=/^(\d+(?:\.\d+)?)(px|rem|em)$/.exec(String(screen));
+    return match?[Number(match[1])*(match[2]==='px'?1:16)]:[];
+   });
+   return [widths.length?1:0,widths.length?Math.max(...widths):0,variants.length];
+  };
+  const classes=[...classSet].filter(Boolean).sort((a,b)=>{
+   const first=cascadeOrder(a),second=cascadeOrder(b);
+   for(let index=0;index<first.length;index++)if(first[index]!==second[index])return first[index]-second[index];
+   return a<b?-1:a>b?1:0;
+  });const unmatched:string[]=[];const rules:string[]=[];
   for(const name of classes){const rule=compileClass(name);if(rule)rules.push(rule);else unmatched.push(name);}
   // Merge identical declaration blocks only when they occupy the same at-rule context.
   // Never merge distinct declarations or reorder conflicting rules.

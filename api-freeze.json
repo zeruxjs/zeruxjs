@@ -395,7 +395,21 @@
       "main": "./dist/index.js",
       "module": null,
       "types": "./dist/index.d.ts",
-      "exports": null,
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js",
+          "require": "./dist/index.js",
+          "default": "./dist/index.js"
+        },
+        "./navigation": {
+          "types": "./dist/navigation.d.ts",
+          "import": "./dist/navigation.js",
+          "require": "./dist/navigation.js",
+          "default": "./dist/navigation.js"
+        },
+        "./*": "./*"
+      },
       "bin": null,
       "engines": null,
       "peerDependencies": null,

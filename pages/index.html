@@ -9,7 +9,7 @@
     />
     <title>ZeruxJS — one connected ecosystem</title>
     <link rel="stylesheet" href="/site-assets/style.css" />
-    <script src="/site-assets/app.js" defer></script>
+    <script type="module" src="/site-assets/app.js"></script>
   </head>
   <body>
     <a class="skip" href="#content">Skip to content</a>
@@ -49,7 +49,7 @@
           </div>
           <p>Independent tools.<br />A shared direction.</p>
         </div>
-        <div class="projects">
+        <div class="projects ui-grid ui-grid-cols-1 desktop:ui-grid-cols-3 ui-gap-neighbor">
           <article class="project featured">
             <div class="project-type">01 / FRAMEWORK</div>
             <h3>ZeruxJS</h3>
@@ -104,7 +104,7 @@
           />
           <p id="package-status" role="status"></p>
         </div>
-        <div class="packages">{{PACKAGE_CARDS}}</div>
+        <div class="packages ui-grid ui-grid-cols-1 tablet:ui-grid-cols-2 desktop:ui-grid-cols-3 ui-gap-3">{{PACKAGE_CARDS}}</div>
       </section>
       <section class="closing">
         <h2>Start with understanding.</h2>

@@ -117,3 +117,7 @@ npm run verify:source            # source-only; does not certify npm ci
 ## Release 0.0.2
 
 Prepared to validate npm trusted publishing through GitHub Actions.
+
+### Responsive cascade
+
+Generated base utilities precede state variants and named responsive variants. Named min-width breakpoints are emitted from smaller to larger, so `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` follows mobile-first behavior regardless of class-token order. Breakpoint comparison uses CSS's standard 16px initial font-size equivalence for `em`/`rem`. Keep breakpoint units consistent for predictable custom scales. The docs and ecosystem homepage use this compiler during static production builds.

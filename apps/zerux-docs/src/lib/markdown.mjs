@@ -69,7 +69,7 @@ export function markdown(source, { version, sourceUrl }) {
     code({ text, lang }) {
       const language = lang?.split(/\s+/)[0] || 'text';
       const title = /title="([^"]+)"/.exec(lang || '')?.[1] || language;
-      return `<div class="code-block"><div class="code-bar"><span>${escape(title)}</span><button type="button" class="copy-code" aria-label="Copy code" hidden>Copy</button></div><pre><code class="language-${escape(language)}">${escape(text)}</code></pre></div>`;
+      return `<div class="code-block"><div class="code-bar ui-flex ui-items-center ui-justify-between"><span>${escape(title)}</span><button type="button" class="copy-code" aria-label="Copy code" hidden>Copy</button></div><pre><code class="language-${escape(language)}">${escape(text)}</code></pre></div>`;
     },
     link({ href, title, tokens }) {
       const url = resolve(href);

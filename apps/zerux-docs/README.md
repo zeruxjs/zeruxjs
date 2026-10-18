@@ -111,3 +111,11 @@ Every build validates metadata, source paths, related pages, package coverage, u
 Search indexes page titles, sections and heading-local prose for the current version. It is fetched only when a visitor searches. Links are ranked locally with bounded results and keyboard navigation. All result text is inserted with DOM text nodes. Clipboard and browser-local theme storage are optional; unavailable APIs do not prevent reading.
 
 For presentation changes, verify desktop/mobile widths, keyboard focus, search close/Escape, theme choices, package filtering, code copy and JavaScript-disabled reading. Example syntax and public imports should be checked against the installed TypeScript declarations when changing APIs. A docs build does not run live database/Redis/SMTP/cloud integrations or certify their production behavior.
+
+## Production assets and navigation
+
+`prebuild` and `predev` compile the four required workspace tools in parallel. Production builds use **Zuixs** to generate only the responsive `ui-` utilities present in rendered HTML, retaining authored component styles. `zuix.config.mjs` owns the utility prefix and breakpoints. **@zeruxjs/typescript** bundles browser modules and minifies CSS/JavaScript; development builds retain readable output and source maps. The asset manifest records sizes and content hashes used in cache-busting URLs. Production output has no source maps.
+
+**@zeruxjs/performance/navigation** prefetches public documentation pages after hover or keyboard focus. Supporting browsers receive speculation prefetch rules; other browsers receive link prefetch hints. There is no prerendering. Hints are bounded per document and exclude external URLs, query strings, downloads, current-page anchors and slow/data-saving connections. Browsers decide whether to honor hints. Ordinary links work without JavaScript.
+
+Docs search loads its browser module and compact index on demand, using **@zeruxjs/search** for local ranking. No third-party browser service is required. Run the production build before measuring output; development intentionally includes source maps and live reload.
