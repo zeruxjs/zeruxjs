@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"name": "Master",
+			"path": "."
+		},
+		{
+			"name": "Apps",
+			"path": "apps"
+		},
+		{
+			"name": "VS Extensions",
+			"path": "vs-ext"
+		},
+		{
+			"name": "Packages",
+			"path": "packages"
+		}
+	],
+	"settings": {
+		"terminal.integrated.cwd": "${workspaceFolder:Master}"
+	}
+}
