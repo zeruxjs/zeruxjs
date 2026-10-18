@@ -62,3 +62,7 @@ Initialization strips private service settings before exposing runtime config. S
 ## Extensibility and validation
 
 The interface permits additional keys for extensions; accepting a key at type level does not mean a built-in implementation consumes it. Read the linked source and service types for nested options. Validate environment values at startup, and do not use configuration output as a debugging response on a public route.
+
+## JavaScript configuration
+
+See [zerux.config.js](zerux-config.md) for an ESM JavaScript example, file precedence, environment timing and the documentation app configuration.

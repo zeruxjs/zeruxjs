@@ -32,7 +32,7 @@ This is build-time server rendering/static generation. It is intentionally an ap
 
 ```text
 src/
-  site.config.mjs             Versions, source refs, section order
+  site.config.mjs             Reads zerux.config.js and provides URL helpers
   docs/
     0.0.2/
       introduction.md         One Markdown document per topic
@@ -100,7 +100,7 @@ Before bumping live package versions:
 npm run snapshot -- 0.0.2
 ```
 
-This creates a new `src/docs/0.0.2/reference.snapshot.json` without overwriting an existing snapshot. Commit it, set that version's `reference` to `snapshot`, and pin its `ref` to the release Git tag/commit in `site.config.mjs`. Then add the new version configuration/content folder and update `site.latest`. Frozen references are not read from newer workspace manifests. Version switching preserves the current slug when available, falling back to introduction.
+This creates a new `src/docs/0.0.2/reference.snapshot.json` without overwriting an existing snapshot. Commit it, set that version's `reference` to `snapshot`, and pin its `ref` to the release Git tag/commit in `zerux.config.js` under `documentation`. Then add the new version configuration/content folder and update `documentation.latest`. Frozen references are not read from newer workspace manifests. Version switching preserves the current slug when available, falling back to introduction.
 
 Archive sources should use immutable Git refs. Edit links still target the docs source on master so corrections can be contributed.
 
@@ -139,3 +139,9 @@ Build manifests record SHA-256 hashes for every export. The docs checker, combin
 The homepage and docs share a system/light/dark preference stored under `zerux-theme`; existing `zerux-docs-theme` preferences migrate on use. A small early head script restores the preference before CSS paints. Storage is optional and no account, network call or cookie is needed. Without JavaScript, the operating system color scheme still applies. Shared build-time palette and motion recipes live in `scripts/site-design.mjs`, and browser controls in `scripts/site-theme.mjs`.
 
 The interface uses indigo/teal accents, theme-aware surfaces, component hover feedback and short entry animations. Motion is enabled only when the visitor allows it. Page tools, a reading-position indicator and `/` or Cmd/Ctrl-K search shortcuts support navigation; typing in inputs does not trigger the `/` shortcut.
+
+## Application configuration
+
+`zerux.config.js` now owns the documentation settings under its app-specific `documentation` namespace. `src/site.config.mjs` imports that object; it is not an unused example. Keep the combined site mount aligned with `documentation.basePath`. See the authored `zerux-config` guide for config file precedence and runtime settings. This remains a static exporter built using workspace packages; adding the config does not turn `zerux build` into a general static-export command.
+
+Production output now minifies HTML as well as CSS and JavaScript. The HTML pass compacts structural whitespace and comments while preserving `pre`, `textarea`, script and style payloads; line breaks inside code examples remain intentional. Development HTML remains readable. The native version disclosure gains outside-click, focus-out and Escape dismissal when JavaScript is available.

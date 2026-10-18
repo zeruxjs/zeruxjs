@@ -1,3 +1,4 @@
+import { minifySiteHtml } from "./minify-site-html.mjs";
 import { themeBootstrap } from "./site-theme.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -103,6 +104,7 @@ export async function optimizeStaticAssets({
           return record ? `${attribute}="${url}?v=${record.version}"` : match;
         })
         .replace(/<body\b/, `<body${searchAttributes}`);
+      if (production) final = minifySiteHtml(final);
       await fs.writeFile(file, final);
     }
     const report = {

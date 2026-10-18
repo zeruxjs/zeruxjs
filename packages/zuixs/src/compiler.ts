@@ -40,7 +40,7 @@ export function createZuix(config:ZuixConfig={}) {
    if(variant==='rtl'||variant==='ltr'){selector=`:where([dir="${variant}"]) ${selector}`;continue;}
    if(variant==='starting'){atRules.push('@starting-style');continue;}
    if(variant.startsWith('supports-[')&&variant.endsWith(']')){const query=variant.slice(10,-1).replace(/_/g,' ');if(!safeQuery(query))return;atRules.push(`@supports (${query})`);continue;}
-   if(variant.startsWith('media-[')&&variant.endsWith(']')){const query=variant.slice(7,-1).replace(/_/g,' ');if(!safeQuery(query))return;atRules.push(`@media (${query})`);continue;}
+   if(variant.startsWith('media-[')&&variant.endsWith(']')){const query=variant.slice(7,-1).replace(/_/g,' ');if(!safeQuery(query))return;atRules.push(`@media ${query.startsWith('(')||query==='print'||query==='screen'?query:`(${query})`}`);continue;}
    if(variant.startsWith('container-[')&&variant.endsWith(']')){const query=variant.slice(11,-1).replace(/_/g,' ');if(!safeQuery(query))return;atRules.push(`@container (${query})`);continue;}
    if(variant.startsWith('cq-')){const key=variant.slice(3);if(!Object.hasOwn(theme.screens,key))return;const screen=String(theme.screens[key]);if(!/^(?:\d+(?:\.\d+)?)(?:px|rem|em)$/.test(screen))return;atRules.push(`@container (min-width: ${screen})`);continue;}
    if(variant==='group-hover' ||variant==='group-focus'){groupPeer=`.group:${variant.slice(6)} `+groupPeer;continue;}
@@ -66,6 +66,7 @@ export function createZuix(config:ZuixConfig={}) {
   const cascadeOrder=(token:string):number[]=>{
    const variants=splitVariants(token).slice(0,-1);
    const widths=variants.flatMap(variant=>{
+    if(variant.startsWith('media-[')){const query=variant.slice(7,-1).replace(/_/g,' ');const match=/\b(min|max)-width:\s*(\d+(?:\.\d+)?)(px|rem|em)/.exec(query);if(match)return [Number(match[2])*(match[3]==='px'?1:16)*(match[1]==='max'?-1:1)];}
     const key=variant.startsWith('cq-')?variant.slice(3):variant;
     const screen=theme.screens[key];
     if(screen===undefined)return [];

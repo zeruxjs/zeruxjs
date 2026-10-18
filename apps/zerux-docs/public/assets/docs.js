@@ -226,3 +226,22 @@ if (progress) {
   addEventListener("resize", schedule, { passive: true });
   update();
 }
+
+// Keep disclosure-based menus usable without JS, adding normal dismiss behavior when enhanced.
+const versionMenu = document.querySelector(".version-switch");
+if (versionMenu) {
+  document.addEventListener("pointerdown", (event) => {
+    if (event.target instanceof Node && !versionMenu.contains(event.target))
+      versionMenu.open = false;
+  });
+  document.addEventListener("focusin", (event) => {
+    if (event.target instanceof Node && !versionMenu.contains(event.target))
+      versionMenu.open = false;
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && versionMenu.open) {
+      versionMenu.open = false;
+      versionMenu.querySelector("summary").focus();
+    }
+  });
+}

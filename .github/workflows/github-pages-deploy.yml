@@ -16,6 +16,7 @@ on:
       - 'scripts/static-site-assets.mjs'
       - 'scripts/site-theme.mjs'
       - 'scripts/site-design.mjs'
+      - 'scripts/minify-site-html.mjs'
       - '.github/workflows/github-pages-deploy.yml'
   workflow_dispatch:
 

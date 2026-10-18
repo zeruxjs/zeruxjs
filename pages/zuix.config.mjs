@@ -1,113 +1,104 @@
-import { themeRecipes, siteKeyframes } from "../scripts/site-design.mjs";
-import recipes from "./zuix.recipes.mjs";
-/** Homepage utility tokens; output uses only classes found in generated pages. */
+import { siteKeyframes } from "../scripts/site-design.mjs";
+/** Classes live in index.html and the generated package-card template. Only reset/theme selectors remain global. */
 export default {
   preflight: false,
-  keyframes: siteKeyframes,
-  recipes: [
-    ...recipes,
-    ...themeRecipes,
-    {
-      selector: "body",
-      apply: [
-        "ui-[background:radial-gradient(ellipse_at_75%_0%,var(--glow),transparent_60%)]",
-      ],
-    },
-    { selector: "header", apply: ["ui-gap-[16px]", "ui-[flex-wrap:wrap]"] },
-    { selector: "header nav", apply: ["ui-ml-[auto]"] },
-    {
-      selector: ".hero",
-      apply: ["ui-relative", "ui-max-w-[920px]", "ui-p-[80px_0_64px]"],
-    },
-    { selector: ".hero h1 > span", apply: ["ui-text-[var(--accent)]"] },
-    {
-      selector: ".eyebrow",
-      apply: ["ui-text-[var(--secondary)]", "ui-tracking-[0.12em]"],
-    },
-    {
-      selector: ".hero-terminal",
-      apply: [
-        "ui-[background:var(--surface)]",
-        "ui-[border:1px_solid_var(--line)]",
-        "ui-rounded-[16px]",
-        "ui-p-[20px_24px]",
-        "ui-mt-[28px]",
-        "ui-max-w-[580px]",
-        "ui-shadow-[var(--shadow)]",
-      ],
-    },
-    {
-      selector: ".terminal-heading",
-      apply: [
-        "ui-text-[11px]",
-        "ui-text-[var(--muted)]",
-        "ui-mb-[14px]",
-        "ui-flex",
-        "ui-gap-[14px]",
-      ],
-    },
-    {
-      selector: ".terminal-heading > span",
-      apply: ["ui-text-[var(--secondary)]", "ui-tracking-[3px]"],
-    },
-    {
-      selector: ".hero-terminal code",
-      apply: [
-        "ui-font-mono",
-        "ui-text-[clamp(12px,2vw,16px)]",
-        "ui-text-[var(--text)]",
-      ],
-    },
-    {
-      selector: ".hero-terminal code > span",
-      apply: ["ui-text-[var(--accent)]"],
-    },
-    {
-      selector: ".hero-terminal p, .hero-terminal a",
-      apply: ["ui-text-[11px]"],
-    },
-    {
-      selector: ".hero-terminal p",
-      apply: ["ui-text-[var(--muted)]", "ui-mb-[8px]"],
-    },
-    { selector: ".project, .package", apply: ["ui-rounded-[16px]"] },
-    {
-      selector: ".primary",
-      apply: [
-        "ui-text-[var(--on-accent)]",
-        "ui-rounded-[999px]",
-        "ui-shadow-[var(--shadow)]",
-      ],
-    },
-    { selector: ".brand > span", apply: ["ui-text-[var(--on-accent)]"] },
-    {
-      selector: ".actions > a",
-      apply: ["ui-[display:inline-flex]", "ui-items-center"],
-    },
-    {
-      selector: ".hero",
-      apply: ["ui-p-[48px_0]"],
-      media: "(max-width: 550px)",
-    },
-    {
-      selector: "header nav",
-      apply: [
-        "ui-[order:3]",
-        "ui-w-full",
-        "ui-[justify-content:space-between]",
-        "ui-mt-[6px]",
-      ],
-      media: "(max-width: 550px)",
-    },
-    {
-      selector: "header nav a:first-child, header nav a:last-child",
-      apply: ["ui-block"],
-      media: "(max-width: 550px)",
-    },
-  ],
   prefix: "ui-",
+  keyframes: siteKeyframes,
   extend: {
     screens: { tablet: "551px", desktop: "851px" },
     spacing: { neighbor: "15px" },
   },
+  recipes: [
+    {
+      selector: ":root",
+      apply: [
+        "ui-[font-family:Inter,_ui-sans-serif,_system-ui,_-apple-system,_BlinkMacSystemFont,_Segoe_UI,_sans-serif]",
+        "ui-text-[var(--text)]",
+        "ui-[background:var(--bg)]",
+        "ui-leading-[1.7]",
+        "ui-[--accent:#087e65]",
+        "ui-[--muted:#66776f]",
+        "ui-[--line:#dde6df]",
+      ],
+    },
+    {
+      selector: "*",
+      apply: ["ui-[box-sizing:border-box]"],
+    },
+    {
+      selector: "[hidden]",
+      apply: ["ui-!hidden"],
+    },
+    {
+      selector: ":root",
+      apply: [
+        "ui-[--bg:#f8f9fe]",
+        "ui-[--surface:#ffffff]",
+        "ui-[--text:#20233c]",
+        "ui-[--muted:#606682]",
+        "ui-[--line:#dfe3f1]",
+        "ui-[--panel:#f0f2fb]",
+        "ui-[--accent:#5546d9]",
+        "ui-[--accent-soft:#eeebff]",
+        "ui-[--on-accent:#ffffff]",
+        "ui-[--secondary:#087f83]",
+        "ui-[--glow:#8170ee15]",
+        "ui-[--selection:#d9d3ff]",
+        "ui-[--header:rgba(248,249,254,0.94)]",
+        "ui-[--code:#171c35]",
+        "ui-[--code-text:#e4e8ff]",
+        "ui-[--shadow:0_12px_32px_rgba(45,38,101,0.10)]",
+        "ui-color-scheme-light",
+      ],
+    },
+    {
+      selector: ':root[data-theme="dark"]',
+      apply: [
+        "ui-[--bg:#101321]",
+        "ui-[--surface:#191d31]",
+        "ui-[--text:#ecedff]",
+        "ui-[--muted:#b0b5d0]",
+        "ui-[--line:#303650]",
+        "ui-[--panel:#20263d]",
+        "ui-[--accent:#b6aaff]",
+        "ui-[--accent-soft:#302849]",
+        "ui-[--on-accent:#191329]",
+        "ui-[--secondary:#68d5d1]",
+        "ui-[--glow:#8170ee19]",
+        "ui-[--selection:#493d73]",
+        "ui-[--header:rgba(16,19,33,0.94)]",
+        "ui-[--code:#0d1020]",
+        "ui-[--code-text:#e3e7ff]",
+        "ui-[--shadow:0_16px_40px_rgba(0,0,0,0.24)]",
+        "ui-color-scheme-dark",
+      ],
+    },
+    {
+      selector: ':root:not([data-theme="light"])',
+      apply: [
+        "ui-[--bg:#101321]",
+        "ui-[--surface:#191d31]",
+        "ui-[--text:#ecedff]",
+        "ui-[--muted:#b0b5d0]",
+        "ui-[--line:#303650]",
+        "ui-[--panel:#20263d]",
+        "ui-[--accent:#b6aaff]",
+        "ui-[--accent-soft:#302849]",
+        "ui-[--on-accent:#191329]",
+        "ui-[--secondary:#68d5d1]",
+        "ui-[--glow:#8170ee19]",
+        "ui-[--selection:#493d73]",
+        "ui-[--header:rgba(16,19,33,0.94)]",
+        "ui-[--code:#0d1020]",
+        "ui-[--code-text:#e3e7ff]",
+        "ui-[--shadow:0_16px_40px_rgba(0,0,0,0.24)]",
+        "ui-color-scheme-dark",
+      ],
+      media: "(prefers-color-scheme: dark)",
+    },
+    {
+      selector: "::selection",
+      apply: ["ui-[background:var(--selection)]", "ui-text-[var(--text)]"],
+    },
+  ],
 };

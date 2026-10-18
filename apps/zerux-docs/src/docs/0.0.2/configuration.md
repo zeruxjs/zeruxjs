@@ -36,3 +36,7 @@ The loader considers .env, .env.local and environment-specific variants. Keep se
 ## Services and structure
 
 Configuration supports database/db, cache, files, email, analytics, tags, reports, queue, protocols, theme, websocket, multisite and structure. Each service has its own startup options; consult the installed TypeScript declarations before enabling it.
+
+## JavaScript configuration
+
+See [zerux.config.js](zerux-config.md) for an ESM JavaScript example, file precedence, environment timing and the documentation app configuration.
