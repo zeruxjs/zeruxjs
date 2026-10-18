@@ -162,6 +162,8 @@ export async function publishSites({ repository = repositoryRoot } = {}) {
       ]);
     }
     const commit = await requireGit(tree, ["rev-parse", "HEAD"]);
+    if (process.env.GITHUB_OUTPUT)
+      await fs.appendFile(process.env.GITHUB_OUTPUT, `commit=${commit}\n`);
     // Artifact comes from the complete output-branch tree, including preserved sites/CNAME.
     const existing = await fs.lstat(artifact).catch((error) => {
       if (error.code !== "ENOENT") throw error;

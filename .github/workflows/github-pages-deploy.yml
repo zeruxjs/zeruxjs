@@ -18,6 +18,8 @@ jobs:
   build-and-publish:
     if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/version/')
     runs-on: ubuntu-24.04
+    outputs:
+      site_commit: ${{ steps.publish.outputs.commit }}
     timeout-minutes: 20
     env:
       SITE_SOURCE_BRANCH: ${{ github.ref_name }}
@@ -65,6 +67,7 @@ jobs:
           console.log(`[sites] ${result.markdown} unchanged Markdown exports verified; deployment uploads prebuilt static files without Jekyll.`);
           NODE
       - name: Publish generated folders to master-site and prepare complete artifact
+        id: publish
         run: node scripts/publish-sites.mjs
       - name: Upload the master-site static tree for Pages
         uses: actions/upload-pages-artifact@v3
@@ -78,6 +81,7 @@ jobs:
     permissions:
       pages: write
       id-token: write
+      actions: read
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -86,4 +90,47 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Deploy the published master-site tree
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/github-script@v9
+        env:
+          SITE_BUILD_COMMIT: ${{ needs.build-and-publish.outputs.site_commit }}
+        with:
+          script: |
+            // Pages identifies deployments by build version. Source SHAs may be shared
+            // by master/version branches even though their generated artifacts differ.
+            const version = process.env.SITE_BUILD_COMMIT;
+            if (!/^[a-f0-9]{40}$/.test(version ?? '')) throw new Error('Missing published site commit');
+            const repository = { owner: context.repo.owner, repo: context.repo.repo };
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+              ...repository, run_id: context.runId, per_page: 100
+            });
+            const matches = artifacts.filter(item => item.name === 'github-pages' && !item.expired);
+            if (matches.length !== 1) throw new Error('Expected exactly one current Pages artifact');
+            const oidc = await core.getIDToken();
+            core.setSecret(oidc);
+            // Avoid logging API error objects containing the OIDC request payload.
+            const request = async (route, parameters) => {
+              try { return await github.request(route, { ...repository, ...parameters }); }
+              catch (error) { throw new Error(`Pages API request failed (HTTP ${error.status ?? 'unknown'})`); }
+            };
+            const { data } = await request('POST /repos/{owner}/{repo}/pages/deployments', {
+              artifact_id: matches[0].id, pages_build_version: version, oidc_token: oidc
+            });
+            const deployment = String(data.id ?? data.status_url?.split('/').pop() ?? version);
+            core.setOutput('page_url', data.page_url);
+            core.info(`Deploying output commit ${version}, artifact ${matches[0].id}`);
+            for (let attempt = 0; attempt < 96; attempt++) {
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              const { data: state } = await request('GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}', {
+                pages_deployment_id: deployment
+              });
+              core.info(`Pages deployment: ${state.status}`);
+              if (state.status === 'succeed') return;
+              if (['deployment_failed', 'deployment_perms_error', 'deployment_content_failed',
+                   'deployment_cancelled', 'deployment_lost'].includes(state.status)) {
+                throw new Error(`Pages deployment failed: ${state.status}`);
+              }
+            }
+            await request('POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel', {
+              pages_deployment_id: deployment
+            });
+            throw new Error('Pages deployment timed out');
