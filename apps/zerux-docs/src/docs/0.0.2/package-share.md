@@ -37,3 +37,66 @@ URLs must be credential-free HTTP(S). Do not share session tokens or private sig
 ## Metadata
 
 createShareMetadata creates escaped public metadata, not a complete SEO strategy or publication workflow. Choose the canonical URL and preview image policy in the application; private content requires separate access control.
+
+## Install and select the integration
+
+```sh
+npm install @zeruxjs/share@0.0.2
+```
+
+There is no automatic `share` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
+
+## A practical integration workflow
+
+Keep native sharing behind an explicit user gesture and supply validated credential-free HTTP(S) URLs. Inject share/clipboard capabilities into a controller when testing or using a custom environment. Use the outcome to tell whether a share, copy or cancellation occurred instead of assuming every resolved call sent content to another app.
+
+## TypeScript: inputs, results and ownership
+
+```ts
+import { createShareController } from '@zeruxjs/share';
+
+type Inputs = Parameters<typeof createShareController>;
+type Result = Awaited<ReturnType<typeof createShareController>>;
+```
+
+`Inputs` is the function's complete argument tuple, including optional parameters. `Result` removes a Promise when the function is asynchronous. These aliases follow the installed declarations; no internal `src`/`dist` import is required. For a generic factory, keep the concrete call's inferred type when an application needs a narrower result than `ReturnType` preserves. Use `satisfies` or a public option type for configuration literals, and validate unknown request/file data separately.
+
+In a JavaScript application the equivalent editor annotation is `/** @type {Parameters<typeof createShareController>} */` on a matching argument tuple. This provides diagnostics only when JavaScript checking is enabled. It does not validate network data or create a resource automatically. See [strict application setup](typescript.md) for the complete NodeNext checker configuration.
+
+## Failure modes and resource lifetime
+
+Do not copy to clipboard after a user AbortError cancellation. Native share and clipboard APIs can be unavailable or denied; present a usable manual link as fallback. Third-party share links need noopener/noreferrer, and metadata helpers must escape titles/descriptions. No configuration key automatically adds share buttons to the application.
+
+## Verify before deploying
+
+- Exercise the example with the actual owning runtime/browser, not only an imported module.
+- Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
+- Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
+- Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
+
+## Public option and data contracts
+
+These tables list fields declared directly on the named public contract. Referenced/inherited types retain their own declarations; optional does not imply a default value. Use the lifecycle and configuration chapters above for actual initialization behavior.
+
+### ShareData
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `url` | `string` | No |
+| `title` | `string` | Yes |
+| `text` | `string` | Yes |
+
+### ShareEnvironment
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `share` | `(data:ShareData)=>Promise<void>` | Yes |
+| `writeText` | `(text:string)=>Promise<void>` | Yes |
+| `open` | `(url:string)=>void` | Yes |
+
+### ShareCapabilities
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `native` | `boolean` | No |
+| `clipboard` | `boolean` | No |

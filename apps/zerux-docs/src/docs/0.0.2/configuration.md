@@ -44,3 +44,19 @@ Configuration supports database/db, cache, files, email, analytics, tags, report
 ## JavaScript configuration
 
 See [zerux.config.js](zerux-config.md) for an ESM JavaScript example, file precedence, environment timing and the documentation app configuration.
+
+## Select settings by consumer
+
+Use the [configuration handbook](configuration-reference.md) rather than guessing a top-level key from a package name. Managed services are database, cache, files, email, analytics, tags, reports and queue. Other packages are explicitly initialized in plugins, handlers, workers or browser components.
+
+A type declaration can include compatibility/custom fields without a runtime consumer. In particular, an auth or security object does not automatically install login/CSRF/header middleware. The runtime service adapters map options into the owning package factories, and those factory shapes are not always identical to the config shapes.
+
+## Check one feature at a time
+
+Start with structure/server policy and one working route. Add an adapter, configure its environment values, enable the service and verify one real operation. Then test its outage and shutdown behavior before adding another service. This makes a missing credential distinguishable from an import/path/type error.
+
+For TypeScript, validate nested options with NonNullable<ZeruxConfig['cache']> or the matching service field in addition to the root type. The root index signature permits custom keys, so a typo accepted at root is not evidence of correct setup. JavaScript projects can use JSDoc and checkJs for editor diagnostics.
+
+## Configuration is not client state
+
+Bootstrap strips raw private service settings from public runtime configuration. Keep the original module object server-side anyway; do not expose it through a debug route or serialize an environment object. An application-specific metadata namespace should contain only values intended for its actual consumer.

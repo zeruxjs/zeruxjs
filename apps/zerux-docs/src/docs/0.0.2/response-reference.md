@@ -62,3 +62,31 @@ Age values must be safe integers from zero through one year. `cached(value, poli
 ## HEAD and conditional requests
 
 The runtime has explicit no-body handling for HEAD. ETag handling can produce 304 for matching GET/HEAD requests. Fetch endpoint helpers have their own status/header contracts; preserve them through the bridge instead of wrapping a completed Response in ordinary JSON.
+
+## Complete declared contract
+
+The following fields/methods are taken from the current source. Method signatures include their parameters; a type describes the interface and does not perform runtime validation or initialize an optional service.
+
+### ResponseCachePolicy
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `visibility` | `'public' \| 'private' \| 'no-store'` | No | Defaults to private; public requires an explicit opt-in. |
+| `maxAge` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `sharedMaxAge` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `staleWhileRevalidate` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `immutable` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `mustRevalidate` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `vary` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `etag` | `boolean` | No | Generate a content-derived strong ETag for non-streaming bodies. |
+
+### ResponseStreamOptions
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `status` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `headers` | `Record<string, string>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `contentType` | `string` | No | Streaming responses are never implicitly cacheable. |
+| `maxBytes` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+For strict application checking, option inference, public imports and unknown-data handling, read [TypeScript application development](typescript.md).

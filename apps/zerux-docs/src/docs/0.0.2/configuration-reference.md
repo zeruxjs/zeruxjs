@@ -66,3 +66,148 @@ The interface permits additional keys for extensions; accepting a key at type le
 ## JavaScript configuration
 
 See [zerux.config.js](zerux-config.md) for an ESM JavaScript example, file precedence, environment timing and the documentation app configuration.
+
+## Configuration handbook
+
+Choose the section matching the service you are enabling. Every page separates runtime setup from standalone factories and includes JavaScript, TypeScript, prerequisites, failure behavior and verification.
+
+
+- [Database configuration](configuration-database.md)
+
+- [Cache configuration](configuration-cache.md)
+
+- [File storage configuration](configuration-files.md)
+
+- [Analytics configuration](configuration-analytics.md)
+
+- [Queue configuration](configuration-queue.md)
+
+- [Email configuration](configuration-email.md)
+
+
+## Complete root option contracts
+
+These are the declared shapes of the current source version. A type declaration is not evidence of automatic runtime consumption: `auth`, `security`, `websocket` and custom keys require checking their actual integration path. The root config has an open index signature for application extensions; unknown keys are not automatically initialized.
+
+
+### ZeruxConfig
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `files` | `import('./bootstrap/services.js').FilesStartupConfig` | No | Named storage connections; initialized before email service. |
+| `email` | `import('./bootstrap/services.js').EmailStartupConfig` | No | Named SMTP providers. Never serialized into runtime manifests. |
+| `analytics` | `import('./bootstrap/services.js').AnalyticsStartupConfig` | No | Best-effort telemetry backed by a named database connector. |
+| `tags` | `import('./bootstrap/services.js').TagsStartupConfig` | No | GA4-style event tags and browser ttag script, managed as a private service. |
+| `reports` | `import('./bootstrap/services.js').ReportsStartupConfig` | No | Authenticated internal analytics report studio. |
+| `queue` | `import('./bootstrap/services.js').QueueStartupConfig` | No | BullMQ queues and optional workers. Credentials remain server-side. |
+| `protocols` | `import("./protocols.js").ZeruxProtocolOptions` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `type` | `"fix" \| "dynamic" \| "function"` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `entryPoint` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `outDir` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `multisite` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `structure` | `ZeruxStructureConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `server` | `ZeruxServerConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `devtools` | `ZeruxDevtoolsConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `worker` | `ZeruxWorkerConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowedDomains` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowedDevDomain` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `connectorManager` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `db` | `DatabaseConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `database` | `DatabaseConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `websocket` | `{ enabled?: boolean; path?: string; maxPayload?: number; }` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `cache` | `{ connector?: string; options?: Record<string, unknown>; prefix?: string; defaultTtlSeconds?: number; startupTimeoutMs?: number; required?: boolean; }` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `security` | `SecurityConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `auth` | `AuthConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `theme` | `import("./theme.js").ThemeConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+
+### DatabaseConfig
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `default` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `connections` | `DatabaseConnection[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `connection` | `DatabaseConnection[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+
+### DatabaseConnection
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `name` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `slug` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `connector` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `connecter` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `options` | `Record<string, unknown>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+
+### ZeruxStructureConfig
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `app` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `middleware` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `controllers` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `composables` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `plugins` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `public` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `env` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+
+### ZeruxServerConfig
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `port` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `devPort` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowedDomains` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowedDevDomain` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+
+### ZeruxDevtoolsConfig
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `modules` | `Array<string \| ZeruxDevtoolsModuleConfig>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+
+### ZeruxDevtoolsModuleConfig
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `package` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `enabled` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `options` | `Record<string, unknown>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+
+### ZeruxWorkerConfig
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `minThreads` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `maxThreads` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+
+### SecurityConfig
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `keys` | `SecuritySaltsAndKeys` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `salts` | `SecuritySaltsAndKeys` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+
+### AuthConfig
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+
+## Additional configuration chapters
+
+- [Tags](configuration-tags.md)
+- [Reports](configuration-reports.md)
+- [Server](configuration-server.md)
+- [Structure](configuration-structure.md)
+- [Theme](configuration-theme.md)
+- [Protocols](configuration-protocols.md)
+- [Workers](configuration-workers.md)
+- [Auth Security](configuration-auth-security.md)

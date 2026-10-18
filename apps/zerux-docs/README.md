@@ -82,7 +82,7 @@ The filename determines `/zeruxjs/docs/<version>/<slug>/`. Section names come fr
 
 Use level-two/three headings, standard Markdown tables/lists/links and language-tagged code fences. A fence can include `title="app/page.ts"` to label a code block. Headings receive stable, deduplicated anchors. Raw HTML is escaped and MDX/JavaScript is not executed. Documentation links use `<slug>.md` and optional fragments; README-relative links resolve to their repository source.
 
-Authored guides are mandatory for **every `@zeruxjs` package**. Adding a package without documenting it fails the docs build. Package name claims must be unique and refer to actual public manifests. Other public packages receive source-backed README/reference pages, accessible through the package directory.
+Authored guides are mandatory for **every public package in a live workspace-backed version**, including CLI/tooling and placeholder packages. Adding a package without documenting it fails the docs build. Package name claims must be unique and refer to actual public manifests. Existing archived versions retain their reference behavior. Placeholder packages must document their real limited contract rather than inventing CMS/generator features.
 
 ## Documentation expectations
 
@@ -147,3 +147,11 @@ The interface uses indigo/teal accents, theme-aware surfaces, component hover fe
 Production output now minifies HTML as well as CSS and JavaScript. The HTML pass compacts structural whitespace and comments while preserving `pre`, `textarea`, script and style payloads; line breaks inside code examples remain intentional. Development HTML remains readable. The native version disclosure gains outside-click, focus-out and Escape dismissal when JavaScript is available.
 
 The framework configuration is primarily for runtime service startup: database, cache and other settings. This static app consumes only `documentation` and never calls `bootstrapApplication`/`initializeRuntimeServices`; adding service configuration does not activate services here. The docs currently require no database/cache connection. A server-backed version must start the actual Zerux runtime; GitHub Pages serves the generated static files.
+
+## Detailed configuration and package coverage
+
+The Configuration navigation group contains a handbook, complete local/production-shaped examples and individual database, cache, files, email, analytics, tags, reports, queue, server, structure, theme, protocol, worker and auth/security chapters. Each separates actual runtime consumption from declared/custom settings and standalone factories. The TypeScript guide covers strict NodeNext checking, typed config, public option/result inference and unknown-data validation.
+
+Every public package now has an authored setup/status page. Preserve established `reference-*` slugs when replacing generated reference content so published URLs remain valid. Package sections cover installation, actual integration path, TypeScript, operations/lifecycle and relevant public option types. Source-backed field tables describe declared values; optional is not a default and a root index signature is not feature activation. Update both prose and option contracts when source APIs change, and freeze release references before a version bump.
+
+Portal learning paths are defined once in `src/lib/learning-paths.mjs` and shared by the HTML and raw Markdown portal, avoiding mismatched navigation as the handbook grows. Validate self-contained examples with the installed public declarations; report real integration/browser checks separately from typechecks.

@@ -51,3 +51,19 @@ Keep queryMode, truncated and coverage information with every exported chart. Mu
 ## Retention and privacy
 
 Analytics retention deletes are bounded administrative operations with explicit approval. They do not erase every email, suppression, external-provider or browser record. Align retention with a broader data inventory. Email open/click/download-click observations should not be labeled confirmed unique human engagement or completed downloads.
+
+## TypeScript event and query contracts
+
+```ts
+import type { AnalyticsEventInput } from '@zeruxjs/analytics';
+const event = {
+  name: 'page_view', source: 'web', site: 'public',
+  properties: { pathname: '/guide' },
+} satisfies AnalyticsEventInput;
+```
+
+The event type checks value shapes; the server must still validate unknown browser events, consent, origins and site scope. A client must not mark its event source as trusted server data. Use the analytics package's actual summary/aggregate query types and preserve coverage/truncation metadata in the caller's result.
+
+When comparing reports, identify whether each number is a raw event page, a database-native count or an indexed numeric aggregate. Consent drops, deduplication reservations, failed writes and reconciliation windows can make those numbers differ without a chart bug. A typed result does not guarantee complete source coverage.
+
+Choose retention and deletion policy before collecting events. Check cross-site source filtering, aggregate fact updates and restart behavior with a real database. Rebuild or reconcile derived data according to its own contract rather than assuming a chart refresh repairs stored facts. See [analytics configuration](configuration-analytics.md) and [report configuration](configuration-reports.md) for the complete startup and adapter inputs.

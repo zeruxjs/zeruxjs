@@ -1,3 +1,4 @@
+import { learningPaths } from "../src/lib/learning-paths.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,8 +47,9 @@ async function addReferencePages(pages) {
     for (const name of claims)
       if (!inventory.some((item) => item.name === name))
         throw new Error(`Unknown package guide: ${name}`);
-    for (const item of inventory.filter((item) =>
-      item.name.startsWith("@zeruxjs/"),
+    for (const item of inventory.filter(
+      (item) =>
+        version.reference === "workspace" || item.name.startsWith("@zeruxjs/"),
     ))
       if (!claims.includes(item.name))
         throw new Error(`Missing authored package guide for ${item.name}`);
@@ -229,8 +231,8 @@ export async function build({ production = true } = {}) {
       description: site.description,
       body:
         "## Choose your next step\n\n" +
-        ["tutorial", "mental-model", "database-queries", "packages"]
-          .map((slug) => {
+        learningPaths
+          .map(([slug]) => {
             const page = pages.find(
               (page) => page.version === site.latest && page.slug === slug,
             );

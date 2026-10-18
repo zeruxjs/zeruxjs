@@ -59,3 +59,76 @@ Logical keys are unprefixed at the call site. Values are JSON-serializable; a mi
 ## Invalidation and safety
 
 Include tenant and data-version boundaries in keys. Do not include secrets or raw personal information. A prefixed clear fails closed when the adapter cannot clear that literal namespace. Avoid unprefixed clear on shared infrastructure. Use database transactions for authoritative writes, then invalidate affected cache entries; cache storage is not a transaction journal.
+
+## Install and select the integration
+
+```sh
+npm install @zeruxjs/cache@0.0.2
+```
+
+This package participates in the runtime's **cache** integration. Start with [cache configuration](configuration-cache.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.
+
+## A practical integration workflow
+
+Use connector in framework config and helper in the standalone manager. Choose memory for process-local development or install the Redis adapter for shared infrastructure. Set a prefix and freshness policy before inserting entries. Preserve the distinction between a missing value and cached null. Use remember for bounded load coalescing in the same process, not as a distributed lock.
+
+## TypeScript: inputs, results and ownership
+
+```ts
+import { createCacheManager } from '@zeruxjs/cache';
+
+type Inputs = Parameters<typeof createCacheManager>;
+type Result = Awaited<ReturnType<typeof createCacheManager>>;
+```
+
+`Inputs` is the function's complete argument tuple, including optional parameters. `Result` removes a Promise when the function is asynchronous. These aliases follow the installed declarations; no internal `src`/`dist` import is required. For a generic factory, keep the concrete call's inferred type when an application needs a narrower result than `ReturnType` preserves. Use `satisfies` or a public option type for configuration literals, and validate unknown request/file data separately.
+
+In a JavaScript application the equivalent editor annotation is `/** @type {Parameters<typeof createCacheManager>} */` on a matching argument tuple. This provides diagnostics only when JavaScript checking is enabled. It does not validate network data or create a resource automatically. See [strict application setup](typescript.md) for the complete NodeNext checker configuration.
+
+## Failure modes and resource lifetime
+
+Close a standalone manager in finally; let runtime shutdown own a configured service. A required cache outage should fail deliberately, while optional-cache request paths must still fetch authoritative data. Use server-verified tenant/data-revision boundaries in keys and invalidate after a successful authoritative write. Never use cache state as the sole durable record of payment, consent or authorization.
+
+## Verify before deploying
+
+- Exercise the example with the actual owning runtime/browser, not only an imported module.
+- Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
+- Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
+- Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
+
+## Public option and data contracts
+
+These tables list fields declared directly on the named public contract. Referenced/inherited types retain their own declarations; optional does not imply a default value. Use the lifecycle and configuration chapters above for actual initialization behavior.
+
+### CacheManagerConfig
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `helper` | `string` | No |
+| `options` | `Record<string, unknown>` | Yes |
+| `prefix` | `string` | Yes |
+| `defaultTtlSeconds` | `number` | Yes |
+
+### CacheSetOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `ttlSeconds` | `number` | Yes |
+| `ifAbsent` | `boolean` | Yes |
+| `ifPresent` | `boolean` | Yes |
+
+### MemoryCacheOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `maxEntries` | `number` | Yes |
+| `now` | `() => number` | Yes |
+
+### MemoryCacheStats
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `entries` | `number` | No |
+| `hits` | `number` | No |
+| `misses` | `number` | No |
+| `evictions` | `number` | No |

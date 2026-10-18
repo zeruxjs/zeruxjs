@@ -54,3 +54,15 @@ Do not leave old documentation reading current manifests: that silently changes 
 ## Review expectations
 
 Keep reference links and examples synchronized with code. State implementation boundaries without claiming a whole framework ecosystem from a package name. Security, durability, authorization and query coverage should be described at the relevant API boundary, not only in a generic disclaimer. Review both desktop and mobile output and exercise keyboard navigation when changing presentation.
+
+## TypeScript examples and configuration coverage
+
+Every runtime-service guide should identify the exact zerux.config key, installation prerequisites, JavaScript/default-export setup, a TypeScript satisfies example, meaningful values/defaults, dependencies and failure policy. A package with no automatic key must say where its factory/controller is initialized instead of inventing a setting.
+
+Check public example imports against the actual export map. Infer options/results from the public function or use its exported type; avoid private source imports and made-up Options identifiers. Typecheck self-contained snippets, but label host-provided callbacks and infrastructure prerequisites separately. A passing compiler does not send SMTP, create a database schema or certify Redis behavior.
+
+Keep source-backed option tables current when declarations change. Tables list declared values, not automatic runtime consumption; nested/inherited types retain their own contracts. Include a realistic example and explain ownership instead of relying only on an exhaustive schema dump.
+
+## Verify content as a site
+
+Build from the application directory. Verify generated HTML, raw Markdown alternatives, source links, cross-page anchors, package coverage, navigation and search. Check a narrow viewport and long option/code tables, keyboard interactions, reduced motion and JavaScript-disabled reading. Keep the previous valid export when a candidate fails; do not publish a partially checked tree.

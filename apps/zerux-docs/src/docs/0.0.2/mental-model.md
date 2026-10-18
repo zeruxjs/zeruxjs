@@ -55,3 +55,15 @@ The framework compiler emits application JavaScript and a build manifest. The ru
 ## What is not implied
 
 The project has React/Vue observable bridges and Zyro libraries, but the server runtime does not automatically provide Next-style component layouts, server actions, route caches, image optimization or a complete hydration adapter. Use the [capability map](capabilities.md) to distinguish actual contracts from future integrations.
+
+## TypeScript mirrors ownership, not runtime guarantees
+
+ZeruxConfig describes startup input, ZeruxPluginApi describes registration, and ZeruxRequestContext describes one request. These types are deliberately different owners. Do not pass a startup config with secrets into a browser state type, or assume a request-local interface makes a module-level singleton request-local.
+
+A service type argument can describe the expected cache/database facade, but the service can still be absent or degraded. Validate unknown input before crossing into a trusted service and handle its explicit failure result. A build's transpilation is not a semantic typecheck or a real backend operation.
+
+## A practical debugging sequence
+
+Ask which phase owns the failure: config evaluation, environment availability, service startup, module discovery, plugin registration, route matching, request processing or shutdown. Inspect that phase's bounded diagnostics rather than restarting every backend or loosening host policy at once.
+
+During development, a failed candidate can leave the previous generation active. That is distinct from a browser cache or a missing file watcher event. During production, verify the built artifact and process root instead of assuming that a running Node process means the intended build was loaded. See [service lifecycle](service-lifecycle.md), [configuration structure](configuration-structure.md) and [deployment](deployment.md).

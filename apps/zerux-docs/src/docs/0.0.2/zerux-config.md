@@ -126,3 +126,16 @@ The static exporter imports this object directly and consumes only `documentatio
 Zuixs settings remain in `zuix.config.mjs`. Prefer utilities directly in template classes. Optional recipes compose utilities for resets or generated Markdown elements; they are not required for ordinary components. A custom application namespace does not cause the framework to consume another tool's configuration automatically.
 
 Set `documentation.origin` to the public origin to emit canonical URLs and the documentation sitemap. Set `documentation.basePath` to the mounted app path; the combined builder's site mount must agree with it. Archive version references before changing release versions, as described in the documentation application README.
+
+## TypeScript application setup
+
+```ts title="zerux.config.ts"
+import type { ZeruxConfig } from 'zeruxjs';
+const cache = {
+  connector: 'memory', options: { maxEntries: 1000 },
+  prefix: 'application:v1', defaultTtlSeconds: 60,
+} satisfies NonNullable<ZeruxConfig['cache']>;
+export default { type: 'fix', cache } satisfies ZeruxConfig;
+```
+
+Keep a single active config file and check nested service objects as well as the root. The root type permits application-specific extensions, so a misspelled unknown top-level property may still be accepted. TypeScript does not validate environment strings or initialize a service. Read the [complete configuration handbook](configuration-handbook.md) and [TypeScript guide](typescript.md) for full application and package setup.

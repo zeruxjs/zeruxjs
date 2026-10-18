@@ -34,3 +34,84 @@ buildTypescript supports esbuild bundling with explicit entry points/outdir. cre
 ## Loading modes
 
 registerTypescript installs CommonJS require hooks and returns a disposer. It does not enable ESM loading. The separate @zeruxjs/typescript/loader entrypoint integrates with Node's custom ESM loader mechanism. Zerux's application CLI registers its own framework loader for virtual imports and source handling.
+
+## Install and select the integration
+
+```sh
+npm install @zeruxjs/typescript@0.0.2
+```
+
+There is no automatic `typescript` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
+
+## A practical integration workflow
+
+Choose transform, build, typecheck or loader registration deliberately. Transforms/bundles remove syntax and may optimize output; only a separate typecheck reports semantic type errors. Browser bundles must use platform browser and a browser target; default platform remains Node. Avoid pulling filesystem/secret-bearing modules into browser entry points.
+
+## TypeScript: inputs, results and ownership
+
+```ts
+import { buildTypescript } from '@zeruxjs/typescript';
+
+type Inputs = Parameters<typeof buildTypescript>;
+type Result = Awaited<ReturnType<typeof buildTypescript>>;
+```
+
+`Inputs` is the function's complete argument tuple, including optional parameters. `Result` removes a Promise when the function is asynchronous. These aliases follow the installed declarations; no internal `src`/`dist` import is required. For a generic factory, keep the concrete call's inferred type when an application needs a narrower result than `ReturnType` preserves. Use `satisfies` or a public option type for configuration literals, and validate unknown request/file data separately.
+
+In a JavaScript application the equivalent editor annotation is `/** @type {Parameters<typeof buildTypescript>} */` on a matching argument tuple. This provides diagnostics only when JavaScript checking is enabled. It does not validate network data or create a resource automatically. See [strict application setup](typescript.md) for the complete NodeNext checker configuration.
+
+## Failure modes and resource lifetime
+
+CommonJS registration returns a disposer and does not register an ESM loader. Use the supported ESM loader mechanism for ESM TypeScript files. Output paths must not equal the source project root. Verify source maps, external packages and generated ESM/CJS format against the actual runtime. A successful transpilation does not prove package exports, types or integration behavior.
+
+## Verify before deploying
+
+- Exercise the example with the actual owning runtime/browser, not only an imported module.
+- Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
+- Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
+- Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
+
+## Public option and data contracts
+
+These tables list fields declared directly on the named public contract. Referenced/inherited types retain their own declarations; optional does not imply a default value. Use the lifecycle and configuration chapters above for actual initialization behavior.
+
+### TypeScriptBuildOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `entryPoints` | `string[]` | No |
+| `outdir` | `string` | No |
+| `cwd` | `string` | Yes |
+| `format` | `"esm" \| "cjs"` | Yes |
+| `platform` | `"node" \| "browser" \| "neutral"` | Yes |
+| `target` | `string` | Yes |
+| `bundle` | `boolean` | Yes |
+| `minify` | `boolean` | Yes |
+| `sourcemap` | `boolean` | Yes |
+| `external` | `string[]` | Yes |
+
+### TransformOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `filename` | `string` | Yes |
+| `format` | `ScriptFormat` | Yes |
+| `sourceMap` | `boolean` | Yes |
+| `target` | `ts.ScriptTarget` | Yes |
+
+### TsConfigOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `overwrite` | `boolean` | Yes |
+| `compilerOptions` | `Record<string, unknown>` | Yes |
+| `include` | `string[]` | Yes |
+| `exclude` | `string[]` | Yes |
+
+### TypecheckOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `files` | `string[]` | No |
+| `cwd` | `string` | Yes |
+| `configFile` | `string` | Yes |

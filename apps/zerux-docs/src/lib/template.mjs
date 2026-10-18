@@ -1,3 +1,4 @@
+import { learningPaths } from "./learning-paths.mjs";
 import { site, sitePath, mountHtml } from "../site.config.mjs";
 import { markdownPath } from "./raw-markdown.mjs";
 import { escape } from "./markdown.mjs";
@@ -76,32 +77,7 @@ export function document(page, pages, content, toc = []) {
 /** Render the documentation portal. @param {object[]} pages Documents. @returns {string} HTML. Reads site configuration only. */
 export function home(pages) {
   const version = site.latest;
-  const links = [
-    [
-      "tutorial",
-      "01",
-      "Build your first app",
-      "A guided project from routes to production build.",
-    ],
-    [
-      "mental-model",
-      "02",
-      "Understand the runtime",
-      "Requests, plugins, generations and ownership.",
-    ],
-    [
-      "database-queries",
-      "03",
-      "Connect your data",
-      "Named connections, caching and service boundaries.",
-    ],
-    [
-      "packages",
-      "04",
-      "Explore the ecosystem",
-      "Focused guides for the packages you actually use.",
-    ],
-  ];
+  const links = learningPaths;
   const intro = pages.find(
     (item) => item.version === version && item.slug === "introduction",
   );

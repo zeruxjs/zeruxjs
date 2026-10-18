@@ -49,3 +49,50 @@ Use createContext, setContext and useContext for request-local values. `withCont
 ## Cleanup
 
 Dispose component hooks when the render owner no longer needs them. Explicit cleanup matters for effects and retained resources. This package is not React Hooks and does not install a UI renderer.
+
+## Install and select the integration
+
+```sh
+npm install @zeruxjs/hooks@0.0.2
+```
+
+There is no automatic `hooks` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
+
+## A practical integration workflow
+
+Wrap each server request in its own hook context and keep hook order stable for each component identity. Context providers and hook state are scoped through AsyncLocalStorage; this does not implement a frontend renderer or schedule rerenders. Keep render-time hooks synchronous and explicitly schedule application updates where appropriate.
+
+## TypeScript: inputs, results and ownership
+
+```ts
+import { runWithRequestHooks } from '@zeruxjs/hooks';
+
+type Inputs = Parameters<typeof runWithRequestHooks>;
+type Result = Awaited<ReturnType<typeof runWithRequestHooks>>;
+```
+
+`Inputs` is the function's complete argument tuple, including optional parameters. `Result` removes a Promise when the function is asynchronous. These aliases follow the installed declarations; no internal `src`/`dist` import is required. For a generic factory, keep the concrete call's inferred type when an application needs a narrower result than `ReturnType` preserves. Use `satisfies` or a public option type for configuration literals, and validate unknown request/file data separately.
+
+In a JavaScript application the equivalent editor annotation is `/** @type {Parameters<typeof runWithRequestHooks>} */` on a matching argument tuple. This provides diagnostics only when JavaScript checking is enabled. It does not validate network data or create a resource automatically. See [strict application setup](typescript.md) for the complete NodeNext checker configuration.
+
+## Failure modes and resource lifetime
+
+Dispose component hooks when their owner ends so effects release resources. Do not keep a user-specific context in a process-global singleton. Path registry persistence uses private atomic writes but competing processes still require serialization. Test nested contexts, changed hook order and cleanup failures rather than treating successful registration as lifecycle correctness.
+
+## Verify before deploying
+
+- Exercise the example with the actual owning runtime/browser, not only an imported module.
+- Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
+- Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
+- Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
+
+## Public option and data contracts
+
+These tables list fields declared directly on the named public contract. Referenced/inherited types retain their own declarations; optional does not imply a default value. Use the lifecycle and configuration chapters above for actual initialization behavior.
+
+### Context
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `id` | `symbol` | No |
+| `defaultValue` | `T` | Yes |

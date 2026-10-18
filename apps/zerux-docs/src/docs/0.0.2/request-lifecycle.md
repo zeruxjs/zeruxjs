@@ -52,3 +52,19 @@ Return serializable payloads for normal handlers. `createFetchRoute` owns sendin
 ## Error boundaries
 
 Throw `HttpError(status, message, data?)` for intentional HTTP failures. Avoid putting stack traces, raw SQL, credentials or rejected request payloads in public error data. Log sanitized diagnostics internally.
+
+## TypeScript at each request boundary
+
+The context contains Node req/res as well as a URL and an unknown body. Fetch adapters construct Web Request/Response contracts; those headers/body APIs are not interchangeable with Node IncomingMessage. Use the actual exported context or inferred adapter handler type rather than a catch-all any-shaped request.
+
+Validate route/query/body values before database/file/tool operations. An authenticated identity must still be authorized for the tenant and action. Context state is per request, but a singleton controller or manager can be shared; avoid storing per-user mutable state in shared modules.
+
+## Earlier endpoints and security policy
+
+Protocol and public handling can precede global application middleware. A private file placed under public cannot be made safe merely by adding later middleware. Protocol authorization and service dashboard callbacks have their own boundaries. Test each exposed endpoint using the actual transport and method.
+
+## Completion and cancellation
+
+After a handler commits headers, errors and disconnects require cleanup rather than an unrelated replacement JSON response. Stop downstream streams/requests and preserve cancellation as cancellation. Let a generation own shared managers until old requests drain; closing a pool after one request can break other users.
+
+Verify normal completion, deliberate errors, malformed bodies, denied identity, a cancelled stream and an unsuccessful reload. Observe whether the owning resources close and whether the old active generation remains available when replacement preparation fails.

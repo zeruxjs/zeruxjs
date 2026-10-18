@@ -36,3 +36,22 @@ HTML pages must explicitly include stylesheets/scripts they need. The runtime do
 ## This documentation app
 
 Its exporter copies public assets and renders known Markdown documents into dist. Directory index.html files serve nested routes directly; configure a real 404 page and avoid SPA history fallback. This app is mounted at /zeruxjs/; its generated links, assets and search URLs include that prefix. The combined ecosystem homepage owns the domain root.
+
+## Configure public discovery deliberately
+
+```ts title="zerux.config.ts"
+import type { ZeruxConfig } from 'zeruxjs';
+export default {
+  structure: { public: ['public'] },
+} satisfies ZeruxConfig;
+```
+
+TypeScript validates the path shape, not the contents of that directory. Audit the actual exported files and keep environment files, backups, source credentials and authenticated uploads outside it. A filename or signed-looking URL is not an access-control check.
+
+## Static versus server-generated assets
+
+The server runtime can discover configured public files; the docs exporter copies only its approved public build tree and generated assets. Neither operation automatically bundles every referenced JavaScript dependency, converts arbitrary Markdown, optimizes image bytes or provisions object storage. Generate browser CSS/JS and link the output with stable base-path-aware URLs.
+
+Use content versioning for reusable immutable assets and verify MIME/content type through the actual host. A local preview can set text/markdown while a static provider chooses another display/download behavior. Keep .nojekyll and prebuilt artifact deployment for the docs raw Markdown exports; a second site generator can otherwise change the artifact contract.
+
+Test nested paths, directory redirects, absent assets, HEAD and the configured static 404 response. A single successful homepage request does not prove fonts, modules, images or mounted documentation paths exist in the production tree.

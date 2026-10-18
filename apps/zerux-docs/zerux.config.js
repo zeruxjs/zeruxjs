@@ -27,6 +27,7 @@ export default {
     sections: [
       "Getting started",
       "Fundamentals",
+      "Configuration",
       "Runtime",
       "Data and services",
       "Frontend",
