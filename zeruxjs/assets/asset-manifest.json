@@ -3,12 +3,13 @@
   "compiler": "zuixs",
   "bundler": "@zeruxjs/typescript",
   "utilities": 15,
+  "recipes": 206,
   "assets": [
     {
       "url": "/zeruxjs/assets/docs.css",
-      "version": "916b81dd07dd",
-      "bytes": 15725,
-      "sourceBytes": 19055
+      "version": "be1f30315555",
+      "bytes": 16896,
+      "sourceBytes": 17369
     },
     {
       "url": "/zeruxjs/assets/docs.js",
