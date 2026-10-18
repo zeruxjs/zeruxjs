@@ -30,3 +30,7 @@ zeruxjs/accessibility exports bindAccessibleTabs and prefersReducedMotion. Tabs 
 ## Template variables
 
 createVariableRegistry, variables, registerVariable and renderVariables expose configurable variable resolution. Treat escaping as a security boundary and use the correct escape mode for the output context.
+
+## Application styling
+
+Use [Zuixs utility-first styling](styling.md) for theme tokens, responsive utilities and component/Markdown recipes. The documentation site uses this compiler for its complete design.

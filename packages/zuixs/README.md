@@ -121,3 +121,32 @@ Prepared to validate npm trusted publishing through GitHub Actions.
 ### Responsive cascade
 
 Generated base utilities precede state variants and named responsive variants. Named min-width breakpoints are emitted from smaller to larger, so `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` follows mobile-first behavior regardless of class-token order. Breakpoint comparison uses CSS's standard 16px initial font-size equivalence for `em`/`rem`. Keep breakpoint units consistent for predictable custom scales. The docs and ecosystem homepage use this compiler during static production builds.
+
+## Component and typography recipes
+
+Zuixs is a build-time utility-first alternative for application styling. Use utility classes directly in templates; compose the same utilities into recipes when styling reusable components, browser states or generated Markdown without repeating markup classes. Recipes work with the CLI, watch mode, Vite, Node and browser compilation APIs.
+
+```js
+export default {
+  prefix: 'ui-',
+  extend: { colors: { brand: '#087e65' } },
+  recipes: [
+    { selector: 'body', apply: ['ui-m-0', 'ui-font-sans'] },
+    { selector: '.card', apply: ['ui-rounded-lg', 'ui-p-6', 'ui-bg-white'] },
+    { selector: '.card:hover', apply: ['ui-border-brand'] },
+    { selector: '.article h2', apply: ['ui-text-2xl', 'ui-font-bold', 'ui-mt-8'] },
+    { selector: '.card', apply: ['ui-p-4'], media: '(max-width: 700px)' },
+    { selector: '.card', apply: ['ui-grid'], supports: '(display: grid)' },
+    { selector: '.card', apply: ['ui-grid-cols-2'], container: '(min-width: 40rem)' },
+    { selector: '.navigation', apply: ['ui-hidden'], media: 'print' },
+  ],
+};
+```
+
+`apply` takes an array of **base** utility tokens with the configured prefix, including arbitrary values/properties and important tokens such as `ui-!hidden`. Put hover/focus/pseudo-element selectors and conditions on the recipe rather than embedding variants in its tokens. Each recipe emits one declaration block, preserving application order and `!important`. Recipes run after reset/plugin bases and before scanned utility rules, retaining normal CSS specificity. Multiple matching recipes follow source order. Recipes are included even when their selectors are absent from scanned templates, which supports runtime dialog/search states and generated document content.
+
+`media`, `supports` and `container` conditions can be combined; emitted nesting is media → supports → container. Selectors are trusted developer configuration, never visitor input. The compiler validates bounded selectors/conditions, rejects unsupported/unsafe utility tokens, and bounds both recipe count and total utility applications by `limits.maxClasses`. Invalid recipes throw rather than silently producing incomplete styles. Existing configurations without recipes retain their output. Arbitrary values retain the compiler's restrictions on URLs, declaration escapes and executable CSS.
+
+### Arbitrary value types
+
+`text-[21px]` and `text-[clamp(2rem,4vw,4rem)]` select font size; `border-[2px]` selects border width. Ambiguous CSS variables default to color for `text-[var(--accent)]` and `border-[var(--line)]`. Supply an explicit type when needed: `text-[length:var(--heading-size)]`, `text-[color:var(--accent)]`, `border-[length:var(--stroke)]`, `font-[family:Inter,system-ui,sans-serif]` or `font-[weight:750]`. These use the same value safety checks as other utilities.

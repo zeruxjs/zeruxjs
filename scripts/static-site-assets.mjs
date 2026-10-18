@@ -32,11 +32,9 @@ export async function optimizeStaticAssets({
       .flatMap(([, html]) => extractClasses(html))
       .filter((token) => /(^|:)ui-/.test(token)),
   );
-  const authored = await fs.readFile(path.join(directory, css), "utf8");
   const generated = createZuix({
     ...zuix,
     minify: production,
-    plugins: [...(zuix.plugins ?? []), ({ addBase }) => addBase(authored)],
   }).generate(classes);
   if (generated.unmatched.length)
     throw new Error(
@@ -83,7 +81,7 @@ export async function optimizeStaticAssets({
         version: assetVersion(bytes),
         bytes: bytes.length,
         sourceBytes: Buffer.byteLength(
-          entry === inputs[0] ? authored : await fs.readFile(entry),
+          entry === inputs[0] ? generated.css : await fs.readFile(entry),
         ),
       });
     }
@@ -110,6 +108,7 @@ export async function optimizeStaticAssets({
       compiler: "zuixs",
       bundler: "@zeruxjs/typescript",
       utilities: classes.size,
+      recipes: zuix.recipes?.length ?? 0,
       assets: records,
     };
     await fs.writeFile(
@@ -117,7 +116,7 @@ export async function optimizeStaticAssets({
       JSON.stringify(report, null, 2),
     );
     console.info(
-      `[assets] ${basePath || "/"}: ${classes.size} Zuixs utilities; ${production ? "minified production" : "readable development"} CSS/JS (${records.reduce((total, item) => total + item.bytes, 0)} bytes)`,
+      `[assets] ${basePath || "/"}: ${classes.size} scanned Zuixs utilities + ${zuix.recipes?.length ?? 0} utility recipes; ${production ? "minified production" : "readable development"} CSS/JS (${records.reduce((total, item) => total + item.bytes, 0)} bytes)`,
     );
     return report;
   } finally {

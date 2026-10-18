@@ -19,6 +19,19 @@ export interface ZuixPluginAPI {
 }
 export type ZuixPlugin = (api: ZuixPluginAPI) => void;
 import type {ZuixLimits} from './safety.js';
+/** Reusable utility composition for components, document elements and browser states. */
+export interface ZuixRecipe {
+  /** Trusted application selector; never derived from visitor input. */
+  selector: string;
+  /** Base utility tokens, including configured prefix. Use selector for state variants. */
+  apply: readonly string[];
+  /** Optional media query, such as print or (max-width: 700px). */
+  media?: string;
+  /** Optional feature query, such as (display: grid). */
+  supports?: string;
+  /** Optional container query. */
+  container?: string;
+}
 export interface ZuixConfig {
   /** Upper bounds for filesystem scanning and CSS token generation. */
   limits?: ZuixLimits;
@@ -34,6 +47,8 @@ export interface ZuixConfig {
   theme?: Partial<{[K in keyof ZuixTheme]: ThemeScale}>;
   extend?: Partial<{[K in keyof ZuixTheme]: ThemeScale}>;
   plugins?: ZuixPlugin[];
+  /** Ordered utility recipes, emitted before scanned utility classes. */
+  recipes?: readonly ZuixRecipe[];
   /** Emit CSS for each matching source file, with optional shared CSS. */
   perFile?: boolean | {dir?: string; shared?: boolean};
   /** Remove unneeded spaces and group identical declaration blocks. */

@@ -1,6 +1,8 @@
-/** Trusted docs utility tokens, compiled from final HTML. Component styling stays in authored CSS. */
+import recipes from "./zuix.recipes.mjs";
+/** Docs utilities and component recipes, compiled at build time. */
 export default {
   preflight: false,
+  recipes,
   prefix: "ui-",
   extend: {
     screens: { wide: "701px", cards: "951px" },

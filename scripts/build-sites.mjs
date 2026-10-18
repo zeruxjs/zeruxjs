@@ -191,10 +191,6 @@ export async function buildSites({ production = true } = {}) {
     const rootSource = path.join(repositoryRoot, sites.root.source);
     await fs.mkdir(path.join(staging, "site-assets"));
     await copyStatic(
-      path.join(rootSource, "style.css"),
-      path.join(staging, "site-assets/style.css"),
-    );
-    await copyStatic(
       path.join(rootSource, "app.js"),
       path.join(staging, "site-assets/app.js"),
     );

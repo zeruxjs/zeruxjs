@@ -55,6 +55,19 @@ export function utilityFor(input:string,theme:ZuixTheme,additional:Record<string
  if(spacing){const props=spacingProps(spacing[1]);const value=scale(theme,'spacing',spacing[2])??(spacing[2]==='auto'?'auto':spacing[2]==='full'?'100%':undefined);if(props?.length&&value&&(!negative||negativeAllowed.has(spacing[1])))return declarations(props,negative?`calc(${value} * -1)`:value);}
  const dimensions=/^(w|h|min-w|min-h|max-w|max-h|basis)-(.+)$/.exec(name);
  if(dimensions){const prop=({w:'width',h:'height','min-w':'min-width','min-h':'min-height','max-w':'max-width','max-h':'max-height',basis:'flex-basis'} as Record<string,string>)[dimensions[1]];const v=scale(theme,'spacing',dimensions[2])??({full:'100%',auto:'auto',screen:dimensions[1].endsWith('w')?'100vw':'100vh',min:'min-content',max:'max-content',fit:'fit-content',none:'none'} as Record<string,string>)[dimensions[2]];if(v)return {[prop]:v};}
+ // Resolve ambiguous arbitrary values before color lookup, following utility-first typed hints.
+ const typed=/^(text|border|font)-\[(length|color|family|weight):(.+)\]$/.exec(name);
+ if(typed){
+  const value=arbitrary('['+typed[3]+']');
+  const property=({text:{length:'font-size',color:'color'},border:{length:'border-width',color:'border-color'},font:{family:'font-family',weight:'font-weight'}} as Record<string,Record<string,string>>)[typed[1]][typed[2]];
+  if(value&&property)return {[property]:value};
+  return;
+ }
+ const sized=/^(text|border)-\[(.+)\]$/.exec(name);
+ if(sized){
+  const value=arbitrary('['+sized[2]+']');
+  if(value&&(/^(?:\d*\.)?\d+(?:px|rem|em|ex|ch|cap|ic|lh|rlh|vw|vh|vi|vb|vmin|vmax|svw|svh|lvw|lvh|dvw|dvh|cqw|cqh|cqi|cqb|cqmin|cqmax|pt|pc|in|cm|mm|q|%)$/i.test(value)||/^(?:calc|min|max|clamp)\(/.test(value)))return {[sized[1]==='text'?'font-size':'border-width']:value};
+ }
  const color=/^(bg|text|border|ring|fill|stroke|decoration|placeholder)-(.+)$/.exec(name);
  if(color){const group=color[1], key=color[2];const [colorKey,opacity]=key.split('/');const v=scale(theme,'colors',colorKey);if(v){const property=({bg:'background-color',text:'color',border:'border-color',ring:'--zuix-ring-color',fill:'fill',stroke:'stroke',decoration:'text-decoration-color',placeholder:'--zuix-placeholder-color'} as Record<string,string>)[group];const colorValue=opacity&&/^\d+$/.test(opacity)?`color-mix(in srgb, ${v} ${Math.min(100,Number(opacity))}%, transparent)`:v;return {[property]:colorValue};}}
  const font=/^font-(.+)$/.exec(name);if(font){const v=scale(theme,'fontWeight',font[1]);if(v)return {'font-weight':v};}

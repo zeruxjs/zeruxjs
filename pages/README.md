@@ -23,8 +23,14 @@ The combined static output is `../.site-build/`. Site mounts and root-owned file
 
 ## Production assets and navigation
 
-`prebuild` and `predev` compile the four required workspace tools in parallel. Production builds use **Zuixs** to generate only the responsive `ui-` utilities present in rendered HTML, retaining authored component styles. `zuix.config.mjs` owns the utility prefix and breakpoints. **@zeruxjs/typescript** bundles browser modules and minifies CSS/JavaScript; development builds retain readable output and source maps. The asset manifest records sizes and content hashes used in cache-busting URLs. Production output has no source maps.
+`prebuild` and `predev` compile the four required workspace tools in parallel. Production builds use **Zuixs** to generate the `ui-` utilities present in rendered HTML plus reusable utility recipes for document elements and component states. There are no handwritten CSS source files. `zuix.config.mjs` owns the utility prefix and breakpoints. **@zeruxjs/typescript** bundles browser modules and minifies CSS/JavaScript; development builds retain readable output and source maps. The asset manifest records sizes and content hashes used in cache-busting URLs. Production output has no source maps.
 
 **@zeruxjs/performance/navigation** prefetches public documentation pages after hover or keyboard focus. Supporting browsers receive speculation prefetch rules; other browsers receive link prefetch hints. There is no prerendering. Hints are bounded per document and exclude external URLs, query strings, downloads, current-page anchors and slow/data-saving connections. Browsers decide whether to honor hints. Ordinary links work without JavaScript.
 
 Docs search loads its browser module and compact index on demand, using **@zeruxjs/search** for local ranking. No third-party browser service is required. Run the production build before measuring output; development intentionally includes source maps and live reload.
+
+### Utility-first styling
+
+Use `ui-` utility classes in templates for new layouts and components. `zuix.config.mjs` defines theme extensions and imports `zuix.recipes.mjs`: reusable compositions of those same utilities for element selectors, Markdown typography, component states, dark mode, reduced-motion and print. This is the Zuixs equivalent of applying utilities to a reusable component; recipes preserve source order and are compiled before explicit template utilities. Style values and unsupported utility names are validated by Zuixs, and invalid recipes fail the build.
+
+The build generates the final stylesheet (`site-assets/style.css` for the homepage, `assets/docs.css` for docs). Do not edit generated files. To change a component, change its recipe's `apply` tokens or its template classes. Use existing theme scales first, arbitrary values such as `ui-p-[13px]` for precise values, and properties such as `ui-[scroll-margin-top:96px]` where a named utility is unnecessary. `ui-!hidden` marks an important utility. State selectors and media/feature/container queries belong to the recipe configuration. No browser styling runtime is shipped.

@@ -22,7 +22,7 @@ export const sites = {
       directory: 'apps/zerux-docs',
       build: ['node', 'scripts/build.mjs'],
       developmentBuild: ['node', 'scripts/build.mjs', '--development'],
-      watch: ['src', 'public', 'scripts', 'zuix.config.mjs'],
+      watch: ['src', 'public', 'scripts', 'zuix.config.mjs', 'zuix.recipes.mjs'],
       output: 'dist/zeruxjs',
     },
   ],

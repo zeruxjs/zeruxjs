@@ -1,3 +1,4 @@
+import {compileRecipes} from './recipes.js';
 import {resolveTheme} from './theme.js';
 import {utilityFor} from './utilities.js';
 import type {Declarations} from './utilities.js';
@@ -90,9 +91,10 @@ export function createZuix(config:ZuixConfig={}) {
    'zuix-ping':'75%,100%{transform:scale(2);opacity:0}'
   };
   const frames={...builtin,...config.keyframes};
-  const usedRules=merged.join('');
+  const recipes=compileRecipes(config.recipes??[],compileClass,limits.maxClasses);
+  const usedRules=[...recipes,...merged].join('');
   const keyframes=Object.entries(frames).filter(([name])=>/^[a-zA-Z][\w-]{0,79}$/.test(name)&&usedRules.includes(name)&&new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`).test(usedRules)).map(([name,value])=>`@keyframes ${name}{${value}}`);
-  const chunks=[config.preflight===false?'':preflight,...base,...keyframes,...merged].filter(Boolean);
+  const chunks=[config.preflight===false?'':preflight,...base,...keyframes,...recipes,...merged].filter(Boolean);
   return {css:chunks.join(config.minify?'':'\n'),classes,unmatched};
  }
 
