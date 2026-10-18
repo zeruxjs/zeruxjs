@@ -32,7 +32,9 @@ export function installNavigationPrefetch(
   if (
     !Array.isArray(options.paths) ||
     options.paths.length < 1 ||
-    options.paths.some((path) => !/^\/(?:[a-zA-Z0-9_-]+\/)*$/.test(path))
+    options.paths.some(
+      (path) => !/^\/(?:[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*\/)*$/.test(path),
+    )
   )
     throw new TypeError("Explicit public path prefixes are required");
   if (

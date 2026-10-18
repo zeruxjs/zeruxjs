@@ -48,7 +48,15 @@ export async function mountPreview(directory, mount) {
   for (const file of files) {
     if (!/\.(?:html|css|js|json|md|xml|txt)$/.test(file)) continue;
     let text = await fs.readFile(file, "utf8");
-    text = text.replace(urls, (_, opening) => opening + mount + "/");
+    // In JS, "/" is also a delimiter/validation string, not necessarily a URL.
+    // Rebase known site paths there, while retaining bare slash comparisons.
+    const fileUrls = file.endsWith(".js")
+      ? new RegExp(
+          `(["'\x60(=])/(?!/)(?=(?:${roots})(?:/|["'\x60)#?\\s]))`,
+          "g",
+        )
+      : urls;
+    text = text.replace(fileUrls, (_, opening) => opening + mount + "/");
     if (file.endsWith(".html"))
       text = text.replace(
         "</head>",

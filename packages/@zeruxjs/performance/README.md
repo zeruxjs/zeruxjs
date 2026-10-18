@@ -36,3 +36,5 @@ Only pass prefixes that contain public, side-effect-free static HTML; this helpe
 ## Release 0.0.3
 
 Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
+
+Static path prefixes can contain dotted version segments such as `/branch/v0.0.4/zeruxjs/`. Empty and dot-only traversal segments remain rejected.
