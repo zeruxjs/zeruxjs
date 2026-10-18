@@ -28,6 +28,54 @@ Provide a stable server snapshot and serialize the same initial state into the c
 
 Batch/transaction operations coordinate store notifications. Observable adapters bridge structural stores without bundling Zyro. Unsubscribe on owner teardown; if a store is shared, its lifetime must be intentional.
 
+## Install and select the integration
+
+```sh
+npm install @zeruxjs/react@0.0.2
+```
+
+There is no automatic `react` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/zeruxjs/docs/0.0.2/configuration-reference.md) and [TypeScript](/zeruxjs/docs/0.0.2/typescript.md).
+
+## A practical integration workflow
+
+Install React separately and inject its actual hooks through createReactBindings. Create a stable external store and selector functions, and choose equality based on the selected value. Bridge stores do not supply HTML rendering, routers or hydration transport. Treat request/user state as request-scoped on the server.
+
+## TypeScript: inputs, results and ownership
+
+```ts
+import { createReactStore } from '@zeruxjs/react';
+
+type Inputs = Parameters<typeof createReactStore>;
+type Result = Awaited<ReturnType<typeof createReactStore>>;
+```
+
+`Inputs` is the function's complete argument tuple, including optional parameters. `Result` removes a Promise when the function is asynchronous. These aliases follow the installed declarations; no internal `src`/`dist` import is required. For a generic factory, keep the concrete call's inferred type when an application needs a narrower result than `ReturnType` preserves. Use `satisfies` or a public option type for configuration literals, and validate unknown request/file data separately.
+
+In a JavaScript application the equivalent editor annotation is `/** @type {Parameters<typeof createReactStore>} */` on a matching argument tuple. This provides diagnostics only when JavaScript checking is enabled. It does not validate network data or create a resource automatically. See [strict application setup](/zeruxjs/docs/0.0.2/typescript.md) for the complete NodeNext checker configuration.
+
+## Failure modes and resource lifetime
+
+Serialize exactly the server snapshot used for rendering into the client hydration input. A shared mutable server singleton can leak data between users. Unsubscribe on component/route teardown; injected hooks must be called under React hook rules. Test selector identity, SSR snapshots and unmount cleanup using the actual React runtime.
+
+## Verify before deploying
+
+- Exercise the example with the actual owning runtime/browser, not only an imported module.
+- Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
+- Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
+- Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
+
+## Public option and data contracts
+
+These tables list fields declared directly on the named public contract. Referenced/inherited types retain their own declarations; optional does not imply a default value. Use the lifecycle and configuration chapters above for actual initialization behavior.
+
+### ExternalStore
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `getSnapshot` | `T` | No |
+| `subscribe` | `() => void` | No |
+| `getServerSnapshot` | `T` | Yes |
+
 
 ## Public entry points
 

@@ -24,6 +24,74 @@ createFontStylesheetHandler from @zeruxjs/font/http returns a Fetch handler with
 
 loadFont requires a DOM. Keep server imports separate from actually invoking browser-only functions. Browser support and font loading behavior vary; include fallback fonts and test text visibility during slow loads.
 
+## Install and select the integration
+
+```sh
+npm install @zeruxjs/font@0.0.2
+```
+
+There is no automatic `font` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/zeruxjs/docs/0.0.2/configuration-reference.md) and [TypeScript](/zeruxjs/docs/0.0.2/typescript.md).
+
+## A practical integration workflow
+
+Register trusted font definitions, host actual font binaries separately and generate font-face CSS from the registry. Preload only the weights/styles needed immediately; preloading every face can compete with critical resources. A registry entry does not download, subset, optimize or license a font file.
+
+## TypeScript: inputs, results and ownership
+
+```ts
+import { createFontRegistry } from '@zeruxjs/font';
+
+type Inputs = Parameters<typeof createFontRegistry>;
+type Result = Awaited<ReturnType<typeof createFontRegistry>>;
+```
+
+`Inputs` is the function's complete argument tuple, including optional parameters. `Result` removes a Promise when the function is asynchronous. These aliases follow the installed declarations; no internal `src`/`dist` import is required. For a generic factory, keep the concrete call's inferred type when an application needs a narrower result than `ReturnType` preserves. Use `satisfies` or a public option type for configuration literals, and validate unknown request/file data separately.
+
+In a JavaScript application the equivalent editor annotation is `/** @type {Parameters<typeof createFontRegistry>} */` on a matching argument tuple. This provides diagnostics only when JavaScript checking is enabled. It does not validate network data or create a resource automatically. See [strict application setup](/zeruxjs/docs/0.0.2/typescript.md) for the complete NodeNext checker configuration.
+
+## Failure modes and resource lifetime
+
+Browser loading requires a DOM and may be blocked by CSP/CORS or a missing binary. Remove injected style elements with their disposer. Verify fallback metrics and real font network responses; a generated stylesheet can be valid while the referenced font is absent. Keep third-party URL/licensing policy explicit instead of silently adding an external font service.
+
+## Verify before deploying
+
+- Exercise the example with the actual owning runtime/browser, not only an imported module.
+- Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
+- Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
+- Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
+
+## Public option and data contracts
+
+These tables list fields declared directly on the named public contract. Referenced/inherited types retain their own declarations; optional does not imply a default value. Use the lifecycle and configuration chapters above for actual initialization behavior.
+
+### FontDefinition
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `sources` | `FontSource[]` | No |
+| `stretch` | `string` | Yes |
+| `featureSettings` | `string` | Yes |
+| `variationSettings` | `string` | Yes |
+
+### FontSource
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `url` | `string` | No |
+| `format` | `string` | Yes |
+
+### FontFaceOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `family` | `string` | No |
+| `src` | `string` | No |
+| `weight` | `string \| number` | Yes |
+| `style` | `string` | Yes |
+| `display` | `'auto'\|'block'\|'swap'\|'fallback'\|'optional'` | Yes |
+| `format` | `string` | Yes |
+| `unicodeRange` | `string` | Yes |
+
 
 ## Public entry points
 

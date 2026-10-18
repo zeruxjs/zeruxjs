@@ -32,6 +32,18 @@ Memory caches, local search indexes, hook state and local snapshots are not dist
 
 Each docs version has its own Markdown content. Sources are linked on every page. When a feature changes, add or update the guide, reference contract, example and limitations together. Do not describe an intended capability as shipped simply because a package name exists.
 
+## TypeScript declarations are not feature activation
+
+The public configuration type has an open extension signature. A custom or compatibility field can therefore pass a root typecheck while no runtime code reads it. The configuration handbook distinguishes managed service setup, explicit package factories and declared-but-not-universal switches. Check a nested known option type when validating a service object.
+
+A package export also describes an available function, not all of its operational prerequisites. Browser functions need a DOM, Redis processors need real Redis, and host callbacks such as authorization/persistence must be supplied by the application. A callback name in an example is not a bundled identity provider.
+
+## Evaluate a feature end to end
+
+Start from the installed package version and its public entry point. Follow the guide's setup, run one real operation, exercise invalid input/unavailable dependencies, then verify cleanup and production output. Report which environment was exercised. Source-level type checks, injected-driver tests, a static export and a real multi-instance deployment establish different evidence.
+
+Placeholder packages intentionally document only metadata or help/version output. Do not turn roadmap language into a deployment dependency. Use the manually configured runtime, implemented package APIs and a supported hosting model until a future release supplies the missing application behavior.
+
 
 ## Implementation sources
 

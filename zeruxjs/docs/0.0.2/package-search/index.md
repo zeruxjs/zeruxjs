@@ -26,6 +26,79 @@ Never use a shared response cache when applying user/tenant visibility filters. 
 
 The Node-only persistence export saves/loads snapshots with atomic replacement and symlink checks. The parent directory must already exist. A single-writer local snapshot is not distributed coordination or an authoritative database. Rebuild from source data when the index format/content changes.
 
+## Install and select the integration
+
+```sh
+npm install @zeruxjs/search@0.0.2
+```
+
+There is no automatic `search` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/zeruxjs/docs/0.0.2/configuration-reference.md) and [TypeScript](/zeruxjs/docs/0.0.2/typescript.md).
+
+## A practical integration workflow
+
+Choose text fields and weights, stable document IDs, document-count limits and the caller-visible scope before indexing. Replacement/removal must follow content changes. Index only data the query owner is allowed to search; filtering a result after showing a snippet can already disclose information. Use Node-only HTTP/persistence subpaths only in server bundles.
+
+## TypeScript: inputs, results and ownership
+
+```ts
+import { createSearchIndex } from '@zeruxjs/search';
+
+type Inputs = Parameters<typeof createSearchIndex>;
+type Result = Awaited<ReturnType<typeof createSearchIndex>>;
+```
+
+`Inputs` is the function's complete argument tuple, including optional parameters. `Result` removes a Promise when the function is asynchronous. These aliases follow the installed declarations; no internal `src`/`dist` import is required. For a generic factory, keep the concrete call's inferred type when an application needs a narrower result than `ReturnType` preserves. Use `satisfies` or a public option type for configuration literals, and validate unknown request/file data separately.
+
+In a JavaScript application the equivalent editor annotation is `/** @type {Parameters<typeof createSearchIndex>} */` on a matching argument tuple. This provides diagnostics only when JavaScript checking is enabled. It does not validate network data or create a resource automatically. See [strict application setup](/zeruxjs/docs/0.0.2/typescript.md) for the complete NodeNext checker configuration.
+
+## Failure modes and resource lifetime
+
+The index and ranking state are in memory. Persist and reload a bounded snapshot when required, and coordinate writers outside the index. Inspect paging, all/any mode and prefix behavior with realistic queries. Escape highlight output and use text nodes for ordinary result labels; a search match is untrusted content, not safe HTML.
+
+## Verify before deploying
+
+- Exercise the example with the actual owning runtime/browser, not only an imported module.
+- Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
+- Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
+- Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
+
+## Public option and data contracts
+
+These tables list fields declared directly on the named public contract. Referenced/inherited types retain their own declarations; optional does not imply a default value. Use the lifecycle and configuration chapters above for actual initialization behavior.
+
+### SearchIndexOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `fields` | `(keyof T & string)[]` | Yes |
+| `weights` | `Partial<Record<keyof T & string, number>>` | Yes |
+| `stopWords` | `Iterable<string>` | Yes |
+| `maxDocuments` | `number` | Yes |
+
+### SearchOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `limit` | `number` | Yes |
+| `offset` | `number` | Yes |
+| `mode` | `'all' \| 'any'` | Yes |
+| `prefix` | `boolean` | Yes |
+| `filter` | `(document: SearchDocument) => boolean` | Yes |
+
+### SearchDocument
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `id` | `string` | No |
+| `text` | `string` | No |
+
+### SearchSnapshot
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `version` | `1` | No |
+| `documents` | `T[]` | No |
+
 
 ## Public entry points
 

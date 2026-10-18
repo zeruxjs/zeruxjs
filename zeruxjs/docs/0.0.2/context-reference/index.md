@@ -43,6 +43,35 @@ export function GET(context: ZeruxRequestContext) {
 
 Do not retain an entire context in a background job: it carries sockets, environment values and generation-scoped managers. Persist a minimal authorized identifier and resolve current services in the designated worker. For Fetch handlers, request and runtime context are separate arguments.
 
+## Complete declared contract
+
+The following fields/methods are taken from the current source. Method signatures include their parameters; a type describes the interface and does not perform runtime validation or initialize an optional service.
+
+### ZeruxRequestContext
+
+| Option | Accepted TypeScript value | Required | Meaning |
+| --- | --- | --- | --- |
+| `req` | `IncomingMessage` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `res` | `ServerResponse` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `method` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `url` | `URL` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `pathname` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `params` | `Record<string, string>` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `query` | `URLSearchParams` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `body` | `unknown` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `requestStream` | `IncomingMessage` | Yes | Original request stream; use route.meta.streamBody to prevent pre-buffering. |
+| `setCache` | `setCache(policy: import("../response.js").ResponseCachePolicy): void;` | Yes | Cache policy for the current response; defaults to private when explicitly called. |
+| `stream` | `stream(source: import("../response.js").StreamResult['source'], options?: import("../response.js").ResponseStreamOptions): import("../response.js").StreamResult;` | Yes | Convenience factory for a bounded streaming response. |
+| `multisiteRegister` | `multisiteRegister(url: string, folderName: string): void;` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `logger` | `Logger` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `config` | `ZeruxConfig` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `runtime` | `ZeruxRuntime` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `state` | `Record<string, unknown>` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `env` | `NodeJS.ProcessEnv` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| `services` | `{ get(name: import("./services.js").ServiceName): unknown; controllers: Record<string, unknown>; composables: Record<string, unknown>; }` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+
+For strict application checking, option inference, public imports and unknown-data handling, read [TypeScript application development](/zeruxjs/docs/0.0.2/typescript.md).
+
 
 ## Implementation sources
 

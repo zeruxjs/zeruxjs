@@ -35,6 +35,18 @@ Plugins expose default/register/plugin registration functions. The optional root
 
 Files in configured public directories become direct URL assets. They bypass ordinary application handler middleware, so store only material intentionally public. File hosting does not run content validation or provide a private download policy.
 
+## TypeScript and module format
+
+A route may use TypeScript source with a typed ZeruxRequestContext, but a supported filename/export is still required for discovery. Adding a file to tsconfig does not register a route. ESM relative imports should describe the emitted module path, and runtime/build loaders must agree on how the module is executed.
+
+Prefer explicit GET/POST exports for method-specific APIs and the documented default handler for a general page. A reserved filename is a discovery rule, not proof that JSX/MDX, suspense or component layout composition exists. Test the output of the actual application compiler after moving or renaming a module.
+
+## Exposure and refactoring checks
+
+Keep configuration, private storage and backups outside public roots. Controller/composable modules are reusable server code, not automatically HTTP endpoints. Avoid duplicate basenames where discovery supports shorthand registry keys; use clear folder/key ownership.
+
+When refactoring, check route inference, explicit routePath/path overrides, dynamic parameter names, imported modules and source-to-build paths. Then test a valid request, wrong method and missing path against the production handler. TypeScript can catch a broken relative import but cannot prove the intended public URL still resolves.
+
 
 ## Implementation sources
 

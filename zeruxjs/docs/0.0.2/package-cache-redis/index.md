@@ -33,6 +33,74 @@ Injected ioredis Cluster clients scan master shards and use per-key operations t
 
 Use TLS/ACL credentials, bounded timeouts and isolated namespaces. Decide whether a cache outage may degrade an application or must block startup. Monitor errors; error listeners avoid unhandled EventEmitter failures but do not make failed reads successful. Close only resources the application owns.
 
+## Install and select the integration
+
+```sh
+npm install @zeruxjs/cache-redis@0.0.2
+```
+
+This package participates in the runtime's **cache** integration. Start with [cache configuration](/zeruxjs/docs/0.0.2/configuration-cache.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.
+
+## A practical integration workflow
+
+Select this adapter through cache.connector in runtime setup or helper in createCacheManager. The normal driver is node-redis; options.driver can select ioredis. When injecting an existing client, state ownership explicitly so another subsystem does not lose its connection during cache shutdown. Use a distinct literal namespace for each application/tenant boundary.
+
+## TypeScript: inputs, results and ownership
+
+```ts
+import { createCacheHelper } from '@zeruxjs/cache-redis';
+
+type Inputs = Parameters<typeof createCacheHelper>;
+type Result = Awaited<ReturnType<typeof createCacheHelper>>;
+```
+
+`Inputs` is the function's complete argument tuple, including optional parameters. `Result` removes a Promise when the function is asynchronous. These aliases follow the installed declarations; no internal `src`/`dist` import is required. For a generic factory, keep the concrete call's inferred type when an application needs a narrower result than `ReturnType` preserves. Use `satisfies` or a public option type for configuration literals, and validate unknown request/file data separately.
+
+In a JavaScript application the equivalent editor annotation is `/** @type {Parameters<typeof createCacheHelper>} */` on a matching argument tuple. This provides diagnostics only when JavaScript checking is enabled. It does not validate network data or create a resource automatically. See [strict application setup](/zeruxjs/docs/0.0.2/typescript.md) for the complete NodeNext checker configuration.
+
+## Failure modes and resource lifetime
+
+Without a namespace, clear rejects unless destructive FLUSHDB was explicitly allowed for a dedicated standalone database. Cluster namespace clearing scans master shards and deletes keys individually; it is not a snapshot transaction and multi-key writes are not cross-slot atomic. Keep BullMQ prefixing separate from ioredis keyPrefix. Verify real Redis TLS/ACL, reconnect, timeouts and ownership behavior.
+
+## Verify before deploying
+
+- Exercise the example with the actual owning runtime/browser, not only an imported module.
+- Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
+- Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
+- Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
+
+## Public option and data contracts
+
+These tables list fields declared directly on the named public contract. Referenced/inherited types retain their own declarations; optional does not imply a default value. Use the lifecycle and configuration chapters above for actual initialization behavior.
+
+### RedisCacheHelperOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `client` | `RedisCacheClient` | Yes |
+| `allowFlushDb` | `boolean` | Yes |
+| `ownClient` | `boolean` | Yes |
+
+### RedisConnectionSettings
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `url` | `string` | Yes |
+| `cluster` | `RedisClusterSettings` | Yes |
+| `host` | `string` | Yes |
+| `port` | `number` | Yes |
+| `username` | `string` | Yes |
+| `password` | `string` | Yes |
+| `db` | `number` | Yes |
+| `tls` | `Record<string, unknown>` | Yes |
+| `keyPrefix` | `never` | Yes |
+
+### RedisClusterSettings
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `nodes` | `Array<{host:string;port:number}>` | No |
+
 
 ## Public entry points
 

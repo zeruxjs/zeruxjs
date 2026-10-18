@@ -29,6 +29,74 @@ withRetry retries explicit retryable provider failures with bounded delay; arbit
 
 Authorize requests, cap input/output budgets, manage cost and redact sensitive prompts/logs. Provider output is untrusted text, not executable HTML or a policy decision. Validate any tool action in trusted application code.
 
+## Install and select the integration
+
+```sh
+npm install @zeruxjs/ai@0.0.2
+```
+
+There is no automatic `ai` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/zeruxjs/docs/0.0.2/configuration-reference.md) and [TypeScript](/zeruxjs/docs/0.0.2/typescript.md).
+
+## A practical integration workflow
+
+Configure a server-side provider, then compose concurrency, retry and fallback wrappers before constructing the client. maxConcurrent bounds active requests and maxQueued bounds pending work; a queue bound is essential when a downstream model slows. Keep the API key in the server process and use an approved HTTPS endpoint. The implementation is Chat Completions-compatible text transport, not a complete vendor SDK.
+
+## TypeScript: inputs, results and ownership
+
+```ts
+import { createOpenAICompatibleProvider } from '@zeruxjs/ai';
+
+type Inputs = Parameters<typeof createOpenAICompatibleProvider>;
+type Result = Awaited<ReturnType<typeof createOpenAICompatibleProvider>>;
+```
+
+`Inputs` is the function's complete argument tuple, including optional parameters. `Result` removes a Promise when the function is asynchronous. These aliases follow the installed declarations; no internal `src`/`dist` import is required. For a generic factory, keep the concrete call's inferred type when an application needs a narrower result than `ReturnType` preserves. Use `satisfies` or a public option type for configuration literals, and validate unknown request/file data separately.
+
+In a JavaScript application the equivalent editor annotation is `/** @type {Parameters<typeof createOpenAICompatibleProvider>} */` on a matching argument tuple. This provides diagnostics only when JavaScript checking is enabled. It does not validate network data or create a resource automatically. See [strict application setup](/zeruxjs/docs/0.0.2/typescript.md) for the complete NodeNext checker configuration.
+
+## Failure modes and resource lifetime
+
+Stop iteration or propagate an AbortSignal when a browser disconnects or a request is cancelled. Retry only explicitly retryable failures; never replay partial stream output. Fallback is safe only before text is emitted. Record provider errors and timing without raw prompts, completions or bearer credentials. Bound input size and output cost outside the provider adapter.
+
+## Verify before deploying
+
+- Exercise the example with the actual owning runtime/browser, not only an imported module.
+- Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
+- Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
+- Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
+
+## Public option and data contracts
+
+These tables list fields declared directly on the named public contract. Referenced/inherited types retain their own declarations; optional does not imply a default value. Use the lifecycle and configuration chapters above for actual initialization behavior.
+
+### ProviderConfig
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `apiKey` | `string` | No |
+| `baseUrl` | `string` | No |
+| `model` | `string` | No |
+| `fetch` | `typeof fetch` | Yes |
+| `timeoutMs` | `number` | Yes |
+| `headers` | `Record<string,string>` | Yes |
+| `maxResponseBytes` | `number` | Yes |
+
+### ChatOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `signal` | `AbortSignal` | Yes |
+| `temperature` | `number` | Yes |
+| `maxTokens` | `number` | Yes |
+| `topP` | `number` | Yes |
+
+### AiConcurrencyOptions
+
+| Field | Accepted type/value | Optional |
+| --- | --- | --- |
+| `maxConcurrent` | `number` | No |
+| `maxQueued` | `number` | Yes |
+
 
 ## Public entry points
 
