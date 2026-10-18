@@ -155,6 +155,12 @@ export default {
 
 `text-[21px]` and `text-[clamp(2rem,4vw,4rem)]` select font size; `border-[2px]` selects border width. Ambiguous CSS variables default to color for `text-[var(--accent)]` and `border-[var(--line)]`. Supply an explicit type when needed: `text-[length:var(--heading-size)]`, `text-[color:var(--accent)]`, `border-[length:var(--stroke)]`, `font-[family:Inter,system-ui,sans-serif]` or `font-[weight:750]`. These use the same value safety checks as other utilities.
 
+### Classes first
+
+Use literal utility classes in templates as the default workflow. The ecosystem homepage and generated package cards demonstrate this approach: global configuration retains only palette/reset/selection rules, with component styles in `class` attributes. Recipes are an optional Zuixs composition API, not Tailwind syntax or a requirement for ordinary markup. The docs renderer currently also uses recipes for generated Markdown and existing document components.
+
+`media-[max-width:_550px]:p-4` supports bounded arbitrary media conditions. Complete conditions such as `media-[(hover:_hover)_and_(prefers-reduced-motion:_no-preference)]:hover:shadow-lg` keep their logical grouping. Simple max-width variants sort from wider to narrower and min-width variants from narrower to wider so responsive utility precedence remains predictable.
+
 
 ## Public entry points
 

@@ -2,14 +2,14 @@
   "production": true,
   "compiler": "zuixs",
   "bundler": "@zeruxjs/typescript",
-  "utilities": 6,
-  "recipes": 106,
+  "utilities": 183,
+  "recipes": 7,
   "assets": [
     {
       "url": "/site-assets/style.css",
-      "version": "6a40cd991305",
-      "bytes": 8752,
-      "sourceBytes": 9020
+      "version": "4adc9e84afd0",
+      "bytes": 11445,
+      "sourceBytes": 12923
     },
     {
       "url": "/site-assets/app.js",
