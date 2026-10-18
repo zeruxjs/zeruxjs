@@ -1,0 +1,26 @@
+{
+  "production": true,
+  "compiler": "zuixs",
+  "bundler": "@zeruxjs/typescript",
+  "utilities": 15,
+  "assets": [
+    {
+      "url": "/zeruxjs/assets/docs.css",
+      "version": "916b81dd07dd",
+      "bytes": 15725,
+      "sourceBytes": 19055
+    },
+    {
+      "url": "/zeruxjs/assets/docs.js",
+      "version": "6e6cd21ea3b1",
+      "bytes": 7353,
+      "sourceBytes": 7377
+    },
+    {
+      "url": "/zeruxjs/assets/search.js",
+      "version": "e95054178560",
+      "bytes": 7257,
+      "sourceBytes": 2207
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "production": true,
+  "compiler": "zuixs",
+  "bundler": "@zeruxjs/typescript",
+  "utilities": 6,
+  "assets": [
+    {
+      "url": "/site-assets/style.css",
+      "version": "b51f089a18ba",
+      "bytes": 4803,
+      "sourceBytes": 5866
+    },
+    {
+      "url": "/site-assets/app.js",
+      "version": "d6b02adf259e",
+      "bytes": 3926,
+      "sourceBytes": 923
+    }
+  ]
+}
