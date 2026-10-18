@@ -1,0 +1,12 @@
+{
+  "name": "zeruxjs-ecosystem-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch ../scripts/serve-sites.mjs --dev",
+    "build": "node ../scripts/build-sites.mjs",
+    "preview": "node ../scripts/serve-sites.mjs",
+    "start": "node ../scripts/serve-sites.mjs"
+  }
+}

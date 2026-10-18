@@ -1,0 +1,113 @@
+# ZeruxJS documentation
+
+A source-linked documentation site for the ZeruxJS runtime and its public ecosystem. Guides are authored Markdown documents, independent of the renderer. The application produces validated, fully rendered HTML for static hosting; package versions are unchanged.
+
+## Run locally
+
+From `apps/zerux-docs`:
+
+```sh
+npm run dev
+```
+
+Open the printed local URL (default `http://127.0.0.1:3011/zeruxjs/`). The development process watches Markdown, version reference snapshots and public assets, debounces rebuilds and retains the previous valid export on content errors. Renderer/configuration changes restart the Node watch process. Refresh the browser after a successful rebuild. Package README/manifest changes require a rebuild or dev restart.
+
+```sh
+npm run build
+npm run check
+npm run preview
+```
+
+`HOST` and `PORT` override the local preview listener. The preview supports nested pages, directory redirects, MIME types, GET/HEAD, and actual 404/405 responses. It is a development/preview tool, not a required production service.
+
+## Static deployment
+
+For an isolated docs preview, use the app commands below. For deployment, use the combined site builder in `pages/` and the GitHub Actions workflow documented in `SITE_DEPLOYMENT.md` at the repository root. The app output in `dist/` contains the `zeruxjs/` folder. Serve directory `index.html` files and configure `404.html` as the missing-page response. Do not configure an SPA fallback. The app is mounted at `/zeruxjs/`; `dist/zeruxjs/` must be served at that same path. The combined ecosystem builder puts the shared homepage at `/` and includes this app under `/zeruxjs/`. Set `site.origin` in `src/site.config.mjs` to your public domain origin before deployment to emit canonical/OG URLs and `sitemap.xml`; `robots.txt` then includes that sitemap. No domain is guessed for local builds.
+
+Every document contains its full article, navigation, related links, source references and metadata in HTML. Search, code copying, package filtering, theme persistence and active-heading tracking are progressive enhancements. Reading and navigating require no JavaScript. No telemetry, external fonts or third-party browser services are loaded.
+
+This is build-time server rendering/static generation. It is intentionally an app-specific exporter: `zerux build` compiles Node server applications and does not currently supply a generic static-export pipeline. These docs do not add React/Vue component rendering or hydration to the framework.
+
+## Content structure
+
+```text
+src/
+  site.config.mjs             Versions, source refs, section order
+  docs/
+    0.0.2/
+      introduction.md         One Markdown document per topic
+      tutorial.md
+      package-cache.md
+      ...
+  lib/
+    content.mjs               Metadata, sources and navigation validation
+    markdown.mjs              Markdown rendering, safe links, heading anchors
+    reference.mjs             Live/frozen package references
+    template.mjs              Reusable layouts, portal and navigation
+scripts/
+  build.mjs                   Staging, rendering, validation and promotion
+  check.mjs                   Static route/link/anchor/search verification
+  snapshot.mjs                Freeze release references before version bumps
+  serve.mjs                   Local preview and content/asset watching
+public/
+  favicon.svg
+  assets/docs.css
+  assets/docs.js
+```
+
+The old `app/docs/` MDX drafts remain historical source material; the active content tree is `src/docs/`.
+
+## Add or update a page
+
+Create `src/docs/<version>/<slug>.md` with JSON metadata delimited by `---`:
+
+```markdown
+---
+{
+  "title": "Your topic",
+  "description": "The task or contract this document explains.",
+  "section": "Fundamentals",
+  "order": 100,
+  "sources": ["packages/zeruxjs/src/bootstrap/types.ts"],
+  "related": ["routing", "request-lifecycle"]
+}
+---
+
+## First section
+
+Explain the behavior and its boundary. Link to [routing](routing.md).
+```
+
+The filename determines `/zeruxjs/docs/<version>/<slug>/`. Section names come from `site.config.mjs`; order controls navigation within a section. Sources must be real repository files for live versions. Related slugs must exist in the same version. For an ecosystem guide, add `"package": "@zeruxjs/cache"`; the builder appends the actual export map, runtime requirements and a collapsible README.
+
+Use level-two/three headings, standard Markdown tables/lists/links and language-tagged code fences. A fence can include `title="app/page.ts"` to label a code block. Headings receive stable, deduplicated anchors. Raw HTML is escaped and MDX/JavaScript is not executed. Documentation links use `<slug>.md` and optional fragments; README-relative links resolve to their repository source.
+
+Authored guides are mandatory for **every `@zeruxjs` package**. Adding a package without documenting it fails the docs build. Package name claims must be unique and refer to actual public manifests. Other public packages receive source-backed README/reference pages, accessible through the package directory.
+
+## Documentation expectations
+
+Document setup, a useful example, ownership/cleanup, error behavior, constraints and related tasks. Distinguish framework startup options from standalone factory options. Link the implementation and use public imports. Name callbacks and resources supplied by the application rather than implying they are built-ins. Make authorization, durability, transaction and coverage boundaries explicit where they matter.
+
+The learning path covers installation, a working notes application, runtime architecture, file conventions, requests, configuration/environment, middleware, plugins, workers, data/services, frontend bridges, operations and API references. Each `@zeruxjs` package has an authored task-focused guide; the directory covers all 47 public packages. The homepage is a learning portal, not a generated manifest listing.
+
+## Versioning and archived references
+
+The live version reads local public manifests and READMEs. The framework version must match the live docs version; independently versioned packages retain their own manifest versions. Archived versions use frozen snapshots rather than newer workspace data.
+
+Before bumping live package versions:
+
+```sh
+npm run snapshot -- 0.0.2
+```
+
+This creates a new `src/docs/0.0.2/reference.snapshot.json` without overwriting an existing snapshot. Commit it, set that version's `reference` to `snapshot`, and pin its `ref` to the release Git tag/commit in `site.config.mjs`. Then add the new version configuration/content folder and update `site.latest`. Frozen references are not read from newer workspace manifests. Version switching preserves the current slug when available, falling back to introduction.
+
+Archive sources should use immutable Git refs. Edit links still target the docs source on master so corrections can be contributed.
+
+## Verification and output contract
+
+Every build validates metadata, source paths, related pages, package coverage, unique routes, unique IDs, local links, heading anchors, assets and search URLs **before replacing `dist/`**. A failed candidate leaves the previous export available. `npm run check` repeats export verification without rebuilding. The generated build manifest lists versions, routes and referenced packages.
+
+Search indexes page titles, sections and heading-local prose for the current version. It is fetched only when a visitor searches. Links are ranked locally with bounded results and keyboard navigation. All result text is inserted with DOM text nodes. Clipboard and browser-local theme storage are optional; unavailable APIs do not prevent reading.
+
+For presentation changes, verify desktop/mobile widths, keyboard focus, search close/Escape, theme choices, package filtering, code copy and JavaScript-disabled reading. Example syntax and public imports should be checked against the installed TypeScript declarations when changing APIs. A docs build does not run live database/Redis/SMTP/cloud integrations or certify their production behavior.

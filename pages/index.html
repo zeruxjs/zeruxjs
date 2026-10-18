@@ -1,16 +1,125 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZenuxJS</title>
-    <link rel="stylesheet" href="./style.css">
-</head>
-ZeruxJS Github Pages!
-
-<body>
-    <script src="./app.js"></script>
-</body>
-
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="The ZeruxJS ecosystem: a Node.js framework, ZyroJS library, ZenixJS CMS and focused JavaScript packages."
+    />
+    <title>ZeruxJS — one connected ecosystem</title>
+    <link rel="stylesheet" href="/site-assets/style.css" />
+    <script src="/site-assets/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+    <header>
+      <a class="brand" href="/"
+        ><span>Z</span>ZeruxJS <small>ecosystem</small></a
+      >
+      <nav aria-label="Main">
+        <a href="#ecosystem">Projects</a><a href="#packages">Packages</a
+        ><a href="/zeruxjs/">Documentation ↗</a
+        ><a href="https://github.com/zeruxjs/zeruxjs">GitHub ↗</a>
+      </nav>
+    </header>
+    <main id="content">
+      <section class="hero">
+        <p class="eyebrow">FRAMEWORK · LIBRARY · CMS · PACKAGES</p>
+        <h1>Build something.<br /><span>Connect everything.</span></h1>
+        <p class="intro">
+          A shared home for the ZeruxJS ecosystem. Explore the framework, follow
+          the libraries, and find focused tools for the application you want to
+          build.
+        </p>
+        <div class="actions">
+          <a class="primary" href="/zeruxjs/">Explore ZeruxJS <span>→</span></a
+          ><a href="#packages">Find a package ↓</a>
+        </div>
+        <p class="status">
+          <span></span>Early development. Explore each project's current
+          capabilities before adopting it.
+        </p>
+      </section>
+      <section id="ecosystem" class="ecosystem">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">ONE ECOSYSTEM, DIFFERENT LAYERS</p>
+            <h2>Choose your starting point.</h2>
+          </div>
+          <p>Independent tools.<br />A shared direction.</p>
+        </div>
+        <div class="projects">
+          <article class="project featured">
+            <div class="project-type">01 / FRAMEWORK</div>
+            <h3>ZeruxJS</h3>
+            <p>
+              A Node.js application runtime with routes, plugins, workers and
+              connected services. Learn how the pieces fit together.
+            </p>
+            <a href="/zeruxjs/">Read the framework docs →</a>
+          </article>
+          <article class="project">
+            <div class="project-type">02 / LIBRARY</div>
+            <h3>ZyroJS</h3>
+            <p>
+              Explore the standalone library and its evolving rendering
+              capabilities. Dedicated documentation will have its own site path.
+            </p>
+            <a
+              href="https://github.com/zeruxjs/zeruxjs/tree/master/packages/zyrojs"
+              >Explore the library ↗</a
+            >
+          </article>
+          <article class="project">
+            <div class="project-type">03 / CMS</div>
+            <h3>ZenixJS</h3>
+            <p>
+              The CMS direction built around the ecosystem. Current releases are
+              early placeholders; a complete CMS is still ahead.
+            </p>
+            <a
+              href="https://github.com/zeruxjs/zeruxjs/tree/master/packages/zenixjs"
+              >Follow CMS development ↗</a
+            >
+          </article>
+        </div>
+      </section>
+      <section id="packages">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">THE TOOLBOX</p>
+            <h2>Small pieces. Useful possibilities.</h2>
+          </div>
+          <p>
+            {{PACKAGE_COUNT}} public packages,<br />from the workspace source.
+          </p>
+        </div>
+        <div class="filter" hidden>
+          <label for="package-filter">Find a package</label
+          ><input
+            id="package-filter"
+            type="search"
+            placeholder="Search by name or purpose…"
+          />
+          <p id="package-status" role="status"></p>
+        </div>
+        <div class="packages">{{PACKAGE_CARDS}}</div>
+      </section>
+      <section class="closing">
+        <h2>Start with understanding.</h2>
+        <p>
+          Follow a working application tutorial, explore the runtime
+          architecture, or dive into a package guide. The docs explain what
+          works today and where the boundaries are.
+        </p>
+        <a href="{{FRAMEWORK_TUTORIAL_URL}}">Build your first application →</a>
+      </section>
+    </main>
+    <footer>
+      <a class="brand" href="/">ZeruxJS</a>
+      <p>Framework, libraries and tools. Built in the open.</p>
+      <a href="https://github.com/zeruxjs/zeruxjs">Source code ↗</a>
+    </footer>
+  </body>
 </html>

@@ -1,43 +1,72 @@
-name: Deploy GitHub Pages
+name: Build and deploy ecosystem sites
 
 on:
   push:
-    branches: ["master"]
+    branches: [master]
     paths:
       - 'pages/**'
+      - 'apps/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'sites.config.mjs'
+      - 'scripts/build-sites.mjs'
+      - 'scripts/publish-sites.mjs'
+      - 'scripts/workspace-graph.mjs'
       - '.github/workflows/github-pages-deploy.yml'
-
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: true   # 🔥 better: cancel old runs
+  group: ecosystem-static-sites
+  cancel-in-progress: false
 
 jobs:
+  build-and-publish:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          # The output worktree shares this ephemeral GitHub-token authentication.
+          persist-credentials: true
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked build dependencies without package lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build shared homepage and every configured site
+        run: node scripts/build-sites.mjs
+      - name: Publish generated folders to master-site and prepare complete artifact
+        run: node scripts/publish-sites.mjs
+      - name: Upload the master-site static tree for Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .site-published
+
   deploy:
+    needs: build-and-publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Pages
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./pages   # ✅ only deploy this
-
-      - name: Deploy to GitHub Pages
+      - name: Deploy the published master-site tree
         id: deployment
         uses: actions/deploy-pages@v4
