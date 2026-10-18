@@ -1,31 +1,31 @@
 /** Documentation routing and navigation. Add a version with its own content directory; no renderer changes needed. */
 export const site = {
-  title: 'ZeruxJS',
-  basePath: '/zeruxjs',
+  title: "ZeruxJS",
+  basePath: "/zeruxjs",
   // Set the deployed domain origin to emit canonical URLs and a sitemap.
   origin: null,
-  description: 'Build applications with the ZeruxJS runtime and ecosystem.',
-  repository: 'https://github.com/zeruxjs/zeruxjs',
-  latest: '0.0.2',
+  description: "Build applications with the ZeruxJS runtime and ecosystem.",
+  repository: "https://github.com/zeruxjs/zeruxjs",
+  latest: "0.0.2",
   versions: [
     {
-      id: '0.0.2',
-      label: '0.0.2',
-      status: 'Early development',
-      reference: 'workspace',
-      ref: 'master',
+      id: "0.0.2",
+      label: "0.0.2",
+      status: "Early development",
+      reference: "workspace",
+      ref: "master",
     },
   ],
   sections: [
-    'Getting started',
-    'Fundamentals',
-    'Runtime',
-    'Data and services',
-    'Frontend',
-    'Operations',
-    'API reference',
-    'Packages',
-    'Contributing',
+    "Getting started",
+    "Fundamentals",
+    "Runtime",
+    "Data and services",
+    "Frontend",
+    "Operations",
+    "API reference",
+    "Packages",
+    "Contributing",
   ],
 };
 
@@ -35,11 +35,11 @@ export function sitePath(pathname) {
   if (!base) return pathname;
   if (
     pathname === base ||
-    pathname.startsWith(base + '/') ||
-    pathname.startsWith(base + '#')
+    pathname.startsWith(base + "/") ||
+    pathname.startsWith(base + "#")
   )
     return pathname;
-  return base + (pathname.startsWith('/') ? pathname : '/' + pathname);
+  return base + (pathname.startsWith("/") ? pathname : "/" + pathname);
 }
 
 /** Mount internal HTML links without changing external URLs or heading fragments.
@@ -47,7 +47,8 @@ export function sitePath(pathname) {
  */
 export function mountHtml(html) {
   return html.replace(
-    /\b(href|src|action)="(\/(?!\/)[^"]*)"/g,
-    (_match, attribute, url) => `${attribute}="${sitePath(url)}"`,
+    /(data-site-root )?\b(href|src|action)="(\/(?!\/)[^"]*)"/g,
+    (_match, rootLink, attribute, url) =>
+      rootLink ? _match : `${attribute}="${sitePath(url)}"`,
   );
 }

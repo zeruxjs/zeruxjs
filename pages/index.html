@@ -7,7 +7,15 @@
       name="description"
       content="The ZeruxJS ecosystem: a Node.js framework, ZyroJS library, ZenixJS CMS and focused JavaScript packages."
     />
+    <meta name="color-scheme" content="light dark" />
+    <link
+      rel="alternate"
+      type="text/markdown"
+      href="/index.md"
+      title="Markdown"
+    />
     <title>ZeruxJS — one connected ecosystem</title>
+    <link rel="icon" href="/site-assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/site-assets/style.css" />
     <script type="module" src="/site-assets/app.js"></script>
   </head>
@@ -22,6 +30,14 @@
         ><a href="/zeruxjs/">Documentation ↗</a
         ><a href="https://github.com/zeruxjs/zeruxjs">GitHub ↗</a>
       </nav>
+      <button
+        class="theme-toggle"
+        type="button"
+        hidden
+        aria-label="Change color theme"
+      >
+        Theme
+      </button>
     </header>
     <main id="content">
       <section class="hero">
@@ -36,6 +52,14 @@
           <a class="primary" href="/zeruxjs/">Explore ZeruxJS <span>→</span></a
           ><a href="#packages">Find a package ↓</a>
         </div>
+        <div class="hero-terminal" aria-label="Get started">
+          <div class="terminal-heading">
+            <span aria-hidden="true">● ● ●</span> Your next application
+          </div>
+          <code><span>npm</span> install zeruxjs</code>
+          <p>Start with the tutorial to check current setup requirements.</p>
+          <a href="{{FRAMEWORK_TUTORIAL_URL}}">Open the setup guide →</a>
+        </div>
         <p class="status">
           <span></span>Early development. Explore each project's current
           capabilities before adopting it.
@@ -49,7 +73,9 @@
           </div>
           <p>Independent tools.<br />A shared direction.</p>
         </div>
-        <div class="projects ui-grid ui-grid-cols-1 desktop:ui-grid-cols-3 ui-gap-neighbor">
+        <div
+          class="projects ui-grid ui-grid-cols-1 desktop:ui-grid-cols-3 ui-gap-neighbor"
+        >
           <article class="project featured">
             <div class="project-type">01 / FRAMEWORK</div>
             <h3>ZeruxJS</h3>
@@ -104,7 +130,11 @@
           />
           <p id="package-status" role="status"></p>
         </div>
-        <div class="packages ui-grid ui-grid-cols-1 tablet:ui-grid-cols-2 desktop:ui-grid-cols-3 ui-gap-3">{{PACKAGE_CARDS}}</div>
+        <div
+          class="packages ui-grid ui-grid-cols-1 tablet:ui-grid-cols-2 desktop:ui-grid-cols-3 ui-gap-3"
+        >
+          {{PACKAGE_CARDS}}
+        </div>
       </section>
       <section class="closing">
         <h2>Start with understanding.</h2>

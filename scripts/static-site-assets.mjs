@@ -1,3 +1,4 @@
+import { themeBootstrap } from "./site-theme.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -96,6 +97,7 @@ export async function optimizeStaticAssets({
     }
     for (const [file, html] of documents) {
       let final = html
+        .replace("<head>", `<head><script>${themeBootstrap}</script>`)
         .replace(/\b(href|src)="([^"?#]+)"/g, (match, attribute, url) => {
           const record = records.find((record) => record.url === url);
           return record ? `${attribute}="${url}?v=${record.version}"` : match;

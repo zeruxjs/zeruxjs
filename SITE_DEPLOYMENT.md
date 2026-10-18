@@ -83,3 +83,9 @@ App builds validate their content. The combined builder checks the complete new 
 A GitHub Pages settings/deployment failure does not lose the successfully published `master-site` build; fix the setting and rerun. No source branch is force-pushed. `.site-published/` and temporary worktrees are generated staging, not source files to commit.
 
 Site tooling uses the current checkout, including unpublished changes: the locked install links local npm workspaces, CI verifies the real paths of Zuixs and the TypeScript/performance/search packages under `packages/`, then builds those sources before building any site. Only external dependencies come from the npm registry. There is no need to publish these workspace changes first.
+
+## Markdown stays Markdown
+
+The published tree includes `/index.md`, `/zeruxjs.md` and raw Markdown alternatives for every docs route. GitHub Actions verifies their content hashes before publishing, and `verifySites` checks them again in the complete output-branch tree. The workflow deploys the uploaded static artifact directly; it has no Jekyll or Markdown-to-HTML step. Keep `.nojekyll` in the output root if hosting the branch directly. Do not add a subsequent site generator or SPA fallback that rewrites `.md` requests. GitHub Pages controls response MIME headers, so browsers may display or download the raw content.
+
+Palette and motion changes in `scripts/site-design.mjs`, and theme changes in `scripts/site-theme.mjs`, trigger the Pages workflow alongside template/content changes. All of these build from the checkout without publishing workspace packages to npm.

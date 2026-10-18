@@ -1,4 +1,7 @@
+import { installThemeControl } from "../scripts/site-theme.mjs";
 import { installNavigationPrefetch } from "@zeruxjs/performance/navigation";
+
+installThemeControl();
 
 /** Optional local package filtering. No network requests, analytics, cookies or storage. */
 const input = document.querySelector("#package-filter");

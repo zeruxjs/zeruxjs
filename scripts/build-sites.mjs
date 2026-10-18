@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -115,6 +116,29 @@ export async function verifySites(directory) {
     }
   }
   await walk(directory);
+  if (!files.has("/.nojekyll"))
+    throw new Error("Static deployment must bypass Jekyll");
+  let markdown = 0;
+  for (const [name, content] of files) {
+    if (
+      !name.endsWith("/build-manifest.json") &&
+      name !== "/site-manifest.json"
+    )
+      continue;
+    const manifest = JSON.parse(content);
+    for (const [url, digest] of Object.entries(manifest.markdownFiles ?? {})) {
+      const text = files.get(url);
+      if (
+        !text ||
+        /^\s*<!doctype html/i.test(text) ||
+        createHash("sha256").update(text).digest("hex") !== digest
+      )
+        throw new Error(
+          `Markdown missing or altered in static artifact: ${url}`,
+        );
+      markdown++;
+    }
+  }
   if (!files.has("/index.html")) throw new Error("Shared homepage is missing");
   for (const app of sites.apps)
     if (!files.has(app.mount + "/index.html"))
@@ -149,7 +173,7 @@ export async function verifySites(directory) {
           throw new Error(`Broken site anchor ${href} in ${name}`);
         links++;
       }
-  return { html: ids.size, links };
+  return { html: ids.size, links, markdown };
 }
 /** Build each app with live child output. @param {object} app Site configuration. @returns {Promise<void>} Completion. Runs only declared build commands, without a shell. */
 async function buildApp(app, production) {
@@ -194,6 +218,10 @@ export async function buildSites({ production = true } = {}) {
       path.join(rootSource, "app.js"),
       path.join(staging, "site-assets/app.js"),
     );
+    await copyStatic(
+      path.join(rootSource, "favicon.svg"),
+      path.join(staging, "site-assets/favicon.svg"),
+    );
     const packages = [...discoverWorkspaces(repositoryRoot).values()]
       .filter(
         (item) =>
@@ -210,6 +238,11 @@ export async function buildSites({ production = true } = {}) {
           ),
         )
       : null;
+    if (docsApp)
+      await copyStatic(
+        path.join(staging, docsApp.mount.slice(1), "index.md"),
+        path.join(staging, docsApp.mount.slice(1) + ".md"),
+      );
     const cards = packages
       .map(
         ({ name, pkg }) =>
@@ -221,7 +254,7 @@ export async function buildSites({ production = true } = {}) {
     )
       .replace("{{PACKAGE_COUNT}}", String(packages.length))
       .replace("{{PACKAGE_CARDS}}", cards)
-      .replace(
+      .replaceAll(
         "{{FRAMEWORK_TUTORIAL_URL}}",
         docs ? `${docsApp.mount}/docs/${docs.latest}/tutorial/` : "/zeruxjs/",
       );
@@ -230,6 +263,34 @@ export async function buildSites({ production = true } = {}) {
       path.join(staging, "404.html"),
       '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page not found · ZeruxJS</title><link rel="stylesheet" href="/site-assets/style.css"></head><body><main><section class="hero"><h1>Page not found.</h1><p>The requested page is not available.</p><a href="/">Open the ecosystem home →</a><br><a href="/zeruxjs/">Browse ZeruxJS documentation →</a></section></main></body></html>',
     );
+    const rawHome =
+      "# ZeruxJS ecosystem\n\nFramework, libraries and tools. Built in the open.\n\n## Projects\n\n- [ZeruxJS framework](/zeruxjs/)\n- [ZyroJS library](https://github.com/zeruxjs/zeruxjs/tree/master/packages/zyrojs)\n- [ZenixJS CMS](https://github.com/zeruxjs/zeruxjs/tree/master/packages/zenixjs)\n\n## Public packages\n\n" +
+      packages
+        .map(
+          ({ name, pkg }) =>
+            `- [${name}](${docs?.packageRoutes?.[name] ?? "https://www.npmjs.com/package/" + name}) — ${pkg.description || "Ecosystem package"} (v${pkg.version})`,
+        )
+        .join("\n") +
+      "\n";
+    const rawMissing =
+      "# Page not found\n\nBrowse the [ecosystem home](/) or [documentation](/zeruxjs/).\n";
+    await fs.writeFile(path.join(staging, "index.md"), rawHome);
+    await fs.writeFile(path.join(staging, "404.md"), rawMissing);
+    const markdownFiles = Object.fromEntries(
+      [
+        ["/index.md", rawHome],
+        ["/404.md", rawMissing],
+      ].map(([url, text]) => [
+        url,
+        createHash("sha256").update(text).digest("hex"),
+      ]),
+    );
+    if (docsApp)
+      markdownFiles[docsApp.mount + ".md"] = createHash("sha256")
+        .update(
+          await fs.readFile(path.join(staging, docsApp.mount.slice(1) + ".md")),
+        )
+        .digest("hex");
     const sitemapLines = new Set();
     for (const app of sites.apps) {
       const robots = await fs
@@ -248,6 +309,7 @@ export async function buildSites({ production = true } = {}) {
     await fs.writeFile(path.join(staging, ".nojekyll"), "");
     const manifest = {
       schema: 1,
+      markdownFiles,
       outputBranch: sites.outputBranch,
       rootOwned: sites.root.owned,
       sites: sites.apps.map((app) => ({ id: app.id, mount: app.mount })),

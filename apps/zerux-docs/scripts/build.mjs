@@ -13,6 +13,12 @@ import {
   htmlFiles,
 } from "../../../scripts/static-site-assets.mjs";
 
+import {
+  rawMarkdown,
+  markdownPath,
+  markdownDigest,
+} from "../src/lib/raw-markdown.mjs";
+
 export { root };
 export const output = path.join(root, "dist");
 
@@ -154,6 +160,13 @@ export async function build({ production = true } = {}) {
   }
   const staging = await fs.mkdtemp(path.join(root, ".docs-build-"));
   const search = [];
+  const markdownFiles = {};
+  async function emitMarkdown(url, text) {
+    const file = path.join(staging, url.slice(1));
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, text);
+    markdownFiles[url] = markdownDigest(text);
+  }
   const mountedRoot = path.join(staging, site.basePath.slice(1));
   await fs.mkdir(mountedRoot, { recursive: true });
   try {
@@ -183,6 +196,9 @@ export async function build({ production = true } = {}) {
       const target = path.join(staging, page.url.slice(1), "index.html");
       await fs.mkdir(path.dirname(target), { recursive: true });
       await fs.writeFile(target, document(page, pages, content, rendered.toc));
+      const raw = rawMarkdown(page, pages, references.get(page.version));
+      await emitMarkdown(markdownPath(page.url), raw);
+      await emitMarkdown(page.url + "index.md", raw);
       search.push({
         title: page.title,
         section: page.section,
@@ -207,6 +223,28 @@ export async function build({ production = true } = {}) {
         });
     }
     await fs.writeFile(path.join(mountedRoot, "index.html"), home(pages));
+    await fs.writeFile(path.join(mountedRoot, ".nojekyll"), "");
+    const portal = {
+      title: "The ZeruxJS handbook",
+      description: site.description,
+      body:
+        "## Choose your next step\n\n" +
+        ["tutorial", "mental-model", "database-queries", "packages"]
+          .map((slug) => {
+            const page = pages.find(
+              (page) => page.version === site.latest && page.slug === slug,
+            );
+            return `- [${page.title}](${page.url}) — ${page.description}`;
+          })
+          .join("\n"),
+    };
+    await emitMarkdown(sitePath("/index.md"), rawMarkdown(portal, pages));
+    await emitMarkdown(
+      sitePath("/404.md"),
+      "# Page not found\n\nThis route does not exist. Browse the [documentation home](" +
+        sitePath("/") +
+        ").\n",
+    );
     for (const version of site.versions) {
       const intro = pages.find(
         (page) => page.version === version.id && page.slug === "introduction",
@@ -216,6 +254,14 @@ export async function build({ production = true } = {}) {
         ...(version.id === site.latest ? ["docs/index.html"] : []),
       ];
       for (const alias of aliases) {
+        await emitMarkdown(
+          sitePath("/" + alias.replace(/\/index\.html$/, ".md")),
+          rawMarkdown(intro, pages, references.get(version.id)),
+        );
+        await emitMarkdown(
+          sitePath("/" + alias.replace(/index\.html$/, "index.md")),
+          rawMarkdown(intro, pages, references.get(version.id)),
+        );
         await fs.mkdir(path.dirname(path.join(mountedRoot, alias)), {
           recursive: true,
         });
@@ -285,6 +331,7 @@ export async function build({ production = true } = {}) {
       JSON.stringify(
         {
           schema: 2,
+          markdownFiles,
           rendering: "static-html",
           basePath: site.basePath,
           latest: site.latest,

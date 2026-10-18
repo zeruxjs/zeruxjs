@@ -1,38 +1,8 @@
 import { installNavigationPrefetch } from "@zeruxjs/performance/navigation";
 
 /** Progressive enhancement for already-rendered documentation. No telemetry, external services or cookies. */
-const root = document.documentElement;
-const themeButton = document.querySelector(".theme-toggle");
-const modes = ["system", "light", "dark"];
-let theme = "system";
-try {
-  const saved = localStorage.getItem("zerux-docs-theme");
-  if (modes.includes(saved)) theme = saved;
-} catch {
-  /* Private browsing may deny storage. */
-}
-/** Apply a display preference only. @returns {void} Nothing. Reads module theme and browser DOM. */
-function applyTheme() {
-  if (theme === "system") delete root.dataset.theme;
-  else root.dataset.theme = theme;
-  themeButton.textContent =
-    theme === "dark" ? "☾" : theme === "light" ? "☀" : "◐";
-  themeButton.setAttribute("aria-label", `Color theme: ${theme}. Change theme`);
-  themeButton.title = `Theme: ${theme}`;
-}
-if (themeButton) {
-  themeButton.hidden = false;
-  applyTheme();
-  themeButton.addEventListener("click", () => {
-    theme = modes[(modes.indexOf(theme) + 1) % modes.length];
-    try {
-      localStorage.setItem("zerux-docs-theme", theme);
-    } catch {
-      /* Optional preference persistence. */
-    }
-    applyTheme();
-  });
-}
+import { installThemeControl } from "../../../../scripts/site-theme.mjs";
+installThemeControl();
 for (const button of document.querySelectorAll(".copy-code")) {
   if (!navigator.clipboard?.writeText) continue;
   button.hidden = false;
@@ -81,7 +51,19 @@ if (dialog && typeof dialog.showModal === "function") {
     if (event.target === dialog) dialog.close();
   });
   document.addEventListener("keydown", (event) => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+    const typing =
+      event.target instanceof Element &&
+      event.target.closest("input,textarea,select,[contenteditable]");
+    const slash =
+      event.key === "/" &&
+      !typing &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey;
+    if (
+      slash ||
+      ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")
+    ) {
       event.preventDefault();
       showSearch();
     }
@@ -202,3 +184,45 @@ const navigation = installNavigationPrefetch({
 window.addEventListener("pagehide", (event) => {
   if (!event.persisted) navigation.destroy();
 });
+
+// Raw content is fetched only after an explicit copy request.
+for (const button of document.querySelectorAll(".copy-page")) {
+  if (!navigator.clipboard?.writeText) continue;
+  button.hidden = false;
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try {
+      const response = await fetch(button.dataset.markdown);
+      if (!response.ok) throw new Error("Markdown unavailable");
+      await navigator.clipboard.writeText(await response.text());
+      button.textContent = "Copied Markdown";
+    } catch {
+      button.textContent = "Open View Markdown to copy";
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+const progress = document.querySelector(".reading-progress");
+if (progress) {
+  progress.hidden = false;
+  let scheduled = false;
+  const update = () => {
+    scheduled = false;
+    const maximum = document.documentElement.scrollHeight - innerHeight;
+    progress.style.setProperty(
+      "--progress",
+      maximum > 0 ? Math.min(1, Math.max(0, scrollY / maximum)) : 0,
+    );
+  };
+  const schedule = () => {
+    if (!scheduled) {
+      scheduled = true;
+      requestAnimationFrame(update);
+    }
+  };
+  addEventListener("scroll", schedule, { passive: true });
+  addEventListener("resize", schedule, { passive: true });
+  update();
+}

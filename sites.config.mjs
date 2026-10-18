@@ -8,6 +8,9 @@ export const sites = {
     source: 'pages',
     owned: [
       'index.html',
+      'index.md',
+      'zeruxjs.md',
+      '404.md',
       '404.html',
       'robots.txt',
       'site-assets',

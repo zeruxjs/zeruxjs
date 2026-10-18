@@ -125,3 +125,17 @@ Docs search loads its browser module and compact index on demand, using **@zerux
 Use `ui-` utility classes in templates for new layouts and components. `zuix.config.mjs` defines theme extensions and imports `zuix.recipes.mjs`: reusable compositions of those same utilities for element selectors, Markdown typography, component states, dark mode, reduced-motion and print. This is the Zuixs equivalent of applying utilities to a reusable component; recipes preserve source order and are compiled before explicit template utilities. Style values and unsupported utility names are validated by Zuixs, and invalid recipes fail the build.
 
 The build generates the final stylesheet (`site-assets/style.css` for the homepage, `assets/docs.css` for docs). Do not edit generated files. To change a component, change its recipe's `apply` tokens or its template classes. Use existing theme scales first, arbitrary values such as `ui-p-[13px]` for precise values, and properties such as `ui-[scroll-margin-top:96px]` where a named utility is unnecessary. `ui-!hidden` marks an important utility. State selectors and media/feature/container queries belong to the recipe configuration. No browser styling runtime is shipped.
+
+## Raw Markdown URLs
+
+Every document is exported as both `/zeruxjs/docs/<version>/<slug>.md` and `/zeruxjs/docs/<version>/<slug>/index.md`. `/zeruxjs/index.md` exports the handbook portal; the combined site also provides `/zeruxjs.md` and the ecosystem `/index.md`. Version introduction aliases are available at `/zeruxjs/docs/<version>.md` and `/zeruxjs/docs.md` for the latest version. These are real static files, not HTML pages disguised with a Markdown extension.
+
+Markdown contains the title, description, authored content, public manifest references and package README where applicable. It excludes authoring front matter and HTML navigation chrome. Prose links are portable between flat and index aliases; fenced code examples are preserved. View Markdown works without JavaScript; Copy Markdown fetches content only after an explicit click. Missing files return a real 404.
+
+Build manifests record SHA-256 hashes for every export. The docs checker, combined builder and GitHub Actions verify these before publishing; the publisher checks them again in the complete output-branch tree. `.nojekyll` is emitted in both static roots. The workflow uploads/deploys prebuilt files directly, without a Jekyll/Markdown rendering action. Local previews return `text/markdown`; the static hosting provider controls the deployed MIME header and whether a browser displays or downloads the file.
+
+## Appearance and interaction
+
+The homepage and docs share a system/light/dark preference stored under `zerux-theme`; existing `zerux-docs-theme` preferences migrate on use. A small early head script restores the preference before CSS paints. Storage is optional and no account, network call or cookie is needed. Without JavaScript, the operating system color scheme still applies. Shared build-time palette and motion recipes live in `scripts/site-design.mjs`, and browser controls in `scripts/site-theme.mjs`.
+
+The interface uses indigo/teal accents, theme-aware surfaces, component hover feedback and short entry animations. Motion is enabled only when the visitor allows it. Page tools, a reading-position indicator and `/` or Cmd/Ctrl-K search shortcuts support navigation; typing in inputs does not trigger the `/` shortcut.

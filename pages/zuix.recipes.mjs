@@ -4,8 +4,8 @@ export default [
     selector: ":root",
     apply: [
       "ui-[font-family:Inter,_ui-sans-serif,_system-ui,_-apple-system,_BlinkMacSystemFont,_Segoe_UI,_sans-serif]",
-      "ui-text-[#21312c]",
-      "ui-[background:#fbfcfa]",
+      "ui-text-[var(--text)]",
+      "ui-[background:var(--bg)]",
       "ui-leading-[1.7]",
       "ui-[--accent:#087e65]",
       "ui-[--muted:#66776f]",
@@ -229,7 +229,7 @@ export default [
   },
   {
     selector: ".featured",
-    apply: ["ui-[background:#eef7f0]", "ui-border-[#c8dece]"],
+    apply: ["ui-[background:var(--accent-soft)]", "ui-border-[var(--line)]"],
   },
   {
     selector: ".project-type",

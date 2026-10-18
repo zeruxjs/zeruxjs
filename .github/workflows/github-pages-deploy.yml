@@ -14,6 +14,8 @@ on:
       - 'scripts/publish-sites.mjs'
       - 'scripts/workspace-graph.mjs'
       - 'scripts/static-site-assets.mjs'
+      - 'scripts/site-theme.mjs'
+      - 'scripts/site-design.mjs'
       - '.github/workflows/github-pages-deploy.yml'
   workflow_dispatch:
 
@@ -63,6 +65,14 @@ jobs:
         run: node scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search
       - name: Build shared homepage and every configured site
         run: node scripts/build-sites.mjs
+      - name: Verify raw Markdown and static Pages artifact (no Jekyll rendering)
+        run: |
+          node --input-type=module <<'NODE'
+          import { verifySites, output } from './scripts/build-sites.mjs';
+          const result = await verifySites(output);
+          if (!result.markdown) throw new Error('Raw Markdown exports missing');
+          console.log(`[sites] ${result.markdown} unchanged Markdown exports verified; deployment uploads prebuilt static files without Jekyll.`);
+          NODE
       - name: Publish generated folders to master-site and prepare complete artifact
         run: node scripts/publish-sites.mjs
       - name: Upload the master-site static tree for Pages
