@@ -3,12 +3,29 @@ import { siteKeyframes } from "../scripts/site-design.mjs";
 export default {
   preflight: false,
   prefix: "ui-",
-  keyframes: siteKeyframes,
+  keyframes: {
+    ...siteKeyframes,
+    "home-float":
+      "0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}",
+  },
   extend: {
     screens: { tablet: "551px", desktop: "851px" },
     spacing: { neighbor: "15px" },
   },
   recipes: [
+    {
+      selector: "a",
+      apply: ["ui-text-[inherit]", "ui-[text-decoration:none]"],
+    },
+    { selector: "button, input", apply: ["ui-[font:inherit]"] },
+    {
+      selector:
+        "a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible",
+      apply: [
+        "ui-[outline:3px_solid_var(--accent)]",
+        "ui-outline-offset-[5px]",
+      ],
+    },
     {
       selector: ":root",
       apply: [
