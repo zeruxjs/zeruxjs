@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "outputBranch": "master-site",
+  "rootOwned": [
+    "index.html",
+    "404.html",
+    "robots.txt",
+    "site-assets",
+    "site-manifest.json",
+    ".nojekyll"
+  ],
+  "sites": [
+    {
+      "id": "zeruxjs",
+      "mount": "/zeruxjs"
+    }
+  ],
+  "packages": 47
+}
