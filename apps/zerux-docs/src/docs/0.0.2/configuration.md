@@ -1,7 +1,7 @@
 ---
 {
   "title": "Configuration",
-  "description": "Configure the runtime in zerux.config.ts.",
+  "description": "Configure database, cache, services and application structure in zerux.config.js or zerux.config.ts.",
   "section": "Fundamentals",
   "order": 30,
   "sources": [
@@ -14,6 +14,10 @@
   ]
 }
 ---
+
+## Runtime settings, not just site metadata
+
+The config file owns database connections, cache, managed services, workers, host policy and application structure. The runtime server loads it and initializes configured services before application modules run. Importing the file alone does not initialize those services. The documentation site's static exporter consumes only its custom `documentation` namespace and does not start the server runtime.
 
 ## Typed configuration
 

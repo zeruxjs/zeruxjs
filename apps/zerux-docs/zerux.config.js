@@ -1,5 +1,6 @@
 /** Shared application configuration. The documentation namespace is consumed by this app's static exporter.
  * Runtime options follow ZeruxConfig; documentation options are app-specific, not generic zerux build flags.
+ * This static exporter does not bootstrap db/cache or other runtime services. Importing this object never starts them.
  * No environment values, credentials or browser state are read.
  * @type {import('zeruxjs').ZeruxConfig}
  */
