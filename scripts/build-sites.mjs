@@ -254,8 +254,20 @@ export async function buildSites({ production = true } = {}) {
     const html = (
       await fs.readFile(path.join(rootSource, "index.html"), "utf8")
     )
-      .replace("{{PACKAGE_COUNT}}", String(packages.length))
+      .replaceAll("{{PACKAGE_COUNT}}", String(packages.length))
       .replace("{{PACKAGE_CARDS}}", cards)
+      .replaceAll(
+        "{{FRAMEWORK_CONFIG_URL}}",
+        docs
+          ? `${docsApp.mount}/docs/${docs.latest}/configuration-handbook/`
+          : "/zeruxjs/",
+      )
+      .replaceAll(
+        "{{FRAMEWORK_ARCHITECTURE_URL}}",
+        docs
+          ? `${docsApp.mount}/docs/${docs.latest}/mental-model/`
+          : "/zeruxjs/",
+      )
       .replaceAll(
         "{{FRAMEWORK_TUTORIAL_URL}}",
         docs ? `${docsApp.mount}/docs/${docs.latest}/tutorial/` : "/zeruxjs/",
@@ -265,15 +277,35 @@ export async function buildSites({ production = true } = {}) {
       path.join(staging, "404.html"),
       '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page not found · ZeruxJS</title><link rel="stylesheet" href="/site-assets/style.css"></head><body class="ui-m-0"><main class="ui-mx-auto ui-max-w-[900px] ui-p-8"><section><h1 class="ui-text-3xl ui-font-bold">Page not found.</h1><p>The requested page is not available.</p><a href="/">Open the ecosystem home →</a><br><a href="/zeruxjs/">Browse ZeruxJS documentation →</a></section></main></body></html>',
     );
-    const rawHome =
-      "# ZeruxJS ecosystem\n\nFramework, libraries and tools. Built in the open.\n\n## Projects\n\n- [ZeruxJS framework](/zeruxjs/)\n- [ZyroJS library](https://github.com/zeruxjs/zeruxjs/tree/master/packages/zyrojs)\n- [ZenixJS CMS](https://github.com/zeruxjs/zeruxjs/tree/master/packages/zenixjs)\n\n## Public packages\n\n" +
-      packages
-        .map(
-          ({ name, pkg }) =>
-            `- [${name}](${docs?.packageRoutes?.[name] ?? "https://www.npmjs.com/package/" + name}) — ${pkg.description || "Ecosystem package"} (v${pkg.version})`,
-        )
-        .join("\n") +
-      "\n";
+    const rawHome = (
+      await fs.readFile(path.join(rootSource, "index.md"), "utf8")
+    )
+      .replaceAll("{{PACKAGE_COUNT}}", String(packages.length))
+      .replaceAll(
+        "{{FRAMEWORK_TUTORIAL_URL}}",
+        docs ? `${docsApp.mount}/docs/${docs.latest}/tutorial/` : "/zeruxjs/",
+      )
+      .replaceAll(
+        "{{FRAMEWORK_CONFIG_URL}}",
+        docs
+          ? `${docsApp.mount}/docs/${docs.latest}/configuration-handbook/`
+          : "/zeruxjs/",
+      )
+      .replaceAll(
+        "{{FRAMEWORK_ARCHITECTURE_URL}}",
+        docs
+          ? `${docsApp.mount}/docs/${docs.latest}/mental-model/`
+          : "/zeruxjs/",
+      )
+      .replace(
+        "{{PACKAGE_LIST}}",
+        packages
+          .map(
+            ({ name, pkg }) =>
+              `- [${name}](${docs?.packageRoutes?.[name] ?? "https://www.npmjs.com/package/" + name}) — ${pkg.description || "Ecosystem package"} (v${pkg.version})`,
+          )
+          .join("\n"),
+      );
     const rawMissing =
       "# Page not found\n\nBrowse the [ecosystem home](/) or [documentation](/zeruxjs/).\n";
     await fs.writeFile(path.join(staging, "index.md"), rawHome);
