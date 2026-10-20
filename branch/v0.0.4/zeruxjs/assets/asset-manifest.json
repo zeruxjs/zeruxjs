@@ -2,26 +2,38 @@
   "production": true,
   "compiler": "zuixs",
   "bundler": "@zeruxjs/typescript",
-  "utilities": 15,
-  "recipes": 232,
+  "utilities": 10,
+  "recipes": 351,
   "assets": [
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/docs.css",
-      "version": "7e88b134416f",
-      "bytes": 20260,
-      "sourceBytes": 20809
+      "version": "25bf6e1811ec",
+      "bytes": 31030,
+      "sourceBytes": 31836
     },
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/docs.js",
-      "version": "5fbe0816e118",
-      "bytes": 8952,
-      "sourceBytes": 8693
+      "version": "196b03c2e14b",
+      "bytes": 11528,
+      "sourceBytes": 13013
     },
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/search.js",
-      "version": "e95054178560",
-      "bytes": 7257,
-      "sourceBytes": 2207
+      "version": "538070758ee9",
+      "bytes": 7457,
+      "sourceBytes": 2702
+    },
+    {
+      "url": "/branch/v0.0.4/zeruxjs/assets/learning.js",
+      "version": "1bdfbaf21afb",
+      "bytes": 14797,
+      "sourceBytes": 12036
+    },
+    {
+      "url": "/branch/v0.0.4/zeruxjs/assets/offline.js",
+      "version": "568708c29348",
+      "bytes": 2941,
+      "sourceBytes": 5069
     }
   ]
 }

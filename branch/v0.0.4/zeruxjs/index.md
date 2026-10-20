@@ -2,6 +2,10 @@
 
 Build applications with the ZeruxJS runtime and ecosystem.
 
+## Start learning
+
+[Eight-lesson course](/branch/v0.0.4/zeruxjs/docs/0.0.4/learn/) · [Find a solution](/branch/v0.0.4/zeruxjs/docs/0.0.4/solutions/) · [Glossary](/branch/v0.0.4/zeruxjs/docs/0.0.4/glossary/)
+
 ## Choose your next step
 
 - [Build your first application](/branch/v0.0.4/zeruxjs/docs/0.0.4/tutorial/) — Create a small notes API, validate requests, and compile it for production.
