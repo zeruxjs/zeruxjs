@@ -80,7 +80,7 @@ Explore 48 public packages for data, styling, security, development and more.
 - [zeruxjs](/zeruxjs/docs/0.0.3/framework-package/) — Main application ZeruxJS Framework (v0.0.3)
 - [zforge](/zeruxjs/docs/0.0.3/reference-zforge/) — Dev tools present here like mapping function and classes and all internal services (v0.0.3)
 - [zhost](/zeruxjs/docs/0.0.3/reference-zhost/) — Server Creator and Handle Auto load and so via @zerux/watcher (v0.0.3)
-- [zlocale](/zeruxjs/docs/0.0.3/reference-zlocale/) — Bounded gettext-style i18n and native Intl localization for Node.js, ZeruxJS and ZyroJS (v0.0.2)
+- [zlocale](/zeruxjs/docs/0.0.3/reference-zlocale/) — Bounded gettext-style i18n and native Intl localization for Node.js, ZeruxJS and ZyroJS (v0.0.3)
 - [zlook](/zeruxjs/docs/0.0.3/reference-zlook/) — File Change Watcher, Optize for multiple watcher together by sharing events (v0.0.3)
 - [ztrial](/zeruxjs/docs/0.0.3/reference-ztrial/) — Modular testing framework and assertion toolkit for ZeruxJS, ZyroJS and JavaScript (v0.0.3)
 - [zuixs](/zeruxjs/docs/0.0.3/reference-zuixs/) — Zero-dependency utility-first CSS compiler for ZeruxJS, ZyroJS, React, Vue, Next and Nuxt (v0.0.3)

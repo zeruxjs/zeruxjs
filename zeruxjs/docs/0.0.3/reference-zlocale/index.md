@@ -6,7 +6,7 @@ Use zlocale for bounded in-memory translation, native locale formatting, request
 ## Install and choose the execution boundary
 
 ```sh
-npm install zlocale@0.0.2
+npm install zlocale@0.0.3
 ```
 
 `zlocale` is a browser-safe, framework-independent i18n/l10n core. `zlocale/node` adds Node request-local state. `zlocale/zyro` adapts translation reads to the host's signal implementation. There are no runtime dependencies and no application or service is started on import. It can run in a browser bundle, a Node server, SSR or a background process.
@@ -168,10 +168,31 @@ const clientI18n = createI18n({ locale: "fr", timeZone: "UTC", catalogs });
 
 The versioned envelope escapes HTML delimiters and Unicode line separators, rejects duplicate locale/domain pairs and unsupported versions, and returns deeply frozen validated catalogs. Only expose public translations: escaping does not make confidential messages public-safe. Payloads default to at most 64 catalogs and 8 MiB UTF-8; `SnapshotOptions` lets you configure `maxCatalogs`, `maxBytes`, and per-catalog `limits`. HTML escaping here is specifically for a JSON data block, not an attribute, URL or executable script. Match locale, timezone and fallback settings across server and browser to avoid hydration differences.
 
+## Race-safe browser locale selection
+
+Version 0.0.3 provides `createLocaleController` and the TypeScript types `LocaleController`, `LocaleControllerOptions` and `LocaleLoader`. Supply the application-owned `i18n`, its bounded catalog loader, an explicit locale allowlist and required domains.
+
+```ts
+import { createLocaleController } from "zlocale";
+const controller = createLocaleController(i18n, loader, {
+  supportedLocales: ["en", "fr", "ar"],
+  domains: ["shop"],
+});
+const applied: boolean = await controller.switchLocale("fr");
+if (applied) {
+  document.documentElement.lang = i18n.getLocale();
+  document.documentElement.dir = i18n.isRTL() ? "rtl" : "ltr";
+}
+// Host teardown:
+controller.dispose();
+```
+
+Rapid selections are last-selection-wins: a slower earlier locale cannot overwrite the latest one. All required catalogs must load, validate and match their requested locale/domain keys before installation. The old locale stays active while loading. A current failure rejects; superseded, cancelled or disposed work resolves `false`. `cancel()` ignores pending results without cancelling shared loader imports. Unsupported locale selections reject before loading. Catalog keys use the selected BCP-47 base name; explicitly preload parent/fallback catalogs if the application needs them. Supported locales are bounded to 128 and domains to 32. Subscriber callbacks should not throw: registration and locale changes notify separately, and a thrown subscriber can follow a committed registry update. This controller changes an application-owned locale, never a shared server request locale; use `zlocale/node` for request isolation.
+
 
 ## Public entry points
 
-Manifest reference for `zlocale@0.0.2`.
+Manifest reference for `zlocale@0.0.3`.
 
 ```json
 {
@@ -203,7 +224,7 @@ Manifest reference for `zlocale@0.0.2`.
 
 # zlocale
 
-Explicit, bounded internationalization and localization for JavaScript, Node.js, ZeruxJS and ZyroJS. Version 0.0.2 provides WordPress-style gettext calls, CLDR plural categories, native Intl formatting, immutable catalogs, bounded caches, optional catalog loaders, request-local server translators and a dependency-free Zyro signal adapter. No runtime dependencies.
+Explicit, bounded internationalization and localization for JavaScript, Node.js, ZeruxJS and ZyroJS. Version 0.0.3 provides WordPress-style gettext calls, CLDR plural categories, native Intl formatting, immutable catalogs, bounded caches, optional catalog loaders, request-local server translators and a dependency-free Zyro signal adapter. No runtime dependencies.
 
 ## Loading design
 
@@ -291,6 +312,22 @@ lang.dispose();
 
 The adapter accepts a signal factory rather than importing ZyroJS. It works in browser bundles and Node SSR; the package does not include DOM APIs or a second Zyro runtime. Scope each instance to its application/mount. `dispose` unsubscribes and rejects later adapter reads. Generic frameworks can use `subscribe`, `getLocale` and locale-fixed translators directly. Subscribers observe locale/catalog changes; the host controls rendering and document `lang`/`dir` attributes.
 
+## Async locale switching (0.0.3)
+
+```ts
+import { createLocaleController } from "zlocale";
+const controller = createLocaleController(i18n, loader, {
+  supportedLocales: ["en", "fr", "ar"],
+  domains: ["shop"],
+});
+const applied: boolean = await controller.switchLocale("fr");
+// true: catalogs installed and locale switched; false: superseded/cancelled/disposed.
+controller.cancel(); // ignores pending results; does not cancel shared loader imports
+controller.dispose(); // call during host teardown
+```
+
+All required locale/domain catalogs load and validate before installation. The current locale remains active while loading. If a user chooses French then Arabic, a late French response cannot overwrite the Arabic selection. Obsolete failures resolve `false`; the latest selection's failure rejects and keeps the previous locale. Unsupported selections reject before loading and do not cancel a valid pending selection. Catalog keys use the selected locale's base name (excluding Unicode extensions). This API requires explicit catalogs for that base locale; it does not implicitly load parent/fallback catalogs. Preload those separately when needed. Defaults: the `default` domain; at most 128 supported locales and 32 domains. The host retains ownership of loaders, translator and DOM `lang`/`dir` updates. Subscribers still observe catalog registration and locale changes separately. A subscriber failure can occur after a registry commit, as with direct `registerCatalogs`; do not throw from UI subscribers. Use request-fixed translators on shared servers instead of this mutable application controller.
+
 ## SSR catalog hydration (0.0.2)
 
 Serialize only the public catalogs the page needs; never include private user data. The versioned payload escapes `<`, `>`, `&` and Unicode line separators so translations cannot close an HTML JSON data block. This is JSON data, not a JavaScript program or an HTML attribute value.
@@ -331,3 +368,5 @@ MIT OR Apache-2.0. No WordPress source is copied and no WordPress runtime depend
 - [packages/zlocale/src/node.ts](https://github.com/zeruxjs/zeruxjs/blob/master/packages/zlocale/src/node.ts)
 - [packages/zlocale/src/zyro.ts](https://github.com/zeruxjs/zeruxjs/blob/master/packages/zlocale/src/zyro.ts)
 - [packages/zlocale/src/loader.ts](https://github.com/zeruxjs/zeruxjs/blob/master/packages/zlocale/src/loader.ts)
+- [packages/zlocale/src/snapshot.ts](https://github.com/zeruxjs/zeruxjs/blob/master/packages/zlocale/src/snapshot.ts)
+- [packages/zlocale/src/controller.ts](https://github.com/zeruxjs/zeruxjs/blob/master/packages/zlocale/src/controller.ts)
