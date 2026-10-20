@@ -64,7 +64,7 @@ export default {
         "ui-[--accent:#5546d9]",
         "ui-[--accent-soft:#eeebff]",
         "ui-[--on-accent:#ffffff]",
-        "ui-[--secondary:#087f83]",
+        "ui-[--secondary:#06686c]",
         "ui-[--glow:#8170ee15]",
         "ui-[--selection:#d9d3ff]",
         "ui-[--header:rgba(248,249,254,0.94)]",
