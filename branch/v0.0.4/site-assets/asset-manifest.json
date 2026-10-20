@@ -2,20 +2,20 @@
   "production": true,
   "compiler": "zuixs",
   "bundler": "@zeruxjs/typescript",
-  "utilities": 235,
-  "recipes": 10,
+  "utilities": 240,
+  "recipes": 11,
   "assets": [
     {
       "url": "/branch/v0.0.4/site-assets/style.css",
-      "version": "bf0c8d4528e7",
-      "bytes": 13968,
-      "sourceBytes": 15382
+      "version": "8d93e19eea04",
+      "bytes": 14482,
+      "sourceBytes": 15927
     },
     {
       "url": "/branch/v0.0.4/site-assets/app.js",
-      "version": "5fb10bf9bd32",
-      "bytes": 6050,
-      "sourceBytes": 3539
+      "version": "c824faefc8dd",
+      "bytes": 7540,
+      "sourceBytes": 6845
     }
   ]
 }
