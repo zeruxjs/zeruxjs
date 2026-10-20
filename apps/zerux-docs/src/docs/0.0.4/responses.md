@@ -25,7 +25,7 @@ Import redirect and RedirectType from zeruxjs/navigation. Temporary is 307, Perm
 
 ```ts
 import { redirect, RedirectType } from "zeruxjs/navigation";
-export const GET = () => redirect("/docs/0.0.3/introduction/", RedirectType.Temporary);
+export const GET = () => redirect("/docs/0.0.4/introduction/", RedirectType.Temporary);
 ```
 
 ## Errors

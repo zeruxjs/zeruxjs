@@ -14,14 +14,15 @@ export default {
     origin: null,
     description: "Build applications with the ZeruxJS runtime and ecosystem.",
     repository: "https://github.com/zeruxjs/zeruxjs",
-    latest: "0.0.3",
+    latest: "0.0.4",
     versions: [
       {
-        id: "0.0.3",
-        label: "0.0.3",
-        status: "Early development",
+        id: "0.0.4",
+        label: "0.0.4",
+        status: "Preview",
+        packageVersion: "0.0.3",
         reference: "workspace",
-        ref: "master",
+        ref: "version/v0.0.4",
       },
     ],
     sections: [
