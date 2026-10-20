@@ -52,3 +52,11 @@ All layout/component styling stays in literal Zuixs utility classes. The local c
 ### Visible homepage motion
 
 The code window and runtime diagram float continuously; small animated markers travel through the diagram connectors. Section cards reveal with a short stagger when they enter the viewport, rather than finishing before the visitor scrolls. Code-tab changes animate on selection. The Pause animations button stops CSS loops and active reveal effects, and the operating system's reduced-motion setting always takes priority. Reveals use the Web Animations API and IntersectionObserver as optional enhancements; content is never initially hidden in source HTML. Animation handles and observers are released on page exit.
+
+## Homepage CSS delivery on GitHub Pages
+
+The production homepage embeds its compiled, minified Zuixs stylesheet directly in HTML, removing the separate render-blocking CSS request. `inlineCss: true` is enabled only for the combined root pages. The shared docs stylesheet stays external, and development keeps external CSS/source maps. No CSS is moved into a JavaScript loader, so first paint and no-JavaScript reading retain their styling.
+
+The asset compiler inlines only self-contained stylesheets up to 16 KiB uncompressed. Bundles containing imports/URL references, conditional stylesheets and larger bundles retain external delivery. An HTML style terminator fails the build rather than escaping the style element. `asset-manifest.json` records how many links were inlined; the standalone CSS file remains an output artifact. Changes to CSS naturally change the generated HTML, while browser JavaScript retains its existing content-versioned module URL.
+
+GitHub Pages controls HTTP cache headers; the site build cannot extend its default `max-age=600`. Versioned URLs avoid reusing an older asset after a deployment, but do not change that TTL. Longer HTTP cache lifetimes require a hosting/proxy layer with header control. No `_headers`, `.htaccess`, meta cache directive or same-origin preconnect is added as a purported fix.

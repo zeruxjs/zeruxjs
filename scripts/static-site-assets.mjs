@@ -12,7 +12,7 @@ export function assetVersion(bytes) {
 }
 
 /** Compile on-demand Zuixs CSS and browser JS/CSS with the workspace TypeScript/esbuild API.
- * @param {{directory:string,htmlFiles:string[],css:string,entries:string[],sourceRoot:string,basePath:string,zuix:object,production?:boolean,search?:{file:string,module:string}}} options Static assets and owned HTML files.
+ * @param {{directory:string,htmlFiles:string[],css:string,entries:string[],sourceRoot:string,basePath:string,zuix:object,production?:boolean,inlineCss?:boolean,search?:{file:string,module:string}}} options Static assets and owned HTML files. inlineCss opts small, self-contained production stylesheets into HTML delivery.
  * @returns {Promise<object>} Sizes and generated utility count. Reads trusted templates/config only; writes provided app-local staging paths.
  */
 export async function optimizeStaticAssets({
@@ -24,6 +24,7 @@ export async function optimizeStaticAssets({
   basePath,
   zuix,
   production = true,
+  inlineCss = false,
   search,
 }) {
   const documents = await Promise.all(
@@ -96,6 +97,21 @@ export async function optimizeStaticAssets({
       if (!module) throw new Error("Compiled search module missing");
       searchAttributes = ` data-search-version="${assetVersion(index)}" data-search-module="${module.url}?v=${module.version}"`;
     }
+    const stylesheet = records.find((record) => record.url.endsWith("/" + css));
+    const cssText = await fs.readFile(path.join(directory, css), "utf8");
+    // Inline only a small, self-contained stylesheet. External delivery preserves
+    // relative URL semantics and shared caching for larger/documentation bundles.
+    const canInlineCss =
+      production &&
+      inlineCss &&
+      stylesheet &&
+      Buffer.byteLength(cssText) <= 16 * 1024 &&
+      !/(?:@import\b|url\s*\()/i.test(cssText);
+    if (canInlineCss && /<\/style/i.test(cssText))
+      throw new Error(
+        "Cannot embed a stylesheet containing an HTML style terminator",
+      );
+    let inlinedStylesheets = 0;
     for (const [file, html] of documents) {
       let final = html
         .replace("<head>", `<head><script>${themeBootstrap}</script>`)
@@ -104,11 +120,25 @@ export async function optimizeStaticAssets({
           return record ? `${attribute}="${url}?v=${record.version}"` : match;
         })
         .replace(/<body\b/, `<body${searchAttributes}`);
+      if (canInlineCss) {
+        final = final.replace(/<link\b[^>]*>/gi, (link) => {
+          const href = /\bhref\s*=\s*["']([^"']+)["']/i.exec(link)?.[1];
+          if (
+            !/\brel\s*=\s*["']stylesheet["']/i.test(link) ||
+            /\b(?:media|disabled|title)\b/i.test(link) ||
+            href !== `${stylesheet.url}?v=${stylesheet.version}`
+          )
+            return link;
+          inlinedStylesheets++;
+          return `<style data-site-css="${stylesheet.version}">${cssText}</style>`;
+        });
+      }
       if (production) final = minifySiteHtml(final);
       await fs.writeFile(file, final);
     }
     const report = {
       production,
+      inlinedStylesheets,
       compiler: "zuixs",
       bundler: "@zeruxjs/typescript",
       utilities: classes.size,
