@@ -1,5 +1,6 @@
 {
   "production": true,
+  "inlinedStylesheets": 2,
   "compiler": "zuixs",
   "bundler": "@zeruxjs/typescript",
   "utilities": 240,
