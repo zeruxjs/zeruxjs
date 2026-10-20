@@ -117,6 +117,15 @@
                 >See how it works <span aria-hidden="true">↓</span></a
               >
             </div>
+            <button
+              data-motion-toggle
+              hidden
+              type="button"
+              aria-pressed="false"
+              class="ui-mt-5 ui-p-0 ui-bg-transparent ui-border-0 ui-text-[11px] ui-text-[var(--muted)] ui-cursor-pointer ui-underline"
+            >
+              Pause animations
+            </button>
             <p class="ui-text-[11px] ui-text-[var(--muted)] ui-mt-5 ui-mb-0">
               Early development · Open source · Explore the current capabilities
               in the docs.
@@ -130,7 +139,7 @@
               aria-hidden="true"
             ></div>
             <div
-              class="code-showcase ui-relative ui-rounded-[22px] ui-bg-[var(--code)] ui-text-[var(--code-text)] ui-[border:1px_solid_var(--line)] ui-shadow-[var(--shadow)] ui-overflow-hidden"
+              class="code-showcase motion-safe:ui-animate-[home-float_5s_ease-in-out_infinite] ui-relative ui-rounded-[22px] ui-bg-[var(--code)] ui-text-[var(--code-text)] ui-[border:1px_solid_var(--line)] ui-shadow-[var(--shadow)] ui-overflow-hidden"
             >
               <div
                 class="ui-flex ui-items-center ui-gap-2 ui-px-5 ui-py-4 ui-[border-bottom:1px_solid_#ffffff18]"
@@ -527,11 +536,15 @@
               </div>
             </div>
             <div
-              class="ui-h-8 ui-w-px ui-bg-[var(--line)] ui-mx-auto"
+              class="ui-h-8 ui-w-px ui-bg-[var(--line)] ui-mx-auto ui-relative"
               aria-hidden="true"
-            ></div>
+            >
+              <span
+                class="ui-absolute ui-left-[-2px] ui-top-0 ui-w-[5px] ui-h-[10px] ui-rounded-full ui-bg-[var(--accent)] motion-safe:ui-animate-[home-flow_2.4s_ease-in-out_infinite]"
+              ></span>
+            </div>
             <div
-              class="ui-rounded-[18px] ui-bg-[var(--text)] ui-text-[var(--bg)] ui-text-center ui-p-7 ui-shadow-[var(--shadow)] motion-safe:ui-animate-[home-float_6s_ease-in-out_3]"
+              class="ui-rounded-[18px] ui-bg-[var(--text)] ui-text-[var(--bg)] ui-text-center ui-p-7 ui-shadow-[var(--shadow)] motion-safe:ui-animate-[home-float_5s_ease-in-out_infinite]"
             >
               <span class="ui-text-[26px] ui-font-semibold ui-tracking-[-1px]"
                 >ZeruxJS runtime</span
@@ -541,9 +554,13 @@
               </p>
             </div>
             <div
-              class="ui-h-8 ui-w-px ui-bg-[var(--line)] ui-mx-auto"
+              class="ui-h-8 ui-w-px ui-bg-[var(--line)] ui-mx-auto ui-relative"
               aria-hidden="true"
-            ></div>
+            >
+              <span
+                class="ui-absolute ui-left-[-2px] ui-top-0 ui-w-[5px] ui-h-[10px] ui-rounded-full ui-bg-[var(--accent)] motion-safe:ui-animate-[home-flow_2.4s_ease-in-out_infinite]"
+              ></span>
+            </div>
             <div class="ui-grid ui-grid-cols-2 tablet:ui-grid-cols-4 ui-gap-2">
               <div
                 class="ui-rounded-xl ui-py-4 ui-text-center ui-text-xs ui-bg-[var(--surface)] ui-[border:1px_solid_var(--line)] motion-safe:ui-[transition:transform_220ms_ease,border-color_220ms_ease,box-shadow_220ms_ease] media-[(hover:_hover)_and_(prefers-reduced-motion:_no-preference)]:hover:ui-[transform:translateY(-5px)] hover:ui-border-[var(--accent)]"
