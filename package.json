@@ -78,7 +78,8 @@
     "packages/@zeruxjs/*",
     "packages/*",
     "packages/create/*",
-    "apps/*"
+    "apps/*",
+    "sample-packages/*"
   ],
   "devDependencies": {
     "better-sqlite3": "^12.6.2",
