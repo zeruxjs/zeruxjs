@@ -93,3 +93,90 @@ function installCommandCopy() {
   });
 }
 installCommandCopy();
+
+/** Install visible homepage motion with an explicit pause control.
+ * @returns {void} Nothing. Uses DOM, matchMedia, IntersectionObserver and Web Animations;
+ * no network, environment values, cookies or storage. Content remains visible without JS.
+ */
+function installHomeMotion() {
+  const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const toggle = document.querySelector("[data-motion-toggle]");
+  const animations = new Set();
+  let paused = false;
+  const allowed = () => !paused && !preference.matches;
+  /** Animate a visible element once. @param {Element} element Target. @param {number} delay Stagger in milliseconds. @returns {void} Tracks and releases the animation. */
+  const reveal = (element, delay = 0) => {
+    if (!allowed() || typeof element.animate !== "function") return;
+    const animation = element.animate(
+      [
+        { opacity: 0, transform: "translateY(28px)" },
+        { opacity: 1, transform: "translateY(0)" },
+      ],
+      {
+        duration: 700,
+        delay,
+        easing: "cubic-bezier(0.16,1,0.3,1)",
+        fill: "backwards",
+      },
+    );
+    animations.add(animation);
+    animation.finished.then(
+      () => animations.delete(animation),
+      () => animations.delete(animation),
+    );
+  };
+  const observer =
+    typeof IntersectionObserver === "function"
+      ? new IntersectionObserver(
+          (entries) => {
+            entries
+              .filter((entry) => entry.isIntersecting)
+              .forEach((entry, index) => {
+                observer.unobserve(entry.target);
+                reveal(entry.target, Math.min(index, 2) * 120);
+              });
+          },
+          { threshold: 0.12 },
+        )
+      : null;
+  for (const element of document.querySelectorAll(
+    "#why article, #how-it-works > div, #ecosystem article, main > div > section:last-child",
+  ))
+    observer?.observe(element);
+  /** Synchronize CSS motion and the accessible pause button. @returns {void} Cancels active effects when motion is disabled. */
+  const render = () => {
+    const stopped = !allowed();
+    if (stopped) document.documentElement.dataset.motion = "paused";
+    else document.documentElement.dataset.motion = "running";
+    if (stopped) for (const animation of animations) animation.cancel();
+    if (toggle) {
+      toggle.hidden = false;
+      toggle.disabled = preference.matches;
+      toggle.textContent = preference.matches
+        ? "Reduced motion enabled"
+        : paused
+          ? "Resume animations"
+          : "Pause animations";
+      toggle.setAttribute("aria-pressed", String(stopped));
+    }
+  };
+  toggle?.addEventListener("click", () => {
+    paused = !paused;
+    render();
+  });
+  preference.addEventListener("change", render);
+  // Animate code-panel changes as well as the page sections.
+  for (const tab of document.querySelectorAll("[data-code-tab]"))
+    tab.addEventListener("click", () => {
+      const panel = document.getElementById(tab.getAttribute("aria-controls"));
+      if (panel) reveal(panel);
+    });
+  render();
+  window.addEventListener("pagehide", (event) => {
+    if (event.persisted) return;
+    observer?.disconnect();
+    preference.removeEventListener("change", render);
+    for (const animation of animations) animation.cancel();
+  });
+}
+installHomeMotion();

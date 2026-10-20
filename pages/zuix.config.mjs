@@ -4,15 +4,21 @@ export default {
   preflight: false,
   prefix: "ui-",
   keyframes: {
+    "home-flow":
+      "0%{opacity:0;transform:translateY(0)}25%,70%{opacity:1}100%{opacity:0;transform:translateY(26px)}",
     ...siteKeyframes,
     "home-float":
-      "0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}",
+      "0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}",
   },
   extend: {
     screens: { tablet: "551px", desktop: "851px" },
     spacing: { neighbor: "15px" },
   },
   recipes: [
+    {
+      selector: ':root[data-motion="paused"] *, :root:not([data-motion]) *',
+      apply: ["ui-![animation:none]", "ui-![transition:none]"],
+    },
     {
       selector: "a",
       apply: ["ui-text-[inherit]", "ui-[text-decoration:none]"],
