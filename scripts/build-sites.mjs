@@ -364,6 +364,7 @@ export async function buildSites({ production = true } = {}) {
       basePath: "",
       zuix,
       production,
+      inlineCss: true,
     });
     const mount = previewMount();
     await mountPreview(staging, mount);
