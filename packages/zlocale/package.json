@@ -1,6 +1,6 @@
 {
   "name": "zlocale",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Bounded gettext-style i18n and native Intl localization for Node.js, ZeruxJS and ZyroJS",
   "type": "module",
   "main": "./dist/index.js",
@@ -24,7 +24,8 @@
     "dist",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc",

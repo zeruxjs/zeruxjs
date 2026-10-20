@@ -11,7 +11,9 @@
     "packages/zlocale/src/core.ts",
     "packages/zlocale/src/node.ts",
     "packages/zlocale/src/zyro.ts",
-    "packages/zlocale/src/loader.ts"
+    "packages/zlocale/src/loader.ts",
+    "packages/zlocale/src/snapshot.ts",
+    "packages/zlocale/src/controller.ts"
   ],
   "related": [
     "packages",
@@ -25,7 +27,7 @@
 ## Install and choose the execution boundary
 
 ```sh
-npm install zlocale@0.0.2
+npm install zlocale@0.0.3
 ```
 
 `zlocale` is a browser-safe, framework-independent i18n/l10n core. `zlocale/node` adds Node request-local state. `zlocale/zyro` adapts translation reads to the host's signal implementation. There are no runtime dependencies and no application or service is started on import. It can run in a browser bundle, a Node server, SSR or a background process.
@@ -186,3 +188,24 @@ const clientI18n = createI18n({ locale: "fr", timeZone: "UTC", catalogs });
 ```
 
 The versioned envelope escapes HTML delimiters and Unicode line separators, rejects duplicate locale/domain pairs and unsupported versions, and returns deeply frozen validated catalogs. Only expose public translations: escaping does not make confidential messages public-safe. Payloads default to at most 64 catalogs and 8 MiB UTF-8; `SnapshotOptions` lets you configure `maxCatalogs`, `maxBytes`, and per-catalog `limits`. HTML escaping here is specifically for a JSON data block, not an attribute, URL or executable script. Match locale, timezone and fallback settings across server and browser to avoid hydration differences.
+
+## Race-safe browser locale selection
+
+Version 0.0.3 provides `createLocaleController` and the TypeScript types `LocaleController`, `LocaleControllerOptions` and `LocaleLoader`. Supply the application-owned `i18n`, its bounded catalog loader, an explicit locale allowlist and required domains.
+
+```ts
+import { createLocaleController } from "zlocale";
+const controller = createLocaleController(i18n, loader, {
+  supportedLocales: ["en", "fr", "ar"],
+  domains: ["shop"],
+});
+const applied: boolean = await controller.switchLocale("fr");
+if (applied) {
+  document.documentElement.lang = i18n.getLocale();
+  document.documentElement.dir = i18n.isRTL() ? "rtl" : "ltr";
+}
+// Host teardown:
+controller.dispose();
+```
+
+Rapid selections are last-selection-wins: a slower earlier locale cannot overwrite the latest one. All required catalogs must load, validate and match their requested locale/domain keys before installation. The old locale stays active while loading. A current failure rejects; superseded, cancelled or disposed work resolves `false`. `cancel()` ignores pending results without cancelling shared loader imports. Unsupported locale selections reject before loading. Catalog keys use the selected BCP-47 base name; explicitly preload parent/fallback catalogs if the application needs them. Supported locales are bounded to 128 and domains to 32. Subscriber callbacks should not throw: registration and locale changes notify separately, and a thrown subscriber can follow a committed registry update. This controller changes an application-owned locale, never a shared server request locale; use `zlocale/node` for request isolation.

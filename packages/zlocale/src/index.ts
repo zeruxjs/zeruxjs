@@ -15,3 +15,9 @@ export type {
 export type { CatalogLoaders } from "./loader.js";
 export { serializeCatalogs, parseCatalogs } from "./snapshot.js";
 export type { CatalogSnapshot, SnapshotOptions } from "./snapshot.js";
+export { createLocaleController } from "./controller.js";
+export type {
+  LocaleLoader,
+  LocaleController,
+  LocaleControllerOptions,
+} from "./controller.js";

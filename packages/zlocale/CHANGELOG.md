@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.3
+
+- Add an explicit allowlisted locale controller with last-selection-wins behavior.
+- Validate complete locale/domain sets before installation; safely ignore stale loads, errors and disposed selections.
+- Include the changelog in published artifacts.
+
 ## 0.0.2
 
 - Add bounded, versioned catalog snapshots for SSR hydration and explicit transport.
