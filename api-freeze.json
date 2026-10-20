@@ -889,6 +889,34 @@
       "peerDependenciesMeta": null
     },
     {
+      "name": "zlocale",
+      "version": "0.0.2",
+      "private": false,
+      "main": "./dist/index.js",
+      "module": null,
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "./node": {
+          "types": "./dist/node.d.ts",
+          "default": "./dist/node.js"
+        },
+        "./zyro": {
+          "types": "./dist/zyro.d.ts",
+          "default": "./dist/zyro.js"
+        }
+      },
+      "bin": null,
+      "engines": {
+        "node": ">=20"
+      },
+      "peerDependencies": null,
+      "peerDependenciesMeta": null
+    },
+    {
       "name": "zlook",
       "version": "0.0.3",
       "private": false,

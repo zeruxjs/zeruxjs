@@ -1,0 +1,59 @@
+{
+  "name": "zlocale",
+  "version": "0.0.2",
+  "description": "Bounded gettext-style i18n and native Intl localization for Node.js, ZeruxJS and ZyroJS",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
+    "./zyro": {
+      "types": "./dist/zyro.d.ts",
+      "default": "./dist/zyro.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepack": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "keywords": [
+    "i18n",
+    "l10n",
+    "gettext",
+    "translation",
+    "intl",
+    "zeruxjs",
+    "zyrojs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git",
+    "directory": "packages/zlocale"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0"
+  }
+}
