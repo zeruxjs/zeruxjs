@@ -1,3 +1,4 @@
+import { lessons } from "./academy.mjs";
 import { createHash } from "node:crypto";
 import { site, sitePath } from "../site.config.mjs";
 
@@ -75,6 +76,26 @@ export function rawMarkdown(page, pages, inventory = []) {
         })
         .join("\n");
   }
+  const lesson = lessons.find((item) => item.slug === page.slug);
+  if (lesson)
+    text +=
+      "\n\n## Check your understanding\n\n" +
+      lesson.questions
+        .map(
+          (q, i) =>
+            `${i + 1}. ${q.prompt}\n${q.options.map((option, index) => `   - ${index + 1}. ${option}`).join("\n")}\n\nAnswer: ${q.options[q.answer]}. ${q.explanation}\n`,
+        )
+        .join("\n") +
+      "\nConfirm that you tried the lesson exercise. Optional points/progress are stored only by the browser interface.\n";
+  if (page.slug === "learn")
+    text +=
+      "\n\n## Course lessons\n\n" +
+      lessons
+        .map(
+          (item, i) =>
+            `${i + 1}. [${item.title}](${sitePath(`/docs/${page.version}/${item.slug}/`)}) — ${item.summary}`,
+        )
+        .join("\n");
   if (page.sources?.length)
     text +=
       "\n\n## Implementation sources\n\n" +

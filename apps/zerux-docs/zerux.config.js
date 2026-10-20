@@ -11,7 +11,8 @@ export default {
     title: "ZeruxJS",
     basePath: "/zeruxjs",
     // Set the deployed domain origin to emit canonical URLs and a sitemap.
-    origin: null,
+    origin: "https://zeruxjs.shubkb.me",
+    deploymentPath: "/branch/v0.0.4",
     description: "Build applications with the ZeruxJS runtime and ecosystem.",
     repository: "https://github.com/zeruxjs/zeruxjs",
     latest: "0.0.4",
@@ -27,6 +28,7 @@ export default {
     ],
     sections: [
       "Getting started",
+      "Learning",
       "Fundamentals",
       "Configuration",
       "Runtime",

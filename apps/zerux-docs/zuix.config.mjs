@@ -1,9 +1,10 @@
 import { themeRecipes, siteKeyframes } from "../../scripts/site-design.mjs";
 import recipes from "./zuix.recipes.mjs";
+import academyRecipes, { academyKeyframes } from "./academy.recipes.mjs";
 /** Docs utilities and component recipes, compiled at build time. */
 export default {
   preflight: false,
-  keyframes: siteKeyframes,
+  keyframes: { ...siteKeyframes, ...academyKeyframes },
   recipes: [
     ...recipes,
     ...themeRecipes,
@@ -101,6 +102,7 @@ export default {
       apply: ["ui-hidden"],
       media: "print",
     },
+    ...academyRecipes,
   ],
   prefix: "ui-",
   extend: {

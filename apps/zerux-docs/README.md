@@ -88,7 +88,7 @@ Authored guides are mandatory for **every public package in a live workspace-bac
 
 Document setup, a useful example, ownership/cleanup, error behavior, constraints and related tasks. Distinguish framework startup options from standalone factory options. Link the implementation and use public imports. Name callbacks and resources supplied by the application rather than implying they are built-ins. Make authorization, durability, transaction and coverage boundaries explicit where they matter.
 
-The learning path covers installation, a working notes application, runtime architecture, file conventions, requests, configuration/environment, middleware, plugins, workers, data/services, frontend bridges, operations and API references. Each `@zeruxjs` package has an authored task-focused guide; the directory covers all 47 public packages. The homepage is a learning portal, not a generated manifest listing.
+The learning path covers installation, a working notes application, runtime architecture, file conventions, requests, configuration/environment, middleware, plugins, workers, data/services, frontend bridges, operations and API references. Each `@zeruxjs` package has an authored task-focused guide; the directory covers all 48 public packages. The homepage is a learning portal, not a generated manifest listing.
 
 ## Versioning and archived references
 
@@ -160,3 +160,24 @@ Portal learning paths are defined once in `src/lib/learning-paths.mjs` and share
 Documentation retention: keep major/minor documentation lines, with only the latest patch for each retained line. The current 0.0 line is documented at 0.0.4; 0.0.2 is removed rather than duplicated.
 
 This branch previews docs 0.0.4 with `packageVersion: "0.0.3"`, so package installation examples and generated references remain truthful without a package release. Source links target `version/v0.0.4`.
+
+
+## Learning, task finding and browser-local progress
+
+The 0.0.4 preview adds an eight-lesson course, symptom-based solution finder, glossary and contextual plain-language explanations. `src/lib/academy.mjs` defines lesson identities, objectives and knowledge checks; `academy-template.mjs` renders their static HTML. Lessons themselves remain ordinary authored Markdown. Keep code examples tied to real public contracts, include expected outcomes and a practical exercise, and validate new course references before exporting. The raw Markdown exports include the same questions/explanations. Add Learning metadata to the configured navigation rather than building a separate hidden application.
+
+`public/assets/learning.js` enhances native radio/checkbox controls, awards 10 points once per correct question and completes a lesson only after all answers and the exercise confirmation. Progress, bookmarks and recent pages use a bounded validated localStorage schema scoped by docs mount/version. No account, telemetry, cookies or network progress service exists. Corrupt/blocked storage does not prevent reading; points are self-assessment, never certification. Export/reset are explicit actions. Every lesson and explanation remains available without JavaScript, and no lesson is locked behind points.
+
+The portal offers Learn from zero, Build a feature and Solve a problem. The symptom filter works locally over static cards. Full search loads only after search intent, includes prose/headings, removes common question filler and falls back to broader matching. Search/no-result controls, sidebar, glossary and explicit issue-report guidance provide multiple ways to find an answer.
+
+## Accessibility, motion, SEO and offline support
+
+Keyboard help documents Ctrl/Command+K, optional `/` and `?`, result arrows and Escape. Visitors can disable single-key shortcuts. Native dialogs, focus return, labels, visible focus and live feedback support keyboard use. One-time reveal animations use IntersectionObserver without repeated geometry reads; system reduced motion and the Motion control disable decorative movement. Styles remain build-time Zuixs utility recipes in `academy.recipes.mjs`; no handwritten CSS stylesheet or browser CSS engine is added.
+
+Page metadata now includes truthful WebSite/TechArticle/LearningResource JSON-LD, descriptions, canonical URLs and social-card metadata. The preview's public origin/deploymentPath ensure canonicals and sitemap entries point into `/branch/v0.0.4`; the combined publisher keeps branch previews noindex to avoid competing with released docs. No fake reviews, certifications, author credentials or update dates are emitted.
+
+Offline support is explicitly opt-in: `offline.js` registers `sw.js` only after Enable offline reading. `scripts/offline.mjs` generates an allowlisted worker scoped to this exact docs mount. The manifest uses relative URLs so branch previews remain isolated. Known HTML uses network-first with a bounded timeout/cache; versioned assets/search data are cached separately. Only same-origin allowlisted GET URLs are eligible; query-bearing documents, APIs and external requests bypass it. Catalog/course content does not cause an application runtime or database startup.
+
+The worker keeps at most a bounded set of previously read eligible pages/assets, with a 1 MiB per-response budget and an explicit offline fallback. Unvisited/oversized pages are not promised offline. It waits for an explicit update action before replacing an active worker, and cleanup touches only this mount's cache prefix. Removal keeps learning progress. Installation is browser-dependent; no push notifications or account background services are used. `manifest.webmanifest` and code-native PNG/SVG icons support install prompts on eligible secure origins. Preview server MIME types include manifest/PNG files.
+
+Run the static validator after every build. It now checks one main heading, landmarks, structured metadata, PWA scope/icons and existing raw Markdown/link/search integrity. For interactive changes, verify a real browser: storage denial/corruption, duplicate points, resume/reset/bookmarks, keyboard opt-out/focus, reduced motion, mobile overflow, dark contrast, no-JavaScript reading and actual offline requests. Performance scores are environment-specific measurements, not blanket production certification.

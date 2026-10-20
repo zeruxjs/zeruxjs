@@ -27,7 +27,12 @@ const closeSearch = document.querySelector(".close-search");
 const input = document.querySelector("#search-input");
 const results = document.querySelector("#search-results");
 const status = document.querySelector("#search-status");
+let singleKeys = true;
+try {
+  singleKeys = localStorage.getItem("zerux-single-shortcuts") !== "off";
+} catch {}
 let searchModule;
+let searchTrigger;
 /** Load the search engine only on explicit search intent. @returns {Promise<object>} Search module. Reads generated script URL only. */
 function loadSearch() {
   searchModule ??= import(document.body.dataset.searchModule).catch((error) => {
@@ -39,7 +44,10 @@ function loadSearch() {
 let queryVersion = 0;
 /** Open the optional modal search. @returns {void} Nothing. Reads dialog DOM only. */
 function showSearch() {
-  if (!dialog.open) dialog.showModal();
+  if (!dialog.open) {
+    searchTrigger = document.activeElement;
+    dialog.showModal();
+  }
   input.focus();
   void loadSearch().catch(() => {});
 }
@@ -55,6 +63,7 @@ if (dialog && typeof dialog.showModal === "function") {
       event.target instanceof Element &&
       event.target.closest("input,textarea,select,[contenteditable]");
     const slash =
+      singleKeys &&
       event.key === "/" &&
       !typing &&
       !event.ctrlKey &&
@@ -68,6 +77,7 @@ if (dialog && typeof dialog.showModal === "function") {
       showSearch();
     }
   });
+  dialog.addEventListener("close", () => searchTrigger?.focus());
   input.addEventListener("input", async () => {
     const sequence = ++queryVersion;
     const query = input.value.trim().toLowerCase().slice(0, 120);
@@ -87,6 +97,18 @@ if (dialog && typeof dialog.showModal === "function") {
       status.textContent = selected.length
         ? `Showing ${selected.length} matching topics.`
         : "No matches. Try a package name or a shorter phrase.";
+      if (!selected.length) {
+        for (const [slug, title] of [
+          ["solutions", "Find a solution by symptom"],
+          ["glossary", "Look up a word"],
+          ["learn", "Follow the beginner course"],
+        ]) {
+          const link = document.createElement("a");
+          link.href = `${document.body.dataset.basePath}/docs/${document.body.dataset.version}/${slug}/`;
+          link.textContent = title;
+          results.append(link);
+        }
+      }
       for (const page of selected) {
         const link = document.createElement("a");
         link.href = page.url;
@@ -205,7 +227,7 @@ for (const button of document.querySelectorAll(".copy-page")) {
 }
 
 const progress = document.querySelector(".reading-progress");
-if (progress) {
+if (progress && document.body.dataset.docSlug !== "home") {
   progress.hidden = false;
   let scheduled = false;
   const update = () => {
@@ -244,4 +266,105 @@ if (versionMenu) {
       versionMenu.querySelector("summary").focus();
     }
   });
+}
+
+// Native help dialogs and visible controls remain keyboard accessible; optional single-key shortcuts can be disabled.
+const shortcuts = document.querySelector("#shortcuts-dialog");
+let shortcutTrigger;
+function showShortcuts() {
+  if (!shortcuts || shortcuts.open) return;
+  shortcutTrigger = document.activeElement;
+  shortcuts.showModal();
+}
+for (const button of document.querySelectorAll("[data-open-shortcuts]")) {
+  button.hidden = false;
+  button.addEventListener("click", showShortcuts);
+}
+for (const button of document.querySelectorAll("[data-open-search]"))
+  button.addEventListener("click", showSearch);
+const shortcutOption = document.querySelector("[data-single-shortcuts]");
+if (shortcutOption) {
+  shortcutOption.checked = singleKeys;
+  shortcutOption.addEventListener("change", () => {
+    singleKeys = shortcutOption.checked;
+    try {
+      localStorage.setItem("zerux-single-shortcuts", singleKeys ? "on" : "off");
+    } catch {}
+  });
+}
+shortcuts?.addEventListener("close", () => shortcutTrigger?.focus());
+for (const modal of document.querySelectorAll("dialog:not(#search-dialog)")) {
+  for (const button of modal.querySelectorAll("[data-close-dialog]"))
+    button.addEventListener("click", () => modal.close());
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) modal.close();
+  });
+}
+document.addEventListener("keydown", (event) => {
+  const typing =
+    event.target instanceof Element &&
+    event.target.closest("input,textarea,select,[contenteditable]");
+  if (
+    event.key === "?" &&
+    singleKeys &&
+    !typing &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    !document.querySelector("dialog[open]")
+  ) {
+    event.preventDefault();
+    showShortcuts();
+  }
+});
+
+// Animate decorative relationships and one-time reveals only when allowed; never hide content without a live observer.
+let motion = true;
+try {
+  motion = localStorage.getItem("zerux-docs-motion") !== "off";
+} catch {}
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+function syncMotion() {
+  const allowed = motion && !reducedMotion.matches;
+  document.documentElement.dataset.motion = allowed ? "on" : "off";
+  for (const button of document.querySelectorAll("[data-motion-toggle]")) {
+    button.hidden = false;
+    button.textContent = reducedMotion.matches
+      ? "Motion: reduced by system"
+      : motion
+        ? "Pause motion"
+        : "Enable motion";
+    button.disabled = reducedMotion.matches;
+    button.setAttribute("aria-pressed", String(!allowed));
+  }
+  if (!allowed)
+    document
+      .querySelectorAll(".reveal-pending")
+      .forEach((node) => node.classList.remove("reveal-pending"));
+}
+for (const button of document.querySelectorAll("[data-motion-toggle]"))
+  button.addEventListener("click", () => {
+    motion = !motion;
+    try {
+      localStorage.setItem("zerux-docs-motion", motion ? "on" : "off");
+    } catch {}
+    syncMotion();
+  });
+reducedMotion.addEventListener("change", syncMotion);
+syncMotion();
+if (motion && !reducedMotion.matches && "IntersectionObserver" in window) {
+  const reveal = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.remove("reveal-pending");
+          reveal.unobserve(entry.target);
+        } else entry.target.classList.add("reveal-pending");
+      }
+    },
+    { threshold: 0.08 },
+  );
+  for (const node of document.querySelectorAll("[data-reveal]")) {
+    reveal.observe(node);
+  }
 }

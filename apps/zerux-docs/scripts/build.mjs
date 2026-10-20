@@ -1,9 +1,11 @@
+import { lessons, validateAcademy } from "../src/lib/academy.mjs";
+import { emitOffline } from "./offline.mjs";
 import { learningPaths } from "../src/lib/learning-paths.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { root, loadContent } from "../src/lib/content.mjs";
-import { site, sitePath } from "../src/site.config.mjs";
+import { site, sitePath, canonicalUrl } from "../src/site.config.mjs";
 import { markdown, escape } from "../src/lib/markdown.mjs";
 import { document, home } from "../src/lib/template.mjs";
 import { versionReference } from "../src/lib/reference.mjs";
@@ -140,10 +142,19 @@ export async function build({ production = true } = {}) {
         "site.origin must be a public domain origin without a path, credentials, query or fragment",
       );
   }
+  if (
+    site.deploymentPath &&
+    !/^\/branch\/[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(site.deploymentPath)
+  )
+    throw new Error("Choose an explicit safe branch preview deploymentPath");
   if (!/^\/[a-z0-9-]+$/.test(site.basePath))
     throw new Error("Choose a single-segment static site basePath");
   const pages = await loadContent();
   const references = await addReferencePages(pages);
+  validateAcademy(
+    pages,
+    site.versions.map((version) => version.id),
+  );
   pages.sort((a, b) => {
     const order = (value) => {
       const index = site.sections.indexOf(value);
@@ -225,12 +236,22 @@ export async function build({ production = true } = {}) {
         });
     }
     await fs.writeFile(path.join(mountedRoot, "index.html"), home(pages));
+    await fs.writeFile(
+      path.join(mountedRoot, "offline.html"),
+      `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>You are offline | ZeruxJS Docs</title><link rel="stylesheet" href="${sitePath("/assets/docs.css")}"></head><body><main class="offline-page"><article><p>ZERUXJS FIELD GUIDE</p><h1>This page is not saved offline yet.</h1><p>Reconnect to open it. Previously read eligible articles may still be available. Offline copies can be older than the live handbook.</p><a href="${sitePath("/")}">Open your handbook home →</a><p>Your local learning progress is separate from the offline cache.</p></article></main></body></html>`,
+    );
     await fs.writeFile(path.join(mountedRoot, ".nojekyll"), "");
     const portal = {
       title: "The ZeruxJS handbook",
       description: site.description,
       body:
-        "## Choose your next step\n\n" +
+        "## Start learning\n\n[Eight-lesson course](" +
+        sitePath(`/docs/${site.latest}/learn/`) +
+        ") · [Find a solution](" +
+        sitePath(`/docs/${site.latest}/solutions/`) +
+        ") · [Glossary](" +
+        sitePath(`/docs/${site.latest}/glossary/`) +
+        ")\n\n## Choose your next step\n\n" +
         learningPaths
           .map(([slug]) => {
             const page = pages.find(
@@ -360,10 +381,7 @@ export async function build({ production = true } = {}) {
       const xml =
         '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
         urls
-          .map(
-            (url) =>
-              `<url><loc>${escape(new URL(url, site.origin).href)}</loc></url>`,
-          )
+          .map((url) => `<url><loc>${escape(canonicalUrl(url))}</loc></url>`)
           .join("") +
         "</urlset>";
       await fs.writeFile(path.join(mountedRoot, "sitemap.xml"), xml);
@@ -372,20 +390,26 @@ export async function build({ production = true } = {}) {
       path.join(mountedRoot, "robots.txt"),
       "User-agent: *\nAllow: /\n" +
         (site.origin
-          ? `Sitemap: ${new URL(sitePath("/sitemap.xml"), site.origin).href}\n`
+          ? `Sitemap: ${canonicalUrl(sitePath("/sitemap.xml"))}\n`
           : ""),
     );
-    await optimizeStaticAssets({
+    const assets = await optimizeStaticAssets({
       directory: mountedRoot,
       htmlFiles: await htmlFiles(mountedRoot),
       css: "assets/docs.css",
-      entries: ["public/assets/docs.js", "public/assets/search.js"],
+      entries: [
+        "public/assets/docs.js",
+        "public/assets/search.js",
+        "public/assets/learning.js",
+        "public/assets/offline.js",
+      ],
       sourceRoot: root,
       basePath: site.basePath,
       zuix,
       production,
       search: { file: "assets/search.json", module: "search.js" },
     });
+    await emitOffline(mountedRoot, site, pages, assets, { production });
     const result = await check(staging);
     const existing = await fs.lstat(output).catch((error) => {
       if (error.code !== "ENOENT") throw error;
