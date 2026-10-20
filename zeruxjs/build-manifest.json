@@ -129,8 +129,8 @@
     "/zeruxjs/docs/0.0.3/cli-reference/index.md": "035e1bfdb82e6b9c6a113fe0135f8a69673fc400aa643b0628782e622f5719ca",
     "/zeruxjs/docs/0.0.3/framework-package.md": "3b548981f4c231753c925caae0c7b89e225d8beb2c79715de1ead058d74d4b6b",
     "/zeruxjs/docs/0.0.3/framework-package/index.md": "3b548981f4c231753c925caae0c7b89e225d8beb2c79715de1ead058d74d4b6b",
-    "/zeruxjs/docs/0.0.3/packages.md": "70c04053a478e356f34d33a2df17321c68181acebddcd75d86d6148d64bd0dbd",
-    "/zeruxjs/docs/0.0.3/packages/index.md": "70c04053a478e356f34d33a2df17321c68181acebddcd75d86d6148d64bd0dbd",
+    "/zeruxjs/docs/0.0.3/packages.md": "4ca75a395cafb01902e376123a79f4944b98444b3d77c08e9ee80c059ac33534",
+    "/zeruxjs/docs/0.0.3/packages/index.md": "4ca75a395cafb01902e376123a79f4944b98444b3d77c08e9ee80c059ac33534",
     "/zeruxjs/docs/0.0.3/package-cache.md": "dd0f1459527dfe52ed35e47a3d0d008e3c06ba36ec1de87a4e4166750ce15a28",
     "/zeruxjs/docs/0.0.3/package-cache/index.md": "dd0f1459527dfe52ed35e47a3d0d008e3c06ba36ec1de87a4e4166750ce15a28",
     "/zeruxjs/docs/0.0.3/package-cache-redis.md": "bbb9e0d366508881b91cc83ab7ed7eb4b91b885123de1d671033a082a1a0850a",
@@ -223,9 +223,11 @@
     "/zeruxjs/docs/0.0.3/reference-zuixs/index.md": "3f45f472cdca3f68cb749b4c58876fa57968cd10025b8e79e1e88b6ab978751a",
     "/zeruxjs/docs/0.0.3/reference-zenixjs.md": "16daa133f4adfa450a8ee0fb7ff5df45011cac1e1bad5fd3fb8f53ec5f882b5b",
     "/zeruxjs/docs/0.0.3/reference-zenixjs/index.md": "16daa133f4adfa450a8ee0fb7ff5df45011cac1e1bad5fd3fb8f53ec5f882b5b",
+    "/zeruxjs/docs/0.0.3/reference-zlocale.md": "6daaaeb2107ef465b8f8ddb92ece9a8aa3668110047d54210958fcd013346a95",
+    "/zeruxjs/docs/0.0.3/reference-zlocale/index.md": "6daaaeb2107ef465b8f8ddb92ece9a8aa3668110047d54210958fcd013346a95",
     "/zeruxjs/docs/0.0.3/documentation-contributing.md": "2694105b2b1cbe7aec73e4fca2d0dd3fb9e3b6d2622f678d4d56e30f83c93daa",
     "/zeruxjs/docs/0.0.3/documentation-contributing/index.md": "2694105b2b1cbe7aec73e4fca2d0dd3fb9e3b6d2622f678d4d56e30f83c93daa",
-    "/zeruxjs/index.md": "443827b718f3ea40b234c4203b58dac82165385c91b5d9537216eac1be593c2e",
+    "/zeruxjs/index.md": "add2d8c494ee542f56c7f6958b0e331450f991801b524b4c456fd4c006f142e6",
     "/zeruxjs/404.md": "76931e8bbee3eef5372bbb8241f66decb8f58dd569539e5d9e2c40c7f70a965f",
     "/zeruxjs/docs/0.0.3.md": "d3e8c0da3b5092d40dbe7b0345e26619f9b312133c55aff8c8b1f49436214fec",
     "/zeruxjs/docs/0.0.3/index.md": "d3e8c0da3b5092d40dbe7b0345e26619f9b312133c55aff8c8b1f49436214fec",
@@ -282,7 +284,8 @@
     "zyrojs": "/zeruxjs/docs/0.0.3/reference-zyrojs/",
     "ztrial": "/zeruxjs/docs/0.0.3/reference-ztrial/",
     "zuixs": "/zeruxjs/docs/0.0.3/reference-zuixs/",
-    "zenixjs": "/zeruxjs/docs/0.0.3/reference-zenixjs/"
+    "zenixjs": "/zeruxjs/docs/0.0.3/reference-zenixjs/",
+    "zlocale": "/zeruxjs/docs/0.0.3/reference-zlocale/"
   },
   "versions": [
     "0.0.3"
@@ -399,6 +402,7 @@
     "/zeruxjs/docs/0.0.3/reference-ztrial/",
     "/zeruxjs/docs/0.0.3/reference-zuixs/",
     "/zeruxjs/docs/0.0.3/reference-zenixjs/",
+    "/zeruxjs/docs/0.0.3/reference-zlocale/",
     "/zeruxjs/docs/0.0.3/documentation-contributing/"
   ],
   "packages": {
@@ -446,6 +450,7 @@
       "zeruxjs",
       "zforge",
       "zhost",
+      "zlocale",
       "zlook",
       "ztrial",
       "zuixs",
