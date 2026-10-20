@@ -1,6 +1,6 @@
 # Package directory
 
-47 public packages. Choose a task-focused guide or inspect the source contract.
+48 public packages. Choose a task-focused guide or inspect the source contract.
 
 ## Find the right layer
 
@@ -53,6 +53,7 @@ Private and sample workspaces are excluded. A published name does not imply a co
 - [zeruxjs](/branch/v0.0.4/zeruxjs/docs/0.0.4/framework-package/) — Main application ZeruxJS Framework (v0.0.3)
 - [zforge](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zforge/) — Dev tools present here like mapping function and classes and all internal services (v0.0.3)
 - [zhost](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zhost/) — Server Creator and Handle Auto load and so via @zerux/watcher (v0.0.3)
+- [zlocale](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zlocale/) — Bounded gettext-style i18n and native Intl localization for Node.js, ZeruxJS and ZyroJS (v0.0.3)
 - [zlook](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zlook/) — File Change Watcher, Optize for multiple watcher together by sharing events (v0.0.3)
 - [ztrial](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-ztrial/) — Modular testing framework and assertion toolkit for ZeruxJS, ZyroJS and JavaScript (v0.0.3)
 - [zuixs](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zuixs/) — Zero-dependency utility-first CSS compiler for ZeruxJS, ZyroJS, React, Vue, Next and Nuxt (v0.0.3)

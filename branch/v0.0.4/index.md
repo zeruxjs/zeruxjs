@@ -35,7 +35,7 @@ export function GET() {
 
 ## The right tool for the next step.
 
-Explore 47 public packages for data, styling, security, development and more.
+Explore 48 public packages for data, styling, security, development and more.
 
 - [@zenixjs/core](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zenixjs-core/) — Placeholder for the future Zenix CMS (v0.0.3)
 - [@zeruxjs/accessibility](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-accessibility/) — Accesibilty Provider (v0.0.3)
@@ -80,6 +80,7 @@ Explore 47 public packages for data, styling, security, development and more.
 - [zeruxjs](/branch/v0.0.4/zeruxjs/docs/0.0.4/framework-package/) — Main application ZeruxJS Framework (v0.0.3)
 - [zforge](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zforge/) — Dev tools present here like mapping function and classes and all internal services (v0.0.3)
 - [zhost](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zhost/) — Server Creator and Handle Auto load and so via @zerux/watcher (v0.0.3)
+- [zlocale](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zlocale/) — Bounded gettext-style i18n and native Intl localization for Node.js, ZeruxJS and ZyroJS (v0.0.3)
 - [zlook](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zlook/) — File Change Watcher, Optize for multiple watcher together by sharing events (v0.0.3)
 - [ztrial](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-ztrial/) — Modular testing framework and assertion toolkit for ZeruxJS, ZyroJS and JavaScript (v0.0.3)
 - [zuixs](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zuixs/) — Zero-dependency utility-first CSS compiler for ZeruxJS, ZyroJS, React, Vue, Next and Nuxt (v0.0.3)

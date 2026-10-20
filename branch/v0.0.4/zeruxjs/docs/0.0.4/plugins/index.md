@@ -54,6 +54,10 @@ Stage the replacement generation without destroying the active one on preparatio
 
 Test duplicate route registration, overlapping service routes, disabled dependencies and an unsuccessful reload while an old request is still running. Verify that an optional integration failure is visible as degraded/disabled state rather than an apparently successful registration. See [plugin API](/branch/v0.0.4/zeruxjs/docs/0.0.4/plugin-reference.md) for the exact methods and [service lifecycle](/branch/v0.0.4/zeruxjs/docs/0.0.4/service-lifecycle.md) for reverse-order cleanup.
 
+## Translate a plugin
+
+Publish domain-isolated locale catalogs and receive the host-selected translator instead of owning a global language. The [module/plugin translation guide](/branch/v0.0.4/zeruxjs/docs/0.0.4/localization-package-authoring.md) explains packaging, explicit imports and typed route integration. The [site language guide](/branch/v0.0.4/zeruxjs/docs/0.0.4/localization-site-settings.md) covers host settings and request isolation.
+
 
 ## Implementation sources
 
