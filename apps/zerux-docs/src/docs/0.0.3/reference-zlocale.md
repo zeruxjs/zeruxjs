@@ -19,7 +19,9 @@
     "packages",
     "typescript",
     "middleware",
-    "request-lifecycle"
+    "request-lifecycle",
+    "localization-package-authoring",
+    "localization-site-settings"
   ]
 }
 ---
@@ -209,3 +211,7 @@ controller.dispose();
 ```
 
 Rapid selections are last-selection-wins: a slower earlier locale cannot overwrite the latest one. All required catalogs must load, validate and match their requested locale/domain keys before installation. The old locale stays active while loading. A current failure rejects; superseded, cancelled or disposed work resolves `false`. `cancel()` ignores pending results without cancelling shared loader imports. Unsupported locale selections reject before loading. Catalog keys use the selected BCP-47 base name; explicitly preload parent/fallback catalogs if the application needs them. Supported locales are bounded to 128 and domains to 32. Subscriber callbacks should not throw: registration and locale changes notify separately, and a thrown subscriber can follow a committed registry update. This controller changes an application-owned locale, never a shared server request locale; use `zlocale/node` for request isolation.
+
+## Follow an integration guide
+
+For reusable translations, read [translate a module or plugin](localization-package-authoring.md). For the application policy, request integration and browser language control, read [configure site languages](localization-site-settings.md).

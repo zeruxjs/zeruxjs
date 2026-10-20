@@ -65,3 +65,7 @@ Use api.variables for controlled template-variable registration and api.protocol
 Stage the replacement generation without destroying the active one on preparation failure. Startup workers can return cleanup; ordinary plugin registration is not documented as an arbitrary returned-disposer lifecycle. Use the worker/service owner for handles and test that failed startup closes resources already created.
 
 Test duplicate route registration, overlapping service routes, disabled dependencies and an unsuccessful reload while an old request is still running. Verify that an optional integration failure is visible as degraded/disabled state rather than an apparently successful registration. See [plugin API](plugin-reference.md) for the exact methods and [service lifecycle](service-lifecycle.md) for reverse-order cleanup.
+
+## Translate a plugin
+
+Publish domain-isolated locale catalogs and receive the host-selected translator instead of owning a global language. The [module/plugin translation guide](localization-package-authoring.md) explains packaging, explicit imports and typed route integration. The [site language guide](localization-site-settings.md) covers host settings and request isolation.
