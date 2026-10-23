@@ -131,7 +131,7 @@ const http = createFeedResponse('rss', config, 300); // { status, headers, body 
 
 Separated into types, validation/XML escaping utilities, RSS, Atom, JSON Feed, content types and HTTP helpers. URLs must be HTTP(S) and cannot contain credentials. Date and enclosure size validation are included.
 
-## Fetch-compatible publication endpoints (Section 39)
+## Fetch-compatible publication endpoints
 
 ```ts
 import { createFeedFetchHandler } from '@zeruxjs/feed/fetch';
@@ -144,15 +144,6 @@ const feed = createFeedFetchHandler({
 ```
 
 Supports GET/HEAD/405, quality-weighted Accept negotiation (406 for unacceptable types), ETag/304, Last-Modified conditional responses, representation-aware `Vary: Accept`, public caching and input limits. Supply only public feed content; personalized or authenticated feeds should be handled by application-specific private routes instead of these public helpers. This does not push SSE/WebSocket updates.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
 
 
 ## Implementation sources

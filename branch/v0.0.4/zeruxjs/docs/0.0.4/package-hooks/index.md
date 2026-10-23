@@ -140,15 +140,6 @@ Hooks are synchronous-render only and intentionally do not trigger rendering the
 
 `createPathRegistry({ directory })` manages aliases with validated names and atomic private writes. The legacy `registerPath`, `resolvePath`, `getAllPaths`, `unregisterPath` wrappers use the current working directory at invocation time. Multi-process registry writes require caller-side serialization; atomic renames prevent partial files but do not prevent concurrent lost updates.
 
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
-
 
 ## Implementation sources
 

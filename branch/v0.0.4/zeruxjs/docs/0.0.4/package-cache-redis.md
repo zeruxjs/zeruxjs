@@ -154,7 +154,7 @@ const helper = createRedisCacheHelper(existingRedisClient, {allowFlushDb:false})
 
 Injected clients are **not** closed by default (`ownClient: true` opts in). The factory opens and owns a client only when it creates one. For production, use Redis TLS/ACLs, timeouts, dedicated credentials, and secure network access.
 
-## ioredis and BullMQ integration (Section 52)
+## Ioredis and BullMQ integration
 
 The default remains `redis` (node-redis). Select `{driver:'ioredis'}` for ioredis v5, or inject an existing ioredis instance. Injected clients remain caller-owned unless `ownClient:true`.
 
@@ -167,20 +167,11 @@ const {producer,worker}=createBullMQRedisOptions({url:process.env.REDIS_URL});
 
 The ioredis adapter translates its lowercase `mget`, `mset`, `incrby`, `scan`, and `quit` commands. It preserves the existing safe cache namespace clearing and the default `FLUSHDB` prohibition. **Do not use ioredis keyPrefix in BullMQ connections.** Separate cache prefixes (`cache`) from BullMQ prefixes (`bull`). Unhandled Redis errors can take down Node processes; both factories register Redis error listeners, while the queue's worker error hook is optional. Existing `redis` driver users do not need to migrate.
 
-## Section 75 — shared Redis Cluster and tenant isolation
+## Shared Redis Cluster and tenant isolation
 
 `createIORedisCacheHelper(clusterClient, {ownClient:false})` accepts an already configured ioredis Cluster client. It scans each **master shard** when clearing a literal namespace. Keys are verified against `namespace + ':'` even if SCAN returns overmatching keys, and deletes are one key at a time (no cross-slot `DEL`). `getMany`/branch/v0.0.4/`setMany` on an injected Cluster use per-key operations; **multi-key updates are not atomic across slots**. Standalone Redis behavior is unchanged. A cluster's `FLUSHDB` is deliberately unavailable even if `allowFlushDb:true`; always use application-prefix clearing. This is a non-snapshot sweep: callers must quiesce writers to guarantee the namespace remains empty. Redis ACLs and credential-bound tenant isolation remain deployment responsibilities.
 
 For BullMQ Redis Cluster, use `createBullMQRedisClusterConnections` indirectly through `@zeruxjs/queue` as described in its README; the standalone `createBullMQRedisOptions()` intentionally rejects cluster configuration. Always use dedicated test Redis servers and different prefixes per tenant. **No live Redis/Cluster certification is claimed until the opt-in integration tests are run.**
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
 
 
 ## Implementation sources

@@ -167,15 +167,6 @@ const response = await handler(new Request('https://example.test/api', { method:
 
 `readJsonBody` streams up to 1 MiB by default, rejecting invalid media types, malformed JSON and oversized payloads; `parseJsonRequest` and `parseQuery` validate with both synchronous and asynchronous schemas. `HttpValidationError.toResponse()` emits bounded error details and `Cache-Control: no-store`. Do not disclose raw input in external API errors. Use `maxBytes`/branch/v0.0.4/`maxQueryFields` to set explicit caps. This adapter works with the Web Fetch `Request` API and can be used by ZeruxJS route handlers or other framework integrations.
 
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
-
 
 ## Implementation sources
 

@@ -127,15 +127,6 @@ Connection ownership: an injected `databaseInstance` is never closed by the conn
 
 `createSqliteConsistentBackup(db.getNativeConnection(), "/absolute/private/backup.sqlite")` requires the built-in Node `DatabaseSync`; it uses SQLite's live backup interface, validates integrity and refuses existing destination paths. Backups must be protected by filesystem permissions/encryption, rotation and separate storage. To restore, stop all writers, copy a **verified** snapshot to a new database location, and test before cutover; do not overwrite an opened SQLite database or directly copy an active WAL DB. See `test/section74-backup.test.mjs`.
 
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
-
 
 ## Implementation sources
 

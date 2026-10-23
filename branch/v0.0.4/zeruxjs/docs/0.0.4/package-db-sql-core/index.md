@@ -115,16 +115,7 @@ Shared parameterized SQL compiler and connector executor for PostgreSQL, MySQL a
 
 **Trust boundary:** Query *values* are parameterized. Column/table identifiers are validated upstream by `@zeruxjs/db` and quoted by the dialect. Do not expose unrestricted schema operations or raw SQL to untrusted callers, and use database credentials with least privilege. Each SQL operation executes separately unless the application explicitly manages a native transaction.
 
-**Section 74 safety contract:** compiler validates identifiers and runtime operator/function/join/order/index enums independently of TypeScript; SQL CHECK text strings are **rejected**, use a validated structured expression. Column lengths, integer limits and INSERT row shapes are checked. Unsupported RETURNING (notably MySQL) throws rather than being silently ignored. PostgreSQL write results expose `affectedCount` from driver `rowCount`, including zero-row CAS misses. MySQL and SQLite index/drop syntax and SQLite integer primary key autoincrement use engine-specific rules.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
+**Safety contract:** compiler validates identifiers and runtime operator/function/join/order/index enums independently of TypeScript; SQL CHECK text strings are **rejected**, use a validated structured expression. Column lengths, integer limits and INSERT row shapes are checked. Unsupported RETURNING (notably MySQL) throws rather than being silently ignored. PostgreSQL write results expose `affectedCount` from driver `rowCount`, including zero-row CAS misses. MySQL and SQLite index/drop syntax and SQLite integer primary key autoincrement use engine-specific rules.
 
 
 ## Implementation sources

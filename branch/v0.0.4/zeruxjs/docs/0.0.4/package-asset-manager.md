@@ -146,15 +146,6 @@ const loaded = await loadAssetCatalog('./private/assets.json');
 
 This is **single-process revision control**, not a distributed lock: concurrent file writers still require a lock or database transaction. URLs are metadata, not fetch permissions; the application must enforce any outbound network/SSRF and SVG sanitization policy.
 
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
-
 
 ## Implementation sources
 

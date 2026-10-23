@@ -158,18 +158,9 @@ const response = await createMediaResponse(media, record.id, {request});
 
 `createSignedMediaToken()` / `verifySignedMediaToken()` create short-lived capabilities using an application-owned signing key (at least 16 bytes). These are not authentication. Store media outside web roots, keep access-control checks on download routes, protect the signing secret and schedule expired-file cleanup. A local directory is not shared storage for multiple hosts.
 
-### Section 80 HTTP safety
+### HTTP safety
 
 For the files-backed media service, use `statAuthorized(id, request)` and `listAuthorized(request, {limit,cursor})` when returning metadata to clients. Both call `authorize` per object, suppressing a backend continuation cursor when unauthorized objects were encountered. For complete paginated tenant listings, partition by bucket/key prefix; the older `stat`/branch/v0.0.4/`list` methods are server-trusted only. The request upload helper validates declared length during streaming; legacy media inline responses allow only inert MIME types and force potentially executable content to download.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
 
 
 ## Implementation sources

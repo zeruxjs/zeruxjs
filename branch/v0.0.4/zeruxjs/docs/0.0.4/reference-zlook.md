@@ -122,7 +122,7 @@ watcher.close();
 
 Subscribers to the same directory share underlying watchers without sharing their ignore rules. `startWatcher()` is retained for existing callers and returns a disposal callback. The scanner does not traverse symlinks.
 
-## Section 79 watcher validation
+## Watcher validation
 
 `watchDirectory(root, callback, { debounceMs, pollIntervalMs, onError })`
 validates callback/root types and integer millisecond settings before creating
@@ -132,15 +132,6 @@ errors are reported through `onError`, and handles must be closed during hot
 reload/unmount. Filesystem symlinks are never traversed by the recursive scan.
 The fallback polling path is retained for hosts where recursive `fs.watch`
 is unsupported. Test with `node --test test/*.test.mjs` after building.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
 
 
 ## Implementation sources

@@ -161,18 +161,9 @@ For production sessions set `SECURITY_SESSION_KEY`, `SECURITY_SESSION_SALT` and 
 
 OAuth authorization-code PKCE helper: `createOAuthAuthorization({authorizationEndpoint, clientId, redirectUri, allowedRedirectUris, scopes})` returns URL, state and verifier. Store the state/verifier per login session server-side and validate state with `verifyOAuthState`; never expose verifier in browser logs or URLs. This helper does not perform token exchange or provider-specific ID token verification.
 
-## Section 74 tenant/role authorization
+## Tenant/role authorization
 
 `hasTenantPermission(principal,{tenantId,permission,siteId?})` and `requireTenantPermission(...)` require exact tenant ID and explicit permission and, when specified, allowlisted site ID. No implicit administrator or wildcard access is granted. These helpers require a previously authenticated, validated principal supplied by the host. Table/column config mappings and session config values now fail closed on invalid input. Organization ID `0` is a valid and enforced role scope. For MySQL user inserts set `setAuthConfig({db:{supportsReturning:false}})` to use `insertedIds`; by default the PostgreSQL/SQLite-compatible RETURNING request is retained. In-memory token/session stores remain unsuitable for distributed revocation without a shared backend.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
 
 
 ## Implementation sources

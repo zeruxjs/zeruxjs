@@ -147,7 +147,7 @@ resource.destroy();
 
 `mapObservable`/branch/v0.0.4/`combineObservables` memoize snapshots for `useSyncExternalStore` consumers. `awaitObservable` supports timeouts/AbortSignals and handles synchronous subscription notifications safely. `createAsyncObservable` aborts previous requests, rejects failures, ignores stale completions, and exposes `idle/loading/success/error` state with `reset()`, `cancel()` and `destroy()`.
 
-## Section 78: route/component subscription scope
+## Route/component subscription scope
 
 ```ts
 import {createObservable,createZyroSubscriptionScope} from '@zeruxjs/zyro';
@@ -158,16 +158,7 @@ scope.observe(count,value=>console.log(value)); // initial state + updates
 scope.destroy(); // idempotent; unsubscribes even if other disposers throw
 ```
 
-`observe(...,{immediate:false})` skips the initial read. Synchronous subscription callbacks are not duplicated by the initial read. Manual unsubscribers returned by `observe()` and `add()` are idempotent. `destroy()` drains **all** disposers and aggregates failures. Scope ownership is independent of React/Vue and can manage `@zeruxjs/zyro` observables or structurally compatible source objects. The standalone **`zyrojs`** package is deliberately handled in the dedicated Section 81 release gate; this bridge alone does not certify that runtime.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
+`observe(...,{immediate:false})` skips the initial read. Synchronous subscription callbacks are not duplicated by the initial read. Manual unsubscribers returned by `observe()` and `add()` are idempotent. `destroy()` drains **all** disposers and aggregates failures. Scope ownership is independent of React/Vue and can manage `@zeruxjs/zyro` observables or structurally compatible source objects. The standalone [`zyrojs`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zyrojs/README.md) runtime has its own lifecycle and verification requirements.
 
 
 ## Implementation sources

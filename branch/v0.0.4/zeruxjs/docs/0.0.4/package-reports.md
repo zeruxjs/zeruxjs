@@ -160,17 +160,17 @@ Reports contain pages; pages contain charts. Chart types: `bar`, `horizontal-bar
 
 Admin sessions must be protected by your own secure cookies/session middleware; this package intentionally provides no default password, OAuth identity provider or anonymous editor. Never put raw analytics database credentials in a chart definition.
 
-## Section 48: Exact native count aggregates
+## Exact native count aggregates
 
 For `metric:'count'` grouped by `event`, `source`, `site`, or `pathname`, Reports automatically calls the optional `source.aggregate()` / `analytics.aggregate()` endpoint rather than loading only 500 raw events. UTC `day` grouping also uses exact native counts when the chart specifies both `since` and `until` within a 366-day range. The backend returns exact `total` and bounded chart groups; the dashboard marks hidden groups distinctly from sampled events. Other metrics and `property:` dimensions still use the bounded sample fallback with explicit `queryMode:'sampled'`. A custom AnalyticsReportSource may implement `aggregate(query)` to cover other backends.
 
 `ReportsOptions.site` and ZeruxJS `reports.site` enforce an application-selected site filter that chart authors cannot override. Supply site from your authenticated tenant context, *not* a user-supplied query string. Protect reports with application auth and tenant authorization.
 
-## Section 49: Indexed numerical metrics
+## Indexed numerical metrics
 
-When `@zeruxjs/analytics` is configured with `numericFields:['value',...]` and a chart uses `metric:'sum'|'average'|'min'|'max'` with a matching `valueField`, Reports uses `analytics.aggregateNumeric()` on the DB-backed numeric fact table for supported built-in dimensions. Report responses include `queryMode:'materialized'`, `matchedFacts`, and `numericCoverage:'indexed-only'`. **The dashboard always warns** that historical/failed numeric facts may be absent. Other fields retain the 500-row sampled fallback. These are not guaranteed complete historical or transactionally consistent financial totals; see `SECTION_49_MATERIALIZED_NUMERIC_ANALYTICS.md`.
+When `@zeruxjs/analytics` is configured with `numericFields:['value',...]` and a chart uses `metric:'sum'|'average'|'min'|'max'` with a matching `valueField`, Reports uses `analytics.aggregateNumeric()` on the DB-backed numeric fact table for supported built-in dimensions. Report responses include `queryMode:'materialized'`, `matchedFacts`, and `numericCoverage:'indexed-only'`. **The dashboard always warns** that historical/failed numeric facts may be absent. Other fields retain the 500-row sampled fallback. These are not guaranteed complete historical or transactionally consistent financial totals.
 
-## Section 73: saved dashboards, scoped exports and campaign views
+## Saved dashboards, scoped exports and campaign views
 
 The studio now includes optional **UTC date-range filtering** (without mutating the saved chart), read-only CSV/JSON export and an opt-in marketing campaign panel. The package also exposes a paginated report catalog and separates viewer, editor, export, sensitive-property and campaign permissions. Each exporter must be explicitly authorized by the host session. Saved report documents continue to use a versioned CAS store; a report shown to a viewer is always freshly queried, not an immutable historical snapshot.
 
@@ -211,15 +211,6 @@ The optional `campaigns` adapter has `report(code,{cursor,limit,site})` and opti
 Native COUNT on supported columns is exact for persisted matching events; supported indexed numeric metrics cover **only materialized numeric facts**, not necessarily historical rows that missed indexing. Unsupported dimensions and metrics query **up to 500 raw rows** and are labeled bounded samples; a sampled average uses only valid numeric values. Non-native samples cannot be interpreted as all-time totals. Date grouping is limited to 366 days, while the multi-chart export has a stricter overall query budget. Per-report export is built from individual chart queries and is **not a transactionally consistent multi-query snapshot**. Explicit external rate limits, host authentication/CSRF-session hardening, database migrations, real-engine parity tests, and a production egress perimeter remain deployer responsibilities.
 
 After building the DB/Analytics/Reports packages, run `node --test tests/integration/reports-sqlite.test.mjs`. This covers two SQLite connections, tenant report-document isolation, exact counts above the raw sampling cap, and optimistic-CAS conflicts. Real PostgreSQL/MySQL/MongoDB concurrency, long-running load and the clean npm registry installation are not certified by this test.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
 
 
 ## Implementation sources

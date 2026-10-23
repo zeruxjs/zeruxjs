@@ -153,7 +153,7 @@ Manifest reference for `zyrojs@0.0.3`.
 
 ZyroJS provides **framework-neutral signals**, lifecycle-managed browser DOM rendering and abortable Fetch-based network helpers. It is an independent library that can run alongside the `@zeruxjs/zyro` observable bridge, React or Vue. It does **not** require ZeruxJS or a component framework.
 
-**Release status:** `0.0.1`. The source and isolated package tarball pass local checks in Section 81; real-browser and clean-machine certification remain unverified. This package does not currently provide a full React-compatible hooks dispatcher, router, internationalization suite, general SSR hydration, custom HTML compiler or automatic XSS sanitizer.
+This package does not currently provide a full React-compatible hooks dispatcher, router, internationalization suite, general SSR hydration, custom HTML compiler or automatic XSS sanitizer.
 
 ## Imports
 
@@ -220,25 +220,16 @@ See `src/network` for Fetch JSON-RPC, MCP, Connect/tRPC, SSE readers, discovery 
 ## Local qualification
 
 ```sh
-cd apps/proworkspace
+# Run these workspace checks from the repository root.
 npm run test:zyrojs  # builds ZyroJS + bridge, runs tests, npm-pack consumer import test
 npm run verify:source # source and lock metadata validation, NOT npm ci
 ```
 
-The Section 81 suite uses a deterministic DOM fixture in Node and an offline tarball consumer. **Real-browser Chromium/WebKit/Firefox, actual React/Vue hydration and cross-OS testing are still release gates** (Sections 83–85). Do not interpret a passed DOM fixture as browser certification or a passed local tarball check as a clean registry-backed workspace install.
+The integration suite uses a deterministic DOM fixture in Node and an offline tarball consumer. Real-browser Chromium/WebKit/Firefox and cross-OS behavior require separate validation; React/Vue hydration is not provided by this package. Do not interpret a passed DOM fixture as browser certification or a passed local tarball check as a clean registry-backed workspace install.
 
 ## Future project generator
 
-[`create-zyro-app`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zyro-app/README.md) is reserved for this package's future project generator. Version `0.0.1` provides placeholder help/version output only; project scaffolding is planned for a future release.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
+[`create-zyro-app`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zyro-app/README.md) is reserved for this package's future project generator. The current CLI provides placeholder help/version output only; project scaffolding is planned for a future release.
 
 
 ## Implementation sources

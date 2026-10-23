@@ -161,7 +161,7 @@ npm run build
 node --test test/*.test.mjs
 ```
 
-## Section 79 test-runner safeguards
+## Test-runner safeguards
 
 - `--config` accepts a size-limited JSON file; a relative `root` in that file
   resolves from the file's directory, not the caller's working directory.
@@ -175,15 +175,6 @@ node --test test/*.test.mjs
 
 Verify with `npm run build && node --test test/*.test.mjs`. No browser/runtime
 certification is inferred from source-only tests.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
 
 
 ## Implementation sources
