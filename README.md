@@ -32,16 +32,16 @@ cd packages/zeruxjs
 npm run build
 ```
 
-Build required workspace dependencies first. Run relevant package tests when the package provides them. See [AGENTS.md](AGENTS.md) for repository editing and verification rules. Application development servers may already be running; consult their READMEs before starting or rebuilding them.
+Build required workspace dependencies first. Run focused existing checks when needed; full test/lint/typecheck suites require an explicit request. Do not bump versions during development unless requested. See [AGENTS.md](AGENTS.md) for repository editing and verification rules. Application development servers may already be running; consult their READMEs before starting or rebuilding them.
 
 ## Repository layout
 
 - `packages/`: framework, library and tooling workspaces.
 - `apps/`: development applications and the [documentation exporter](apps/zerux-docs/README.md).
-- `sample-packages/`: sample modules and dependency relationships.
+- `sample-packages/`: private sample plugins, modules and dependency relationships for development.
 - `pages/`: [shared ecosystem website](pages/README.md) and combined static build.
 - `scripts/`, `tests/`, `integration-lab/`: workspace automation and [service acceptance checks](integration-lab/README.md).
-- `vs-ext/zerux-n-zyro-js-dev/`: [VS Code extension](vs-ext/zerux-n-zyro-js-dev/README.md).
+- `vs-ext/zerux-n-zyro-js-dev/`: [VS Code extension](vs-ext/zerux-n-zyro-js-dev/README.md); development is currently on hold.
 
 ## Publishing and deployment
 
