@@ -59,15 +59,6 @@ Local S3-lite is S3-**style** object addressing; it is *not* an HTTP server impl
 
 Install official AWS SDK modules including `@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@aws-sdk/credential-providers`, `@aws-sdk/s3-request-presigner`, and `@aws-sdk/cloudfront-signer`. The runtime imports them lazily. SDK integration tests use an injected client, not live cloud infrastructure.
 
-### Section 80 streamed request/copy safety
+### Streamed request/copy safety
 
 Fetch uploads validate a declared `Content-Length` **inside the stream** and reject missing/excess bytes before storage commits; they do not delete already-committed keys as cleanup. All manager copies, including storage-native copies, enforce destination `allowedTypes` and `maxBytes`. Do not use a signed PUT or raw driver call as a substitute for tenant authorization. Native S3 multipart create-only behavior needs real-provider concurrency tests.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

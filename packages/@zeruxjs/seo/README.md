@@ -12,7 +12,7 @@ const response = sitemapResponse([{loc: 'https://example.com/'}]);
 
 Supports Open Graph, Twitter cards, JSON-LD, sitemap indexes, image entries, alternate languages, robots groups, crawler delay validation, XML/HTML escaping, and response helpers. Applications remain responsible for their canonical domain and content policies.
 
-## Fetch crawler endpoints (Section 39)
+## Fetch crawler endpoints
 
 ```ts
 import { createCrawlerService } from '@zeruxjs/seo/fetch';
@@ -31,13 +31,4 @@ crawler.invalidate();
 
 Supports 50,000-entry-per-sitemap maximum, bounded XML byte sizes, size-based splitting, deterministic sitemap indexes, and conditional ETag responses. Optional in-memory snapshot caching coalesces concurrent rebuilds and can be explicitly invalidated. By default no server-side snapshot cache is kept; use a fresh supplier function for changing content. URLs must be public HTTPS/HTTP URLs. The `robots.txt` route only points crawlers at your sitemap; it does not implement authentication or robots enforcement.
 
-Section 80: `createSitemap()` validates `changefreq` against the sitemap vocabulary at runtime, including untyped/JSON-fed calls.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
+`createSitemap()` validates `changefreq` against the sitemap vocabulary at runtime, including untyped/JSON-fed calls.

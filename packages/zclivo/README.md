@@ -66,7 +66,7 @@ npm run build
 node --test test/*.test.mjs
 ```
 
-## Section 79 — safe app starter
+## Safe app starter
 
 After installing/building this package, use `zclivo create my-app` (TypeScript),
 `zclivo create my-app --js` (JavaScript), or `zclivo create my-app --dry-run` to inspect
@@ -86,12 +86,3 @@ public `zeruxjs` dependencies and Node's test runner. The generated source is
 intentionally minimal—not a fully integrated demo or live-deployment proof.
 `npm install`, `npm run dev`, `npm run build`, browser acceptance and real service
 configuration must be verified separately in a clean environment.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

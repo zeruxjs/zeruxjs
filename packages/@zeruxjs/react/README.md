@@ -14,7 +14,7 @@ store.batch(() => {store.update(s=>({count:s.count+1}));});
 
 For real components, stabilize selectors with `useCallback` or a module-level function when possible. `createReactBindings` memoizes selector stores using the supplied real `useMemo`; `useReactSelector` also caches a stable selector/store pair for direct calls. The store supports `getServerSnapshot`, transactions, cleanup, and selector equality. `observableToReactStore`/`reactStoreToObservable` bridge Zyro-style observables via structural typing with no bundled React or Zyro dependency.
 
-## Section 78: hydration and ownership contract
+## Hydration and ownership contract
 
 `ExternalStore<T>` may expose `getServerSnapshot()` for React 18+ SSR. The snapshot returned on the server **must be serialized into the client hydration payload**, including its data shape. `createReactStore(initial, {serverSnapshot})` pins its server snapshot rather than returning a subsequently mutated client value. `selectReactStore` memoizes selected client **and server** values using the supplied comparator, preventing newly allocated selectors from changing snapshot identity on every read.
 
@@ -31,12 +31,3 @@ function Counter(){
 ```
 
 `createReactBindings` invokes the real React Hooks only inside components. The standalone `useReactSelector` convenience helper uses a weak cache and needs a stable selector. When passing an explicit `serverSnapshot` callback, return stable data; React requires consistent snapshots across SSR, hydration and the first client commit. Unsubscribe is idempotent; the external store does not own React's component lifecycle. React itself is **not installed, vendored or automatically registered** by this package.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

@@ -1,29 +1,12 @@
-> [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. This release uses version `0.0.2`.
+# zeruxjs
 
-# ZeruxJS Framework
+ZeruxJS is a Node.js application framework with file-based routing, middleware, plugin registration, runtime services, startup workers and worker-thread pools. Its hosting and protocol integration uses `zhost`; shared commands, file watching and development tools use `zclivo`, `zlook` and `zforge`.
 
-**ZeruxJS** is a next-generation, multi-engine meta-framework for Node.js designed to provide a unified developer experience regardless of your frontend choice.
+## Getting started
 
-## 🚀 Multi-Engine Support
+Use the repository's [installation guide](../../apps/zerux-docs/src/docs/0.0.4/installation.md) and [tutorial](../../apps/zerux-docs/src/docs/0.0.4/tutorial.md), or inspect `apps/zeruxjs-app` for a development example. `zclivo create` provides a minimal starter. The separate `create-zerux-js` CLI remains a placeholder.
 
-ZeruxJS is engine-agnostic, allowing you to build applications using your favorite libraries while benefiting from a consistent backend and tooling layer:
-
-- **Zyro**: Native integration with the ZyroJS Library for maximum performance.
-- **React**: Full support for React components and hooks.
-- **Vue**: Seamless integration with the Vue ecosystem.
-
-## ✨ Key Features
-
-- **Unified CLI**: A single command-line interface (`zclivo`) to manage your entire lifecycle.
-- **Advanced Server Orchestration**: Powered by `zhost`, managing both app and dev servers with ease.
-- **Hot-Module Replacement**: High-performance watching and reloading via `zlook`.
-- **Built-in Security**: Hardened by default with `@zeruxjs/security`.
-- **Performance First**: Native support for Lighthouse reporting, Web-Vitals, and intelligent caching.
-
-## 📦 Getting Started
-
-The future official scaffolder is `create-zerux-js`. Its `0.0.2` release is a placeholder supporting help/version only; it does not generate a project. Use the applications under `apps/` as development examples.
+React/Vue observable adapters are available as separate packages. They do not provide a general component-rendering or SSR hydration pipeline in this runtime. Configure authentication, trusted proxies and service credentials explicitly for each application.
 
 ## Runtime Workers and Thread Workers
 
@@ -187,7 +170,7 @@ export default function register(api: ZeruxPluginApi) {
 
 `api.getLoadStatus(windowMs)` and `runtime.getLoadStatus(windowMs)` expose bounded in-memory request counts, 1xx–5xx status families, HTTP versions, concurrency and latency. Nothing is publicly served automatically.
 
-## Fetch handlers and content integration (Section 39)
+## Fetch handlers and content integration
 
 ```ts
 import { registerFetchRoutes } from 'zeruxjs/fetch-route';
@@ -208,29 +191,18 @@ Fetch-compatible handlers are registered with the existing plugin API. The adapt
 
 Development rebuilds now stage new handlers and startup workers before switching the running HTTP handler. If the new application fails to build or start, the last successfully activated runtime stays available. `dev.json` includes the latest `reload` state and error message for diagnostics. Runtime manifests and snapshots use atomic private writes. Workers are rolled back after partial startup failures and thread-pool tasks are rejected during shutdown.
 
-## Application build and runtime-managed services (Section 42)
+## Application build and runtime-managed services
 
 `zerux build` stages compiled TypeScript/JavaScript routes, handlers, plugins and public assets under `.zerux/build`. On successful completion, `zerux start` uses the build manifest and compiled folders; `zerux dev` continues to use the working sources. A failed build leaves the last good build untouched. Build output is restricted to this project and refuses symbolic links. Run a separate typecheck and install dependencies before production use.
 
 Optional `config.files`, `config.analytics` and `config.email` configure generation-scoped managers after database and cache initialization. Use `api.service('files')`, `api.service('email')` and `api.service('analytics')` inside application plugins, or `context.services.get('files')` in request handlers. Manager resources close in reverse initialization order after requests from the prior generation finish. Analytics remains best-effort and email tracking remains opt-in per send.
 
-See `SECTION_42_BUILD_LIFECYCLE_INTEGRATION.md` at the project root for configuration and known limitations.
-
-## Section 78: accessible frontend progressive enhancement
+## Accessible frontend progressive enhancement
 
 `zeruxjs/accessibility` exposes `bindAccessibleTabs(tabList)` and `prefersReducedMotion()`. It is safe to **import on the server** (DOM globals are only read inside browser-only functions). For tabs, author actual buttons under `role="tablist"`, give each a unique ID and `aria-controls` pointing to a `role="tabpanel"` element whose `aria-labelledby` points back. The binder enforces matching references, disabled tabs, roving tab index, focus and arrow/Home/End keyboard operation; call `destroy()` on route unmount. Orientation and RTL handling can be supplied explicitly. It never overwrites arbitrary HTML or dynamically generates IDs.
 
-A browser fixture (under `tests/browser/`) covers bridge snapshot projection, explicit subscription teardown, keyboard focus, ARIA panel selection and reduced-motion styles. Run `npm run test:frontend`; opt into live Chromium checks with `npm run test:frontend:browser` when a functioning browser is installed. This does not certify standalone ZyroJS or Zuix; see Sections 81 and 82.
+A browser fixture (under `tests/browser/`) covers bridge snapshot projection, explicit subscription teardown, keyboard focus, ARIA panel selection and reduced-motion styles. Run `npm run test:frontend`; opt into live Chromium checks with `npm run test:frontend:browser` when a functioning browser is installed. Standalone ZyroJS and Zuixs have separate test suites.
 
 ## Future project generator
 
-[`create-zerux-js`](../create/create-zerux-app/README.md) is reserved for this package's future project generator. Version `0.0.2` provides placeholder help/version output only; project scaffolding is planned for a future release.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
+[`create-zerux-js`](../create/create-zerux-app/README.md) is reserved for this package's future project generator. The current CLI provides placeholder help/version output only; project scaffolding is planned for a future release.

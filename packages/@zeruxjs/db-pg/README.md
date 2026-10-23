@@ -10,12 +10,3 @@ await pg.disconnect();
 ```
 
 Accepts injected `pool`, `client`, or `executor` for tests and managed connections. Connectors close only pools they created; external clients are not closed. The dialect and pool lifecycle live in separate modules. Enable PostgreSQL TLS on untrusted networks. Use database-native transactions for multi-operation atomicity; the JSON query pipeline is not a transaction manager.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

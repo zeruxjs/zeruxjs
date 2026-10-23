@@ -1,8 +1,4 @@
-> [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. This release uses version `0.0.2`.
-
 # zforge
-
 
 The internal development toolkit for **Zdev**. `zforge` provides the foundational infrastructure for developer tools, including the shared dev server, dev-client injection, and the devtools module registry.
 
@@ -57,8 +53,7 @@ export default defineDevtoolsModule({
   Part of the Zdev Monorepo.
 </p>
 
-
-## Request boundaries (Section 7)
+## Request boundaries
 
 The HTTP devtools server enforces a 1 MiB streamed request-body limit via `src/request.ts`, with cleanup on completion, failure, or aborted requests. Local development hostname checks reject crafted authorities. Focused tests: `node --test test/request.test.mjs` after building. Devtools should be restricted to trusted networks; configure firewall and proxy access appropriately.
 
@@ -67,12 +62,3 @@ The HTTP devtools server enforces a 1 MiB streamed request-body limit via `src/r
 The shared development server is loopback-only by default. To listen on a different interface, set `ZDEV_BIND_HOST` **only with trusted access controls**, such as an authenticated reverse proxy. Devtools and its APIs are not an Internet-facing administration service.
 
 State and registry JSON files are private, bounded, atomic and reject symlink destinations. Client HTML injection escapes script-breaking values. Snapshot and bootstrap JSON include a `reload` status object containing the attempt count, generation and last failure message when available.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

@@ -20,12 +20,3 @@ container.addEventListener('keydown', roving.onKey);
 ```
 
 **Browser requirement:** Focus and live-region APIs require a DOM. Dialog helpers do not independently implement backdrop management, page-level inertness, or full WAI-ARIA application semantics. Test with keyboard navigation and assistive technology.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

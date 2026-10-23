@@ -11,7 +11,7 @@ const css = fonts.css();
 
 The registry generates CSS; it does not download or bundle font files. Sources are validated, and browser font loading requires a DOM.
 
-## Font stylesheet endpoint (Section 39)
+## Font stylesheet endpoint
 
 ```ts
 import { createFontRegistry } from '@zeruxjs/font';
@@ -22,12 +22,3 @@ const endpoint = createFontStylesheetHandler({ registry, preloadKeys: ['ui'], ca
 ```
 
 Generates a CSS `@font-face` stylesheet with ETag/304 and HEAD, optional bounded `Link: preload` headers and cache policy. Font binary hosting, licensing, Content Security Policy and font optimization remain application/deployment responsibilities. Only trusted font definitions should be registered.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

@@ -5,8 +5,8 @@
 ## Getting started
 
 ```sh
-npm run build -w zuixs
-node apps/proworkspace/packages/zuixs/dist/cli.js build --cwd apps/proworkspace -o public/zuix.css
+npm install zuixs
+npx zuix build -o public/zuix.css
 ```
 
 In a consuming package, install `zuixs` and use the `zuix` binary. Add the generated stylesheet in the application's HTML root/layout. For dev regeneration, use `zuix watch -c zuix.config.mjs`. The CLI scans `html`, `js`, `jsx`, `ts`, `tsx`, `vue`, `svelte`, `astro`, `md` and `mdx` by default and skips common build directories. Set `content` to constrain scanning on large projects.
@@ -55,7 +55,7 @@ const plugin: ZuixPlugin = ({addUtilities,addBase,theme}) => {
 
 **Limitations:** Static extraction recognizes literal class attributes and common class helpers, not all expressions or runtime-generated class names. Arbitrary values are accepted only from trusted application source code; don't compile raw classes submitted by untrusted users. `zuixVite` is intentionally framework-neutral and does not manage all bundler-specific invalidation cases yet. No changes to the ZeruxJS renderer or ZyroJS internals are required to use the generated CSS.
 
-## Production improvements (0.2)
+## Output generation
 
 - **Idempotent output:** classes are deduplicated before generation; identical token inputs emit one rule. Configurable reset and plugin base CSS are emitted once per build.
 - **Tree-shaken keyframes:** built-in `spin`, `pulse`, `bounce` and `ping` animation definitions are output only when their matching utilities are present; custom `keyframes` entries are supported.
@@ -82,7 +82,7 @@ Run `zuix build --per-file` or `zuix build --per-file-dir public/zuix-parts` to 
 
 This version does **not** claim 100% coverage of every current or experimental CSS grammar. For new properties, arbitrary properties (e.g. `[animation-timeline:view()]`) are a forward-compatible escape hatch, subject to browser support. `@property`, `@layer`, complex selector authoring, custom CSS animations, font faces, and newer spec features should use authored CSS or `addBase` in addition to utility classes. Some modern features require progressive enhancement and browser fallbacks. Source extraction is deliberately static, so safelist runtime-built tokens. Do not pass untrusted input into arbitrary CSS syntax. Minification is structural/whitespace-light, not equivalent to an AST optimizer such as Lightning CSS; do not assume vendor prefixing or complex declaration-level compression.
 
-## Section 82 — Production compiler and adapter hardening (source/local gate)
+## Compiler safety and resource limits
 
 The compiler now rejects malformed/unsafe arbitrary CSS values (including declaration delimiters, comment escapes, `url(...)`, `expression(...)`, control characters and invalid at-rule conditions) instead of concatenating them into CSS. Selectors are CSS-escaped, including leading digits. `unmatched` lists unsupported and rejected class tokens; explicitly safelist classes built at runtime. Plugins (`addBase`, custom keyframes, `addUtilities`) are **trusted application code**, not a sandbox for untrusted CSS.
 
@@ -105,18 +105,14 @@ Generation is bounded through optional `limits` with defaults: `maxFiles: 20000`
 ### Reproducible commands
 
 ```sh
-cd apps/proworkspace
+# Run these workspace checks from the repository root.
 npm run test:zuix                # TypeScript, focused tests, npm-pack + offline consumer
 npm run test:zuix:browser        # opt-in real Chromium CSS assertion; fails if Chromium cannot launch
 npm run test:workspace-tools
 npm run verify:source            # source-only; does not certify npm ci
 ```
 
-`npm run test:zuix` checks tarball contents and installs the packed `zuixs` offline in an isolated consumer, importing `zuixs`, `zuix/node`, `zuix/vite`, and `zuix/theme`. It does not certify a clean workspace installation or actual Vite/Next/Nuxt applications. Chromium fails to render in the current environment; real computed-style screenshots, CSSOM validation across browsers, large-scale memory/load profiling, and full cross-OS tests remain release gates for Sections 82–85. The existing 14 unresolved external workspace dependency resolutions also remain outstanding.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
+`npm run test:zuix` checks tarball contents and installs the packed `zuixs` offline in an isolated consumer, importing `zuixs`, `zuixs/node`, `zuixs/vite`, and `zuixs/theme`. It does not certify a clean workspace installation or actual Vite/Next/Nuxt applications. Browser rendering, CSSOM behavior, large-project resource use and cross-platform compatibility require separate validation in the target environment.
 
 ### Responsive cascade
 
@@ -211,8 +207,3 @@ buildZuixStylesheet(process.cwd(), 'src/styles.css', { output: 'public/zuix.css'
 The import expands in place; authored rules after it can override generated utilities through the normal cascade. Native `:root`, custom properties, `@property`, `@keyframes`, `@media`, `@supports`, `@container`, `@layer`, nesting and animation declarations remain intact, including browser-supported future CSS. Native CSS is trusted application source and is not sanitized like arbitrary utility values. `@apply` accepts existing **base** utilities (including important/arbitrary utilities); use CSS selectors and conditions around it for states and responsive composition. Unsupported applications fail explicitly. Keep ordinary CSS imports before the Zuixs import; resolving their files and vendor prefixing belongs to the consuming bundler. CLI compilation does not inline external stylesheets.
 
 This is Zuixs syntax, not full Tailwind compatibility: Tailwind-specific directives such as `@theme`, `@utility`, `@source` and custom variants are not implemented. Variables work through native CSS and arbitrary values; custom utility/theme extensions still use the optional plugin/config API. Recipes remain supported, including the docs application's generated Markdown styling. No claim of complete Tailwind feature parity is made.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

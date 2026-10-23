@@ -16,7 +16,7 @@ stop();
 
 `syncVueRef` prevents write-feedback loops and returns explicit cleanup. `observableToVueRef` exposes an immutable ref view with subscription and stop, and `fromVueRef`/`bindVueRef` remain compatible with earlier versions. This package does **not** install Vue plugins or automatically use Vue reactivity APIs; pass adapter results to your framework code.
 
-## Section 78: Vue 3 effect-scope bindings
+## Vue 3 effect-scope bindings
 
 `createVueBindings` injects Vue APIs instead of hard-importing Vue. It is compatible with effect scopes, `setup()`, and SSR when the host supplies Vue's actual runtime functions. The legacy standalone `createVueRef` is **not** a Vue `ref` and `fromVueRef()` without a subscription callback does not observe future writes. Prefer `createVueBindings`:
 
@@ -33,13 +33,4 @@ const {ref,stop}=bridge.connect(externalStore);
 stop();
 ```
 
-`useStore` rejects missing scopes rather than silently leaking subscriptions. SSR mode reads a one-time snapshot and creates **no external subscription**. `fromRef` uses a synchronous Vue `watch` and returns an unsubscriber. If a read races subscription setup, the bridge re-reads after subscribing. This package is not a Vue plugin and **has not been certified against a live Vue runtime** in the offline Section 78 test environment.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
+`useStore` rejects missing scopes rather than silently leaking subscriptions. SSR mode reads a one-time snapshot and creates **no external subscription**. `fromRef` uses a synchronous Vue `watch` and returns an unsubscriber. If a read races subscription setup, the bridge re-reads after subscribing. This package is not a Vue plugin and **has not been certified against a live Vue runtime** in the local test environment.

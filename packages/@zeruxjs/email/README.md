@@ -42,33 +42,31 @@ Delivery safeguards include `createRecipientFilter` for allow/block/suppression 
 
 For file attachments supply `files` when creating the manager and set `attachments:[{filename:'manual.pdf',file:{storage:'object',bucket:'uploads',key:'manual.pdf'}}]`. Streams are bounded by the configured attachment limits. Avoid local path attachments unless explicitly allowed for trusted server code.
 
-## Section 46: Marketing permission is separate from activity tracking
+## Marketing permission is separate from activity tracking
 
 `purpose:'marketing'` requires one recipient and an affirmative subscribed record in an injected `preferences` service. Marketing unsubscribe endpoints are hosted by ZeruxJS and require a POST to modify preference state. `purpose:'transactional'` remains independent of the marketing permission store. Neither an opt-in subscription nor an unsubscribe silently changes `tracking` for any message. Tracking is still off unless explicitly requested *on the send*, and can be overridden by `{tracking:false}`.
 
-For tracked deliveries, `EmailResult.trackingId` identifies activity reports (an opaque UUID), but is only supplied when tracking is requested and a tracking service is injected. `message.tracking` accepts `opens`, `clicks`, `downloads`, and a list of exact HTTPS `downloadLinks`. For per-email first/last timestamps and counts call `tracking.getActivity(result.trackingId)` in `@zeruxjs/analytics`. A link click is **not** a proven completed download. Attachments are not trackable after delivery. See root `SECTION_46_EMAIL_CONSENT_AND_ACTIVITY.md`.
+For tracked deliveries, `EmailResult.trackingId` identifies activity reports (an opaque UUID), but is only supplied when tracking is requested and a tracking service is injected. `message.tracking` accepts `opens`, `clicks`, `downloads`, and a list of exact HTTPS `downloadLinks`. For per-email first/last timestamps and counts call `tracking.getActivity(result.trackingId)` in `@zeruxjs/analytics`. A link click is **not** a proven completed download. Attachments are not trackable after delivery.
 
-## Section 55 — Marketing campaigns
+## Marketing campaigns
 
 Use `createCampaignPlanner` for persistent, segmented recipient paging and stage-before-enqueue checkpoints, `createDatabaseCampaignStore` for atomic multi-node document CAS, `createMarketingSuppressionService` with a shared store for hard/soft bounce and complaint handling, and `createCampaignDashboard`/`createMarketingFeedbackEndpoint` for *opt-in* authenticated routes. `createCampaignAnalyticsReporter` can emit best-effort operational events for internal Reports. Never assume memory stores provide restart/multi-server safety; provider webhooks must verify raw-body signatures.
 
-For full configuration, queue-worker integration, privacy controls, and deployment restrictions, see the project root `SECTION_55_MARKETING_CAMPAIGNS_SUPPRESSION.md`.
-
+See the [durable email guide](../../../apps/zerux-docs/src/docs/0.0.4/durable-email.md) for queue integration and delivery controls.
 
 ## Receiving email (IMAP/POP3)
 
-`createEmailReceiver({accounts,store})` supports IMAP/POP3 TLS inbox polling, deduplicated message storage, MIME parsing, optional attachment storage and explicit IMAP read-flag updates. Configure combined SMTP/incoming accounts through ZeruxJS `email.accounts[].receive` plus `email.receive.database`, or use `email.receive.accounts` for receive-only applications. Incoming HTML is sanitized and no public inbox endpoints are enabled. See the project-level `SECTION_63_INBOUND_IMAP_POP3.md`.
+`createEmailReceiver({accounts,store})` supports IMAP/POP3 TLS inbox polling, deduplicated message storage, MIME parsing, optional attachment storage and explicit IMAP read-flag updates. Configure combined SMTP/incoming accounts through ZeruxJS `email.accounts[].receive` plus `email.receive.database`, or use `email.receive.accounts` for receive-only applications. Incoming HTML is sanitized and no public inbox endpoints are enabled.
 
-## Section 65 — Inbox storage choice and UI APIs
+## Inbox storage choice and UI APIs
 
 The package-managed inbox table remains available: `createDatabaseInboxStore(db, table)` creates the table lazily, deduplicates by remote message identity and supports paginated `get/page` reads. Use `createMappedDatabaseInboxStore(db,{table,columns,createTable:false})` to write to an **existing application-owned table** with mapped identity, payload and optional metadata columns without creating schema. For completely custom schemas, inject your own `InboundStore`.
 
 Alternatively `createEmailReceiver({accounts,mode:'json',onMessage})` returns the parsed message payloads directly and does not require an inbox database. This mode does not deduplicate for you.
 
-Build private inbox UIs using `createInboxApi({store,receiver,authorize,canErase})`: `list`, `search`, `get`, `folders`, `markSeen`, `markUnread`, `setFlagged`, `poll` and `eraseLocal`. Authentication/authorization is mandatory for API creation, list/search pages are summary-only, search scans at most a configured number of rows, and deletion needs explicit retention approval. IMAP mutations check UIDVALIDITY; POP3 cannot set remote read/flag state. Refer to root `SECTION_65_INBOX_STORAGE_UI_API.md` for detailed configuration, function calls and known limits.
+Build private inbox UIs using `createInboxApi({store,receiver,authorize,canErase})`: `list`, `search`, `get`, `folders`, `markSeen`, `markUnread`, `setFlagged`, `poll` and `eraseLocal`. Authentication/authorization is mandatory for API creation, list/search pages are summary-only, search scans at most a configured number of rows, and deletion needs explicit retention approval. IMAP mutations check UIDVALIDITY; POP3 cannot set remote read/flag state.
 
-
-## Section 67 — Multiple IMAP mailboxes and stronger inbound validation
+## Multiple IMAP mailboxes and stronger inbound validation
 
 Use `IncomingAccount.mailboxes` as an allowlist for additional IMAP folders and
 `receiver.poll(name,{mailbox,cursor})` for folder-scoped receiving. Returned
@@ -81,20 +79,10 @@ POP3 UIDL entries are validated for uniqueness; invalid MIME attachment metadata
 is rejected, and oversized attachment binary is not exposed or stored. The Inbox
 API `poll(account,mailbox?)` passes the selected mailbox to `authorize` before
 network access. The package-managed inbox table, host-owned mapped tables and
-JSON-only mode remain supported. See `SECTION_67_IMAP_MULTI_MAILBOX_HARDENING.md`
-for test-server setup, replay/authorization requirements and production limits.
+JSON-only mode remain supported. See the [email guide](../../../apps/zerux-docs/src/docs/0.0.4/package-email.md) for configuration and storage boundaries.
 
-## Section 70 — Function-based campaign completion
+## Function-based campaign completion
 
-`createMarketingCampaignService` includes `schedule`, `report`, `finalize`, `exportPage`, `archive` and opt-in archival `redactArchived` in addition to existing create/preview/import/queue/paused operations. Configure `renderer:createVariableRegistry()` for globally registered subject/HTML/text variables; `segment` supports the Section 55 `all`/`any` primitive conditions. Require durable `onAudit:createDatabaseMarketingAuditLog(db).record` for PII-free audit trails, real `verifyMissingJob`/`queue.getJob` before redrive, and consent/suppression policies both at queue and SMTP boundaries. Use the Section 69 durable outbox for Redis outage recovery. The dashboard presents paginated, privacy-limited reports/exports with per-action host authorization and CSRF.
+`createMarketingCampaignService` includes `schedule`, `report`, `finalize`, `exportPage`, `archive` and opt-in archival `redactArchived` in addition to existing create/preview/import/queue/paused operations. Configure `renderer:createVariableRegistry()` for globally registered subject/HTML/text variables; `segment` supports the supported `all`/`any` primitive conditions. Require durable `onAudit:createDatabaseMarketingAuditLog(db).record` for PII-free audit trails, real `verifyMissingJob`/`queue.getJob` before redrive, and consent/suppression policies both at queue and SMTP boundaries. Use the durable outbox for Redis outage recovery. The dashboard presents paginated, privacy-limited reports/exports with per-action host authorization and CSRF.
 
-**Important:** `archive` is not a deletion operation: it accepts only cancelled or safely finalized campaigns with no nonterminal/uncertain delivery. `redactArchived` defaults to dry-run, requires a legal-hold approval hook and a DB delete capability, and erases only campaign-specific template/recipient data, not durable mail activity or consent/suppression stores. For an API-only example and full limitations, see root `SECTION_70_COMPLETE_MARKETING_CAMPAIGNS.md`.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
+**Important:** `archive` is not a deletion operation: it accepts only cancelled or safely finalized campaigns with no nonterminal/uncertain delivery. `redactArchived` defaults to dry-run, requires a legal-hold approval hook and a DB delete capability, and erases only campaign-specific template/recipient data, not durable mail activity or consent/suppression stores. See the [email guide](../../../apps/zerux-docs/src/docs/0.0.4/package-email.md) for related APIs.

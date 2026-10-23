@@ -1,8 +1,4 @@
-> [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. This release uses version `0.0.2`.
-
 # zhost
-
 
 The core server orchestration engine for **ZeruxJS**. `zhost` manages the lifecycle of both the application server and the development environment, providing a seamless "zero-config" experience.
 
@@ -59,8 +55,7 @@ When running in development mode (`details.dev` provided), `zhost` will:
   The engine powering ZeruxJS Applications.
 </p>
 
-
-## Proxy request hardening (Section 7)
+## Proxy request hardening
 
 The portless proxy now validates Host / HTTP/2 authority before routing, handles IPv6 authorities, and prefers the longest matching registered suffix. Untrusted `Forwarded` and `X-Forwarded-*` input is discarded; the proxy reconstructs forwarding headers from the socket and requested authority. Malformed hop counts are rejected, and upstream HTTP and WebSocket handshake requests have a 30-second socket timeout.
 
@@ -74,8 +69,7 @@ The portless proxy supports HTTP/1.1, HTTP/2 over TLS, and HTTP/1.1 WebSocket up
 
 Focused regression tests are in `test/websocket-proxy.test.mjs` and `test/lifecycle.test.mjs`.
 
-
-### Atomic proxy state and recovery (Section 16)
+### Atomic proxy state and recovery
 
 `zhost` now writes `proxy.state.json` as the **last, atomic commit record**
 containing the port, TLS flag, TLD and verified process marker. The existing
@@ -95,8 +89,7 @@ double snapshot until their next successful startup. Legacy reads cannot offer
 the same atomic guarantee as a commit record; do not edit state files manually.
 A malformed commit record or unresolved journal is not silently ignored.
 
-
-## Safe route lifecycle and registry protection (Section 17)
+## Safe route lifecycle and registry protection
 
 Applications launched with `portlessRun()` now receive a unique route lease.
 When the child command finishes, its cleanup only removes **that registration**;
@@ -133,7 +126,7 @@ To run the route-focused regression tests after compiling the package:
 leases prevent accidental cleanup races; they do not provide user isolation,
 authenticated registration, or a hardened internet-facing control plane.
 
-## Application supervision and readiness (Section 18)
+## Application supervision and readiness
 
 `zerux-server run` now launches application commands **without shell interpolation**,
 checks for an already occupied application port, waits for a TCP listener on
@@ -162,7 +155,7 @@ returns a `SupervisedProcess` with `.completed`, `.running`, and asynchronous
 should use the supervisor API. On Windows, direct execution does not invoke a
 shell; prefer executable programs or invoke scripts through `node` explicitly.
 
-**Section 18 limitations:** Basic TCP readiness confirms a listener, not an HTTP health endpoint;
+**Limitations:** Basic TCP readiness confirms a listener, not an HTTP health endpoint;
 free-port discovery cannot eliminate races before the child binds. Child-process
 group termination is strongest on POSIX; native Windows process-tree supervision
 still needs its own integration suite. This tool is intended for local developer
@@ -171,7 +164,7 @@ applications, not untrusted multi-tenant process execution.
 Focused checks after compilation: `node --test test/process-supervisor.test.mjs
 test/cli-run-arguments.test.mjs test/app-supervision-integration.test.mjs`.
 
-## HTTP health checks and bounded restart policies (Section 19)
+## HTTP health checks and bounded restart policies
 
 When an application supplies an HTTP health endpoint, ZHOST can wait for a
 successful status (HTTP 200–299) before publishing a route. Health requests are
@@ -215,7 +208,7 @@ behavior and cross-process recovery still need native integration testing.
 Regression suite (after building dependencies and `zhost`):
 `node --test test/*.test.mjs`.
 
-## Runtime status and coordinated manual reload (Section 20)
+## Runtime status and coordinated manual reload
 
 Managed application state is now observable via `handle.status` and
 `handle.subscribe(listener)`. Snapshots include lifecycle phase, child PID,
@@ -262,7 +255,7 @@ This is local-machine observability, not a distributed control plane or an
 authenticated remote management API. End-to-end Linux testing is included;
 native macOS/Windows behavior requires additional platform verification.
 
-## Multi-instance routing and safe traffic handovers (Section 21)
+## Multi-instance routing and safe traffic handovers
 
 Route pools can distribute **new HTTP requests and WebSocket upgrades** across
 up to 32 local application instances using smooth weighted round-robin. Legacy
@@ -327,7 +320,7 @@ if (committed) {
 After a package build, run `node --test test/backend-*.test.mjs` for the new
 pool, handover, and WebSocket integration regression tests.
 
-## Rolling application deployments (Section 22)
+## Rolling application deployments
 
 `launchRollingApplication` runs *overlapping* generations of the same loopback
 application on different ports, tests the candidate's readiness, switches the
@@ -396,9 +389,9 @@ The controller passes the correct `PORT` to each child even if an existing
 Focused validation: build `zhost`, then run
 `node --test test/rolling-app.test.mjs test/backend-*.test.mjs`.
 
-## Rolling CLI & cross-process deployment control (Section 23)
+## Rolling CLI & cross-process deployment control
 
-The Section 22 rolling controller is now available from the CLI, with **real
+The rolling controller is now available from the CLI, with **real
 proxy-side HTTP/WebSocket drain observations** even when the proxy and the
 application wrapper are separate processes. Use an existing ZHOST proxy built
 from this version or later; rolling launches deliberately refuse to claim
@@ -446,7 +439,7 @@ consistency, distributed scheduling and external load-balancer draining are
 not provided. Run `node --test test/rolling-cli-control.test.mjs` against fresh
 compiled output for a separate-process smoke test.
 
-### Recovering rolling applications after a hard crash (Section 24)
+### Recovering rolling applications after a hard crash
 
 The rolling wrapper now records its own OS creation fingerprint and the
 fingerprints/ports of **each spawned generation** in a private, atomically
@@ -484,8 +477,7 @@ recent status. History is informational and is never a source of authority
 for process termination. Cross-platform process identity behavior still needs
 native Windows/macOS integration testing.
 
-
-### Persistent backend health and multi-app reconciliation (Section 25)
+### Persistent backend health and multi-app reconciliation
 
 ZHOST's built-in proxy now checkpoints recent backend circuit-breaker state in
 `app-controls-<uid>/backend-health.json` using private atomic writes. Checkpoints
@@ -538,7 +530,7 @@ recent failures and are not durable application or process authority.
 No cross-host storage, distributed failover, or persistent metrics database is
 provided. State files must remain private to the proxy's operating-system user.
 
-## Health-aware multi-instance process fleets (Section 26)
+## Health-aware multi-instance process fleets
 
 `launchInstanceFleet()` manages a desired set of local application processes and
 publishes their backend ports through a conditional route lease. It detects
@@ -572,12 +564,11 @@ The fleet API is exported from the root package. Create the proxy using your
 existing ZHOST proxy setup; do not create a separate empty tracker for draining.
 `fleet.stop()` is required during application shutdown. Restart budgets are
 currently in memory and the API does not perform cross-process ownership
-recovery automatically. See `SECTION_26_MULTI_INSTANCE_SUPERVISION.md` in the
-project root for operational details and limitations.
+recovery automatically.
 
-## Persistent multi-instance fleet CLI (Section 27)
+## Persistent multi-instance fleet CLI
 
-`zerux-server fleet` connects the Section 26 multi-instance supervisor to the
+`zerux-server fleet` connects the multi-instance supervisor to the
 real proxy's private authenticated control endpoint. Unlike launching the API
 from another process, the CLI uses the proxy's **actual** connection tracker
 for draining; it refuses to launch when that control is unavailable.
@@ -636,7 +627,7 @@ hook fails closed rather than silently allowing a new replacement. A health
 failure can temporarily reduce serving capacity. Full native Windows/macOS
 integration and long-duration deployment tests are still required.
 
-## Dynamic fleet capacity and request-rate autoscaling (Section 28)
+## Dynamic fleet capacity and request-rate autoscaling
 
 A fleet can now change its desired replica count while running. Each new replica
 is started and health-checked **before** its port is atomically added to the
@@ -698,7 +689,7 @@ orchestration, not cluster autoscaling; it does not provision machines, limit
 CPU/memory usage, or distribute control across hosts. The OS and full app
 integration still need validation in your deployment environment.
 
-## Fleet observability and resource autoscaling (Section 29)
+## Fleet observability and resource autoscaling
 
 The fleet controller supports request-rate scaling (default) and Linux child-process
 resource scaling. Samples are based on **the serving child processes**, not the
@@ -837,7 +828,7 @@ protection. Size violations are rejected with HTTP 413, rate violations with
 429, and concurrency overload with 503. Backend code may have seen a partial
 chunked request before a streaming size violation is detected.
 
-## Integrated protocol gateway (Section 31)
+## Integrated protocol gateway
 
 **MCP has moved into `zhost`**: import `createMcpServer`, `ToolRegistry`,
 `ResourceRegistry` and `createProtocolGateway` from `zhost`. The old
@@ -994,7 +985,7 @@ server already compresses responses. The proxy avoids double-compression and
 never transforms SSE, Connect/gRPC, range, or `Cache-Control: no-transform`
 responses. Zstandard is only selected when the Node runtime supports it.
 
-## Proxy cache control (Section 32)
+## Proxy cache control
 
 Response caching is **off by default**, independent of ZHOST's streaming compression. To opt in:
 
@@ -1011,12 +1002,3 @@ Or set `createProxyServer({ getRoutes, proxyPort, cache: { enabled: true } })`. 
 ### Reloading the development HTTP server
 
 Development reloads now replace the active request handler without unbinding the application's HTTP port. In-flight requests retain their old handler, new requests use the new handler, and a failed `watchFunc` leaves the previous handler serving. This is local development lifecycle behavior, not a guarantee of zero-downtime production deployment.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.

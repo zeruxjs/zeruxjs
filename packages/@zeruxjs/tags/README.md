@@ -70,7 +70,7 @@ Connect `analytics.analytics` to a real named @zeruxjs/db connector. Its facade 
 
 Published `pageview`, `click`, `form`, and `history` trigger types cause the generated bootstrap to register corresponding browser listeners. They emit `page_view`, `click`, `form_submit`, and `history_change` events respectively. Click/form metadata intentionally excludes element text and form field values. Automatic tracking is not enabled unless a corresponding trigger is published. Set `tags.defaultConsent:'denied'` for a site's privacy policy to suppress telemetry before the application calls `ttag('consent','granted')`; this switch is independent of email marketing subscription state. `history` currently listens to `popstate` rather than monkeypatching routing APIs.
 
-## Section 72: publishable releases and governance
+## Publishable releases and governance
 
 **Important migration:** `PUT /_tags/admin/api` now **saves a draft**, not the live container. A separate privileged `POST /_tags/admin/publish` makes the draft live. Existing plain versioned containers are treated as live **release 1** until their first draft change; the first save persists a governance envelope in the existing CAS document. No new table is required. Two manager replicas must share the same atomic versioned document store and request-ID adapter; an in-memory store is for development only.
 
@@ -109,12 +109,3 @@ The editor shows draft and live revision independently; **saving never fires edi
 `ttag('config', {site:..., debug:...})` is **no longer accepted**: an untrusted web page may not change the server-issued tenant or debug policy. Arbitrary JavaScript/HTML tags are **not supported**. The studio uses an exact SHA-256 hash for inline script CSP, with scripts otherwise denied; it also denies framing and uses no-store responses. Automatic click/form listeners avoid form field values, text contents and URLs. Browser telemetry uses opaque random request IDs, bounded scalar properties and client-side consent. `ttag('consent','denied')` discards queued events. `defaultConsent:'denied'` gates `astag` until it receives `astag('consent','granted')`, and enables consent checks on browser ingestion by default. The collector drops explicit `denied` claims and, with `requireBrowserConsent:true`, ignores unknown consent. **A browser's `granted` claim cannot prove legal consent**: host consent management and privacy policies remain essential. `siteByOrigin` should be configured for every public origin in multi-tenant deployments; collection-side binding rejects mismatched site assertions. The system never infers identity from IPs or browser fingerprints.
 
 External destinations have independently bounded 1-second timeouts and failures isolate each tag, with sanitized warnings. Webhook destinations must use public HTTPS DNS hostnames and redirects are disallowed; this **does not remove DNS-rebinding risk**. Enforce outbound DNS/IP allowlists and egress firewall rules in your deployment. GA4 HTTP acceptance is not proof of Google-side processing. No arbitrary remote script execution, guaranteed browser delivery, distributed rate limiting, replay queue or unbounded GTM/GA4 feature parity is provided. Large production deployments should migrate release snapshots to a normalized transactional release table rather than depending on the capped JSON envelope.
-
-## Release 0.0.2
-
-Prepared to validate npm trusted publishing through GitHub Actions.
-
-
-## Release 0.0.3
-
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
