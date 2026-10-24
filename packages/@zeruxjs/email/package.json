@@ -27,7 +27,7 @@
     "juice": "^11.0.0",
     "mailparser": "^3.7.0",
     "node-pop3": "^0.15.1",
-    "nodemailer": "^10.1.2",
+    "nodemailer": "^10.1.4",
     "sanitize-html": "^2.13.0"
   },
   "peerDependencies": {
