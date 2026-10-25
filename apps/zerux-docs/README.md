@@ -88,7 +88,7 @@ Authored guides are mandatory for **every public package in a live workspace-bac
 
 Document setup, a useful example, ownership/cleanup, error behavior, constraints and related tasks. Distinguish framework startup options from standalone factory options. Link the implementation and use public imports. Name callbacks and resources supplied by the application rather than implying they are built-ins. Make authorization, durability, transaction and coverage boundaries explicit where they matter.
 
-The learning path covers installation, a working notes application, runtime architecture, file conventions, requests, configuration/environment, middleware, plugins, workers, data/services, frontend bridges, operations and API references. Each `@zeruxjs` package has an authored task-focused guide; the directory covers all 48 public packages. The homepage is a learning portal, not a generated manifest listing.
+The learning path covers installation, a working notes application, runtime architecture, file conventions, requests, configuration/environment, middleware, plugins, workers, data/services, frontend bridges, operations and API references. Each `@zeruxjs` package has an authored task-focused guide; the directory covers all 52 public packages. The homepage is a learning portal, not a generated manifest listing.
 
 ## Versioning and archived references
 

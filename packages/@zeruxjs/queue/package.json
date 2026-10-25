@@ -17,9 +17,7 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "bullmq": "^5.61.0",
-    "@zeruxjs/cache-redis": "0.0.3",
-    "ioredis": "^5.4.0"
+    "@zeruxjs/queue-bullmq": "0.0.3"
   },
   "license": "(MIT OR Apache-2.0)",
   "files": [

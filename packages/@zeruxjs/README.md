@@ -11,6 +11,7 @@ Modular services and adapters used by ZeruxJS applications. Each package defines
 | [@zeruxjs/asset-manager](asset-manager/README.md) | Validated in-memory asset catalog for images, video, fonts, color tokens, documents and branding assets.
 | [@zeruxjs/auth](auth/README.md) | Server-side password hashing, encrypted sessions, user/role database facade, one-time passwords, RFC 6238 authenticator TOTP, scoped API/reset tokens, password policy, and optional revocation store.
 | [@zeruxjs/cache](cache/README.md) | Application cache abstraction with a built-in bounded memory cache, external adapters, and a manager facade.
+| [@zeruxjs/cache-memcache](cache-memcache/README.md) | Memcached cache adapter with bounded text transport; safe namespace clearing is unsupported.
 | [@zeruxjs/cache-redis](cache-redis/README.md) | Redis 5 adapter for @zeruxjs/cache.
 | [@zeruxjs/db](db/README.md) | JSON-structured database operations, named connections and connector lifecycle management for ZeruxJS or standalone Node.js applications.
 | [@zeruxjs/db-mongo](db-mongo/README.md) | JSON-query MongoDB connector for @zeruxjs/db.
@@ -27,6 +28,9 @@ Modular services and adapters used by ZeruxJS applications. Each package defines
 | [@zeruxjs/media](media/README.md) | Private, disk-backed binary media storage.
 | [@zeruxjs/performance](performance/README.md) | Browser performance observations, resource hints, cache validators, reporting, and optional Lighthouse auditing.
 | [@zeruxjs/queue](queue/README.md) | BullMQ-backed named job queues, durable Redis storage, optional worker processors, delayed/retried/repeatable jobs, and generation-scoped ZeruxJS startup/shutdown.
+| [@zeruxjs/queue-bullmq](queue-bullmq/README.md) | Extracted BullMQ backend; queue preserves its existing API through compatibility exports.
+| [@zeruxjs/queue-rabbitmq](queue-rabbitmq/README.md) | Standalone confirmed publisher and manual-ack consumer for RabbitMQ.
+| [@zeruxjs/queue-memcacheq](queue-memcacheq/README.md) | Standalone FIFO producer and destructive consumer for MemcacheQ.
 | [@zeruxjs/react](react/README.md) | Framework-neutral external-store primitives and injected React Hooks adapters.
 | [@zeruxjs/reports](reports/README.md) | A structured report/page/chart designer over internal @zeruxjs/analytics events.
 | [@zeruxjs/search](search/README.md) | Dependency-free, Unicode-aware in-memory search index.
