@@ -35,7 +35,7 @@ export function GET() {
 
 ## The right tool for the next step.
 
-Explore 48 public packages for data, styling, security, development and more.
+Explore 52 public packages for data, styling, security, development and more.
 
 - [@zenixjs/core](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-zenixjs-core/) — Placeholder for the future Zenix CMS (v0.0.3)
 - [@zeruxjs/accessibility](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-accessibility/) — Accesibilty Provider (v0.0.3)
@@ -45,6 +45,7 @@ Explore 48 public packages for data, styling, security, development and more.
 - [@zeruxjs/asset-manager](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-asset-manager/) — Asset Manager, Help naming asset and manage them on the go, best for managing branding and your identity assets by arrangeing them, can be for Logo, Images, Video but not limited to assets, can be add Color, font and more (v0.0.3)
 - [@zeruxjs/auth](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-auth/) — Provide all AUth option from Password, OTP Verification, Reverification, Password Change, Oauth, Third-Party Provider (Add more option), Login/Register/Reset Form (with @zerux/form), Passkey, Authanticator Apps, Session Management, App passwords, API keys and more. (v0.0.3)
 - [@zeruxjs/cache](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-cache/) — cache on browser application (v0.0.3)
+- [@zeruxjs/cache-memcache](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-cache-memcache/) — Bounded Memcached text-protocol adapter for @zeruxjs/cache (v0.0.3)
 - [@zeruxjs/cache-redis](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-cache-redis/) — Redis cache helper supporting node-redis and ioredis, with BullMQ connection settings. (v0.0.3)
 - [@zeruxjs/db](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db/) — A powerful library that can connect with database with similar JSON structured query. (v0.0.3)
 - [@zeruxjs/db-mongo](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-mongo/) — Helper for @zerux/db for MongoDB Database. (v0.0.3)
@@ -61,6 +62,9 @@ Explore 48 public packages for data, styling, security, development and more.
 - [@zeruxjs/media](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-media/) — Download and Upload Media, Making them enter only in non-executable area, Download Manager, expiry function and more. (v0.0.3)
 - [@zeruxjs/performance](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-performance/) — Performance metrics, resource hints, cache directives and timing utilities. (v0.0.3)
 - [@zeruxjs/queue](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-queue/) — BullMQ-backed queues and workers with ZeruxJS lifecycle management (v0.0.3)
+- [@zeruxjs/queue-bullmq](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-queue-bullmq/) — BullMQ backend and lifecycle helpers for ZeruxJS (v0.0.3)
+- [@zeruxjs/queue-memcacheq](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-queue-memcacheq/) — MemcacheQ FIFO producer and destructive consumer (v0.0.3)
+- [@zeruxjs/queue-rabbitmq](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-queue-rabbitmq/) — RabbitMQ confirmed publishing and acknowledged consumers (v0.0.3)
 - [@zeruxjs/react](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-react/) — External stores, stable selectors and React useSyncExternalStore bridge without bundled React. (v0.0.3)
 - [@zeruxjs/reports](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-reports/) — Authenticated report builder backed by internal Zerux analytics (v0.0.3)
 - [@zeruxjs/search](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-search/) — Powerfull Search (v0.0.3)
