@@ -186,17 +186,6 @@ if ("IntersectionObserver" in window) {
   headings.forEach((heading) => observer.observe(heading));
 }
 
-// Desktop keeps navigation visible; mobile starts with a compact disclosure.
-const mobileNavigation = document.querySelector(".mobile-navigation");
-if (mobileNavigation && window.matchMedia) {
-  const mobile = window.matchMedia("(max-width: 760px)");
-  const synchronizeNavigation = () => {
-    mobileNavigation.open = !mobile.matches;
-  };
-  synchronizeNavigation();
-  mobile.addEventListener("change", synchronizeNavigation);
-}
-
 // Only known public documentation pages are eligible; no initial navigation requests.
 const navigation = installNavigationPrefetch({
   paths: [document.body.dataset.basePath + "/"],
