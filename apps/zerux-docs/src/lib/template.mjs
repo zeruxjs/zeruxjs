@@ -53,7 +53,7 @@ function sidebar(page, pages) {
             const familyEntries = entries.filter(
               (item) => packageFamily(item.package) === family,
             );
-            return `<details class="package-navigation" ${page.package && packageFamily(page.package) === family ? "open" : ""}><summary>${escape(family)} <span>${familyEntries.length}</span></summary>${familyEntries.map((item) => `<a href="${item.url}"${item.url === page.url ? ' aria-current="page"' : ""}>${escape(item.navTitle || item.title)}</a>`).join("")}</details>`;
+            return `<details class="package-navigation" open><summary>${escape(family)} <span>${familyEntries.length}</span></summary>${familyEntries.map((item) => `<a href="${item.url}"${item.url === page.url ? ' aria-current="page"' : ""}>${escape(item.navTitle || item.title)}</a>`).join("")}</details>`;
           })
           .join("");
       return `<section><h2>${escape(section)}</h2>${body}</section>`;
