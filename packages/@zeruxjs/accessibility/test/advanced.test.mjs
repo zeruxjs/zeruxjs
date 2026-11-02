@@ -36,7 +36,7 @@ test('accessible dialog opens, traps focus, closes and restores attributes',()=>
  assert.throws(()=>dialog.show(),/destroyed/);
 });
 test('nested focus traps restore their own focus',()=>{
- const {element,doc,previous}=docElement();const inner=node({ownerDocument:doc,isConnected:true,querySelectorAll(){return []},contains(target){return target===inner}});
+ const {element,doc,previous}=docElement();element.hidden=false;const inner=node({ownerDocument:doc,isConnected:true,querySelectorAll(){return []},contains(target){return target===inner}});
  inner.focus=()=>{doc.activeElement=inner};const first=createFocusTrap(element);const second=createFocusTrap(inner);
  first.activate();second.activate();assert.equal(doc.activeElement,inner);second.deactivate();assert.equal(doc.activeElement,element);first.deactivate();assert.equal(doc.activeElement,previous);
 });

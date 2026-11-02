@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/queue-bullmq",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "description": "BullMQ backend and lifecycle helpers for ZeruxJS",
   "main": "./dist/index.js",
@@ -57,11 +57,12 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "dependencies": {
+    "@zeruxjs/cache-redis": "0.0.4",
     "bullmq": "^5.61.0",
-    "@zeruxjs/cache-redis": "0.0.3",
     "ioredis": "^5.4.0"
   },
   "license": "(MIT OR Apache-2.0)",
@@ -75,8 +76,8 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

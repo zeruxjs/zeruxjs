@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/queue-rabbitmq",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "description": "RabbitMQ confirmed publishing and acknowledged consumers",
   "main": "./dist/index.js",
@@ -9,11 +9,16 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./worker": {
+      "types": "./dist/worker.d.ts",
+      "default": "./dist/worker.js"
     }
   },
   "scripts": {
     "build": "tsc",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "dependencies": {
     "amqplib": "^0.10.9"

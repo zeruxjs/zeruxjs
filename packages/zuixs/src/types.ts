@@ -33,6 +33,8 @@ export interface ZuixRecipe {
   container?: string;
 }
 export interface ZuixConfig {
+  /** Explicit output-only host/renderer manifest; publicPath mounts the shared output directory. */
+  buildManifest?: { file: string; publicPath: string; sourceMap?: boolean; includeSources?: boolean };
   /** Upper bounds for filesystem scanning and CSS token generation. */
   limits?: ZuixLimits;
   content?: string[];
@@ -57,3 +59,9 @@ export interface ZuixConfig {
   keyframes?: Record<string,string>;
 }
 export interface GenerateResult { css: string; classes: string[]; unmatched: string[] }
+
+/** Public styles only; never source filenames, executable handlers or configuration. */
+export interface ZuixBuildManifest {
+ version: 1;
+ stylesheets: { id: string; url: string; integrity: string; sourceMap?: string }[];
+}

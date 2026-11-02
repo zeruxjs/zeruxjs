@@ -1,3 +1,4 @@
+import { executeSchema } from '../utils/_run.js';
 import type { BaseIssue, BaseSchema, InferInput } from '../types/index.js';
 
 /**
@@ -13,5 +14,5 @@ import type { BaseIssue, BaseSchema, InferInput } from '../types/index.js';
 export function is<
   const TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(schema: TSchema, input: unknown): input is InferInput<TSchema> {
-  return !schema['~run']({ value: input }, { abortEarly: true }).issues;
+  return !executeSchema(schema, input, { abortEarly: true }).issues;
 }

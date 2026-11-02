@@ -4,6 +4,8 @@ export interface VitalObserverOptions {
  onMetric:(metric:PerformanceMetric)=>void;
  /** Override for tests or embedded browsers; uses global PerformanceObserver otherwise. */
  createObserver?:(callback:(entries:PerformanceEntry[])=>void)=>{observe(options:PerformanceObserverInit):void;disconnect():void};
+ supportedEntryTypes?:readonly string[];
+ onUnsupported?:(type:string)=>void;
  navigation?:()=>{responseStart:number;requestStart:number}|undefined;
 }
 /** Native browser RUM observer. INP is deliberately not claimed: accurate INP requires interaction lifecycle tracking. */
@@ -15,9 +17,11 @@ export function observeWebVitals(options:VitalObserverOptions):()=>void {
  let active=true;
  const publish=(name:VitalName,value:number)=>{if(!active||!Number.isFinite(value)||value<0||last.get(name)===value)return;last.set(name,value);options.onMetric(createPerformanceMetric(name,value))};
  const observers:Array<{disconnect():void}>=[];
+ const supported=options.supportedEntryTypes??(options.createObserver?undefined:Observer?.supportedEntryTypes);
  const watch=(type:string,callback:(entry:PerformanceEntry)=>void)=>{
-  const observer=factory(entries=>{for(const entry of entries)if(active)callback(entry)});
-  try{observer.observe({type,buffered:true});observers.push(observer)}catch{observer.disconnect()}
+  if(supported&&!supported.includes(type)){options.onUnsupported?.(type);return;}
+  let observer:ReturnType<NonNullable<typeof factory>>|undefined;
+  try{observer=factory(entries=>{for(const entry of entries)if(active)callback(entry)});observer.observe({type,buffered:true});observers.push(observer)}catch{observer?.disconnect();options.onUnsupported?.(type)}
  };
  watch('largest-contentful-paint',entry=>publish('LCP',entry.startTime));
  watch('paint',entry=>{if(entry.name==='first-contentful-paint')publish('FCP',entry.startTime)});

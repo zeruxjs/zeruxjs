@@ -29,7 +29,7 @@
 ## Install and choose the execution boundary
 
 ```sh
-npm install zlocale@0.0.3
+npm install zlocale@0.0.4
 ```
 
 `zlocale` is a browser-safe, framework-independent i18n/l10n core. `zlocale/node` adds Node request-local state. `zlocale/zyro` adapts translation reads to the host's signal implementation. There are no runtime dependencies and no application or service is started on import. It can run in a browser bundle, a Node server, SSR or a background process.
@@ -193,7 +193,7 @@ The versioned envelope escapes HTML delimiters and Unicode line separators, reje
 
 ## Race-safe browser locale selection
 
-Version 0.0.3 provides `createLocaleController` and the TypeScript types `LocaleController`, `LocaleControllerOptions` and `LocaleLoader`. Supply the application-owned `i18n`, its bounded catalog loader, an explicit locale allowlist and required domains.
+Version 0.0.4 provides `createLocaleController` and the TypeScript types `LocaleController`, `LocaleControllerOptions` and `LocaleLoader`. Supply the application-owned `i18n`, its bounded catalog loader, an explicit locale allowlist and required domains.
 
 ```ts
 import { createLocaleController } from "zlocale";

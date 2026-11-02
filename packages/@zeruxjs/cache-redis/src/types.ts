@@ -1,7 +1,9 @@
+import type {RedisCachePolicy as importPolicy} from "./policy.js";
 import type { CacheValue } from "@zeruxjs/cache";
 
 /** Minimal Redis protocol surface; supports injected clients without a live Redis service. */
 export interface RedisCacheClient {
+    eval?(script:string,options:{keys:string[];arguments:string[]}):Promise<unknown>;
     get(key: string): Promise<string | null>;
     set(key: string, value: string, options?: { EX?: number; NX?: boolean; XX?: boolean }): Promise<unknown>;
     del(keys: string | string[]): Promise<number>;
@@ -14,9 +16,11 @@ export interface RedisCacheClient {
     scanIterator(options?: { MATCH?: string; COUNT?: number }): AsyncIterable<string | string[]>;
     flushDb?(): Promise<unknown>;
     close?(): Promise<unknown>;
+    destroy?():void;
+    off?(event:string,listener:(...args:unknown[])=>void):unknown;
     on?(event: string, listener: (...args: unknown[]) => void): unknown;
 }
-export interface RedisCacheHelperOptions {
+export interface RedisCacheHelperOptions extends importPolicy {
     client?: RedisCacheClient;
     /** Dangerous global operation; never enabled by default. */
     allowFlushDb?: boolean;

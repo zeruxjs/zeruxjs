@@ -1,3 +1,4 @@
+import { normalizeApiError } from './api-error.js';
 // Centralised exception handler for ZeruxJS core.
 //
 // It logs the error using the shared logger and returns a normalized
@@ -15,9 +16,9 @@ export interface NormalizedError {
     body: {
         /** Human‑readable error message. */
         message: string;
-        /** Optional stack trace – only included in non‑production builds. */
+        /** Legacy type field; framework responses never populate it. */
         stack?: string;
-        /** Any extra data attached to the original error. */
+        /** Legacy type field; private error data is never returned. */
         data?: unknown;
     };
 }
@@ -30,24 +31,18 @@ export interface NormalizedError {
  */
 export function exceptionHandler(err: unknown): NormalizedError {
     const isHttp = err instanceof HttpError;
-    const status = isHttp ? err.status : 500;
-    const message = isHttp ? err.message : 'Internal Server Error';
-    const data = isHttp && (err as HttpError).data !== undefined ? (err as HttpError).data : undefined;
+    const safe=normalizeApiError(err);
+    const status = safe.status;
+    const message = safe.body.error.message;
 
-    // Log the error – include stack for debugging purposes.
+    // Default logs contain only a safe summary; runtime onError owns trusted raw causes.
     if (isHttp) {
-        logger.warn(`HttpError ${status}: ${message}`, data);
+        logger.warn('HTTP request failed', status);
     } else {
         logger.error('Unhandled exception', err);
     }
 
     const body: NormalizedError['body'] = { message };
-    if (process.env.NODE_ENV !== 'production' && err instanceof Error) {
-        body.stack = err.stack;
-    }
-    if (data !== undefined) {
-        body.data = data;
-    }
 
     return { status, body };
 }

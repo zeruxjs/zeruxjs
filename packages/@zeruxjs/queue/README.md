@@ -1,6 +1,6 @@
 # @zeruxjs/queue
 
-The implementation now lives in [`@zeruxjs/queue-bullmq`](../queue-bullmq/README.md); this package preserves its public API through compatibility exports. [`queue-rabbitmq`](../queue-rabbitmq/README.md) and [`queue-memcacheq`](../queue-memcacheq/README.md) currently provide explicit standalone factories with different capabilities. Existing framework `queue` configuration still uses BullMQ; it does not automatically select these adapters.
+The implementation now lives in [`@zeruxjs/queue-bullmq`](../queue-bullmq/README.md); this package preserves its public API through compatibility exports. [`queue-rabbitmq`](../queue-rabbitmq/README.md) and [`queue-memcacheq`](../queue-memcacheq/README.md) currently provide explicit standalone factories with different capabilities. Legacy framework `queue` configuration still uses BullMQ; the explicit neutral selection below opts into other factories.
 
 BullMQ-backed named job queues, durable Redis storage, optional worker processors, delayed/retried/repeatable jobs, and generation-scoped ZeruxJS startup/shutdown. This is a **Redis-backed queue** and does not use the SQL/Mongo analytics storage as a queue backend.
 
@@ -202,12 +202,122 @@ Install dependencies with a repaired registry-backed lockfile, use isolated Redi
 
 ```bash
 # Real standalone, two BullMQ service instances, delayed/retry/concurrent workers:
-QUEUE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/queue/test/section75-live-certification.test.mjs
+QUEUE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/queue/test/live-redis-integration.test.mjs
 # Standalone namespace safety:
-CACHE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/cache-redis/test/section75-live-redis.test.mjs
+CACHE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/cache-redis/test/live-redis.test.mjs
 # Real Redis Cluster masters, e.g. ephemeral ports (never production):
-QUEUE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/queue/test/section75-live-certification.test.mjs
-CACHE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/cache-redis/test/section75-live-redis.test.mjs
+QUEUE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/queue/test/live-redis-integration.test.mjs
+CACHE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/cache-redis/test/live-redis.test.mjs
 ```
 
 Use dedicated throwaway test Redis instances, correct authentication and TLS as appropriate. Live tests do not intentionally stop Redis: a full outage/restart and worker crash-injection rehearsal, DST boundary verification, cluster resharding, and long-running load/retention/ACL testing are **separate operational gates**. In an offline environment these suites are intentionally skipped; mocked tests are not live certification. The clean `npm ci` check is also not satisfied by locally generated `dist` files.
+
+## Opt-in neutral backend selection
+
+The legacy `createQueueService` and BullMQ exports are unchanged. `/neutral` adds a small producer/pull-consumer contract; `/backends` adapts explicitly supplied standalone factories. Neither entry scans packages, opens connections on import or loads an optional driver. Install/import only the standalone backend you choose. The facade's existing BullMQ dependency remains for compatibility.
+
+```ts
+import {createQueueBackend, selectQueueBackend} from '@zeruxjs/queue/neutral';
+import {rabbitMQBackend} from '@zeruxjs/queue/backends';
+import {createRabbitMQ} from '@zeruxjs/queue-rabbitmq';
+
+export async function sendReference(url: string) {
+  const factory = rabbitMQBackend(createRabbitMQ, ['notifications']);
+  const selection = selectQueueBackend(factory, {url, queues: ['notifications']}, {
+    requireCapabilities: ['acknowledgement', 'publisherConfirms'], maxBytes: 8192
+  });
+  const jobs = await createQueueBackend(selection);
+  try {
+    await jobs.publish('notifications', 'refresh', {recordId: '42'});
+    const delivery = await jobs.take('notifications');
+    if (delivery) {
+      // Perform the authorized, durable, idempotent side effect before ack.
+      await delivery.settle!('ack');
+    }
+  } finally { await jobs.close(); }
+}
+```
+
+The example publishes/pulls a reference only; it does not implement that business side effect. URL credentials are private server configuration, never job payloads. Authorization, tenant-specific factory/queue allowlists, consent, durable idempotency and uncertain-result reconciliation remain host responsibilities. No API is automatically exposed over HTTP. A queue prefix/name is not permission. Native factory options retain the owning package's inferred types; unknown top-level and known nested backend options reject before startup. `selectQueueBackend` validates synchronously and the framework validates again before opening database/cache resources. Custom validators must be pure synchronous trusted code.
+
+| Adaptation | Publish completion | Neutral consumption | Delay/retry | Scheduler |
+| --- | --- | --- | --- | --- |
+| `bullMQBackend(['jobs'])` | Native BullMQ add completes | `push:true`; configure native `options.workers`, neutral `take` rejects | Native delay/attempts supported | Native typed extension only |
+| `rabbitMQBackend(createRabbitMQ, ['jobs'])` | Broker publisher confirmation | Manual-ack pull; settle `ack`, `discard`, `requeue` once locally | No delay/automatic retry; explicit requeue can repeat indefinitely | Unsupported |
+| `memcacheQBackend(createMemcacheQ, ['jobs'])` | Native append response | Destructive pull; disposition `consumed`, no settle method | Unsupported | Unsupported |
+
+`publish(queue,name,data,{delay?,attempts?})` rejects unsupported options even when delay is zero or attempts is one. No scheduling, automatic polling/worker loop or acknowledgement is emulated. `require(capability)` provides an explicit runtime guard. Scheduler requests must use the matching native extension; the neutral API has no fake scheduler. BullMQ `acknowledgement:false` means no **manual neutral settlement**; processor completion/failure still uses native BullMQ acknowledgement/retry. `publisherConfirms` specifically describes RabbitMQ broker confirms, not a generic persistence guarantee for every backend.
+
+`jobs.extension(factory)` requires that exact registered factory object and returns its typed native service. BullMQ operations, processors, schedules, events and outbox helpers remain BullMQ-specific. The neutral BullMQ adapter deliberately rejects `dashboard` configuration because it does not mount native dashboard routes; use legacy `createQueueService`/framework configuration for that feature. Extensions are trusted host access: their direct methods retain native validation/ownership and bypass neutral payload/pending limits. Do not close the extension separately or expose raw native jobs to clients. No native extension guarantees portability. Existing outbox/CAS delivery APIs remain unchanged; they are not silently mapped to a destructive queue.
+
+Neutral defaults: 64 KiB JSON payloads (maximum 1 MiB), depth 16/8192 nodes, 32 pending calls (maximum 1000), 1–100 unique allowed queue names. JSON payloads are snapshotted; unsafe property names, accessors, cycles, classes and non-JSON values reject. Native envelope/response limits also apply and may reject an otherwise valid payload near the boundary. Names use the conservative common ASCII subset, up to 96 characters. Callers own pull scheduling/backoff. Native returned deliveries are validated; malformed destructive reads can already have lost the message. Handler failures never trigger an implicit retry/requeue.
+
+`close()` is idempotent, rejects new work, drains actual pending operation settlement and executes registered cleanup once in reverse order. It does not force-cancel JavaScript or promise a new shutdown deadline: native deadlines govern I/O, BullMQ keeps its existing worker grace/force-close behavior, and noncooperating injected operations can delay close indefinitely. A timeout/disconnect can mean an unknown publish outcome; the wrapper never replays it. Unacknowledged RabbitMQ deliveries requeue when its owned connection closes. MemcacheQ cannot restore popped messages. Native extension/background processor lifetime stays with its backend's close implementation.
+
+Custom backends may implement `QueueBackendFactory<Options,Extension>` with an explicit name, immutable capability/queue snapshots, pure `validate` and `open(options,{onCleanup})`. Register each resource immediately after acquiring it; at most 64 cleanup callbacks are accepted. Cleanup runs on startup failure, including invalid returned handles. An explicit factory is executable trusted host code, not a sandbox or discovered package. Errors use fixed `QueueBackendError.code`/message; private non-enumerable causes must remain in trusted server diagnostics. Neutral limits do not sanitize private job contents for telemetry—never log payloads or credentials.
+
+Framework configuration uses `{queue:{enabled:true,required:true,selection}}`, with the same selection above. Do not mix `selection` with legacy Redis/workers/dashboard keys. Factories and options stay out of public manifests; factory identity is retained per generation. Optional startup failures mark queue degraded and log a fixed message; required failures roll back the generation. Queue cleanup still precedes cache/database cleanup, while the existing startup-worker shutdown remains separate. Configuration changes require an explicit generation/restart policy; nothing restarts an app automatically.
+
+Focused qualification covers injected backend semantics, legacy BullMQ calls, strict selection, cleanup/draining, framework rollback and public export/type consumers. This does not certify live RabbitMQ confirms/redelivery, MemcacheQ persistence/loss or Redis worker recovery. Use dedicated disposable services for that acceptance. Semantics follow the official [amqplib channel API](https://amqp-node.github.io/amqplib/channel_api.html), [BullMQ worker shutdown](https://docs.bullmq.io/guide/workers/graceful-shutdown) and [MemcacheQ protocol](https://github.com/stvchu/memcacheq); no complete backend parity is promised.
+
+## Durable opt-in webhooks
+
+`@zeruxjs/queue/webhooks` adds an application-owned `webhook-cas-v1` outbox workflow. It imports no framework runtime, starts no timer/worker/exporter on import, and leaves all existing email helpers unchanged. The queue facade depends one-way on BullMQ, database types and security primitives; BullMQ never imports the facade. There is no default in-memory production store.
+
+```ts
+import {createWebhookWorkflow, createWebhookHttpsTransport} from '@zeruxjs/queue/webhooks';
+import type {WebhookWorkflowOptions, WebhookInput, WebhookRecord} from '@zeruxjs/queue/webhooks';
+import type {DatabaseFacade, TransactionDatabase} from '@zeruxjs/db';
+
+export function configureWebhooks(
+  host: Pick<WebhookWorkflowOptions, 'store' | 'authorize' | 'destination'>,
+  approveAddress: (hostname: string, address: string) => boolean
+) {
+  const transport = createWebhookHttpsTransport({
+    allowedOrigins: ['https://hooks.example.com'], approveAddress
+  });
+  const workflow = createWebhookWorkflow({...host, transport,
+    policy: {maxAttempts: 5, maxAgeMs: 86400000, baseDelayMs: 1000,
+      maxDelayMs: 60000, retryAfterMaxMs: 60000,
+      transientStatuses: [429, 500, 502, 503, 504], retryNotSent: true}});
+  return {workflow, async close() { await workflow.close(); await transport.close(); }};
+}
+
+export async function commitBusinessEvent(
+  workflow: ReturnType<typeof createWebhookWorkflow>,
+  db: Pick<DatabaseFacade, 'transaction' | 'transactionCapabilities'>,
+  append: (pin: TransactionDatabase, record: WebhookRecord) => Promise<void>,
+  event: WebhookInput, principal: unknown
+) {
+  return workflow.commit(db, {insert: append}, event, async pin => {
+    const result = await pin.insert({table: 'business_events', values: {id: event.eventId}});
+    if (!result.ok) throw new Error('Business write failed');
+  }, principal);
+}
+```
+
+The host supplies the actual durable store, journal writer, authenticated principal, destination registry and egress approval. The example domain is illustrative, not a live integration. `append` must insert on **that exact pin** into a tenant+delivery-ID unique journal; it must not use an unrelated connection, publish a queue job or perform an HTTP side effect inside the business transaction. Configure/migrate tables separately. `commit` negotiates the existing async database transaction facade and propagates its options/signals; unsupported facades reject. A native commit error can itself have an indeterminate outcome; reconcile by the unique journal key rather than blindly re-executing business work. No independent transaction implementation is introduced.
+
+SQLite has a distinct supported path: await `workflow.prepare(event, principal)` **before** entering the connector's public `transactionSync`. Inside its synchronous callback perform the business insert and outbox insert using that callback's `SqliteSyncTransaction`, with no await/thenable. Preparation checks authorization, destination and active signing configuration but writes nothing; the host owns insertion and synchronous pinning. Async `commit` deliberately does not masquerade as SQLite `transactionSync`. Tests use the existing SQLite connector against an owned disposable WAL file for rollback; the shipped workflow does not include a production SQLite/SQL journal adapter.
+
+A stored V1 record includes tenant, delivery ID, event ID, destination **reference**, application schema version, immutable serialized event body/hash, revision, delivery state, attempt count, timestamps, lease and bounded redacted history. The signed JSON body is `{eventId,schemaVersion,data}`. The SHA-256 digest detects byte changes, not authorship/permissions. Store bodies as private data under host retention/encryption/access policy; no client inspection returns bodies, URLs or signing keys. `WebhookStore.get/cas/due` are host-owned, linearizable durable operations: CAS must compare the **tenant+delivery ID and exact revision**, preserve immutable event fields and update indexed state/lease/due fields atomically. An ordinary cache get/set, process-local Map, local catalog revision or queue job ID is not this store.
+
+States: `pending → sending → delivered`; declared transient responses return to `pending` with persisted `nextAt`; permanent HTTP/redirect, transport address-denial and limit outcomes become `dead`. Pre-claim authorization/destination/credential failures reject without sending and leave pending records available for host policy repair. Lost acknowledgements, interrupted HTTP after TLS establishment and **expired sending leases** become `uncertain`, never an automatic resend. Claims use durable CAS; competing workers cannot both claim a pending revision. A process crash after claim but before bytes are sent can conservatively become uncertain too. A successful side effect followed by failed journal settlement remains sending until reconciliation—do not infer failure from a missing response. A receiver still needs durable idempotency; this is not exactly-once processing.
+
+`dispatch(tenant, principal, publisher, {cursor?,limit?})` publishes at most 50 sorted due references per call (default 20). The store must page pending due records and expired sending leases, with a stable ascending delivery-ID continuation. The host invokes this periodically; nothing starts a scheduler. Dispatch fails visibly on a policy/dependency failure; earlier references in that page may already have been published, so page retries must tolerate duplicates and operators must resolve blocked references. Queue payloads are only `{tenant,deliveryId}` under `webhook.deliver`, never bodies or credentials. Duplicate dispatches are possible, and durable CAS is authoritative. Use `createAcknowledgedWebhookPublisher` for the neutral RabbitMQ confirmed/manual-ack contract; destructive MemcacheQ and unknown capability claims reject. `createBullMQWebhookPublisher` explicitly uses native BullMQ completion acknowledgement, which differs from neutral manual-ack metadata. `createWebhookProcessor(workflow, workerPrincipal)` validates the opaque job reference. A pull worker acknowledges only after the processor durably records its outcome; a BullMQ processor resolves at that same boundary. These helpers do not start workers, grant tenant permissions, promise broker crash recovery or make queue publication atomic with database commit.
+
+Every enqueue/delivery/dispatch/inspect/redrive requires a fresh host `authorize(action,reference,principal)` decision. Worker principals must be authenticated service identities authorized for the record tenant; request IDs/forwarded headers are not authorization. `destination(tenant,ref)` must return a matching `{tenant,ref,url,enabled:true,consumerIdempotency:true,keys}` from a private explicit registry. Resolve it on every operation so revocation/rotation takes effect. The idempotency flag is a host declaration requiring receiver qualification, not remote proof. `inspect` returns fixed metadata/history only, after rechecking destination/key policy. `redrive` requires fresh privileged authorization, current destination approval and active credentials; uncertain redrive additionally needs `{confirmedUncertain:true}` based on external reconciliation evidence. It preserves total age/attempt counts—expired/exhausted records cannot bypass caps. Reopening a known permanent rejection after a corrected policy is explicit; no redrive is automatic.
+
+Policy is explicit: 1–20 attempts, age 1 second–30 days, base/max backoff 1 ms–1 day, bounded Retry-After 0–1 day, and at most 16 declared transient statuses (408/425/429/5xx). Other HTTP errors are permanent; all redirects are denied. Exponential backoff uses bounded half-to-full jitter. Retry-After seconds/date hints can increase the delay only within the declared cap; the remaining total age still wins. `retryNotSent` explicitly governs transport failures known to precede an HTTP write. HTTP 2xx requires a complete bounded response. Neither an unknown transport failure nor a lost acknowledgement is transparently retried. Injected `now`/`random` support deterministic checks; synchronize production clocks. An acknowledgement can follow a committed receiver side effect even on a 5xx, so declared response retries also require durable receiver idempotency.
+
+Requests use the existing security package's native HMAC-SHA-256 authenticator with its exact 32-byte keys and current/previous key IDs, not homemade crypto or an asymmetric signature. Resolve active host-owned keys each attempt; temporary keyring copies are destroyed afterward. V1 headers are `x-zerux-webhook-id`, `x-zerux-webhook-timestamp` (Unix seconds) and `x-zerux-webhook-signature:v1.kid.tag`. The authenticated security context is JSON `["zerux.webhook.v1",tenant,destination,deliveryId,timestamp]` plus the exact UTF-8 body, using security's documented domain-separated MAC framing. `x-zerux-webhook-schema` is only a hint; the **signed body** is authoritative. This is a ZeruxJS-specific shared-MAC envelope, not RFC HTTP Message Signatures, JOSE, Stripe/GitHub compatibility or a token authorization scheme.
+
+`verifyWebhook` verifies exact body bytes, key selection, tenant/destination scope and a bounded timestamp window (default five minutes, max one hour; future timestamps reject). Those scope values must come from trusted receiver configuration, not unverified headers. It does not consume replay state. `verifyAndConsumeWebhook` additionally requires a host `webhook-replay-v1` linearizable unique claim and explicit retention (up to 30 days), returning `verified`, `duplicate` or `invalid`. Retention must cover the sender's retry/redrive horizon. The receiver must coordinate that claim with durable business/idempotency state in its own transaction: a standalone pre-handler consume can burn an event if business work fails. Handle a previously committed duplicate with the receiver's documented success acknowledgement, not a second side effect. Keys, auth tokens, private bodies and raw error causes never belong in attempt telemetry.
+
+The default Node HTTPS transport uses an exact HTTPS-origin allowlist, rejects credentials/query/fragment URL fields, disables pooling (`agent:false`) and checks DNS through the connection's lookup callback **for every connection**. All returned IPv4 addresses (maximum 32) must pass built-in special/private/loopback/link-local/multicast denial **and** synchronous host egress approval before an approved answer is pinned to that connection. Literal addresses receive the same checks. TLS certificate/hostname verification stays enabled, redirects are never followed and no proxy credentials/environment transport are inferred. IPv6, mapped and transition addresses are deliberately unsupported/fail-closed. This is not a complete IANA/routing policy: deployment firewalls/DNS/network egress controls must also prevent SSRF, rebinding/proxy bypass and access to sensitive globally routed services. Host `resolve`/`request` hooks are explicitly trusted testing/deployment injection; a replacement connector can bypass these guarantees and needs separate qualification. No public HTTP input may choose them.
+
+Bodies are plain JSON ≤64 KiB, nesting ≤16, visited values ≤8192. HTTP headers/responses are bounded (8 KiB by default; response-body max 64 KiB). Default workflow/transport concurrency is 16, hard maximum 128. HTTP deadlines are 1–30000 ms (workflow default 10000); leases default 60000 ms, must exceed HTTP deadline by at least one second, and cap at five minutes. Fixed `WebhookError.code`/messages and redacted history contain no payload, key, cookie, token URL or private stack. Private non-enumerable causes remain for trusted diagnostics; do not serialize them. No global logger/tracer or diagnostic routes start on import. A host can map codes into its existing sanitized application envelope without exposing causes.
+
+Close the workflow before its host-owned transport/store. `workflow.close()` rejects new work, aborts active HTTP signals and awaits actual in-flight work; `transport.close()` closes its own requests and awaits outstanding DNS/native settlement. Noncooperating host callbacks/DNS/database work can delay closure; slots remain occupied instead of starting unbounded replacement work. Abort does not prove remote rollback. The workflow borrows its store/transport/signing source and never closes the application's database, queue or credential vault.
+
+Qualification includes synthetic pinned commit/rollback, actual disposable SQLite rollback, CAS/replayed jobs, expired leases, signature rotation/replay-store claims, 429/5xx/permanent/redirect outcomes, total caps, SSRF/DNS/egress denial and HTTP cancellation/cleanup through an injected Node-request fixture. These are not live receiver, TLS/DNS infrastructure or broker/process-crash acceptance. That needs a dedicated acknowledged broker, production-quality durable CAS/journal/replay stores, qualified HTTPS receivers with idempotency, active credentials and deployment egress policy. See the official [Node HTTPS API](https://nodejs.org/docs/latest-v24.x/api/https.html), [DNS lookup API](https://nodejs.org/docs/latest-v24.x/api/dns.html#dnslookuphostname-options-callback) and [Retry-After semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-retry-after). Existing email outbox/recovery helpers stay unchanged and retain their own boundaries.

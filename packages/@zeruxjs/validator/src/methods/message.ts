@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -27,7 +28,7 @@ export function message<
       return _getStandardProps(this);
     },
     '~run'(dataset, config) {
-      return schema['~run'](dataset, { ...config, message: message_ });
+      return _runSchema(schema, dataset, { ...config, message: message_ });
     },
   };
 }

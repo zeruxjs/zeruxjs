@@ -63,3 +63,6 @@ export {
   registerDevtoolsServerChannel,
   unregisterDevtoolsServerChannel
 } from "./api/ws.js";
+
+export { createDevtoolsDocumentPolicy } from './framing.js';
+export type { DevtoolsDocumentPolicyOptions } from './framing.js';

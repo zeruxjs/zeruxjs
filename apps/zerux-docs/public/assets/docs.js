@@ -181,7 +181,7 @@ if ("IntersectionObserver" in window) {
         else link.removeAttribute("aria-current");
       }
     },
-    { rootMargin: "-90px 0px -55% 0px" },
+    { rootMargin: "-140px 0px -55% 0px" },
   );
   headings.forEach((heading) => observer.observe(heading));
 }
@@ -189,7 +189,7 @@ if ("IntersectionObserver" in window) {
 // Desktop keeps navigation visible; mobile starts with a compact disclosure.
 const mobileNavigation = document.querySelector(".mobile-navigation");
 if (mobileNavigation && window.matchMedia) {
-  const mobile = window.matchMedia("(max-width: 700px)");
+  const mobile = window.matchMedia("(max-width: 760px)");
   const synchronizeNavigation = () => {
     mobileNavigation.open = !mobile.matches;
   };

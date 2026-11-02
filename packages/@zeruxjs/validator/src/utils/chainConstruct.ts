@@ -27,7 +27,7 @@ import {
   transform,
   trim,
   union,
-} from '../index.js';
+} from '../core.js';
 import type {
   BaseIssue,
   BaseSchema,

@@ -19,8 +19,8 @@ export async function main(argv:string[]=process.argv.slice(2)):Promise<number>{
     clearTests();for(const file of entries)await import(`${pathToFileURL(file).href}?ztrial_run=${++importGeneration}`);
     const result=await runTests({timeoutMs:config.timeoutMs,retries:config.retries,match:selected??config.match,bail:config.bail,forbidOnly:config.allowOnly===false});
     if (!result.results.length) throw new Error('No registered test cases found');
-    if ((selected ?? config.match) !== undefined && result.passed === 0 && result.failed === 0) throw new Error('No tests matched the selected name');
-    process.stdout.write(formatSummary(result,config.reporter)+'\n');return result.failed?1:0;
+    if ((selected ?? config.match) !== undefined && result.passed === 0 && result.failed === 0 && !result.unavailable) throw new Error('No tests matched the selected name');
+    process.stdout.write(formatSummary(result,config.reporter)+'\n');return result.failed?1:result.unavailable?2:0;
   }catch(e) {process.stderr.write(`ztrial: ${e instanceof Error?e.message:String(e)}\n`);return 2;}
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) process.exitCode=await main();

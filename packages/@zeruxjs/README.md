@@ -13,6 +13,7 @@ Modular services and adapters used by ZeruxJS applications. Each package defines
 | [@zeruxjs/cache](cache/README.md) | Application cache abstraction with a built-in bounded memory cache, external adapters, and a manager facade.
 | [@zeruxjs/cache-memcache](cache-memcache/README.md) | Memcached cache adapter with bounded text transport; safe namespace clearing is unsupported.
 | [@zeruxjs/cache-redis](cache-redis/README.md) | Redis 5 adapter for @zeruxjs/cache.
+| [@zeruxjs/cache-valkey](cache-valkey/README.md) | Explicit bounded iovalkey standalone/Cluster adapter with borrowed-client ownership and no automatic replay. |
 | [@zeruxjs/db](db/README.md) | JSON-structured database operations, named connections and connector lifecycle management for ZeruxJS or standalone Node.js applications.
 | [@zeruxjs/db-mongo](db-mongo/README.md) | JSON-query MongoDB connector for @zeruxjs/db.
 | [@zeruxjs/db-mysql](db-mysql/README.md) | MySQL JSON-query connector using parameterized ? placeholders and mysql2/promise (loaded only when needed).
@@ -34,6 +35,8 @@ Modular services and adapters used by ZeruxJS applications. Each package defines
 | [@zeruxjs/react](react/README.md) | Framework-neutral external-store primitives and injected React Hooks adapters.
 | [@zeruxjs/reports](reports/README.md) | A structured report/page/chart designer over internal @zeruxjs/analytics events.
 | [@zeruxjs/search](search/README.md) | Dependency-free, Unicode-aware in-memory search index.
+| [@zeruxjs/search-elastic](search-elastic/README.md) | Explicit tenant-scoped official Elasticsearch adapter with bounded bulk and native concurrency guards.
+| [@zeruxjs/search-mille](search-mille/README.md) | Explicit Meilisearch adapter with bounded tenant-scoped queries and asynchronous task status/wait.
 | [@zeruxjs/security](security/README.md) | Framework-independent server security primitives.
 | [@zeruxjs/seo](seo/README.md) | Modular page metadata and crawler files.
 | [@zeruxjs/share](share/README.md) | Safe browser sharing, fallback handling, social share links and HTML metadata.

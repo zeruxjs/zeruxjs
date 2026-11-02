@@ -38,17 +38,20 @@ export interface SmtpSettings {
   dkim?: {domainName:string;keySelector:string;privateKey:string;cacheDir?:string};
 }
 export interface TransportLike {
-  sendMail(mail:Record<string,unknown>):Promise<{messageId?:string;accepted?:unknown[];rejected?:unknown[];response?:string}>;
+  sendMail(mail:Record<string,unknown>,context?:{signal:AbortSignal}):Promise<{messageId?:string;accepted?:unknown[];rejected?:unknown[];rejectedErrors?:unknown[];response?:string}>;
   verify?():Promise<boolean>;
   close?():void|Promise<void>;
 }
-export interface EmailAccount {name:string; smtp?:SmtpSettings;transport?:TransportLike;
+export interface EmailAccount {name:string;
+  /** Injected transports retain legacy owned-by-manager default; set false to borrow explicitly. */
+  ownTransport?:boolean; smtp?:SmtpSettings;transport?:TransportLike;
   /** Optional incoming side of this logical account, started through ZeruxJS email.receive. */
   receive?:Omit<import('./inbound.js').IncomingAccount,'name'>;
   defaults?:Partial<EmailMessage>;maxRecipients?:number;enabled?:boolean}
 export interface EmailResult {account:string;messageId?:string;accepted:string[];rejected:string[];response?:string;skipped?:boolean;reason?:string;trackingId?:string;
   /** SMTP envelope result only; not evidence of delivery or inbox placement. */
-  submissionStatus?:'accepted'|'partial'|'rejected'|'unknown';acceptanceComplete?:boolean}
+  submissionStatus?:'accepted'|'partial'|'rejected'|'unknown';acceptanceComplete?:boolean;
+  recipientOutcomes?:import('./smtp-outcomes.js').SmtpRecipientOutcome[];telemetryIncomplete?:boolean}
 export interface EmailManagerOptions {
   accounts:EmailAccount[];defaultAccount?:string;maxRecipients?:number;
   /** Globally suppress blocked recipients. Local memory; persist separately if needed. */
@@ -57,7 +60,9 @@ export interface EmailManagerOptions {
   /** Called before every send, fail closed. Integrate @zeruxjs/auth here. */
   authorize?:(message:Readonly<EmailMessage>,account:string)=>boolean|Promise<boolean>;
   /** Optional @zeruxjs/files StorageManager; attachments are streamed, not buffered. */
-  files?:{ stat(addr:{storage?:string;bucket:string;key:string}):Promise<{size:number;contentType:string}|null>;read(addr:{storage?:string;bucket:string;key:string}):Promise<AsyncIterable<Uint8Array>>};
+  files?:{ stat(addr:{storage?:string;bucket:string;key:string}):Promise<{size:number;contentType:string}|null>;read(addr:{storage?:string;bucket:string;key:string},options?:{signal?:AbortSignal}):Promise<AsyncIterable<Uint8Array>>};
+  /** Bounds actual unsettled send tasks, including preparation and cleanup. */
+  maxConcurrentSends?:number;sendTimeoutMs?:number;maxAttachmentStreams?:number;
   maxAttachmentBytes?:number;idempotencyTtlMs?:number;maxIdempotencyKeys?:number;
   /** Optional @zeruxjs/analytics tracking service; this interface avoids a hard dependency. */
   tracking?: {instrumentHtml(html:string,context:{id:string;account:string;message:Readonly<EmailMessage>}):string|Promise<string>;

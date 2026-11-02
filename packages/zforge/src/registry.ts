@@ -1,3 +1,4 @@
+import { createSecurityPolicy } from '@zeruxjs/security';
 import fs from "node:fs";
 import net from "node:net";
 
@@ -90,6 +91,7 @@ export const getRegistryAppByRoot = (rootDir: string) => {
 export const registerSharedDevApp = async (
     options: SharedDevRegistrationOptions
 ): Promise<SharedDevStartResult> => {
+    if (options.devtools?.frameAncestors !== undefined) createSecurityPolicy({ mode: 'development', developmentFrameAncestors: options.devtools.frameAncestors });
     const registry = readRegistry();
     const now = new Date().toISOString();
     const basePort = options.preferredPort ?? registry.port ?? DEFAULT_SHARED_PORT;

@@ -1,3 +1,4 @@
+import type { ValidationContext } from '../types/runtime.js';
 import type {
   BaseValidationAsync,
   ErrorMessage,
@@ -28,7 +29,7 @@ export interface CheckActionAsync<
   /**
    * The validation function.
    */
-  readonly requirement: (input: TInput) => MaybePromise<boolean>;
+  readonly requirement: (input: TInput, context: ValidationContext) => MaybePromise<boolean>;
   /**
    * The error message.
    */
@@ -43,7 +44,7 @@ export interface CheckActionAsync<
  * @returns A check action.
  */
 export function checkAsync<TInput>(
-  requirement: (input: TInput) => MaybePromise<boolean>
+  requirement: (input: TInput, context: ValidationContext) => MaybePromise<boolean>
 ): CheckActionAsync<TInput, undefined>;
 
 /**
@@ -58,13 +59,13 @@ export function checkAsync<
   TInput,
   const TMessage extends ErrorMessage<CheckIssue<TInput>> | undefined,
 >(
-  requirement: (input: TInput) => MaybePromise<boolean>,
+  requirement: (input: TInput, context: ValidationContext) => MaybePromise<boolean>,
   message: TMessage
 ): CheckActionAsync<TInput, TMessage>;
 
 // @__NO_SIDE_EFFECTS__
 export function checkAsync(
-  requirement: (input: unknown) => MaybePromise<boolean>,
+  requirement: (input: unknown, context: ValidationContext) => MaybePromise<boolean>,
   message?: ErrorMessage<CheckIssue<unknown>>
 ): CheckActionAsync<unknown, ErrorMessage<CheckIssue<unknown>> | undefined> {
   return {
@@ -76,7 +77,7 @@ export function checkAsync(
     requirement,
     message,
     async '~run'(dataset, config) {
-      if (dataset.typed && !(await this.requirement(dataset.value))) {
+      if (dataset.typed && !(await this.requirement(dataset.value, { signal: config.signal }))) {
         _addIssue(this, 'input', dataset, config);
       }
       return dataset;

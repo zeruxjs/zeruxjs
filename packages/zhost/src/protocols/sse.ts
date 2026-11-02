@@ -9,6 +9,8 @@ export function formatSse(event: SseEvent): string {
 /** Bounded event stream with Last-Event-ID replay and cleanup on disconnect. */
 export class SseHub {
   private nextId = 0;
+  private closed = false;
+  private readonly cleanups = new Map<ServerResponse,()=>void>();
   private readonly clients = new Set<ServerResponse>();
   private readonly history: SseEvent[] = [];
   private readonly maxClients: number;
@@ -22,7 +24,7 @@ export class SseHub {
   }
   get clientCount(): number { return this.clients.size; }
   subscribe(res: ServerResponse, lastEventId?: string): boolean {
-    if (this.clients.size >= this.maxClients) { res.writeHead(503); res.end('SSE client limit reached'); return false; }
+    if (this.closed || this.clients.size >= this.maxClients) { res.writeHead(503); res.end('SSE client limit reached'); return false; }
     res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     res.flushHeaders?.();
     if (lastEventId && /^\d{1,20}$/.test(lastEventId)) {
@@ -32,20 +34,23 @@ export class SseHub {
     this.clients.add(res);
     const timer = setInterval(() => { if (!res.destroyed && !res.write(': heartbeat\n\n')) res.end(); }, this.heartbeatMs);
     timer.unref?.();
-    const cleanup = () => { clearInterval(timer); this.clients.delete(res); };
+    const cleanup = () => { clearInterval(timer); this.clients.delete(res); this.cleanups.delete(res); res.off('close',cleanup); res.off('finish',cleanup); res.off('error',cleanup); };
+    this.cleanups.set(res,cleanup);
+    res.once('finish',cleanup);
     res.once('close', cleanup);
     res.once('error', cleanup);
     return true;
   }
   publish(event: string, value: unknown): SseEvent {
+    if (this.closed) throw new Error('SSE hub closed');
     const data = typeof value === 'string' ? value : JSON.stringify(value);
     if (typeof data !== 'string' || Buffer.byteLength(data) > 64 * 1024) throw new RangeError('SSE event too large');
     const item = { id: String(++this.nextId), event, data };
     const formatted = formatSse(item);
-    if (this.historySize) { this.history.push(item); if (this.history.length > this.historySize) this.history.shift(); }
+    if (this.historySize) { this.history.push({...item}); if (this.history.length > this.historySize) this.history.shift(); }
     for (const client of this.clients) if (!client.write(formatted)) client.end();
     return item;
   }
-  close(): void { for (const client of this.clients) client.end(); this.clients.clear(); }
+  close(): void { if(this.closed)return;this.closed=true;for (const client of [...this.clients]) { this.cleanups.get(client)?.(); client.end(); } this.history.length=0; }
 }
 export function createSseHub(options?: SseOptions) { return new SseHub(options); }

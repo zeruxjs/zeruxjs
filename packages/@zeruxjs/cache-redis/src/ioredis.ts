@@ -1,3 +1,4 @@
+import {RedisCacheError} from './policy.js';
 import type { RedisCacheClient } from './types.js';
 import { createRedisCacheHelper, type RedisHelperConfig } from './helper.js';
 
@@ -5,6 +6,7 @@ import { createRedisCacheHelper, type RedisHelperConfig } from './helper.js';
 export function adaptIORedis(client: IORedisCompatibleClient): RedisCacheClient {
   const isCluster = typeof client.nodes === 'function';
   return {
+    ...(client.eval?{eval:(script:string,options:{keys:string[];arguments:string[]})=>client.eval!(script,options.keys.length,...options.keys,...options.arguments)}:{}),
     get: key => client.get(key),
     set: (key, value, options = {}) => client.set(key, value, ...(options.EX === undefined ? [] : ['EX', options.EX] as const), ...(options.NX ? ['NX'] as const : []), ...(options.XX ? ['XX'] as const : [])),
     del: async keys => {
@@ -18,11 +20,11 @@ export function adaptIORedis(client: IORedisCompatibleClient): RedisCacheClient 
       return client.del(...list);
     },
     exists: key => client.exists(key),
-    mGet: keys => !keys.length ? Promise.resolve([]) : isCluster ? Promise.all(keys.map(key => client.get(key))) : client.mget(...keys),
+    mGet: async keys => {if(!keys.length)return [];if(!isCluster)return client.mget(...keys);const result:Array<string|null>=[];for(let i=0;i<keys.length;i+=32)result.push(...await Promise.all(keys.slice(i,i+32).map(key=>client.get(key))));return result;},
     mSet: async values => {
       if (!isCluster) return client.mset(values);
       // Cluster-safe, deliberately NON-ATOMIC across keys, like the facade.
-      await Promise.all(Object.entries(values).map(([key,value]) => client.set(key,value)));
+      const entries=Object.entries(values);for(let i=0;i<entries.length;i+=32)await Promise.all(entries.slice(i,i+32).map(([key,value])=>client.set(key,value)));
     },
     incrBy: (key, n) => client.incrby(key, n),
     decrBy: (key, n) => client.decrby(key, n),
@@ -33,7 +35,7 @@ export function adaptIORedis(client: IORedisCompatibleClient): RedisCacheClient 
         // Iterate every current primary; this is a best-effort, non-snapshot
         // sweep, and cannot promise deletion of concurrent writes.
         const nodes = isCluster ? client.nodes!('master') : [client];
-        if (!Array.isArray(nodes) || !nodes.length) throw new Error('Redis Cluster masters unavailable for namespace scan');
+        if (!Array.isArray(nodes) || !nodes.length) throw new RedisCacheError('REDIS_CLUSTER_MASTERS_UNAVAILABLE','Redis Cluster masters unavailable for namespace scan');
         for (const node of nodes) {
           let cursor = '0';
           do {
@@ -49,12 +51,15 @@ export function adaptIORedis(client: IORedisCompatibleClient): RedisCacheClient 
     // not a cache-wide operation, and is unsafe for shared tenants anyway.
     ...(isCluster ? {} : {flushDb: () => client.flushdb()}),
     close: () => client.quit(),
+    ...(client.disconnect?{destroy:()=>client.disconnect!(false)}:{}),
     on: (event, listener) => client.on(event, listener),
+    ...(client.off?{off:(event:string,listener:(...args:unknown[])=>void)=>client.off!(event,listener)}:{}),
   };
 }
 
 /** The structural type deliberately avoids binding users to a specific ioredis minor version. */
 export interface IORedisCompatibleClient {
+  eval?(script:string,keyCount:number,...args:string[]):Promise<unknown>;
   get(key: string): Promise<string | null>;
   set(key: string, value: string, ...args: (string | number)[]): Promise<unknown>;
   del(...keys: string[]): Promise<number>;
@@ -69,10 +74,12 @@ export interface IORedisCompatibleClient {
   nodes?(role: 'master'): IORedisCompatibleClient[];
   flushdb(): Promise<unknown>;
   quit(): Promise<unknown>;
+  disconnect?(reconnect?:boolean):void;
+  off?(event:string,listener:(...args:unknown[])=>void):unknown;
   on(event: string, listener: (...args: unknown[]) => void): unknown;
 }
 export function createIORedisCacheHelper(client: IORedisCompatibleClient, options: RedisHelperConfig = {}) {
-  return createRedisCacheHelper(adaptIORedis(client), options);
+  return createRedisCacheHelper(adaptIORedis(client), {...options,cluster:typeof client.nodes==='function'});
 }
 
 export interface RedisClusterSettings {

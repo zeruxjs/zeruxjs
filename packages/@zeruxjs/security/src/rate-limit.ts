@@ -2,15 +2,16 @@ export interface RateLimitOptions { windowMs: number; max: number; maxKeys?: num
 export interface RateLimitResult { allowed: boolean; remaining: number; resetAt: number; retryAfterSeconds: number; }
 /** Bounded in-process rate limiter. Use a shared store for multiple instances. */
 export function createRateLimiter(options: RateLimitOptions) {
-    if (![options.windowMs, options.max].every(n => Number.isSafeInteger(n) && n > 0)) throw new RangeError("Invalid limiter settings");
+    if (!options || typeof options!=="object" || ![options.windowMs, options.max].every(n => Number.isSafeInteger(n) && n > 0)) throw new RangeError("Invalid limiter settings");
     const cap = options.maxKeys ?? 10000;
     if (!Number.isSafeInteger(cap) || cap < 1) throw new RangeError("Invalid maxKeys");
     const now = options.now ?? Date.now;
     const buckets = new Map<string, { count: number; reset: number }>();
     return {
         check(key: string, weight = 1): RateLimitResult {
-            if (!key || key.length > 512 || !Number.isSafeInteger(weight) || weight < 1) throw new Error("Invalid rate-limit key or weight");
+            if (typeof key!=="string" || !key || Buffer.byteLength(key) > 512 || !Number.isSafeInteger(weight) || weight < 1) throw new Error("Invalid rate-limit key or weight");
             const stamp = now();
+            if(!Number.isSafeInteger(stamp)||stamp<0||!Number.isSafeInteger(stamp+options.windowMs))throw new RangeError("Invalid limiter clock");
             let state = buckets.get(key);
             if (state && state.reset <= stamp) { buckets.delete(key); state = undefined; }
             if (!state) {

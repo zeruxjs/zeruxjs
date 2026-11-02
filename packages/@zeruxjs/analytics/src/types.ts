@@ -4,6 +4,11 @@ export type EventProperties = Record<string, EventValue>;
 export interface AnalyticsEventInput {
   name: string;
   properties?: EventProperties;
+  /** Explicit registered version; omitted means latest in this generation. */
+  schemaVersion?: number;
+  /** Registered, consent-gated pseudonymous properties; never automatic profile collection. */
+  userProperties?: EventProperties;
+  sessionProperties?: EventProperties;
   source?: 'web' | 'server' | 'email' | 'system';
   site?: string;
   pathname?: string;
@@ -34,10 +39,10 @@ export interface AnalyticsRow {
 export interface DatabaseResultLike {ok: boolean; rows?: unknown[]; affectedCount?:number;rowCount?:number; error?: {message?:string;code?:string}}
 export interface AnalyticsConnection {
   insert(operation:{table:string;values:Record<string,string|number>|Array<Record<string,string|number>>}):DatabaseResultLike|Promise<DatabaseResultLike>;
-  select(operation:{table:string;columns?:Array<string|{expr:{kind:'column';name:string}|{kind:'function';name:'COUNT'|'SUM'|'AVG'|'MIN'|'MAX';args:Array<{kind:'column';name:string}>};as?:string}>;groupBy?:string[];where?:{field:string;operator:'eq'|'gte'|'lte'|'gt'|'lt';value:string|number}|{and:Array<{field:string;operator:'eq'|'gte'|'lte'|'gt'|'lt';value:string|number}>};orderBy?:Array<{by:string;direction:'desc'|'asc'}>;limit?:number}):DatabaseResultLike|Promise<DatabaseResultLike>;
+  select(operation:{table:string;columns?:Array<string|{expr:{kind:'column';name:string}|{kind:'function';name:'COUNT'|'SUM'|'AVG'|'MIN'|'MAX';args:Array<{kind:'column';name:string}>};as?:string}>;groupBy?:string[];where?:{field:string;operator:'eq'|'gte'|'lte'|'gt'|'lt';value:string|number}|{and:Array<{field:string;operator:'eq'|'gte'|'lte'|'gt'|'lt';value:string|number}>};orderBy?:Array<{by:string;direction:'desc'|'asc'}>;limit?:number},options?:{signal?:AbortSignal;deadline?:number}):DatabaseResultLike|Promise<DatabaseResultLike>;
   createTable(operation:{table:string;ifNotExists:true;columns:Array<{name:string;type:'varchar'|'text'|'bigint'|'float';length?:number;primary?:boolean;notNull?:boolean}>}):DatabaseResultLike|Promise<DatabaseResultLike>;
   delete?(operation:{table:string;where:{field:string;operator:'eq'|'lt';value:string|number}|{and:Array<{field:string;operator:'eq'|'lt';value:string|number}>}}):DatabaseResultLike|Promise<DatabaseResultLike>;
-  createIndex?(operation:{table:string;name:string;columns:string[];unique?:boolean;ifNotExists?:boolean}):DatabaseResultLike|Promise<DatabaseResultLike>;
+  createIndex?(operation:{table:string;name:string;columns:string[];unique?:boolean;ifNotExists?:boolean},options?:{signal?:AbortSignal;deadline?:number}):DatabaseResultLike|Promise<DatabaseResultLike>;
   update?(operation:{table:string;values:Record<string,string|number>;where:{and:Array<{field:string;operator:'eq';value:string|number}>}}):DatabaseResultLike|Promise<DatabaseResultLike>;
 }
 export interface DatabaseManagerLike {connectionSlugs:readonly string[];getConnectionFacade(name:string):AnalyticsConnection}
@@ -60,6 +65,10 @@ export interface AnalyticsConfig {
   webConsent?:'optional'|'required';
   /** Optional allowlist of event names and scalar properties. Unknown names/keys reject if configured. */
   eventSchemas?:Record<string,{properties:Record<string,'string'|'number'|'boolean'|'null'>;allowAdditionalProperties?:boolean}>;
+  /** Immutable versioned schemas; cannot be combined with legacy eventSchemas. */
+  schemaRegistry?: import('./schemas.js').AnalyticsEventSchemaRegistry;
+  /** Reject legacy retention on every replica sharing a durable events table. */
+  durableRetention?:boolean;
   /** Explicit authorized administrator approval, required for destructive retention. */
   approveRetention?:(scope:{site:string;before:number})=>boolean|Promise<boolean>;
   /** Optional data minimization hook invoked before insertion. */
@@ -81,6 +90,8 @@ export interface AnalyticsNumericAggregateResult {
   truncated:boolean;
   mode:'materialized';
   coverage:'indexed-only';
+  /** Units describe registered ingestion; legacy/materialization history can remain mixed. */
+  schema?:{unit:import('./schemas.js').AnalyticsMeasurementUnit;coverageVersion:1;coverage:'mixed-history'};
   groupBy:AnalyticsAggregateQuery['groupBy'];
   metric:AnalyticsNumericAggregateQuery['metric'];
   valueField:string;

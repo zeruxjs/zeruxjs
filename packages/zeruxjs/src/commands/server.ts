@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+import {assertConfigReloadable,snapshotConfig,ConfigurationError} from '../bootstrap/config-validation.js';
 import fs from "node:fs";
 import path from "node:path";
 
@@ -19,8 +21,9 @@ import type { ZeruxWorkerRunResult } from "../bootstrap/worker.js";
 const parsePort = (value: unknown) => {
     if (value === undefined || value === null || value === "") return undefined;
 
-    const port = Number.parseInt(String(value), 10);
-    return Number.isFinite(port) ? port : undefined;
+    if(typeof value!=='string'&&typeof value!=='number')throw new ConfigurationError('INVALID_PORT');
+    if(!/^[0-9]+$/.test(String(value)))throw new ConfigurationError('INVALID_PORT');
+    const port=Number(value);if(!Number.isSafeInteger(port)||port<0||port>65535)throw new ConfigurationError('INVALID_PORT');return port;
 };
 
 const isInsideGeneratedDir = (filePath: string, serviceName: string) => {
@@ -77,7 +80,7 @@ const writeDevSnapshot = (details: {
                 threadWorkers: details.threadWorkers,
                 appPort: details.appPort,
                 devtools: {
-                    modules: Array.isArray(details.devtoolsModules) ? details.devtoolsModules : []
+                    modules: Array.isArray(details.devtoolsModules) ? details.devtoolsModules.map((item: any) => ({ package: item.package, enabled: item.enabled })) : []
                 },
                 reload: details.reload ?? previous.reload ?? {
                     generation: 1, attempts: 0, failures: 0,
@@ -101,7 +104,10 @@ export const server = async (
     const rootDir = process.cwd();
     console.log(`[zerux] Loading config from ${rootDir}`);
     loadEnvironmentFiles(resolveDefaultEnvFiles(rootDir, mode));
-    const loadedConfig = await loadConfig(rootDir, mode);
+    const overrides={server:{port:parsePort(args.namedArgs?.p??args.namedArgs?.port),devPort:parsePort(args.namedArgs?.devPort)}};
+    const loadedConfig = await loadConfig(rootDir, mode,{overrides});
+    let savedConfig=snapshotConfig(loadedConfig);
+    const applicationId=loadedConfig.observability?.applicationId??randomBytes(12).toString('hex');
     const config = mode === "start" ? await resolveProductionStructure(rootDir, serviceName, loadedConfig) : loadedConfig;
     const structure = resolveStructure(rootDir, config, serviceName);
 
@@ -112,6 +118,7 @@ export const server = async (
     registerProcessExceptionHandlers(logger);
 
     console.log("[zerux] Bootstrapping application");
+    config.observability={...config.observability,applicationId};
     let bootstrap = await bootstrapApplication(rootDir, mode, config, structure);
     console.log("[zerux] Application bootstrap complete");
     let manifestPath: string;
@@ -150,13 +157,16 @@ export const server = async (
         await bootstrap.runtime.closeServices().catch(() => {});
         throw error;
     }
-    const lifecycle = createHotRuntime({ bootstrap, manifestPath, devDataPath, handler: currentHandler, workerRun }, {
+    const lifecycle = createHotRuntime({ bootstrap, manifestPath, devDataPath, handler: currentHandler, workerRun,configSnapshot:savedConfig }, {
         prepare: async () => {
             loadEnvironmentFiles(resolveDefaultEnvFiles(rootDir, mode));
-            const nextConfig = await loadConfig(rootDir, mode);
+            const nextConfig = await loadConfig(rootDir, mode,{overrides});
+            assertConfigReloadable(savedConfig,nextConfig);
+            const candidateConfig=snapshotConfig(nextConfig);
+            nextConfig.observability={...nextConfig.observability,applicationId};
             const nextStructure = resolveStructure(rootDir, nextConfig, serviceName);
             loadEnvironmentFiles(nextStructure.envFiles);
-            const nextBootstrap = await bootstrapApplication(rootDir, mode, nextConfig, nextStructure);
+            const nextBootstrap = await bootstrapApplication(rootDir, mode, nextConfig, nextStructure,{}, {deferActivation:true});
             let nextWorkers: ZeruxWorkerRunResult | null = null;
             try {
                 const handler = createRequestLifecycle(nextBootstrap.runtime.createHandler());
@@ -177,7 +187,7 @@ export const server = async (
                     serviceName
                 });
                 return { bootstrap: nextBootstrap, handler, manifestPath: nextManifest,
-                    devDataPath: nextSnapshot, workerRun: nextWorkers };
+                    devDataPath: nextSnapshot, workerRun: nextWorkers, configSnapshot:candidateConfig };
             } catch (error) {
                 await nextWorkers?.stop();
                 nextBootstrap.runtime.closeProtocols();
@@ -186,6 +196,8 @@ export const server = async (
             }
         },
         activate: next => {
+            next.bootstrap.runtime.activateServices();
+            savedConfig=next.configSnapshot;
             bootstrap = next.bootstrap;
             manifestPath = next.manifestPath;
             devDataPath = next.devDataPath;

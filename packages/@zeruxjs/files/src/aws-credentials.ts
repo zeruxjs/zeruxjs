@@ -1,5 +1,5 @@
 /** AWS credential selection. An IAM role ARN names a role; STS is what issues credentials. */
-export interface AwsKeyCredentials { accessKeyId: string; secretAccessKey: string; sessionToken?: string }
+export interface AwsKeyCredentials { accessKeyId: string; secretAccessKey: string; sessionToken?: string; expiration?: Date }
 export type AwsCredentialProvider = () => Promise<AwsKeyCredentials>;
 export interface AssumeRoleOptions {
   roleArn: string;
@@ -21,6 +21,10 @@ export interface WebIdentityOptions {
   stsRegion?: string;
 }
 export interface AwsCredentialOptions {
+  /** Explicit trusted shared-config profile running the official Roles Anywhere signing helper. */
+  rolesAnywhere?: { profile: string };
+  /** Fixed, value-free provider diagnostics; exceptions from observers are isolated. */
+  onCredentialStatus?: (status: Readonly<{status: 'valid' | 'expiring' | 'expired' | 'failed'; expiresAt?: number}>) => void;
   credentials?: AwsKeyCredentials | AwsCredentialProvider;
   profile?: string;
   assumeRole?: AssumeRoleOptions;
@@ -31,8 +35,12 @@ export function assertRoleArn(value: string): void {
   if (typeof value !== 'string' || !rolePattern.test(value)) throw new TypeError('A valid IAM role ARN is required');
 }
 export function validateAwsCredentialOptions(input: AwsCredentialOptions): void {
-  const choices=[input.credentials!==undefined,input.profile!==undefined,input.assumeRole!==undefined,input.webIdentity!==undefined];
+  if(!input||typeof input!=='object')throw new TypeError('AWS credential options required');
+  for(const key of ['credentials','assumeRole','webIdentity','rolesAnywhere'] as const){if(input[key]!==undefined&&(!input[key]||(typeof input[key]!=='object'&&!(key==='credentials'&&typeof input[key]==='function'))))throw new TypeError('Invalid AWS credential mode');}
+  const choices=[input.credentials!==undefined,input.profile!==undefined,input.assumeRole!==undefined,input.webIdentity!==undefined,input.rolesAnywhere!==undefined];
   if (choices.filter(Boolean).length>1) throw new TypeError('Choose exactly one top-level AWS credential mode');
+  if(input.rolesAnywhere && (typeof input.rolesAnywhere.profile!=='string'||! /^[A-Za-z0-9_+=,.@-]{1,128}$/.test(input.rolesAnywhere.profile)))throw new TypeError('Invalid Roles Anywhere profile');
+  if(input.onCredentialStatus!==undefined&&typeof input.onCredentialStatus!=='function')throw new TypeError('Invalid credential observer');
   if (input.profile !== undefined && !/^[A-Za-z0-9_+=,.@-]{1,128}$/.test(input.profile)) throw new TypeError('Invalid AWS profile');
   if (input.assumeRole) {
     const role=input.assumeRole;assertRoleArn(role.roleArn);
@@ -58,9 +66,10 @@ export function validateAwsCredentialOptions(input: AwsCredentialOptions): void 
  * environment, SSO, shared config, IAM Identity Center, ECS/EKS, EC2 metadata, etc.
  * The official AWS SDK refreshes assumed-role / web-identity credentials automatically.
  */
-export async function resolveAwsCredentials(input: AwsCredentialOptions, region: string): Promise<AwsKeyCredentials|AwsCredentialProvider|undefined> {
+async function selectAwsCredentials(input: AwsCredentialOptions, region: string): Promise<AwsKeyCredentials|AwsCredentialProvider|undefined> {
   validateAwsCredentialOptions(input);
   if(input.credentials) return input.credentials;
+  if(input.rolesAnywhere){const {fromProcess}=await import('@aws-sdk/credential-providers');return fromProcess({profile:input.rolesAnywhere.profile});}
   if(input.profile){const {fromIni}=await import('@aws-sdk/credential-providers');return fromIni({profile:input.profile,clientConfig:{region}});}
   if(input.assumeRole){
     const role=input.assumeRole,{fromTemporaryCredentials,fromIni}=await import('@aws-sdk/credential-providers');
@@ -69,4 +78,40 @@ export async function resolveAwsCredentials(input: AwsCredentialOptions, region:
   }
   if(input.webIdentity){const role=input.webIdentity,{fromTokenFile}=await import('@aws-sdk/credential-providers');return fromTokenFile({roleArn:role.roleArn,webIdentityTokenFile:role.tokenFile,roleSessionName:role.sessionName??'zerux-files',clientConfig:{region:role.stsRegion??region}});}
   return undefined;
+}
+
+/** Validates every refresh result without exposing credential values or provider errors to observers. */
+export function monitorAwsCredentials(provider: AwsCredentialProvider, onStatus?: AwsCredentialOptions['onCredentialStatus']): AwsCredentialProvider {
+  if(typeof provider!=='function'||(onStatus!==undefined&&typeof onStatus!=='function'))throw new TypeError('Invalid credential monitor');
+  const notify=(status: Parameters<NonNullable<AwsCredentialOptions['onCredentialStatus']>>[0])=>{try{onStatus?.(Object.freeze(status));}catch{/* Diagnostics cannot change signing. */}};
+  return async()=>{
+    let expired=false;
+    try {
+      const credentials=await provider();
+      if(!credentials || typeof credentials.accessKeyId!=='string'||!credentials.accessKeyId||typeof credentials.secretAccessKey!=='string'||!credentials.secretAccessKey||
+        (credentials.sessionToken!==undefined&&typeof credentials.sessionToken!=='string'))throw new Error('Invalid credential result');
+      const expiresAt=credentials.expiration instanceof Date?credentials.expiration.getTime():undefined;
+      if(credentials.expiration!==undefined&&(!Number.isFinite(expiresAt)||!(credentials.expiration instanceof Date)))throw new Error('Invalid credential expiration');
+      if(expiresAt!==undefined&&expiresAt<=Date.now()){
+        expired=true;notify({status:'expired',expiresAt});
+        throw Object.assign(new Error('AWS credentials expired'),{code:'CREDENTIALS_EXPIRED'});
+      }
+      notify({status:expiresAt!==undefined&&expiresAt-Date.now()<=300000?'expiring':'valid',...(expiresAt!==undefined?{expiresAt}:{})});
+      return {...credentials};
+    } catch(cause) {
+      if(expired)throw cause;
+      notify({status:'failed'});
+      throw Object.assign(new Error('AWS credential resolution failed',{cause}),{code:'CREDENTIALS_FAILED'});
+    }
+  };
+}
+/** Providers remain SDK-owned and refresh on demand; no timer or process starts on import. */
+export async function resolveAwsCredentials(input: AwsCredentialOptions, region: string): Promise<AwsKeyCredentials|AwsCredentialProvider|undefined> {
+  let selected=await selectAwsCredentials(input,region);
+  if(selected===undefined && !input.onCredentialStatus)return undefined;
+  if(selected===undefined){const {fromNodeProviderChain}=await import('@aws-sdk/credential-providers');selected=fromNodeProviderChain({clientConfig:{region}});}
+  // Preserve the existing static-credential result when diagnostics are not requested.
+  if(typeof selected!=='function'&&!input.onCredentialStatus&&selected.expiration===undefined)return selected;
+  const source=selected;
+  return monitorAwsCredentials(typeof source==='function'?source:async()=>source!,input.onCredentialStatus);
 }

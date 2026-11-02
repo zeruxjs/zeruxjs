@@ -49,7 +49,7 @@ Use TLS/ACL credentials, bounded timeouts and isolated namespaces. Decide whethe
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/cache-redis@0.0.3
+npm install @zeruxjs/cache-redis@0.0.4
 ```
 
 This package participates in the runtime's **cache** integration. Start with [cache configuration](configuration-cache.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.
@@ -113,3 +113,13 @@ These tables list fields declared directly on the named public contract. Referen
 | Field | Accepted type/value | Optional |
 | --- | --- | --- |
 | `nodes` | `Array<{host:string;port:number}>` | No |
+
+## Scoped cache command policy and diagnostics
+
+Both cache factories use bounded command/connect/shutdown waits, pending capacity and cache reconnect attempts; offline queues/resending are disabled on owned cache clients. BullMQ producer/worker settings remain separate. Borrowed driver-native retry/TLS/routing behavior stays host-owned. Critical owned cache retry/offline overrides reject; use the package-owned RedisCachePolicy fields. No command is transparently replayed by the wrapper.
+
+Deadlines reject caller waits with unknown write outcomes when appropriate, retain native capacity until settlement and stop future scan/batch phases. Close invalidates stale helper/manager methods, drains accepted commands and closes only owned clients. A borrowed uncooperative driver can exceed the shutdown deadline; it is never forcibly closed. Async hook capacity is 16, with fixed operation/outcome/code labels and no key, prefix, URL, tenant or payload. Hook exceptions do not change cache success. getDiagnostics exposes path-free counts.
+
+RedisHelperConfig and RedisSetOptions remain owned by this package. The helper advertises supported conditions/counters/literal namespace clear and unsupported overall bulk atomicity. Counter numbers outside JS safe integers reject after potential mutation; JSON strings remain distinct from native numeric counters. Direct JSON/key/bulk boundaries are bounded, and actual ioredis Cluster masters use per-key batches instead of cross-slot assumptions. See the package README for exact defaults, lifecycle/migration limits and a packed public-import example.
+
+Live acceptance needs dedicated CACHE_REDIS_URL / CACHE_REDIS_CLUSTER_NODES, plus explicit outage/ACL/TLS endpoints through CACHE_REDIS_OUTAGE_URL, CACHE_REDIS_ACL_URL and CACHE_REDIS_TLS_URL. TLS requires trusted CA setup; ACL requires a host-configured denied identity. Tests never create credentials or restart services, and offline fixtures do not establish live failover/security acceptance.

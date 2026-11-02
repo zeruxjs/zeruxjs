@@ -1,4 +1,3 @@
-import { backup, DatabaseSync } from "node:sqlite";
 import { link, lstat, unlink } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
@@ -11,6 +10,8 @@ import type { SqliteDatabase } from "./driver.js";
  * Caller must protect the backup at rest, set private directory permissions and rehearse restoration.
  */
 export async function createSqliteConsistentBackup(database: SqliteDatabase, destination: string): Promise<{ destination: string; integrity: "ok" }> {
+    const {backup,DatabaseSync}=await import('node:sqlite');
+    if(typeof backup!=='function')throw new Error('SQLite online backup API is unavailable on this Node runtime');
     if (!(database instanceof DatabaseSync)) throw new Error("SQLite online backup requires Node DatabaseSync; injected drivers must supply their own safe backup");
     if (typeof destination !== "string" || !path.isAbsolute(destination) || destination.includes("\0")) throw new Error("Backup destination must be an absolute path");
     const parent = path.dirname(destination);
@@ -19,6 +20,7 @@ export async function createSqliteConsistentBackup(database: SqliteDatabase, des
     try { await lstat(destination); throw new Error("Backup destination already exists"); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
     const temp = path.join(parent, `.zerux-backup-${randomBytes(16).toString("hex")}.sqlite`);
+    let failure:unknown,failed=false;
     try {
         await backup(database, temp);
         const check = new DatabaseSync(temp, { readOnly: true });
@@ -28,8 +30,10 @@ export async function createSqliteConsistentBackup(database: SqliteDatabase, des
         } finally { check.close(); }
         await link(temp, destination); // hard-link fails with EEXIST instead of replacing existing destination
         return { destination, integrity: "ok" };
-    } finally {
-        // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
-        try { await unlink(temp); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+    } catch(error){failed=true;failure=error;throw error;} finally {
+        // These random temporary names belong only to this backup, including read-only WAL sidecars.
+        const errors:unknown[]=[];
+        for(const file of [temp,`${temp}-wal`,`${temp}-shm`])try{await unlink(file);}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')errors.push(error);}
+        if(errors.length)throw new AggregateError([...(failed?[failure]:[]),...errors],'SQLite backup temporary cleanup failed');
     }
 }

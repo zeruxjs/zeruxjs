@@ -22,7 +22,7 @@ ZeruxJS connects file routes, middleware, controllers, plugins and background wo
 
 ## Release status
 
-The repository is at 0.0.3 and remains early development. The create-zerux-js scaffolder currently provides help and version output only. React, Vue and Zyro integration packages exist, but package presence does not imply a complete rendering adapter. These docs distinguish implemented runtime APIs from future plans.
+These 0.0.4 preview docs read actual 0.0.4 workspace contracts. Safe Zerux/Zyro generators and a host-configured SQLite Zenix scaffold are implemented. Explicit renderer entries exist, with documented hydration and deployment limits; no complete vendor parity is implied.
 
 ## Choose your path
 
@@ -32,7 +32,7 @@ Begin with Installation and Routing, then add middleware and plugins. Use Worker
 
 Start with [installation](installation.md), run the [notes tutorial](tutorial.md), then read the [runtime mental model](mental-model.md). Add one service at a time from the [configuration handbook](configuration-reference.md). This ordering lets you distinguish route/module errors from an unavailable database or queue before several failures interact.
 
-The framework coordinates application startup, file discovery, request dispatch, plugins and owned services. Focused packages also work outside that runtime, but a standalone factory does not inherit application configuration or shutdown automatically. The package directory shows the implementation contract for each installed release, including honest placeholder status for future CMS/generator packages.
+The framework coordinates application startup, file discovery, request dispatch, plugins and owned services. Focused packages also work outside that runtime, but a standalone factory does not inherit application configuration or shutdown automatically. The package directory shows the implementation contract for each installed release, including explicit CMS host-policy prerequisites and generator mode limits.
 
 ## JavaScript and TypeScript
 
@@ -42,4 +42,4 @@ Use the [TypeScript chapter](typescript.md) for strict checks, public option inf
 
 ## Learn the boundaries before deploying
 
-The current create packages are placeholders, so manual setup is the supported starting path. The docs site itself is a static exporter using workspace packages; its configuration's documentation namespace is not a built-in general-purpose static-site feature. Read [capabilities](capabilities.md) and each guide's lifecycle/failure section before interpreting a roadmap or README headline as a completed integration.
+Choose an implemented [generator](examples.md) or the manual installation path. The Zenix scaffold requires real host authentication/CSRF before startup. The docs site itself is a static exporter using workspace packages; its configuration's documentation namespace is not a built-in general-purpose static-site feature. Read [capabilities](capabilities.md) and each guide's lifecycle/failure section before interpreting a roadmap or README headline as a completed integration.

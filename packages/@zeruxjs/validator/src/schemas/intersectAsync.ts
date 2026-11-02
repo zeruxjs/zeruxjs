@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchemaAsync,
@@ -112,7 +113,7 @@ export function intersectAsync(
 
         // Parse schema of each option async
         const optionDatasets = await Promise.all(
-          this.options.map((schema) => schema['~run']({ value: input }, config))
+          this.options.map((schema) => _runSchema(schema, { value: input }, config))
         );
 
         // Collect outputs of option datasets

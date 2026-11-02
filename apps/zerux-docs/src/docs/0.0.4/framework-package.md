@@ -25,13 +25,13 @@ The main package coordinates configuration, application module discovery, HTTP d
 ## Installation and application commands
 
 ```sh
-npm install zeruxjs@0.0.3 @zeruxjs/typescript@0.0.3
+npm install zeruxjs@0.0.4 @zeruxjs/typescript@0.0.4
 npx zerux dev
 npx zerux build
 npx zerux start
 ```
 
-Run commands inside your application directory. Configure infrastructure and domains before deployment. The project generator remains a placeholder; use the manual installation guide or tutorial.
+Run commands inside your application directory. Configure infrastructure and domains before deployment. Use the implemented [SSR generator](reference-create-zerux-js.md), manual installation guide or tutorial.
 
 ## Root exports
 
@@ -62,7 +62,7 @@ zeruxjs/cache reexports active-manager convenience methods from the cache packag
 
 The server compiler stages application modules and public assets; it does not promise a generic static export, a typecheck or arbitrary external worker-file compilation. The production resolver uses a valid build manifest when present and can fall back to source configuration when absent. Verify your artifact and built path explicitly.
 
-React/Vue state adapters, standalone Zyro rendering and reserved CMS/generator packages have separate contracts. Use the capability map and task guides rather than interpreting a roadmap statement as an implemented framework integration.
+React/Vue state adapters, standalone Zyro rendering and host-configured CMS/generator packages have separate contracts. Use the capability map and task guides rather than interpreting a roadmap statement as an implemented framework integration.
 
 ## TypeScript configuration and service access
 
@@ -80,3 +80,25 @@ Service managers are generation-owned and can be disabled/degraded. Use their co
 ## Production verification path
 
 Create one route, run development, build, then start the compiled application. Verify its host policy and configured infrastructure before adding more services. Read the [production checklist](production-checklist.md), [service lifecycle](service-lifecycle.md) and [configuration entry point](zerux-config.md). Source README roadmap statements do not replace these implemented contracts.
+
+## Coordinated subject privacy operations
+
+The optional Node-only `zeruxjs/privacy` entry exposes a headless host-authorized
+coordinator. Explicit participants declare find/export/erase coverage and exclusions;
+no subject identity, object ownership or remote erasure capability is inferred from
+an email, service name or report source. The package README lists actual service
+contracts and missing host mappings.
+
+Jobs require verified subject linkage, per-operation authorization, preview pages,
+expiring approval evidence and a durable private CAS/checkpoint journal. Resume
+rechecks authorization and processes one bounded participant page. Local page
+receipts must be durable/idempotent with effects; uncertain outcomes recover receipts
+rather than automatically repeating deletion. Retained holds, inaccessible providers
+and backups remain visible as partial coverage. No cross-store transaction or legal
+compliance guarantee is implied.
+
+Private expiring JSONL exports use approved projections and bounded streams, with
+per-chunk authorization/expiry checks and no public URLs. Host routes still own
+CSRF/authentication, private attachment headers and disconnect cleanup. The public
+`examples/privacy.mjs` demonstrates explicit injection. Synthetic fixtures verify
+checkpoint recovery and partial completion; no real user-data deletion was run.

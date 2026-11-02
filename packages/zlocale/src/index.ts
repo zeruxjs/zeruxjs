@@ -12,7 +12,7 @@ export type {
   PluralCategory,
   Translator,
 } from "./types.js";
-export type { CatalogLoaders } from "./loader.js";
+export type { CatalogLoadOptions, CatalogLoaders } from "./loader.js";
 export { serializeCatalogs, parseCatalogs } from "./snapshot.js";
 export type { CatalogSnapshot, SnapshotOptions } from "./snapshot.js";
 export { createLocaleController } from "./controller.js";
@@ -21,3 +21,5 @@ export type {
   LocaleController,
   LocaleControllerOptions,
 } from "./controller.js";
+
+export { validateMessagePlaceholders } from "./placeholders.js";

@@ -20,6 +20,7 @@ export function trackConnections(server: net.Server): ConnectionTracker {
   const sockets = new Set<net.Socket>();
   let draining: Promise<void> | undefined;
   server.on('connection', socket => {
+    if (draining) { socket.destroy(); return; }
     sockets.add(socket);
     socket.once('close', () => sockets.delete(socket));
   });
@@ -29,8 +30,8 @@ export function trackConnections(server: net.Server): ConnectionTracker {
     drain(options = {}) {
       if (draining) return draining;
       const timeout = options.timeoutMs ?? 10_000;
-      if (!Number.isFinite(timeout) || timeout < 0) {
-        return Promise.reject(new RangeError('timeoutMs must be a non-negative finite number'));
+      if (!Number.isSafeInteger(timeout) || timeout < 0 || timeout > 300_000) {
+        return Promise.reject(new RangeError('timeoutMs must be an integer from 0 to 300000'));
       }
       draining = new Promise<void>((resolve, reject) => {
         let settled = false;

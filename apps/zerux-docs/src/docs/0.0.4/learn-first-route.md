@@ -39,11 +39,11 @@ mkdir hello-zerux
 cd hello-zerux
 npm init -y
 npm pkg set type=module
-npm install zeruxjs@0.0.3 @zeruxjs/typescript@0.0.3
+npm install zeruxjs@0.0.4 @zeruxjs/typescript@0.0.4
 npm pkg set scripts.dev="zerux dev" scripts.build="zerux build" scripts.start="zerux start"
 ```
 
-The creator packages are currently placeholders; this course creates files manually. The npm commands edit your application's `package.json`. The lockfile records dependency resolutions. Commit source/lockfiles to your project, but never private environment values.
+Implemented creators offer supported templates; this course creates files manually so each boundary is visible. The npm commands edit your application's `package.json`. The lockfile records dependency resolutions. Commit source/lockfiles to your project, but never private environment values.
 
 ## Create the route file
 

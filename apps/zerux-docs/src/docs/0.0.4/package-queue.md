@@ -49,7 +49,7 @@ The durable email processor uses a host-supplied atomic CAS record and treats se
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/queue@0.0.3
+npm install @zeruxjs/queue@0.0.4
 ```
 
 This package participates in the runtime's **queue** integration. Start with [queue configuration](configuration-queue.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.

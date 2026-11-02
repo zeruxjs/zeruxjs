@@ -1,3 +1,4 @@
+import { getRequestCorrelation } from '../observability.js';
 // Simple logger used across ZeruxJS.
 //
 // Features:
@@ -27,7 +28,10 @@ interface LoggerOptions {
  */
 function format(level: LogLevel, message: string, ...args: unknown[]): string {
   const timestamp = new Date().toISOString();
-  const extra = args.length ? ` ${JSON.stringify(args)}` : "";
+  message=String(message).slice(0,4096).replace(/[\x00-\x1f\x7f]/g,' ').replace(/https?:\/\/[^\s]+/gi,'[url redacted]').replace(/(bearer\s+)[^\s]+/gi,'$1[redacted]');
+  const context=getRequestCorrelation();
+  const safe=args.slice(0,16).map(value=>value instanceof Error?{name:'Error'}:typeof value==='number'||typeof value==='boolean'?value:'[redacted]');
+  const extra = " " + JSON.stringify({...(context??{}),...(safe.length?{details:safe}:{})});
   return `[${timestamp}] [${level.toUpperCase()}] ${message}${extra}\n`;
 }
 

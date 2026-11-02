@@ -42,7 +42,7 @@ test('S3-compatible endpoint and credential configuration is validated offline',
  assert.equal(createS3Storage({assumeRole:{roleArn:'arn:aws:iam::123456789012:role/StorageReader',externalId:'tenant-id'}}).kind,'aws-s3');
 });
 test('S3 PutObject conditional writes, metadata, HEAD/ranges and delete use SDK commands',async()=>{
- const client=sdkClient(),storage=createS3Storage({region:'us-east-1',endpoint:'https://minio.example.com',forcePathStyle:true,client,encryption:{mode:'aws:kms',keyId:'alias/files'}});
+ const client=sdkClient(),storage=createS3Storage({region:'us-east-1',endpoint:'https://minio.example.com',forcePathStyle:true,providerCapabilities:{range:true,createOnlyWrite:true},client,encryption:{mode:'aws:kms',keyId:'alias/files'}});
  const manager=createFileManager({stores:[{name:'s3',driver:storage}]});
  const a={...addr,storage:'s3'};
  const info=await manager.put(a,Buffer.from('hello world'),{contentType:'text/plain',visibility:'public',cacheControl:'public, max-age=60'});
@@ -52,7 +52,7 @@ test('S3 PutObject conditional writes, metadata, HEAD/ranges and delete use SDK 
  await assert.rejects(manager.put(a,Buffer.from('overwrite')),{code:'FILE_EXISTS'});
  const parts=[];for await (const chunk of await manager.read(a,{start:6,end:10}))parts.push(chunk);assert.equal(Buffer.concat(parts).toString(),'world');
  assert.equal((await manager.list('demo-bucket')).items.length,1);
- const other={...a,key:'copy.txt'};await manager.copy(a,other,{visibility:'private'});assert.equal((await manager.stat(other)).visibility,'private');
+ const other={...a,key:'copy.txt'};await manager.copy(a,other,{visibility:'private',ifNoneMatch:false});assert.equal((await manager.stat(other)).visibility,'private');
  assert.equal(await manager.delete(a),true);assert.equal(await manager.stat(a),null);
  await manager.close();assert.equal(client.closed,false);
 });

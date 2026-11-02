@@ -132,7 +132,7 @@ export interface ColumnDefinition {
     foreign?: ForeignKeyReference;
     notNull?: boolean;
     default?: QueryExpression | JsonValue;
-    check?: string | QueryExpression;
+    check?: string | QueryExpression | WhereClause;
     autoIncrement?: boolean;
     length?: number;
     precision?: number;
@@ -384,6 +384,9 @@ export interface DatabaseResult<T = unknown> {
     rows?: T[];
     rowCount?: number;
     affectedCount?: number;
+    matchedCount?: number;
+    changedCount?: number;
+    counts?: DatabaseCountMetadata;
     insertedIds?: Array<number | string>;
     value?: unknown;
     native?: unknown;
@@ -403,6 +406,7 @@ export interface DatabaseConnectionConfig {
 }
 
 export interface DatabaseManagerConfig {
+    execution?: DatabaseExecutionPolicy;
     default?: string;
     connections?: DatabaseConnectionConfig[];
     connection?: DatabaseConnectionConfig[];
@@ -416,10 +420,15 @@ export interface NormalizedConnectionConfig {
 }
 
 export interface DatabaseExecutionContext {
+    /** Cooperative driver cancellation; absence of support never implies forced cancellation. */
+    signal?:AbortSignal;
+    deadline?:number;
     connection: NormalizedConnectionConfig;
 }
 
 export interface DatabaseConnector {
+    readonly transactionAdapter?: import('./transactions.js').PinnedTransactionAdapter;
+    readonly capabilities?: Partial<DatabaseCapabilities>;
     readonly kind: string;
     readonly options: Record<string, unknown>;
     connect?(): MaybePromise<void>;
@@ -437,46 +446,60 @@ export type DatabaseConnectorFactory = (
 ) => MaybePromise<DatabaseConnector>;
 
 export interface DatabaseFacade {
+    transaction?: import('./transactions.js').DatabaseTransaction;
+    transactionCapabilities?():Readonly<import('./transactions.js').PinnedTransactionCapabilities>|undefined;
+    capabilities?():Readonly<DatabaseCapabilities>;
     readonly slug: string;
     readonly name: string;
     readonly connector: string;
     readonly options: Record<string, unknown>;
-    query(operation: QueryOperation | QueryOperation[]): MaybePromise<DatabaseResult | DatabaseResult[]>;
-    createDb(operation: Omit<CreateDbOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    dropDb(operation: Omit<DropDbOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    switchDB(operation: Omit<SwitchDbOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    createTable(operation: Omit<CreateTableOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    dropTable(operation: Omit<DropTableOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    alterTable(operation: Omit<AlterTableOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    turcunateTable(operation: Omit<TruncateTableOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    createIndex(operation: Omit<CreateIndexOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    dropIndex(operation: Omit<DropIndexOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    insert(operation: Omit<InsertOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    select(operation: Omit<SelectOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    update(operation: Omit<UpdateOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    delete(operation: Omit<DeleteOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
+    query(operation: QueryOperation | QueryOperation[], options?:DatabaseQueryOptions): MaybePromise<DatabaseResult | DatabaseResult[]>;
+    createDb(operation: Omit<CreateDbOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    dropDb(operation: Omit<DropDbOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    switchDB(operation: Omit<SwitchDbOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    createTable(operation: Omit<CreateTableOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    dropTable(operation: Omit<DropTableOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    alterTable(operation: Omit<AlterTableOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    turcunateTable(operation: Omit<TruncateTableOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    createIndex(operation: Omit<CreateIndexOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    dropIndex(operation: Omit<DropIndexOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    insert(operation: Omit<InsertOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    select(operation: Omit<SelectOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    update(operation: Omit<UpdateOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    delete(operation: Omit<DeleteOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
     native(): unknown;
 }
 
 export interface DatabaseManager {
+    transaction?: import('./transactions.js').DatabaseTransaction;
+    transactionCapabilities?():Readonly<import('./transactions.js').PinnedTransactionCapabilities>|undefined;
+    capabilities?(slug?:string):Readonly<DatabaseCapabilities>;
     readonly defaultConnectionSlug: string;
     readonly connectionSlugs: string[];
     getConnectionFacade(slug?: string): DatabaseFacade;
     listConnections(): NormalizedConnectionConfig[];
     dbAccess(slug: string): DatabaseConnector;
     disconnect(): Promise<void>;
-    query(operation: QueryOperation | QueryOperation[]): MaybePromise<DatabaseResult | DatabaseResult[]>;
-    createDb(operation: CreateDbOperation): MaybePromise<DatabaseResult>;
-    dropDb(operation: DropDbOperation): MaybePromise<DatabaseResult>;
-    switchDB(operation: SwitchDbOperation): MaybePromise<DatabaseResult>;
-    createTable(operation: CreateTableOperation): MaybePromise<DatabaseResult>;
-    dropTable(operation: DropTableOperation): MaybePromise<DatabaseResult>;
-    alterTable(operation: AlterTableOperation): MaybePromise<DatabaseResult>;
-    turcunateTable(operation: TruncateTableOperation): MaybePromise<DatabaseResult>;
-    createIndex(operation: CreateIndexOperation): MaybePromise<DatabaseResult>;
-    dropIndex(operation: DropIndexOperation): MaybePromise<DatabaseResult>;
-    insert(operation: InsertOperation): MaybePromise<DatabaseResult>;
-    select(operation: SelectOperation): MaybePromise<DatabaseResult>;
-    update(operation: UpdateOperation): MaybePromise<DatabaseResult>;
-    delete(operation: DeleteOperation): MaybePromise<DatabaseResult>;
+    query(operation: QueryOperation | QueryOperation[], options?:DatabaseQueryOptions): MaybePromise<DatabaseResult | DatabaseResult[]>;
+    createDb(operation: CreateDbOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    dropDb(operation: DropDbOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    switchDB(operation: SwitchDbOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    createTable(operation: CreateTableOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    dropTable(operation: DropTableOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    alterTable(operation: AlterTableOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    turcunateTable(operation: TruncateTableOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    createIndex(operation: CreateIndexOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    dropIndex(operation: DropIndexOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    insert(operation: InsertOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    select(operation: SelectOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    update(operation: UpdateOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    delete(operation: DeleteOperation, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
 }
+
+/** Capabilities of the structured connector API, not claims about its native engine. */
+export type CapabilitySupport = 'supported' | 'unsupported' | 'unknown';
+export interface DatabaseCapabilities { returning:CapabilitySupport; transactions:CapabilitySupport; cancellation:CapabilitySupport; schema:CapabilitySupport; indexes:CapabilitySupport; nativeAggregation:CapabilitySupport }
+export interface DatabaseQueryOptions { signal?:AbortSignal; deadline?:number; timeoutMs?:number; require?:Array<keyof DatabaseCapabilities> }
+export interface DatabaseQueryMetric { operation:DatabaseOperationName; table?:string; durationMs:number; count?:number; outcome:'success'|'failure'|'cancelled'|'deadline' }
+export interface DatabaseExecutionPolicy { maxPending?:number; maxBatch?:number; shutdownGraceMs?:number; onMetric?:(metric:Readonly<DatabaseQueryMetric>)=>void }
+export interface DatabaseCountMetadata { affected?:'exact'|'approximate'|'unknown'; matched?:'exact'|'approximate'|'unknown'; changed?:'exact'|'approximate'|'unknown'; affectedMeaning?:'matched'|'changed'|'engine' }

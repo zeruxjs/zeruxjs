@@ -43,7 +43,7 @@ watch returns a stop/disposer. Release prepack prepares the pinned Stylelint dep
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/lint@0.0.3
+npm install @zeruxjs/lint@0.0.4
 ```
 
 There is no automatic `lint` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).

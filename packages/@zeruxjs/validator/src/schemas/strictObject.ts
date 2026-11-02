@@ -1,4 +1,5 @@
-import { getDefault, getFallback } from '../methods/index.js';
+import { _runSchema } from '../utils/_run.js';
+import { getFallback } from '../methods/index.js';
 import type {
   BaseSchema,
   ErrorMessage,
@@ -93,20 +94,21 @@ export function strictObject(
       const input = dataset.value;
 
       // If root type is valid, check nested types
-      if (input && typeof input === 'object') {
+      if (input && typeof input === 'object' && !Array.isArray(input)) {
         // Set typed to `true` and value to blank object
         // @ts-expect-error
         dataset.typed = true;
         dataset.value = {};
 
         // Process each object entry of schema
-        for (const key in this.entries) {
+        for (const key of Object.keys(this.entries)) {
+          if (['__proto__', 'prototype', 'constructor'].includes(key)) throw new TypeError('Unsafe object schema key');
           const valueSchema = this.entries[key];
 
           // If key is present or its an optional schema with a default value,
           // parse input of key or default value
           if (
-            key in input ||
+            Object.hasOwn(input, key) ||
             ((valueSchema.type === 'exact_optional' ||
               valueSchema.type === 'optional' ||
               valueSchema.type === 'nullish') &&
@@ -114,11 +116,11 @@ export function strictObject(
               valueSchema.default !== undefined)
           ) {
             const value: unknown =
-              key in input
+              Object.hasOwn(input, key)
                 ? // @ts-expect-error
                 input[key]
-                : getDefault(valueSchema);
-            const valueDataset = valueSchema['~run']({ value }, config);
+                : undefined;
+            const valueDataset = _runSchema(valueSchema, { value }, config);
 
             // If there are issues, capture them
             if (valueDataset.issues) {
@@ -199,8 +201,8 @@ export function strictObject(
 
         // Check input for unknown keys if necessary
         if (!dataset.issues || !config.abortEarly) {
-          for (const key in input) {
-            if (!(key in this.entries)) {
+          for (const key of Object.keys(input)) {
+            if (!(Object.hasOwn(this.entries, key))) {
               _addIssue(this, 'key', dataset, config, {
                 input: key,
                 expected: 'never',

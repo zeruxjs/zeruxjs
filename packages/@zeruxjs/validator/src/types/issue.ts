@@ -219,6 +219,8 @@ export type IssuePathItem =
  * Base issue interface.
  */
 export interface BaseIssue<TInput> extends Config<BaseIssue<TInput>> {
+  /** Stable machine code; optional for compatibility with custom issue producers. */
+  readonly code?: string;
   /**
    * The issue kind.
    */

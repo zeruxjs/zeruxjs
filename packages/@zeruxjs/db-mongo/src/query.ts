@@ -1,25 +1,16 @@
 import type { ComparisonOperator, QueryExpression, SelectOperation, WhereClause, WherePredicate } from "@zeruxjs/db";
 import { createDatabaseError } from "@zeruxjs/db";
-export const toMongoValue = (value: unknown): unknown => {
-    if (
-        typeof value === "object" &&
-        value !== null &&
-        "kind" in value &&
-        typeof (value as { kind?: unknown; }).kind === "string"
-    ) {
-        const expression = value as Extract<QueryExpression, { kind: string; }>;
-        switch (expression.kind) {
-            case "column":
-                assertSafeField(expression.name);
-                return `$${expression.name}`;
-            case "value":
-                return expression.value;
-            default:
-                return value;
-        }
+/** Converts the small expression DSL; aggregation literals never become executable operators. */
+export const toMongoValue = (value: unknown, aggregation = false): unknown => {
+    if (value && typeof value === "object" && "kind" in value) {
+        const expr = value as {kind?:unknown;name?:unknown;value?:unknown};
+        if (expr.kind === "column") { assertSafeField(expr.name as string); return `$${expr.name}`; }
+        if (expr.kind !== "value") throw createDatabaseError({code:"INVALID_QUERY",message:"Unsupported Mongo expression"});
+        assertSafeDocument(expr.value);
+        return aggregation ? {$literal:expr.value} : expr.value;
     }
-
-    return value;
+    assertSafeDocument(value);
+    return aggregation ? {$literal:value} : value;
 };
 
 const escapeMongoLike = (value: unknown): string => String(value)
@@ -28,16 +19,18 @@ const escapeMongoLike = (value: unknown): string => String(value)
     .replace(/_/g, ".");
 
 export const assertSafeField = (name: string): void => {
-    if (!/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/.test(name) || name.split(".").some(part => ["__proto__", "prototype", "constructor"].includes(part))) {
+    if (typeof name !== "string" || !/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/.test(name) || name.split(".").some(part => ["__proto__", "prototype", "constructor"].includes(part))) {
         throw createDatabaseError({ code: "INVALID_WHERE", message: "Unsafe MongoDB field name" });
     }
 };
 
 /** Reject untrusted query selector objects (including nested Mongo operators). */
 export function assertSafeDocument(value: unknown, maxDepth = 32): void {
+    if(!Number.isSafeInteger(maxDepth)||maxDepth<0||maxDepth>32)throw createDatabaseError({code:"INVALID_WHERE",message:"Invalid Mongo document depth budget"});
     const seen = new WeakSet<object>();
+    let nodes = 0;
     function walk(input: unknown, depth: number): void {
-        if (depth > maxDepth) throw createDatabaseError({ code: "INVALID_WHERE", message: "Mongo document nesting too deep" });
+        if (++nodes > 100000 || depth > Math.min(maxDepth,32)) throw createDatabaseError({ code: "INVALID_WHERE", message: "Mongo document nesting too deep" });
         if (!input || typeof input !== "object") return;
         if (seen.has(input)) throw createDatabaseError({ code: "INVALID_WHERE", message: "Cyclic Mongo document" });
         seen.add(input);
@@ -82,20 +75,25 @@ const mapOperator = (operator: ComparisonOperator, value: unknown) => {
     }
 };
 
-export const buildWhere = (where: WhereClause, depth = 0): Record<string, unknown> => {
-    if (!where || typeof where !== "object" || depth > 32) throw createDatabaseError({ code: "INVALID_WHERE", message: "Invalid or deeply nested Mongo where clause" });
+export const buildWhere = (where:WhereClause,depth=0):Record<string,unknown> => compileWhere(where,depth,{nodes:0});
+const compileWhere = (where: WhereClause, depth:number, budget:{nodes:number}): Record<string, unknown> => {
+    if (!Number.isSafeInteger(depth)||depth<0||++budget.nodes>10000 || !where || typeof where !== "object" || Array.isArray(where) || depth > 32) throw createDatabaseError({ code: "INVALID_WHERE", message: "Invalid or deeply nested Mongo where clause" });
+    if(![Object.prototype,null].includes(Object.getPrototypeOf(where)))throw createDatabaseError({code:"INVALID_WHERE",message:"Mongo predicates require own fields"});
+    const keys=Object.keys(where);
+    const logical=keys.filter(k=>['and','or','not'].includes(k));
+    if(logical.length && keys.length!==1 || !logical.length && keys.some(k=>!['field','operator','value','values','from','to'].includes(k)))throw createDatabaseError({code:"INVALID_WHERE",message:"Invalid Mongo predicate keys"});
     if ("and" in where) {
-        if (!where.and.length) throw createDatabaseError({ code: "INVALID_WHERE", message: "Empty Mongo AND clauses are not allowed" });
-        return { $and: where.and.map((entry) => buildWhere(entry, depth + 1)) };
+        if (!Array.isArray(where.and) || !where.and.length || where.and.length>1000) throw createDatabaseError({ code: "INVALID_WHERE", message: "Empty Mongo AND clauses are not allowed" });
+        return { $and: where.and.map((entry) => compileWhere(entry, depth + 1, budget)) };
     }
 
     if ("or" in where) {
-        if (!where.or.length) throw createDatabaseError({ code: "INVALID_WHERE", message: "Empty Mongo OR clauses are not allowed" });
-        return { $or: where.or.map((entry) => buildWhere(entry, depth + 1)) };
+        if (!Array.isArray(where.or) || !where.or.length || where.or.length>1000) throw createDatabaseError({ code: "INVALID_WHERE", message: "Empty Mongo OR clauses are not allowed" });
+        return { $or: where.or.map((entry) => compileWhere(entry, depth + 1, budget)) };
     }
 
     if ("not" in where) {
-        return { $nor: [buildWhere(where.not, depth + 1)] };
+        return { $nor: [compileWhere(where.not, depth + 1, budget)] };
     }
 
     return buildPredicate(where);
@@ -144,7 +142,7 @@ export const buildProjection = (operation: SelectOperation): Record<string, unkn
     return Object.fromEntries(
         operation.columns.map((column) => {
             if (typeof column === "string") assertSafeField(column);
-            else { if (column.as) assertSafeField(column.as); if (typeof column.expr === "string") assertSafeField(column.expr); }
+            else { if (column.as!==undefined) assertSafeField(column.as); if (typeof column.expr === "string") assertSafeField(column.expr); }
             if (typeof column === "string") {
                 return [column, 1];
             }
@@ -153,7 +151,7 @@ export const buildProjection = (operation: SelectOperation): Record<string, unkn
                 return [column.as ?? column.expr, `$${column.expr}`];
             }
 
-            return [column.as ?? "value", toMongoValue(column.expr)];
+            return [column.as ?? "value", toMongoValue(column.expr, true)];
         })
     );
 };
@@ -170,6 +168,8 @@ export const buildSort = (operation: SelectOperation): Record<string, 1 | -1> | 
                 return [entry, 1];
             }
 
+            if (entry.direction!==undefined&&!['asc','desc'].includes(entry.direction))throw createDatabaseError({code:"INVALID_QUERY",message:"Invalid Mongo sort direction"});
+            if(typeof entry.by!=='string')throw createDatabaseError({code:"INVALID_QUERY",message:"Mongo sorting requires a named field"});
             return [typeof entry.by === "string" ? entry.by : "value", entry.direction === "desc" ? -1 : 1];
         })
     );

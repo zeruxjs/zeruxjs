@@ -15,14 +15,14 @@ export function createReactStore<T>(initial:T,options:{serverSnapshot?:T}={}):Wr
 /** Memoizes selected snapshots instead of producing fresh references on every read. */
 export function selectReactStore<A,B>(source:ExternalStore<A>,selector:(value:A)=>B,equal:(a:B,b:B)=>boolean=Object.is):ExternalStore<B>{
  let lastSource=source.getSnapshot(),lastSelected=selector(lastSource);
- const getSnapshot=()=>{const current=source.getSnapshot();if(!Object.is(lastSource,current)){lastSource=current;const selected=selector(current);if(!equal(lastSelected,selected))lastSelected=selected}return lastSelected};
+ const getSnapshot=()=>{const current=source.getSnapshot();if(!Object.is(lastSource,current)){const selected=selector(current);const same=equal(lastSelected,selected);lastSource=current;if(!same)lastSelected=selected}return lastSelected};
  let lastServerSource=source.getServerSnapshot?.();
  let lastServerSelected=source.getServerSnapshot?selector(lastServerSource as A):undefined;
  const getServerSnapshot=source.getServerSnapshot?()=>{
   const current=source.getServerSnapshot!();
   if(!Object.is(lastServerSource,current)){
-   lastServerSource=current;const selected=selector(current);
-   if(lastServerSelected===undefined||!equal(lastServerSelected,selected))lastServerSelected=selected;
+   const selected=selector(current);const same=equal(lastServerSelected as B,selected);
+   lastServerSource=current;if(!same)lastServerSelected=selected;
   }
   return lastServerSelected as B;
  }:undefined;

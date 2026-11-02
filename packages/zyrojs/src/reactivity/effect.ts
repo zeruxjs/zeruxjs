@@ -1,7 +1,8 @@
+import { assertSetupHook } from '../dom/component.js';
 import type { Subscriber } from './types.js';
 
 /** Dependency tracking is synchronous: async work must use explicit signals/cleanup. */
-const stack: Subscriber[] = [];
+const stack: (Subscriber | undefined)[] = [];
 const cleanups = new WeakMap<Subscriber, Set<() => void>>();
 const scopes: EffectScope[] = [];
 const scheduled = new Set<Subscriber>();
@@ -82,6 +83,7 @@ export function onScopeDispose(cleanup: () => void): () => void {
 
 /** Runs immediately, re-tracks conditional dependencies, and returns an idempotent stop. */
 export function effect(callback: () => void | (() => void)): () => void {
+  assertSetupHook();
   let active = true;
   let running = false;
   let rerun = false;
@@ -131,4 +133,16 @@ export function effect(callback: () => void | (() => void)): () => void {
   const managedStop = scope ? scope.add(stop) : stop;
   try { run(); } catch (error) { managedStop(); throw error; }
   return managedStop;
+}
+
+/** Run synchronous work without subscribing its caller to incidental reads. */
+export function untracked<T>(fn: () => T): T {
+  stack.push(undefined);
+  try { return fn(); } finally { stack.pop(); }
+}
+
+/** Internal ownership bridge for composite reactive resources. */
+export function ownEffectCleanup(cleanup: () => void): () => void {
+  const scope = scopes[scopes.length - 1];
+  return scope ? scope.add(cleanup) : cleanup;
 }

@@ -1,4 +1,4 @@
-import { getCurrentSubscriber, trackDependency, scheduleEffect } from './effect.js';
+import { getCurrentSubscriber, trackDependency, scheduleEffect, batch } from './effect.js';
 import type { Signal, Subscriber } from './types.js';
 export { batch } from './effect.js';
 
@@ -16,7 +16,7 @@ class SignalImpl<T> implements Signal<T> {
   set value(next: T) {
     if (Object.is(this.current, next)) return;
     this.current = next;
-    for (const subscriber of [...this.subscribers]) scheduleEffect(subscriber);
+    batch(() => { for (const subscriber of [...this.subscribers]) scheduleEffect(subscriber); });
   }
   peek(): T { return this.current; }
 }
@@ -81,3 +81,6 @@ export function reactive<T extends object>(target: T): T {
   proxies.set(proxy, proxy);
   return proxy;
 }
+
+/** Ref is the same value/peek signal contract, not a React ref. */
+export const ref = signal;

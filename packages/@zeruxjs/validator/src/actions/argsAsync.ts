@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   LooseTupleIssue,
   LooseTupleSchema,
@@ -105,7 +106,7 @@ export function argsAsync(
     '~run'(dataset, config) {
       const func = dataset.value;
       dataset.value = async (...args) => {
-        const argsDataset = await schema['~run']({ value: args }, config);
+        const argsDataset = await _runSchema(schema, { value: args }, config);
         if (argsDataset.issues) {
           throw new ValidationError(argsDataset.issues);
         }

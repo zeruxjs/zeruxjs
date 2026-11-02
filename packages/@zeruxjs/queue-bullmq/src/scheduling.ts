@@ -1,26 +1,9 @@
+import {copyJobPayload} from './payload.js';
 import type {BullJobLike,JobProcessor,JobData,QueueJobOptions,ZeruxQueue} from './index.js';
 
 const identifier=/^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$/;
 const validId=(value:string,kind:string)=>{if(typeof value!=='string'||!identifier.test(value))throw new TypeError(`Invalid ${kind}`);return value;};
-const clonePayload=(data:JobData):JobData=>{
-  if(!data||typeof data!=='object'||Array.isArray(data))throw new TypeError('Scheduled task data must be an object');
-  const json=JSON.stringify(data);
-  if(typeof json!=='string'||Buffer.byteLength(json)>8192)throw new RangeError('Scheduled task data exceeds 8 KiB');
-  const parsed=JSON.parse(json) as JobData;
-  // Reject unsafe keys anywhere in the JSON tree, not only the top-level
-  // payload. Bound nesting to prevent deeply nested worker-side input.
-  const check=(value:unknown,depth:number):void=>{
-    if(depth>32)throw new RangeError('Scheduled task nesting exceeds 32');
-    if(!value||typeof value!=='object')return;
-    if(Array.isArray(value)){for(const item of value)check(item,depth+1);return;}
-    for(const [key,item] of Object.entries(value)){
-      if(['__proto__','constructor','prototype'].includes(key))throw new TypeError('Unsafe task data key');
-      check(item,depth+1);
-    }
-  };
-  check(parsed,0);
-  return parsed;
-};
+const clonePayload=(data:JobData):JobData=>copyJobPayload(data,8192,32);
 const validTime=(date:Date|string|number):number=>{
   const value=date instanceof Date?date.getTime():typeof date==='string'?Date.parse(date):date;
   if(!Number.isSafeInteger(value)||value<=Date.now()||value>Date.now()+366*86_400_000)throw new RangeError('Scheduled execution must be within the next 366 days');

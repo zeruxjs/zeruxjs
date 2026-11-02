@@ -6,7 +6,9 @@
   "order": 24,
   "sources": [
     "packages/@zeruxjs/performance/README.md",
-    "packages/@zeruxjs/performance/package.json"
+    "packages/@zeruxjs/performance/package.json",
+    "packages/@zeruxjs/performance/src/response.ts",
+    "packages/zhost/src/compression.ts"
   ],
   "related": [
     "packages",
@@ -56,7 +58,7 @@ The budget is per document, with a maximum of twenty distinct hints. Same-origin
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/performance@0.0.3
+npm install @zeruxjs/performance@0.0.4
 ```
 
 There is no automatic `performance` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
@@ -142,3 +144,22 @@ Public-static navigation prefetching. Browser globals are read only when install
 | `staleWhileRevalidate` | `number` | Yes |
 | `staleIfError` | `number` | Yes |
 | `sMaxAge` | `number` | Yes |
+
+## Explicit hosting response policy
+
+The optional Node-only `@zeruxjs/performance/response` entry delegates to a borrowed
+`zhost/compression` owner. Importing performance starts no encoder/server. Hosts
+must select one compression layer and derive authenticated classification from
+verified server identity. Private is the default; cookies/Authorization/Set-Cookie
+conservatively force no-store. Public cache policy remains an explicit host choice.
+
+The zhost owner bounds active encoders, uses identity/406 at capacity and reports
+only fixed encoding/outcome/byte/duration fields. Changed representations discard
+identity ETags and lengths; ranges, no-transform and existing encodings bypass
+transformation. Conditional evaluation stays with the origin; HEAD/304 do not
+consume source bodies. Native streaming retains backpressure and disconnect
+cleanup. Build-time minification remains in TypeScript tooling.
+
+See the package README and `examples/response.mjs` for exact limits, lifecycle and
+HTTP semantics. Local identity/gzip/Brotli measurements are workload observations,
+not evidence of general latency gains or production/CDN/browser qualification.

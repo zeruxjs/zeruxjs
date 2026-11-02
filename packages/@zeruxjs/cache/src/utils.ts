@@ -1,3 +1,4 @@
+import {cachePolicy,cacheKey,cacheSetOptions} from "./policy.js";
 import type {
     CacheErrorShape,
     CacheHelperFactory,
@@ -26,7 +27,12 @@ export const createCacheError = (error: CacheErrorShape): Error & { details: Cac
  * @returns Validated cache manager config.
  */
 export const normalizeCacheConfig = (config: CacheManagerConfig): Required<Pick<CacheManagerConfig, "helper">> & CacheManagerConfig => {
-    const helper = String(config?.helper || "").trim();
+    if(!config||typeof config!=="object"||Array.isArray(config)||typeof config.helper!=="string")throw createCacheError({code:"INVALID_CONFIG",message:"Invalid cache configuration"});
+    const policy=cachePolicy(config.policy);
+    if(config.prefix!==undefined)cacheKey(config.prefix,policy);
+    if(config.options!==undefined&&(!config.options||typeof config.options!=="object"||Array.isArray(config.options)))throw createCacheError({code:"INVALID_CONFIG",message:"Invalid cache options"});
+    cacheSetOptions({ttlSeconds:config.defaultTtlSeconds});
+    const helper = config.helper.trim();
     if (!helper) {
         throw createCacheError({
             code: "MISSING_HELPER",
@@ -43,6 +49,7 @@ export const normalizeCacheConfig = (config: CacheManagerConfig): Required<Pick<
 
     return {
         helper,
+        policy,
         options: typeof config.options === "object" && config.options !== null ? { ...config.options } : {},
         prefix: typeof config.prefix === "string" && config.prefix.length > 0 ? config.prefix : undefined,
         defaultTtlSeconds: config.defaultTtlSeconds

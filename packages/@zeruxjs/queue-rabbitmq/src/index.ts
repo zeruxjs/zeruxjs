@@ -123,3 +123,5 @@ export async function createRabbitMQ(options: RabbitMQOptions) {
     throw new Error('RabbitMQ startup failed', {cause: error});
   }
 }
+
+export * from './worker.js';

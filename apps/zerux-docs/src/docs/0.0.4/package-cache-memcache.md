@@ -43,3 +43,13 @@ Keys, including the manager prefix, must be 1–250 printable ASCII bytes withou
 The public `@zeruxjs/cache-memcache/protocol` subpath exposes `MemcacheTextClient`, `TextConnectionOptions`, `TextReply`, `TextValue` and `validateKey` for protocol adapters. Its `request` method accepts trusted raw commands; never expose it to clients. It is also used by `queue-memcacheq` for transport only.
 
 Run `npm run build` here after building `@zeruxjs/cache`. See the [Memcached protocol](https://github.com/memcached/memcached/blob/master/doc/protocol.txt). Local protocol fixtures do not establish live server, TLS or distributed acceptance.
+
+## Validated single-endpoint and payload contract
+
+Legacy servers/options configuration explicitly rejects; select a reviewed host/port, never inferred sharding. The helper now declares conditional writes/counters supported, namespace clear/bulk atomicity unsupported and owned sockets. clearPrefix remains fail-closed; no generation-token resurrection scheme or speculative pooling is introduced.
+
+maxBytes counts exact serialized JSON UTF-8 bytes before connection, and maxDepth defaults to 32 (maximum 64). Plain JSON traversal also caps at 100000 nodes. Bulk calls cap at 1000 keys and aggregate maxBytes encoded data; setMany prevalidates every entry before sending. Sparse arrays, accessors, toJSON, cycles and invalid numbers reject. Responses enforce strict UTF-8, JSON depth, framing and matching retrieval keys.
+
+Direct get/set and protocol request accept signal/deadline options. Helper close returns a Promise for actual socket cleanup; protocol close stays synchronous with whenClosed() and activeSocketCount for observation. Stable MemcacheError codes exclude raw key/payload/server text; internal causes remain private. Timeout/cancellation after a write is an unknown outcome, never an automatic replay. TTL rounding above 30 days still converts to absolute Unix expiry, add/replace are atomic per key, counter misses reject and decrement clamps at zero.
+
+See the package README for the packed public-import example and exact migration limits. Live acceptance requires a dedicated ZX_TEST_MEMCACHE_HOST (optional ZX_TEST_MEMCACHE_PORT); loopback fixtures do not certify Memcached/TLS/eviction or MemcacheQ delivery semantics.

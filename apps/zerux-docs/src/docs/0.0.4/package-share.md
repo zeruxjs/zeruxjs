@@ -6,7 +6,10 @@
   "order": 31,
   "sources": [
     "packages/@zeruxjs/share/README.md",
-    "packages/@zeruxjs/share/package.json"
+    "packages/@zeruxjs/share/package.json",
+    "packages/@zeruxjs/share/src/server.ts",
+    "packages/@zeruxjs/share/src/sqlite-store.ts",
+    "packages/@zeruxjs/share/examples/short-links.ts"
   ],
   "related": [
     "packages",
@@ -41,7 +44,7 @@ createShareMetadata creates escaped public metadata, not a complete SEO strategy
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/share@0.0.3
+npm install @zeruxjs/share@0.0.4
 ```
 
 There is no automatic `share` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
@@ -100,3 +103,36 @@ These tables list fields declared directly on the named public contract. Referen
 | --- | --- | --- |
 | `native` | `boolean` | No |
 | `clipboard` | `boolean` | No |
+
+## Add persistent short links separately
+
+The server-only `@zeruxjs/share/server` entry creates an explicit service over a
+host-owned durable create-only/CAS store. It does not change browser sharing or
+start a listener. The public-import example accepts host store/session-authorizer
+callbacks; the host mounts the resolution handler and closes the service before
+its borrowed database. No management HTTP endpoints are mounted automatically.
+
+Default links use 144-bit random slugs, 302/no-store, bounded expiry and owner/tenant
+checks. Custom slugs reserve a global public namespace atomically; expired/revoked
+slugs must never be recycled. Reserved application/framework paths and destination
+origin/path policy prevent local collisions and unapproved redirects. Management
+requires fresh verified session permissions, revision CAS and host HTTP CSRF/rate
+controls. A short URL does not authorize access at its destination.
+
+Permanent 301/308 is explicit and permitted only for nonexpiring, uneditable,
+non-revocable records with an approved cache lifetime. A cached redirect cannot be
+recalled by editing storage. Temporary links remain no-store. Unknown write
+acknowledgements require authorized reconciliation, not automatic retry.
+
+Optional click collection is consent-gated and pseudonymous, emits no raw recipient
+or destination, and cannot replace a valid redirect when analytics fails. Close
+aborts/drains actual store/analytics work; callbacks and stores stay host-owned.
+Tests exercise duplicate/CAS races through two real SQLite pins on a disposable
+file, plus browser fallback and failure fixtures. Production crash recovery,
+mobile share-sheet behavior and session/consent/proxy deployment are not inferred
+from those checks.
+
+The optional `@zeruxjs/share/sqlite` store borrows a native synchronous connector,
+requires explicit host persistent-file qualification and initializes its table only
+when requested. Create-only/CAS work uses the existing database transaction pin;
+there is no independent transaction engine or implicit connector ownership.

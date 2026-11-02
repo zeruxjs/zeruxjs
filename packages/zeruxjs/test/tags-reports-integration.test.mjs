@@ -30,9 +30,9 @@ test('tags and reports HTTP mounts, lifecycle, redacted config and browser ingre
 });
 test('invalid report authentication config never mounts insecure admin',async()=>{
  const cfg={analytics:{enabled:true},reports:{enabled:true}};
- const scope=await initializeRuntimeServices(cfg,process.cwd(),{
+ await assert.rejects(initializeRuntimeServices(cfg,process.cwd(),{
   ...providers(),reports:async(config,a)=>createReports({...config,analytics:a})
- });try{assert.equal(scope.status().find(x=>x.name==='reports').state,'degraded');assert.equal(scope.httpRoutes().length,0);}finally{await scope.close();}
+ }), {code:'MISSING_AUTHORIZER'});
 });
 test('default framework initializers dynamically mount real Tags/Reports packages',async()=>{
  const cfg={analytics:{enabled:true},tags:{enabled:true,allowedOrigins:['https://myapp.test'],authorizeAdmin:()=>true},reports:{enabled:true,authorize:()=>true}};

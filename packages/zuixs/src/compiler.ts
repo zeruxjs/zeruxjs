@@ -3,14 +3,14 @@ import {resolveTheme} from './theme.js';
 import {utilityFor} from './utilities.js';
 import type {Declarations} from './utilities.js';
 import type {ZuixConfig,GenerateResult,ZuixPluginAPI} from './types.js';
-import {cssEscapeClass,resolveLimits,safeCondition,safeDeclaration} from './safety.js';
+import {cssEscapeClass,resolveLimits,safeCondition,safeDeclaration,splitToken,balancedSyntax} from './safety.js';
 export const preflight = `*,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:currentColor}html{line-height:1.5;-webkit-text-size-adjust:100%;font-family:ui-sans-serif,system-ui,sans-serif}body{margin:0;line-height:inherit}button,input,select,textarea{font:inherit}button{cursor:pointer}img,svg,video,canvas{display:block;max-width:100%}a{color:inherit;text-decoration:inherit}h1,h2,h3,h4,h5,h6,p{margin:0}ol,ul{list-style:none;margin:0;padding:0}`;
 
-function splitVariants(input:string):string[] {const result:string[]=[];let buf='',depth=0;for(const ch of input){if(ch==='[')depth++;else if(ch===']')depth--;if(ch===':'&&depth===0){result.push(buf);buf='';}else buf+=ch;}result.push(buf);return result;}
+function splitVariants(input:string):string[] {return splitToken(input)??[];}
 function cssDeclarations(decls:Declarations,important:boolean):string|undefined{const entries=Object.entries(decls);if(!entries.length||entries.some(([prop,val])=>!safeDeclaration(prop,String(val))))return;return entries.map(([prop,val])=>`${prop}:${String(val)}${important?' !important':''};`).join('');}
 const pseudo:Record<string,string>={ 'first-letter':'::first-letter','first-line':'::first-line',marker:'::marker',backdrop:'::backdrop','file':'::file-selector-button','open':':is([open],:popover-open)',target:':target','only':':only-child','first-of-type':':first-of-type','last-of-type':':last-of-type','only-of-type':':only-of-type','read-only':':read-only','read-write':':read-write','autofill':':autofill','indeterminate':':indeterminate','in-range':':in-range','out-of-range':':out-of-range','placeholder-shown':':placeholder-shown',default:':default',optional:':optional',autofocus:':focus-visible',hover:':hover',focus:':focus','focus-visible':':focus-visible','focus-within':':focus-within',active:':active',disabled:':disabled',enabled:':enabled',checked:':checked',required:':required',invalid:':invalid',valid:':valid',first:':first-child',last:':last-child',odd:':nth-child(odd)',even:':nth-child(even)',visited:':visited',empty:':empty',before:'::before',after:'::after',placeholder:'::placeholder',selection:'::selection'};
 function safeQuery(value:string):boolean{return safeCondition(value);}
-function safeSelector(value:string):boolean{return value.length<=120&&/^[a-zA-Z0-9.#:[\]_'"()=~+* >|-]+$/.test(value);}
+function safeSelector(value:string):boolean{return balancedSyntax(value)&&value.length<=120&&/^[a-zA-Z0-9.#:[\]_'"()=~+* >|-]+$/.test(value);}
 export function createZuix(config:ZuixConfig={}) {
  const theme=resolveTheme(config);const limits=resolveLimits(config.limits);const utilities:Record<string,Declarations>={};const components:Record<string,Declarations>={};const base:string[]=[];
  const api:ZuixPluginAPI={
@@ -22,7 +22,7 @@ export function createZuix(config:ZuixConfig={}) {
  function compileClass(token:string):string|undefined {
   // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
   if(typeof token!=='string'||!token||token.length>limits.maxTokenLength||/[\u0000-\u001f\u007f{};\\]/.test(token))return;
-  const chunks=splitVariants(token);if(chunks.length>12)return;let name=chunks.pop()??'';const variants=chunks;
+  const chunks=splitToken(token);if(!chunks)return;let name=chunks.pop()??'';const variants=chunks;
   if(config.prefix){if(!name.startsWith(config.prefix))return;name=name.slice(config.prefix.length);}
   const important=name.startsWith('!')||Boolean(config.important);if(name.startsWith('!'))name=name.slice(1);
   const decl=utilityFor(name,theme,{...utilities,...components});if(!decl)return;const body=cssDeclarations(decl,important);if(!body)return;
@@ -39,13 +39,19 @@ export function createZuix(config:ZuixConfig={}) {
    if(variant==='contrast-more'||variant==='contrast-less'){atRules.push(`@media (prefers-contrast: ${variant==='contrast-more'?'more':'less'})`);continue;}
    if(variant==='rtl'||variant==='ltr'){selector=`:where([dir="${variant}"]) ${selector}`;continue;}
    if(variant==='starting'){atRules.push('@starting-style');continue;}
-   if(variant.startsWith('supports-[')&&variant.endsWith(']')){const query=variant.slice(10,-1).replace(/_/g,' ');if(!safeQuery(query))return;atRules.push(`@supports (${query})`);continue;}
+   if(variant.startsWith('supports-[')&&variant.endsWith(']')){const query=variant.slice(10,-1).replace(/_/g,' ');if(!safeQuery(query))return;atRules.push(`@supports ${query.startsWith('(')?query:`(${query})`}`);continue;}
    if(variant.startsWith('media-[')&&variant.endsWith(']')){const query=variant.slice(7,-1).replace(/_/g,' ');if(!safeQuery(query))return;atRules.push(`@media ${query.startsWith('(')||query==='print'||query==='screen'?query:`(${query})`}`);continue;}
-   if(variant.startsWith('container-[')&&variant.endsWith(']')){const query=variant.slice(11,-1).replace(/_/g,' ');if(!safeQuery(query))return;atRules.push(`@container (${query})`);continue;}
+   if(variant.startsWith('container-[')&&variant.endsWith(']')){const query=variant.slice(11,-1).replace(/_/g,' ');if(!safeQuery(query))return;atRules.push(`@container ${query.startsWith('(')?query:`(${query})`}`);continue;}
+   const namedContainer=/^cq-([a-zA-Z][\w-]{0,47})-([a-zA-Z0-9]+)$/.exec(variant);
+   if(namedContainer&&Object.hasOwn(theme.screens,namedContainer[2])){
+    const name=namedContainer[1],screen=String(theme.screens[namedContainer[2]]);
+    if(/^(?:none|and|or|not|initial|inherit|unset|revert|revert-layer)$/i.test(name)||!/^\d+(?:\.\d+)?(?:px|rem|em)$/.test(screen))return;
+    atRules.push(`@container ${name} (min-width: ${screen})`);continue;
+   }
    if(variant.startsWith('cq-')){const key=variant.slice(3);if(!Object.hasOwn(theme.screens,key))return;const screen=String(theme.screens[key]);if(!/^(?:\d+(?:\.\d+)?)(?:px|rem|em)$/.test(screen))return;atRules.push(`@container (min-width: ${screen})`);continue;}
    if(variant==='group-hover' ||variant==='group-focus'){groupPeer=`.group:${variant.slice(6)} `+groupPeer;continue;}
    if(variant==='peer-checked'||variant==='peer-focus'){groupPeer=`.peer:${variant.slice(5)} ~ `+groupPeer;continue;}
-   if(variant in pseudo){selector+=pseudo[variant];continue;}
+   if(Object.hasOwn(pseudo,variant)){selector+=pseudo[variant];continue;}
    if(variant.startsWith('has-[')&&variant.endsWith(']')){const nested=variant.slice(5,-1);if(!safeSelector(nested))return;selector+=`:has(${nested})`;continue;}
    if(variant.startsWith('not-[')&&variant.endsWith(']')){const nested=variant.slice(5,-1);if(!safeSelector(nested))return;selector+=`:not(${nested})`;continue;}
    if(variant.startsWith('aria-')){const attr=variant.slice(5);if(!/^[a-z-]+$/.test(attr))return;selector+=`[aria-${attr}="true"]`;continue;}
@@ -58,7 +64,8 @@ export function createZuix(config:ZuixConfig={}) {
   return rule;
  }
  function generate(tokens:Iterable<string>):GenerateResult {
-  const classSet=new Set<string>();const add=(token:string)=>{if(typeof token!=='string')throw new Error('zuix: class tokens must be strings');classSet.add(token);if(classSet.size>limits.maxClasses)throw new Error('zuix: maxClasses limit exceeded');};
+  let visits=0;
+  const classSet=new Set<string>();const add=(token:string)=>{if(typeof token!=='string')throw new Error('zuix: class tokens must be strings');if(token.length>limits.maxTokenLength)throw new Error('zuix: maxTokenLength limit exceeded');if(++visits>limits.maxClasses*16)throw new Error('zuix: token iteration limit exceeded');classSet.add(token);if(classSet.size>limits.maxClasses)throw new Error('zuix: maxClasses limit exceeded');};
   for(const token of tokens)add(token);for(const token of config.safelist??[])add(token);
   /** Base utilities precede variants; larger min-width breakpoints override smaller ones.
    * @param token Class token. @returns Cascade ordering tuple. Reads resolved theme only.
@@ -67,7 +74,8 @@ export function createZuix(config:ZuixConfig={}) {
    const variants=splitVariants(token).slice(0,-1);
    const widths=variants.flatMap(variant=>{
     if(variant.startsWith('media-[')){const query=variant.slice(7,-1).replace(/_/g,' ');const match=/\b(min|max)-width:\s*(\d+(?:\.\d+)?)(px|rem|em)/.exec(query);if(match)return [Number(match[2])*(match[3]==='px'?1:16)*(match[1]==='max'?-1:1)];}
-    const key=variant.startsWith('cq-')?variant.slice(3):variant;
+    const named=/^cq-[a-zA-Z][\w-]{0,47}-([a-zA-Z0-9]+)$/.exec(variant);
+    const key=named&&Object.hasOwn(theme.screens,named[1])?named[1]:variant.startsWith('cq-')?variant.slice(3):variant;
     const screen=theme.screens[key];
     if(screen===undefined)return [];
     const match=/^(\d+(?:\.\d+)?)(px|rem|em)$/.exec(String(screen));

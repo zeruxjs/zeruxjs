@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -92,7 +93,7 @@ export function nonOptional(
       // If value is not `undefined`, run wrapped schema
       if (dataset.value !== undefined) {
         // @ts-expect-error
-        dataset = this.wrapped['~run'](dataset, config);
+        dataset = _runSchema(this.wrapped, dataset, config);
       }
 
       // If value is `undefined`, add issue to dataset

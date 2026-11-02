@@ -20,7 +20,7 @@
 ## Installation and integration path
 
 ```sh
-npm install zuixs@0.0.3
+npm install zuixs@0.0.4
 ```
 
 This package has its own public API. Installing it does not create an automatic runtime service key in `zerux.config.js`. Use the framework integration described below or initialize it in the tool/application that owns its lifetime.

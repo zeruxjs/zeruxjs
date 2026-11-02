@@ -35,7 +35,7 @@ Parameterized values do not authorize a schema operation. Keep credentials narro
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/db-sql-core@0.0.3
+npm install @zeruxjs/db-sql-core@0.0.4
 ```
 
 This package participates in the runtime's **database** integration. Start with [database configuration](configuration-database.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.
@@ -97,3 +97,11 @@ These tables list fields declared directly on the named public contract. Referen
 | `fixedDatabase` | `boolean` | Yes |
 | `lockDatabase` | `boolean` | Yes |
 | `locked` | `boolean` | Yes |
+
+## Direct compilation and runtime guards
+
+`compileSql(dialect, operation)` exposes the same bounded own-data validation used by `createSqlConnector`; no connection is opened. It returns one parameter list per statement, validates all identifiers/enums and rejects unknown clauses and raw expressions independently of facade normalization. See the package README for a public-import example and exact budgets.
+
+NULL equality uses explicit null predicates; empty IN/NOT IN is rejected. Multi-row shapes must match. Nested/subquery/keyset parameters retain lexical numbering. Structured CHECK predicates are supported through database-owned types; DDL literals are validated/encoded instead of losing placeholders. Raw CHECK text, subqueries and unsupported function semantics fail before execution.
+
+Unsupported index guards, RETURNING, DDL/generated-key policies, upsert/conflict clauses, join/order features and pagination combinations are rejected rather than dropped. The README lists the intentionally limited dialect matrix. Backend versions and permissions remain deployment prerequisites. Generated numeric IDs with lost precision fail; bigint SQLite IDs retain their string representation. The compiler owns no native clients, transactions or cleanup of borrowed pools. Native transaction and decimal/time precision acceptance require the actual driver/backend; mocked compilation is not live acceptance.

@@ -54,7 +54,7 @@ Initialization failures disconnect already-created connectors. `disconnect()` is
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/db@0.0.3
+npm install @zeruxjs/db@0.0.4
 ```
 
 This package participates in the runtime's **database** integration. Start with [database configuration](configuration-database.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.
@@ -133,3 +133,22 @@ These tables list fields declared directly on the named public contract. Referen
 | --- | --- | --- |
 | `transaction` | `ExclusiveMigrationTransaction` | No |
 | `now` | `() => Date` | Yes |
+
+## Capabilities, bounded execution and continuation
+
+Managers and facades expose explicit supported/unsupported/unknown capability reports. PostgreSQL native-compatible pools implement pinned transactions and destructive cancellation; MySQL pools implement pinned async DML transactions with cooperative deadlines but no native cancellation. MongoDB clients may explicitly enable deployment-probed snapshot session transactions without callback replay or native cancellation. Query-only injected transports remain unsupported. SQLite has a separate synchronous API. Requesting an unsupported advertised feature or an unmet explicit capability requirement fails before execution. Batch preflight checks all capabilities, but batches are not atomic.
+
+Configure `execution.maxPending`, `maxBatch`, `shutdownGraceMs` and a nonblocking `onMetric` hook. CRUD/query methods take a separate `{signal, timeoutMs, deadline, require}` argument; tenant methods forward it without placing executable values in query JSON. Cancellation/deadline rejects an async caller while retaining the resource slot until actual driver settlement. Disconnect aborts contexts and drains up to its grace period before closing connectors. None of these Promise boundaries prove native cancellation or write rollback.
+
+Metrics contain only operation, safe table identifier, duration, optional count and outcome. Values, SQL, parameters, credentials, tenant IDs and raw failures are excluded. Applications may explicitly read their request correlation carrier in this hook; the database package never imports the framework. Counts retain adapter semantics and zero-row misses, with optional matched/changed counts and precision metadata. Approximate or unknown counts cannot prove CAS success.
+
+`createKeysetPage` builds bounded lexicographic pages with stable order declarations and a final unique tie-breaker. It validates structured continuations against the table/order and rejects null/missing/oversized keys. The host owns actual uniqueness, collation, filter/tenant binding and cursor signing if needed. A continuation is not an authorization token or a snapshot. See the package README for a runnable public-import SQLite example and driver count references.
+
+
+## Pinned transactions and migration ownership
+
+`transaction(fn, options)` is a shared extension point. Managers reject it unless the connector advertises transactions and supplies a `PinnedTransactionAdapter`. PostgreSQL native-compatible pools, MySQL pools and explicitly enabled deployment-probed MongoDB clients implement the pinned adapter; MySQL excludes transactional DDL and native query cancellation. Synthetic and injected fixtures verify the contract without claiming live engine acceptance. Isolation and cooperative timeout are explicitly negotiated before acquiring a lease. Savepoints/nesting are unsupported.
+
+The callback receives only a scoped pinned facade. Every operation, commit, rollback and release must target the acquired connection/session. Queries run FIFO, accepted work drains before finalization, and any query failure makes the scope rollback-only. Callback/commit/rollback failures still attempt release once. Commit/release failures may follow a real commit: do not retry automatically. Cancellation is cooperative; cleanup and outstanding native work must finish before the transaction settles. Transactional DDL must be declared honestly by the owning adapter, not inferred from SQL syntax.
+
+`createPinnedMigrationTransaction` constructs the journal from that same pinned facade and holds a host-provided owned migration lock through transaction cleanup. The host supplies cross-process exclusion, ownership assertions, owner-fenced release and optional ownership-loss cancellation. There is no production in-memory lock implementation or automatic journal provisioning. Checksums, contiguous history and collection limits are checked before applying changes. Reverse migrations require an explicit authorizer returning exactly true. The package README includes public imports, adapter responsibilities, error behavior and native prerequisites.

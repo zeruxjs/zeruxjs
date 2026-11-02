@@ -33,3 +33,5 @@ export * from './inbound-sync.js';
 export * from './inbound-retention.js';
 
 export * from './inbox-api.js';
+
+export * from "./sender-feedback.js";

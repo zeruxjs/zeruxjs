@@ -30,7 +30,7 @@ const withStartupTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Pr
  * @param config Zerux config object loaded for the current application.
  * @returns Initialized manager or null when cache is not configured.
  */
-export const initializeCacheRuntime = async (config: ZeruxConfig): Promise<unknown | null> => {
+export const initializeCacheRuntime = async (config: ZeruxConfig, activation?:{onActivate:(callback:()=>void)=>void}): Promise<unknown | null> => {
     const cacheConfig = config.cache;
     const connector = cacheConfig && typeof cacheConfig === "object" && typeof cacheConfig.connector === "string"
         ? cacheConfig.connector
@@ -49,7 +49,8 @@ export const initializeCacheRuntime = async (config: ZeruxConfig): Promise<unkno
     const required = resolvedCacheConfig.required === true;
 
     const moduleValue = await import("@zeruxjs/cache") as unknown as CacheModuleNamespace;
-    const configure = moduleValue.configureCacheManager ?? moduleValue.createCacheManager;
+    if (activation && typeof moduleValue.createCacheManager !== 'function') throw new Error('Staged services require a non-publishing manager factory');
+    const configure = moduleValue.createCacheManager ?? moduleValue.configureCacheManager;
 
     if (typeof configure !== "function") {
         throw new Error("[zerux cache] @zeruxjs/cache does not export a manager factory");
@@ -68,9 +69,8 @@ export const initializeCacheRuntime = async (config: ZeruxConfig): Promise<unkno
         return null;
     }
 
-    if (moduleValue.setActiveCacheManager) {
-        moduleValue.setActiveCacheManager(manager);
-    }
+    const activate=()=>moduleValue.setActiveCacheManager?.(manager);
+    if(activation)activation.onActivate(activate);else activate();
 
     return manager;
 };

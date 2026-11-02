@@ -77,3 +77,9 @@ test('Mongo rejects unsupported schema mutations and malformed operators',async(
  const ix=await mongo.createConnector({db:{collection:()=>({createIndex:async()=> 'ix'})}},context.connection);
  await assert.rejects(ix.execute({op:'createIndex',table:'items',name:'ix',columns:[{kind:'function',name:'NOW'}]},context),/plain named columns/);
 });
+test('Mongo reports matched versus changed counts without widening returning support',async()=>{
+ const connector=await mongo.createConnector({executor:()=>({acknowledged:true,matchedCount:1,modifiedCount:0})},context.connection);
+ assert.equal(connector.capabilities.returning,'unsupported');assert.equal(connector.capabilities.transactions,'unsupported');
+ assert.throws(()=>connector.execute({op:'update',table:'users',values:{name:'Ada'},returning:['name']},context),/returning/);
+ const result=await connector.execute({op:'update',table:'users',values:{name:'Ada'},where:{field:'id',operator:'eq',value:'one'}},context);assert.equal(result.affectedCount,0);assert.equal(result.matchedCount,1);assert.equal(result.changedCount,0);assert.equal(result.counts.affectedMeaning,'changed');
+});

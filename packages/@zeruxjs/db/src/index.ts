@@ -7,6 +7,7 @@ import type {
     DatabaseManager,
     DatabaseManagerConfig,
     DatabaseResult,
+    DatabaseQueryOptions,
     DeleteOperation,
     DropDbOperation,
     DropIndexOperation,
@@ -35,6 +36,9 @@ const getDefaultFacade = (): DatabaseFacade => getActiveDatabaseManager().getCon
  * Global Variables: none
  */
 export const db: DatabaseFacade = {
+    transactionCapabilities(){return getDefaultFacade().transactionCapabilities?.();},
+    transaction(run,options){const facade=getDefaultFacade();if(!facade.transaction)throw createDatabaseError({code:'UNSUPPORTED_TRANSACTION',message:'Pinned transactions are unavailable'});return facade.transaction(run,options);},
+    capabilities() { return getDefaultFacade().capabilities?.() ?? {returning:'unknown',transactions:'unknown',cancellation:'unknown',schema:'unknown',indexes:'unknown',nativeAggregation:'unknown'}; },
     get slug() {
         return getDefaultFacade().slug;
     },
@@ -47,47 +51,47 @@ export const db: DatabaseFacade = {
     get options() {
         return getDefaultFacade().options;
     },
-    query(operation: QueryOperation | QueryOperation[]): MaybePromise<DatabaseResult | DatabaseResult[]> {
-        return getActiveDatabaseManager().query(operation);
+    query(operation: QueryOperation | QueryOperation[], options?:DatabaseQueryOptions): MaybePromise<DatabaseResult | DatabaseResult[]> {
+        return getActiveDatabaseManager().query(operation,options);
     },
-    createDb(operation: Omit<CreateDbOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().createDb({ ...operation, op: "createDb" });
+    createDb(operation: Omit<CreateDbOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().createDb({ ...operation, op: "createDb" },options);
     },
-    dropDb(operation: Omit<DropDbOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().dropDb({ ...operation, op: "dropDb" });
+    dropDb(operation: Omit<DropDbOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().dropDb({ ...operation, op: "dropDb" },options);
     },
-    switchDB(operation: Omit<SwitchDbOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().switchDB({ ...operation, op: "switchDB" });
+    switchDB(operation: Omit<SwitchDbOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().switchDB({ ...operation, op: "switchDB" },options);
     },
-    createTable(operation: Omit<CreateTableOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().createTable({ ...operation, op: "createTable" });
+    createTable(operation: Omit<CreateTableOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().createTable({ ...operation, op: "createTable" },options);
     },
-    dropTable(operation: Omit<DropTableOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().dropTable({ ...operation, op: "dropTable" });
+    dropTable(operation: Omit<DropTableOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().dropTable({ ...operation, op: "dropTable" },options);
     },
-    alterTable(operation: Omit<AlterTableOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().alterTable({ ...operation, op: "alterTable" });
+    alterTable(operation: Omit<AlterTableOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().alterTable({ ...operation, op: "alterTable" },options);
     },
-    turcunateTable(operation: Omit<TruncateTableOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().turcunateTable({ ...operation, op: "turcunateTable" });
+    turcunateTable(operation: Omit<TruncateTableOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().turcunateTable({ ...operation, op: "turcunateTable" },options);
     },
-    createIndex(operation: Omit<CreateIndexOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().createIndex({ ...operation, op: "createIndex" });
+    createIndex(operation: Omit<CreateIndexOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().createIndex({ ...operation, op: "createIndex" },options);
     },
-    dropIndex(operation: Omit<DropIndexOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().dropIndex({ ...operation, op: "dropIndex" });
+    dropIndex(operation: Omit<DropIndexOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().dropIndex({ ...operation, op: "dropIndex" },options);
     },
-    insert(operation: Omit<InsertOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().insert({ ...operation, op: "insert" });
+    insert(operation: Omit<InsertOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().insert({ ...operation, op: "insert" },options);
     },
-    select(operation: Omit<SelectOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().select({ ...operation, op: "select" });
+    select(operation: Omit<SelectOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().select({ ...operation, op: "select" },options);
     },
-    update(operation: Omit<UpdateOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().update({ ...operation, op: "update" });
+    update(operation: Omit<UpdateOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().update({ ...operation, op: "update" },options);
     },
-    delete(operation: Omit<DeleteOperation, "op" | "connection">) {
-        return getActiveDatabaseManager().delete({ ...operation, op: "delete" });
+    delete(operation: Omit<DeleteOperation, "op" | "connection">, options?:DatabaseQueryOptions) {
+        return getActiveDatabaseManager().delete({ ...operation, op: "delete" },options);
     },
     native() {
         return getDefaultFacade().native();
@@ -110,47 +114,47 @@ export const dbAccess = (slug: string) => getActiveDatabaseManager().dbAccess(sl
  * @param operation Operation or operation list.
  * @returns Query result.
  */
-export const query = (operation: QueryOperation | QueryOperation[]) =>
-    getActiveDatabaseManager().query(operation);
+export const query = (operation: QueryOperation | QueryOperation[], options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().query(operation,options);
 
-export const createDb = (operation: CreateDbOperation) =>
-    getActiveDatabaseManager().createDb(operation);
+export const createDb = (operation: CreateDbOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().createDb(operation,options);
 
-export const dropDb = (operation: DropDbOperation) =>
-    getActiveDatabaseManager().dropDb(operation);
+export const dropDb = (operation: DropDbOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().dropDb(operation,options);
 
-export const switchDB = (operation: SwitchDbOperation) =>
-    getActiveDatabaseManager().switchDB(operation);
+export const switchDB = (operation: SwitchDbOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().switchDB(operation,options);
 
-export const createTable = (operation: CreateTableOperation) =>
-    getActiveDatabaseManager().createTable(operation);
+export const createTable = (operation: CreateTableOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().createTable(operation,options);
 
-export const dropTable = (operation: DropTableOperation) =>
-    getActiveDatabaseManager().dropTable(operation);
+export const dropTable = (operation: DropTableOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().dropTable(operation,options);
 
-export const alterTable = (operation: AlterTableOperation) =>
-    getActiveDatabaseManager().alterTable(operation);
+export const alterTable = (operation: AlterTableOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().alterTable(operation,options);
 
-export const turcunateTable = (operation: TruncateTableOperation) =>
-    getActiveDatabaseManager().turcunateTable(operation);
+export const turcunateTable = (operation: TruncateTableOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().turcunateTable(operation,options);
 
-export const createIndex = (operation: CreateIndexOperation) =>
-    getActiveDatabaseManager().createIndex(operation);
+export const createIndex = (operation: CreateIndexOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().createIndex(operation,options);
 
-export const dropIndex = (operation: DropIndexOperation) =>
-    getActiveDatabaseManager().dropIndex(operation);
+export const dropIndex = (operation: DropIndexOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().dropIndex(operation,options);
 
-export const insert = (operation: InsertOperation) =>
-    getActiveDatabaseManager().insert(operation);
+export const insert = (operation: InsertOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().insert(operation,options);
 
-export const select = (operation: SelectOperation) =>
-    getActiveDatabaseManager().select(operation);
+export const select = (operation: SelectOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().select(operation,options);
 
-export const update = (operation: UpdateOperation) =>
-    getActiveDatabaseManager().update(operation);
+export const update = (operation: UpdateOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().update(operation,options);
 
-export const remove = (operation: DeleteOperation) =>
-    getActiveDatabaseManager().delete(operation);
+export const remove = (operation: DeleteOperation, options?:DatabaseQueryOptions) =>
+    getActiveDatabaseManager().delete(operation,options);
 
 export { remove as delete };
 export { createTenantDatabaseFacade } from "./tenant.js";
@@ -212,3 +216,16 @@ export type {
 } from "./types.js";
 
 export default db;
+
+export type { CapabilitySupport, DatabaseCapabilities, DatabaseQueryOptions, DatabaseQueryMetric, DatabaseExecutionPolicy, DatabaseCountMetadata } from './types.js';
+export { createKeysetPage } from './pagination.js';
+export type { KeysetOrder, KeysetContinuation, KeysetPageOptions } from './pagination.js';
+
+export { executionPolicy as validateDatabaseExecutionPolicy } from './execution.js';
+
+export { createPinnedTransaction } from './manager.js';
+export type { TransactionIsolation, TransactionOptions, TransactionDatabase, DatabaseTransaction, PinnedTransactionAdapter, PinnedTransactionSession, PinnedTransactionCapabilities } from './transactions.js';
+export type { NormalizedConnectionConfig } from './types.js';
+
+export { createPinnedMigrationTransaction } from './migration-coordination.js';
+export type { MigrationLock, MigrationLockLease, MigrationCoordinationOptions } from './migration-coordination.js';

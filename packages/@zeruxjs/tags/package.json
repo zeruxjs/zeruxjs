@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/tags",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "description": "Server and browser tag manager with versioned containers, triggers and destinations",
   "main": "./dist/index.js",
@@ -9,6 +9,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./admin-client": {
+      "types": "./dist/admin-client.d.ts",
+      "default": "./dist/admin-client.js"
+    },
+    "./admin-view": {
+      "types": "./dist/admin-view.d.ts",
+      "default": "./dist/admin-view.js"
     }
   },
   "scripts": {
@@ -17,10 +25,11 @@
     "prepack": "npm run build"
   },
   "peerDependencies": {
-    "@zeruxjs/analytics": "0.0.3"
+    "@zeruxjs/analytics": "0.0.4"
   },
   "files": [
     "dist/",
+    "examples/",
     "README.md",
     "LICENSE-MIT",
     "LICENSE-APACHE"
@@ -30,8 +39,8 @@
   },
   "license": "(MIT OR Apache-2.0)",
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

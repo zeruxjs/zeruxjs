@@ -1,3 +1,4 @@
+import { syncCallback } from '../utils/_run.js';
 import type { BaseValidation, ErrorMessage } from '../types/index.js';
 import { _addIssue } from '../utils/index.js';
 import type { CheckIssue } from './types/check.js';
@@ -72,7 +73,7 @@ export function check(
     requirement,
     message,
     '~run'(dataset, config) {
-      if (dataset.typed && !this.requirement(dataset.value)) {
+      if (dataset.typed && !syncCallback(this.requirement, dataset.value)) {
         _addIssue(this, 'input', dataset, config);
       }
       return dataset;

@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/font",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Font Adding and Using",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -14,7 +14,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && esbuild src/browser.ts --bundle --platform=browser --format=esm --outfile=dist/browser.mjs",
     "dev": "tsc --watch",
     "test": "npm run build && node --test test/*.test.mjs",
     "prepack": "npm run build"
@@ -23,8 +23,31 @@
     "Font Adding and Using"
   ],
   "exports": {
-    ".": "./dist/index.js",
-    "./http": "./dist/http.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./http": {
+      "types": "./dist/http.d.ts",
+      "default": "./dist/http.js"
+    },
+    "./build": {
+      "types": "./dist/build.d.ts",
+      "default": "./dist/build.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.mjs",
+      "default": "./dist/browser.mjs"
+    },
+    "./zuix": {
+      "types": "./dist/zuix.d.ts",
+      "default": "./dist/zuix.js"
+    },
+    "./registry": {
+      "types": "./dist/registry.d.ts",
+      "default": "./dist/registry.js"
+    }
   },
   "files": [
     "dist/",
@@ -36,7 +59,8 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "esbuild": "0.28.2",
+    "typescript": "^5.9.3"
   }
 }

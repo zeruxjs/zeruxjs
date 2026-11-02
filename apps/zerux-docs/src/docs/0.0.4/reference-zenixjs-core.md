@@ -1,7 +1,7 @@
 ---
 {
   "title": "@zenixjs/core",
-  "description": "Current placeholder contract, installation and honest upgrade expectations.",
+  "description": "Minimal authorized CMS domain core, SQLite persistence and explicit limits.",
   "section": "Packages",
   "order": 210,
   "package": "@zenixjs/core",
@@ -17,27 +17,40 @@
 }
 ---
 
-## Current release contract
+## Implemented domain core
 
-`@zenixjs/core@0.0.3` is a public placeholder. The package exports version/status metadata; it does not provide a working CMS or admin application. The purpose of this guide is to distinguish the published contract from future plans, not to invent setup steps that the release cannot perform.
+`@zenixjs/core/cms` exposes an opt-in Node-only `createCms` over the existing SQLite
+connector. Root `version` and legacy `status` metadata remain compatible; new
+`capabilities` describes the minimal implemented scope. The separate `zenixjs/application` entry supplies initial host-configured SSR UI;
+the separate creator emits a host-configured SQLite integration scaffold. This core mounts no admin routes.
 
-## Install or inspect
+The core provides tenant/site-authorized sites, immutable content type versions,
+drafts, optimistic entry heads, immutable revision references, publication pointers
+and restore-to-new-draft. Auth-owned verified principals/permissions and explicit
+files media ownership/version/hash checks remain host integrations. Role names or
+client JSON never authenticate a caller.
 
-```ts
-import { version, status } from '@zenixjs/core';
-console.log(version, status);
+## Persistence and lifecycle
+
+Explicit `migrate:true` initializes schema v1 and its checksum journal on one native
+synchronous SQLite transaction. Head changes and revision inserts are also atomic;
+stale revisions conflict. Other adapters and async transaction parity are not claimed.
+Use a private file-backed database; without migration approval startup verifies the
+existing schema. The package README defines the journal and publication semantics.
+
+Plugins are explicit trusted setup code with generation-owned cleanup. Startup
+resource rollback does not undo already committed plugin writes. Await `close` to
+abort/drain callbacks, dispose resources and close only the owned connector.
+
+## Public imports
+
+```js
+import {version, status, capabilities} from '@zenixjs/core';
+import {createCms, cmsRolePermissions} from '@zenixjs/core/cms';
 ```
 
-Read the returned metadata to identify the installed release. There are no database migrations, authentication screens, routing integrations or CMS service options to enable in this placeholder.
-
-## TypeScript and configuration
-
-The installed declarations describe only the metadata export surface. A type assertion cannot create a future CMS API. Keep application configuration typed against the real Zerux runtime if building an application manually.
-
-There is no automatic `@zenixjs/core` key in `zerux.config.js` that activates an unfinished feature. Use the [manual installation guide](installation.md) for a working Zerux application and the package guides for implemented storage/cache/queue functionality. Do not copy future-roadmap examples into production and assume package installation supplies their dependencies.
-
-## Upgrading and troubleshooting
-
-Pin the version you actually inspected. When a future release implements functionality, review its changelog, public exports, migration/data policy and configuration contract before adopting it. Existing placeholder imports are not evidence of backward-compatible CMS implementation.
-
-If a command prints help but produces no files, that is the documented placeholder behavior. If an expected factory cannot be imported, inspect the installed version and exports instead of importing internal files. A registry name reservation and a successful tarball install do not certify a working application.
+The package's `examples/cms.mjs` shows private dependency injection and a minimal
+draft/publication flow. Host session proof, Origin/CSRF policy, media providers and
+private rendering remain explicit. Native SQLite fixtures check file-backed reopen,
+rollback, revision conflicts and denied sites; no browser/admin/provider qualification
+or complete CMS behavior is implied.

@@ -179,7 +179,7 @@ const createSlugDbModuleTypes = (): string => {
  * @returns Initialized manager or null when no database config exists.
  */
 export const initializeDatabaseRuntime = async (
-    config: ZeruxConfig
+    config: ZeruxConfig, activation?:{onActivate:(callback:()=>void)=>void}
 ): Promise<unknown | null> => {
     const managerPackage = typeof config.connectorManager === "string"
         ? config.connectorManager
@@ -190,24 +190,23 @@ export const initializeDatabaseRuntime = async (
     delete config.database;
     delete config.connectorManager;
 
-    unregister("db");
+
 
     if (!dbConfig || typeof dbConfig !== "object") {
         return null;
     }
 
     const moduleValue = await import(managerPackage) as DatabaseModuleNamespace;
-    const configure = moduleValue.configureDatabaseManager ?? moduleValue.createDatabaseManager;
+    if (activation && typeof moduleValue.createDatabaseManager !== 'function') throw new Error('Staged services require a non-publishing manager factory');
+    const configure = moduleValue.createDatabaseManager ?? moduleValue.configureDatabaseManager;
 
     if (typeof configure !== "function") {
         throw new Error(`[zerux database] Connector manager "${managerPackage}" does not export a manager factory`);
     }
 
     const manager = await configure(dbConfig as Record<string, unknown>);
-    if (moduleValue.setActiveDatabaseManager) {
-        moduleValue.setActiveDatabaseManager(manager);
-    }
-
+    const activate=()=>{
+    // Complete fallible file preparation before publishing the active manager.
     writeVirtualDbModule("default.mjs", createDefaultDbModuleSource(managerPackage));
     writeVirtualDbTypes("default.d.ts", createDefaultDbModuleTypes());
 
@@ -216,6 +215,8 @@ export const initializeDatabaseRuntime = async (
         writeVirtualDbTypes(`${slug}.d.ts`, createSlugDbModuleTypes());
     }
 
+    if (moduleValue.setActiveDatabaseManager) moduleValue.setActiveDatabaseManager(manager);
+    unregister('db');
     register("db", (identifier) => {
         if (!identifier) {
             const exportsObject = Object.fromEntries(
@@ -237,6 +238,9 @@ export const initializeDatabaseRuntime = async (
             ...facade
         };
     });
+
+    };
+    if(activation)activation.onActivate(activate);else activate();
 
     return manager;
 };

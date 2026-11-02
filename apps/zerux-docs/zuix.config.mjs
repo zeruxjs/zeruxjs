@@ -1,4 +1,5 @@
 import { themeRecipes, siteKeyframes } from "../../scripts/site-design.mjs";
+import docsLayoutRecipes from "./docs-layout.recipes.mjs";
 import recipes from "./zuix.recipes.mjs";
 import academyRecipes, { academyKeyframes } from "./academy.recipes.mjs";
 /** Docs utilities and component recipes, compiled at build time. */
@@ -103,6 +104,7 @@ export default {
       media: "print",
     },
     ...academyRecipes,
+    ...docsLayoutRecipes,
   ],
   prefix: "ui-",
   extend: {

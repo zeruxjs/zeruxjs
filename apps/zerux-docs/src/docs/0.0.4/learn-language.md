@@ -24,7 +24,7 @@ Create a small catalog, translate a greeting and quantity, and explain why a sha
 ## Prepare a typed catalog
 
 ```sh
-npm install zlocale@0.0.3
+npm install zlocale@0.0.4
 ```
 
 ```ts title="locales/fr.ts"

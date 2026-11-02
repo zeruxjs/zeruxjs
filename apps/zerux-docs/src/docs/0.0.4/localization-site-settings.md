@@ -26,7 +26,7 @@
 
 The site chooses its default language, supported locale allowlist, display timezone, locale URL/preference policy and required text domains. A module/plugin contributes message functions and catalogs for its own domain. Translation functions do not inspect a request or open files; they use the translator selected by the host.
 
-Install `zlocale@0.0.3`. Use `zlocale` in browser/server/shared code, `zlocale/node` only on Node, and `zlocale/zyro` when connecting reactive UI. This guide describes application integration. Installing the package does not automatically add a framework-managed `i18n` service, negotiate Accept-Language or build localized routes.
+Install `zlocale@0.0.4`. Use `zlocale` in browser/server/shared code, `zlocale/node` only on Node, and `zlocale/zyro` when connecting reactive UI. This guide describes application integration. Installing the package does not automatically add a framework-managed `i18n` service, negotiate Accept-Language or build localized routes.
 
 ## Define one typed language policy
 

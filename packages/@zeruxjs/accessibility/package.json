@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/accessibility",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Accesibilty Provider",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -32,7 +32,9 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "esbuild": "0.28.2",
+    "jsdom": "30.1.3",
+    "typescript": "^5.9.3"
   }
 }

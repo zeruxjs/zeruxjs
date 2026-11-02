@@ -21,7 +21,7 @@ export default {
         id: "0.0.4",
         label: "0.0.4",
         status: "Preview",
-        packageVersion: "0.0.3",
+        packageVersion: "0.0.4",
         reference: "workspace",
         ref: "version/v0.0.4",
       },

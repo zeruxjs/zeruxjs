@@ -26,7 +26,7 @@ For an isolated docs preview, use the app commands below. For deployment, use th
 
 Every document contains its full article, navigation, related links, source references and metadata in HTML. Search, code copying, package filtering, theme persistence and active-heading tracking are progressive enhancements. Reading and navigating require no JavaScript. No telemetry, external fonts or third-party browser services are loaded.
 
-This is build-time server rendering/static generation. It is intentionally an app-specific exporter: `zerux build` compiles Node server applications and does not currently supply a generic static-export pipeline. These docs do not add React/Vue component rendering or hydration to the framework.
+This is build-time server rendering/static generation. It is intentionally an app-specific exporter: `zerux build` compiles Node server applications; the separately invoked `zeruxjs/static-export` API owns generic public-page exports. These docs remain their own exporter and do not activate renderer hydration or runtime services.
 
 ## Content structure
 
@@ -88,7 +88,7 @@ Authored guides are mandatory for **every public package in a live workspace-bac
 
 Document setup, a useful example, ownership/cleanup, error behavior, constraints and related tasks. Distinguish framework startup options from standalone factory options. Link the implementation and use public imports. Name callbacks and resources supplied by the application rather than implying they are built-ins. Make authorization, durability, transaction and coverage boundaries explicit where they matter.
 
-The learning path covers installation, a working notes application, runtime architecture, file conventions, requests, configuration/environment, middleware, plugins, workers, data/services, frontend bridges, operations and API references. Each `@zeruxjs` package has an authored task-focused guide; the directory covers all 52 public packages. The homepage is a learning portal, not a generated manifest listing.
+The learning path covers installation, a working notes application, runtime architecture, file conventions, requests, configuration/environment, middleware, plugins, workers, data/services, frontend bridges, operations and API references. Each `@zeruxjs` package has an authored task-focused guide; the build checks the discovered public-package inventory rather than a fixed count (55 at this reconciliation). The homepage links six authored documentation collections and retains the course/solution finder.
 
 ## Versioning and archived references
 
@@ -97,10 +97,10 @@ The live version reads local public manifests and READMEs. The framework version
 Before bumping live package versions:
 
 ```sh
-npm run snapshot -- 0.0.3
+npm run snapshot -- <configured-version-matching-framework>
 ```
 
-This creates a new `src/docs/0.0.4/reference.snapshot.json` without overwriting an existing snapshot. Commit it, set that version's `reference` to `snapshot`, and pin its `ref` to the release Git tag/commit in `zerux.config.js` under `documentation`. Then add the new version configuration/content folder and update `documentation.latest`. Frozen references are not read from newer workspace manifests. Version switching preserves the current slug when available, falling back to introduction.
+The command refuses an unconfigured version, a docs/framework version mismatch or an existing snapshot. The 0.0.4 preview reads matching package 0.0.4 workspace references. Freezing them remains an explicit reviewed action; the version bump creates or modifies no snapshots. Commit it, set that version's `reference` to `snapshot`, and pin its `ref` to the release Git tag/commit in `zerux.config.js` under `documentation`. Then add the new version configuration/content folder and update `documentation.latest`. Frozen references are not read from newer workspace manifests. Version switching preserves the current slug when available, falling back to introduction.
 
 Archive sources should use immutable Git refs. Edit links still target the docs source on master so corrections can be contributed.
 
@@ -150,16 +150,16 @@ The framework configuration is primarily for runtime service startup: database, 
 
 ## Detailed configuration and package coverage
 
-The Configuration navigation group contains a handbook, complete local/production-shaped examples and individual database, cache, files, email, analytics, tags, reports, queue, server, structure, theme, protocol, worker and auth/security chapters. Each separates actual runtime consumption from declared/custom settings and standalone factories. The TypeScript guide covers strict NodeNext checking, typed config, public option/result inference and unknown-data validation.
+The Guide collection includes a Configuration chapter group containing a handbook, complete local/production-shaped examples and individual database, cache, files, email, analytics, tags, reports, queue, server, structure, theme, protocol, worker and auth/security chapters. Each separates actual runtime consumption from declared/custom settings and standalone factories. The TypeScript guide covers strict NodeNext checking, typed config, public option/result inference and unknown-data validation.
 
 Every public package now has an authored setup/status page. Preserve established `reference-*` slugs when replacing generated reference content so published URLs remain valid. Package sections cover installation, actual integration path, TypeScript, operations/lifecycle and relevant public option types. Source-backed field tables describe declared values; optional is not a default and a root index signature is not feature activation. Update both prose and option contracts when source APIs change, and freeze release references before a version bump.
 
-Portal learning paths are defined once in `src/lib/learning-paths.mjs` and shared by the HTML and raw Markdown portal, avoiding mismatched navigation as the handbook grows. Validate self-contained examples with the installed public declarations; report real integration/browser checks separately from typechecks.
+Primary collections are defined once in `src/lib/navigation.mjs` and shared by the HTML and raw Markdown portal; course learning paths remain in `src/lib/learning-paths.mjs`. Validate self-contained examples with the installed public declarations; report real integration/browser checks separately from typechecks.
 
 
 Documentation retention: keep major/minor documentation lines, with only the latest patch for each retained line. The current 0.0 line is documented at 0.0.4; 0.0.2 is removed rather than duplicated.
 
-This branch previews docs 0.0.4 with `packageVersion: "0.0.3"`, so package installation examples and generated references remain truthful without a package release. Source links target `version/v0.0.4`.
+This branch previews docs 0.0.4 with `packageVersion: "0.0.4"`, so package installation examples and generated references remain truthful without a package release. Source links target `version/v0.0.4`.
 
 
 ## Learning, task finding and browser-local progress
@@ -181,3 +181,29 @@ Offline support is explicitly opt-in: `offline.js` registers `sw.js` only after 
 The worker keeps at most a bounded set of previously read eligible pages/assets, with a 1 MiB per-response budget and an explicit offline fallback. Unvisited/oversized pages are not promised offline. It waits for an explicit update action before replacing an active worker, and cleanup touches only this mount's cache prefix. Removal keeps learning progress. Installation is browser-dependent; no push notifications or account background services are used. `manifest.webmanifest` and code-native PNG/SVG icons support install prompts on eligible secure origins. Preview server MIME types include manifest/PNG files.
 
 Run the static validator after every build. It now checks one main heading, landmarks, structured metadata, PWA scope/icons and existing raw Markdown/link/search integrity. For interactive changes, verify a real browser: storage denial/corruption, duplicate points, resume/reset/bookmarks, keyboard opt-out/focus, reduced motion, mobile overflow, dark contrast, no-JavaScript reading and actual offline requests. Performance scores are environment-specific measurements, not blanket production certification.
+
+
+## Reconciled navigation and presentation
+
+The primary navigation has **Get Started, Structure, Guide, API, Deploy and Examples**, with contextual chapter sidebars, a desktop on-page outline, raw Markdown actions and native mobile disclosures. `src/lib/navigation.mjs` is the single taxonomy for header/sidebar/previous-next. Existing versioned slugs and archived reference behavior remain unchanged. An optional `navigation` metadata field selects one of `start`, `structure`, `guide`, `api`, `deploy`, `examples`; unknown values fail content loading. Otherwise existing section/package metadata determines the collection. API package chapters are grouped by responsibility and only the selected family opens initially.
+
+The layout follows the reading/navigation pattern of the [Nuxt docs reference](https://nuxt.com/docs/4.x/getting-started/introduction), using original templates/Zuixs recipes and the existing shared lavender/teal light/dark palette. It imports no Nuxt UI assets or remote fonts. `docs-layout.recipes.mjs` owns this app's chrome, after shared and learning recipes. It does not change package styles or the ecosystem homepage. All six tabs and all article content work without JavaScript; search/theme/progress/offline remain optional local enhancements. No Community collection was added.
+
+Structure documentation covers every accepted `type` (`fix`, `dynamic`, `function`), root/src layouts, every discovery directory, explicit module registration and multisite mapping. It states their actual limits: the current runtime shares discovery across all three labels; `function` influences the resolver's fallback environment but does not implement cloud/serverless packaging.
+
+Every public package has exactly one authored package guide. Feature guides such as GraphQL are not duplicate package claims. The Valkey guide consumes the implemented optional adapter; MCP documentation points to `zhost/protocols`, and a regression check prevents a separate removed MCP workspace/dependency from returning. Generators and CMS chapters describe source-implemented modes and mandatory private host policies, without implying workspace versions were published.
+
+The portable public-import example is `examples/renderer-data-queue.mjs`, linked from the Examples collection. Importing it is inert. Its explicit synthetic SQLite initialization is separate from runtime registration; queue jobs carry a known reference and shutdown closes the worker before the database. The fixture injects a queue, so successful docs checks do not establish live Redis acceptance or DB/broker atomicity.
+
+### Focused checks
+
+```sh
+# Build with already-built required workspace tools; no runtime services start.
+npm run build --ignore-scripts --workspace=zeruxjs-docs
+npm run check --workspace=zeruxjs-docs
+node --test apps/zerux-docs/test/reconciliation.test.mjs
+# Optional installed Chrome; fails if unavailable. No HTTP service or external fetches.
+node apps/zerux-docs/scripts/browser-check.mjs
+```
+
+The native browser fixture uses Chrome CDP pipes and serves generated files through request interception; all external requests are denied. It checks desktop/mobile overflow, light/dark palette, six tabs, headings, no-JavaScript reading and keyboard search. Browser profiles/processes are owned and removed on exit. `CHROME_BIN` chooses a trusted installed executable; `DOCS_SCREENSHOTS` optionally writes local verification images outside the app. Chrome 156 Linux was exercised in this task; other engines and assistive technologies were not. Never label an injected provider fixture or a static export as production integration acceptance.

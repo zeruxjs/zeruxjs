@@ -20,7 +20,7 @@
 ## Installation and integration path
 
 ```sh
-npm install zhost@0.0.3
+npm install zhost@0.0.4
 ```
 
 This package has its own public API. Installing it does not create an automatic runtime service key in `zerux.config.js`. Use the framework integration described below or initialize it in the tool/application that owns its lifetime.
@@ -220,3 +220,53 @@ Run the real owning application/tool with a normal input and a failure input. In
 | `burst` | `number` | No | Maximum burst per client; defaults to ratePerSecond. |
 | `maxActiveRequests` | `number` | No | Maximum number of upstream HTTP requests globally in flight. |
 | `maxBodyBytes` | `number` | No | Streaming request body size limit. Also checked against Content-Length. |
+
+## Application-owned protocol adapters
+
+Import `createTransportRegistry`, `createHttpTransportAdapter`,
+`createWebSocketTransportAdapter`, `createProtocolGateway` and
+`transportCapabilityMatrix` from `zhost/protocols`. Register only trusted adapter
+factories; unknown transport names fail without package discovery. Registration
+is inert, startup checks readiness, and failure rolls back partial resources in
+reverse order. Numeric-IP binds reject duplicate fixed ports before startup;
+port zero is supported for disposable listeners.
+
+The HTTP adapter owns its gateway and requires explicit authorization, including
+loopback. Gateway `authorizeEndpoint` adds per-path policy; method/tool handlers
+still own tenant and operation authorization. Forwarding headers are not proof
+of identity. WebSocket upgrades require their own authorization and explicit
+browser origin allowances. Message sizes, work concurrency and cooperative
+signals are bounded; a disconnected handler retains capacity until it settles.
+Stop closes admission, signals work, closes streams/sockets, then drains actual
+pending work. Uncooperative JavaScript is not forcibly cancelled.
+
+The runtime matrix distinguishes native HTTP/WS/SSE/JSON-RPC from JSON-only
+Connect/tRPC and stateless MCP core subsets. Existing gRPC support forwards
+HTTP/2 frames to an upstream; there is no native gRPC service adapter. QUIC and
+WebTransport require explicitly configured external implementations. Generic SSE
+is not MCP resumable Streamable HTTP. The package README includes a runnable
+public-import factory and the detailed limits/authentication matrix.
+
+## Proxy overload and bounded drain
+
+Use `createProxyServer({ getRoutes, proxyPort, limits })` with explicit workload
+budgets. Optional `maxConnections` caps TCP sockets, `maxActivePerClient` caps
+concurrent work per direct socket peer, and `maxActiveStreams` caps upgraded
+WebSockets within the existing global `maxActiveRequests` ceiling. HTTP/SSE and
+HTTP/2 requests share the global ceiling. Forwarded headers cannot change peer
+identity, and a shared front proxy groups callers unless the owning application
+applies a separate authenticated identity policy. Limits are process-local;
+distributed rate accounting remains the security package's atomic-store contract.
+
+`proxy.getAdmissionStatus()` exposes fixed counters without peer/URL labels.
+Capacity rejects with 503; configured rate exhaustion rejects with 429. There is
+no unbounded queue or automatic replay. TCP overload can close a connection before
+HTTP exists. The package README contains a public-import listener factory.
+
+Piping preserves upload/download backpressure; downstream disconnect destroys
+identity and compressed response sources. Partially delivered POSTs are never
+rerouted to another backend. Existing cache privacy, health selection, rolling
+replacement and restart budgets remain authoritative. Drain accepts integer
+0–300000ms deadlines and closes remaining sockets after waiting; it does not prove
+rollback of an upstream operation. Focused loopback workloads test overload and
+cleanup, without claiming a production performance gain.

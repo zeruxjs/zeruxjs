@@ -30,7 +30,21 @@ Create state per request when it includes private/user-specific data. A module s
 
 createReactStore supports a pinned serverSnapshot. Supply the same shape/value through the initial hydration payload and a stable getServerSnapshot on the client. Stabilize selectors with useCallback or a module function; a selector allocating a new object on every read needs an appropriate comparator/memoization strategy.
 
-Injected useMemo/useSyncExternalStore must be real React hooks invoked within components. The adapter does not own React's component lifetime. Do not run a hook function at module top level because it has a use-style name.
+Injected useMemo/useSyncExternalStore must be real React hooks invoked within components. The core hook adapter does not own a React root's lifetime. Do not run a hook function at module top level because it has a use-style name.
+
+The optional `@zeruxjs/react/server` and `/browser` entries now provide explicit
+native string SSR and root mount/update/hydrate/unmount through matching host
+peers. `/hydration` pairs a validated per-request public payload with its pinned
+server snapshot. See [React stores and native rendering](package-react.md) and the
+package README for the checked three-file example. These entries do not make
+framework registration or browser bundle/state transport automatic; native
+renderToString cannot wait for suspended data.
+
+The optional `@zeruxjs/vue/server` and `/browser` entries now own native runtime-only
+apps with explicit lifetime. They reject request-time templates, require matching
+peers, and leave public state transport/build-time compilation with the host. See
+[Vue bindings and native rendering](package-vue.md) for controlled-form hydration
+semantics and the checked example.
 
 ## Vue scopes
 

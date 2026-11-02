@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -138,8 +139,8 @@ export function mapAsync(
             Promise.all([
               inputKey,
               inputValue,
-              this.key['~run']({ value: inputKey }, config),
-              this.value['~run']({ value: inputValue }, config),
+              _runSchema(this.key, { value: inputKey }, config),
+              _runSchema(this.value, { value: inputValue }, config),
             ])
           )
         );

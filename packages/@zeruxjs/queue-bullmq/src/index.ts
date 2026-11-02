@@ -1,3 +1,5 @@
+import {copyJobPayload,QUEUE_JOB_LIMITS} from './payload.js';
+export {QUEUE_JOB_LIMITS} from './payload.js';
 import { randomUUID } from 'node:crypto';
 import {createQueueDashboard, type QueueDashboardOptions} from './dashboard.js';
 export {createQueueDashboard} from './dashboard.js';
@@ -134,7 +136,7 @@ const validName = (name:string, kind:string) => {
 };
 function validateJobOptions(options:QueueJobOptions | undefined) {
   if (options === undefined) return;
-  if (!options || typeof options !== 'object' || Array.isArray(options)) throw new TypeError('Invalid job options');
+  if (!options || typeof options !== 'object' || Array.isArray(options)||Object.keys(options).some(key=>!['jobId','delay','priority','attempts','backoff','removeOnComplete','removeOnFail','repeat','deduplication'].includes(key))) throw new TypeError('Invalid job options');
   if (options.jobId !== undefined && !validJobId(options.jobId)) throw new TypeError('Invalid jobId');
   if (options.delay !== undefined) validPositive(options.delay,0,366*86_400_000,'job delay');
   if (options.priority !== undefined) validPositive(options.priority,0,2_097_152,'job priority');
@@ -166,15 +168,15 @@ function validateJobOptions(options:QueueJobOptions | undefined) {
     if (r.pattern!==undefined && (typeof r.pattern!=='string'||r.pattern.length>100||!([5,6].includes(r.pattern.trim().split(/\s+/).length))))throw new TypeError('Invalid repeat cron pattern');
   }
 }
-const deadline = async <T>(promise:Promise<T>, ms:number, message:string):Promise<T> => {
+const deadline = async <T>(promise:Promise<T>, ms:number, message:string,onTimeout?:()=>void):Promise<T> => {
   let timer:ReturnType<typeof setTimeout>|undefined;
-  try {return await Promise.race([promise,new Promise<T>((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms);timer.unref?.();})]);}
+  try {return await Promise.race([promise,new Promise<T>((_,reject)=>{timer=setTimeout(()=>{onTimeout?.();reject(new Error(message));},ms);timer.unref?.();})]);}
   finally {if(timer)clearTimeout(timer);}
 };
 
 /** Create a managed BullMQ service. Inject a factory in unit tests; normally load real bullmq. */
 export async function createQueueService(config:QueueServiceConfig, injected?:BullMQFactory, injectedCluster?:BullMQClusterConstructor) {
-  if (!config || !config.redis || !Array.isArray(config.queues) || !config.queues.length) throw new TypeError('Queue requires Redis settings and at least one named queue');
+  if (!config || !config.redis || !Array.isArray(config.queues) || !config.queues.length || config.queues.length>256) throw new TypeError('Queue requires Redis settings and at least one named queue');
   const prefix = config.prefix ?? 'zerux';
   if (config.redis.cluster) {
     if (!/^\{[A-Za-z0-9][A-Za-z0-9_.-]{0,63}\}$/.test(prefix))throw new TypeError('Redis Cluster needs an explicit hash-tagged BullMQ prefix, e.g. {tenant-a}');
@@ -194,6 +196,7 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
   if(config.shutdownGraceMs!==undefined)validPositive(config.shutdownGraceMs,1,300_000,'shutdown grace period');
   if(config.readyTimeoutMs!==undefined)validPositive(config.readyTimeoutMs,1,120_000,'queue ready timeout');
   if(config.administration?.maxPageSize!==undefined)validPositive(config.administration.maxPageSize,1,100,'administration.maxPageSize');
+  const shutdownGrace=config.shutdownGraceMs??30_000;
   const moduleName='bullmq';
   const bullmq=injected??await import(moduleName) as unknown as BullMQFactory;
   let ownedCluster: {producer:BullMQClusterClient;worker:BullMQClusterClient}|undefined;
@@ -213,6 +216,18 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
   const eventStreams=new Map<string,QueueEventsLike>();
   let closed=false,closePromise:Promise<void>|undefined;
   const ensureOpen=()=>{if(closed)throw new Error('Queue service is closed');};
+  let closingState:QueueShutdownStatus['state']='open',activeProcessors=0,pendingClosures=0,workerDeadlines=0,forceCloseAttempts=0,cleanupDeadlines=0,cleanupFailures=0;
+  const closeResource=async(work:()=>Promise<unknown>,ms:number,message:string,worker=false)=>{
+    pendingClosures++;const pending=Promise.resolve().then(work);
+    pending.then(()=>{pendingClosures--;},()=>{pendingClosures--;});
+    return deadline(pending,ms,message,()=>{cleanupDeadlines++;if(worker)workerDeadlines++;});
+  };
+  const prepareJob=(jobName:string,data:JobData,opts?:QueueJobOptions)=>{validName(jobName,'job');validateJobOptions(opts);return {name:jobName,data:copyJobPayload(data),opts};};
+  const prepareBulk=(jobs:Array<{name:string;data:JobData;options?:QueueJobOptions}>)=>{
+    if(!Array.isArray(jobs)||jobs.length>QUEUE_JOB_LIMITS.maxBulk||Object.keys(jobs).length!==jobs.length||Object.keys(jobs).some((key,index)=>key!==String(index)))throw new RangeError('Queue bulk count limit exceeded');
+    let bytes=0;return jobs.map(job=>{const prepared=prepareJob(job.name,job.data,job.options);bytes+=Buffer.byteLength(JSON.stringify(prepared.data));if(bytes>QUEUE_JOB_LIMITS.maxBulkBytes)throw new RangeError('Queue bulk byte limit exceeded');return prepared;});
+  };
+
   const getQueue=(name:string)=>{ensureOpen();const q=queues.get(name);if(!q)throw new Error(`Unknown queue: ${name}`);return q;};
   const policy=config.administration;
   const authorize=async(action:QueueAdminAction,name:string,context:unknown)=>{
@@ -295,17 +310,21 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
   };
   const manager={
     operations,
+    shutdownStatus():QueueShutdownStatus {
+      const state=closingState==='incomplete'&&!pendingClosures&&!activeProcessors?'closed':closingState;
+      return {state,activeProcessors,pendingClosures,workerDeadlines,forceCloseAttempts,cleanupDeadlines,cleanupFailures};
+    },
     routes:()=>config.dashboard?createQueueDashboard({names:()=>[...queues.keys()],operations},config.dashboard).routes():[],
     schedules(name:string) {
       const q=getQueue(name);
       // Bind the scheduler to this runtime generation: calls after close are rejected.
       return createQueueTaskScheduler({
-        add:(jobName,data,opts)=>{ensureOpen();return q.add(jobName,data,opts);},
-        addBulk:jobs=>{ensureOpen();return q.addBulk(jobs.map(j=>({name:j.name,data:j.data,opts:j.options})));},
+        add:(jobName,data,opts)=>{ensureOpen();const job=prepareJob(jobName,data,opts);return q.add(job.name,job.data,job.opts);},
+        addBulk:jobs=>{ensureOpen();return q.addBulk(prepareBulk(jobs));},
         getJob:id=>{ensureOpen();return q.getJob(id);},
         counts:(...states)=>{ensureOpen();return q.getJobCounts(...states);},
         pause:()=>{ensureOpen();return q.pause();},resume:()=>{ensureOpen();return q.resume();},
-        upsertJobScheduler:(id,repeat,template)=>{ensureOpen();if(!q.upsertJobScheduler)throw new Error("BullMQ Job Scheduler unavailable");return q.upsertJobScheduler(id,repeat,template);},
+        upsertJobScheduler:(id,repeat,template)=>{ensureOpen();if(!q.upsertJobScheduler)throw new Error("BullMQ Job Scheduler unavailable");const job=prepareJob(template.name,template.data,template.opts);return q.upsertJobScheduler(id,repeat,{name:job.name,data:job.data,opts:job.opts??{}});},
         removeJobScheduler:(id)=>{ensureOpen();if(!q.removeJobScheduler)throw new Error("BullMQ Job Scheduler unavailable");return q.removeJobScheduler(id);},
         getJobSchedulers:(start,end,asc)=>{ensureOpen();if(!q.getJobSchedulers)throw new Error("BullMQ Job Scheduler unavailable");return q.getJobSchedulers(start,end,asc);}
       });
@@ -313,8 +332,8 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
     queue(name:string):ZeruxQueue {
       const q=getQueue(name);
       return {
-        add(jobName,data,opts){ensureOpen();validName(jobName,'job');validateJobOptions(opts);return q.add(jobName,data,opts);},
-        addBulk(jobs){ensureOpen();for(const job of jobs){validName(job.name,'job');validateJobOptions(job.options);}return q.addBulk(jobs.map(j=>({name:j.name,data:j.data,opts:j.options})));},
+        add(jobName,data,opts){ensureOpen();const job=prepareJob(jobName,data,opts);return q.add(job.name,job.data,job.opts);},
+        addBulk(jobs){ensureOpen();return q.addBulk(prepareBulk(jobs));},
         getJob(id){ensureOpen();return q.getJob(id);},
         counts(...states){ensureOpen();return q.getJobCounts(...states);},
         pause(){ensureOpen();return q.pause();},resume(){ensureOpen();return q.resume();}
@@ -339,22 +358,23 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
     },
     async close() {
       if(closePromise)return closePromise;
-      closed=true;
+      closed=true;closingState='draining';
       closePromise=(async()=>{
         const errors:unknown[]=[];
-        const grace=config.shutdownGraceMs??30_000;
+        const grace=shutdownGrace;
         for(const worker of [...workers.values()].reverse()) {
-          // A worker can be stuck in a user-supplied processor; force-close after the grace period.
-          try {await deadline(worker.close(),grace,'Worker shutdown deadline');}
-          catch(error){try {await deadline(worker.close(true),Math.min(grace,5_000),'Forced worker shutdown deadline');}catch(forceError){errors.push(error,forceError);}}
+          // Attempt native force-close after grace; this cannot stop user JavaScript.
+          try {await closeResource(()=>worker.close(),grace,'Worker shutdown deadline',true);}
+          catch(error){forceCloseAttempts++;try {await closeResource(()=>worker.close(true),Math.min(grace,5_000),'Forced worker shutdown deadline',true);}catch(forceError){errors.push(error,forceError);}}
         }
-        for(const stream of [...eventStreams.values()].reverse()) {try{await deadline(stream.close(),Math.min(grace,5_000),'Queue events shutdown deadline');}catch(error){errors.push(error);}}
-        for(const queue of [...queues.values()].reverse()) {try {await deadline(queue.close(),Math.min(grace,5_000),'Queue shutdown deadline');}catch(error){errors.push(error);}}
+        for(const stream of [...eventStreams.values()].reverse()) {try{await closeResource(()=>stream.close(),Math.min(grace,5_000),'Queue events shutdown deadline');}catch(error){errors.push(error);}}
+        for(const queue of [...queues.values()].reverse()) {try {await closeResource(()=>queue.close(),Math.min(grace,5_000),'Queue shutdown deadline');}catch(error){errors.push(error);}}
         workers.clear();eventStreams.clear();queues.clear();
         if(ownedCluster)for(const cluster of [ownedCluster.worker,ownedCluster.producer]){
-          try{await deadline(cluster.quit(),Math.min(grace,5_000),'Redis Cluster close deadline');}
-          catch(error){errors.push(error);}
+          try{await closeResource(()=>cluster.quit(),Math.min(grace,5_000),'Redis Cluster close deadline');}
+          catch(error){errors.push(error);if('disconnect' in cluster&&typeof cluster.disconnect==='function')try{cluster.disconnect();}catch(disconnectError){errors.push(disconnectError);}}
         }
+        cleanupFailures=errors.length;closingState=errors.length?'failed':pendingClosures||activeProcessors?'incomplete':'closed';
         if(errors.length)throw new AggregateError(errors,'Queue service shutdown failed');
       })();
       return closePromise;
@@ -380,7 +400,7 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
         for(const type of ['completed','failed','waiting','active','stalled','progress'] as const){
           stream.on(type,(payload:unknown)=>{
             const obj=payload&&typeof payload==='object'?payload as {jobId?:unknown}:{};
-            const jobId=typeof obj.jobId==='string'?obj.jobId:undefined;
+            const jobId=typeof obj.jobId==='string'&&obj.jobId.length<=256&&!/[\x00-\x1f\x7f]/.test(obj.jobId)?obj.jobId:undefined;
             try{config.events?.onEvent?.({queue:def.name,type,at:new Date().toISOString(),...(jobId?{jobId}:{})});}catch{/* No callback may crash the stream */}
           });
         }
@@ -390,12 +410,18 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
     }
     for(const [name,options] of Object.entries(config.workers??{})) {
       // The Worker uses a dedicated connection configuration for blocking operations.
-      const worker=new bullmq.Worker(name,options.processor,{connection:connection.worker,prefix,concurrency:options.concurrency??1,autorun:options.autorun??true,...(options.lockDuration?{lockDuration:options.lockDuration}:{}),...(options.limiter?{limiter:options.limiter}:{})});
-      worker.on('error',(error:unknown)=>{try{config.onWorkerError?.(name,error);}catch{/* logging must never terminate a worker */}});
+      const process=options.processor;
+      const processor:JobProcessor=async(job,token)=>{ensureOpen();copyJobPayload(job.data);activeProcessors++;try{return await process(job,token);}finally{activeProcessors--;}};
+      const worker=new bullmq.Worker(name,processor,{connection:connection.worker,prefix,concurrency:options.concurrency??1,autorun:options.autorun??true,...(options.lockDuration?{lockDuration:options.lockDuration}:{}),...(options.limiter?{limiter:options.limiter}:{})});
       workers.set(name,worker);
+      worker.on('error',(error:unknown)=>{try{config.onWorkerError?.(name,error);}catch{/* logging must never terminate a worker */}});
     }
     return manager;
   }catch(error){try{await manager.close();}catch{/* preserve the startup error */}throw error;}
+}
+export interface QueueShutdownStatus {
+ state:'open'|'draining'|'closed'|'incomplete'|'failed';activeProcessors:number;
+ pendingClosures:number;workerDeadlines:number;forceCloseAttempts:number;cleanupDeadlines:number;cleanupFailures:number;
 }
 export type QueueService=Awaited<ReturnType<typeof createQueueService>>;
 

@@ -6,7 +6,11 @@
   "order": 26,
   "sources": [
     "packages/@zeruxjs/ai-model/README.md",
-    "packages/@zeruxjs/ai-model/package.json"
+    "packages/@zeruxjs/ai-model/package.json",
+    "packages/@zeruxjs/ai-model/src/corpus.ts",
+    "packages/@zeruxjs/ai-model/examples/corpus.mjs",
+    "packages/@zeruxjs/ai-model/src/evidence.ts",
+    "packages/@zeruxjs/ai-model/examples/evidence.mjs"
   ],
   "related": [
     "packages",
@@ -44,7 +48,7 @@ Apply document authorization before populating/searching the knowledge base. Sea
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/ai-model@0.0.3
+npm install @zeruxjs/ai-model@0.0.4
 ```
 
 There is no automatic `ai-model` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
@@ -104,3 +108,40 @@ These tables list fields declared directly on the named public contract. Referen
 | `limit` | `number` | Yes |
 | `maxExcerptCharacters` | `number` | Yes |
 | `maxTotalCharacters` | `number` | Yes |
+
+
+## Reproducible public corpus
+
+The optional `@zeruxjs/ai-model/corpus` entry reads an explicit allowlist of public
+manifests, matching public export declarations and authored docs. It checks Git
+ignore rules and excludes notes/private/generated sources. No source module is
+evaluated and no provider call starts automatically.
+
+Sources/chunks retain paths, content/indexed-text hashes, package/version and
+public-module/symbol labels. Current manifest hashes gate cache reuse; changed
+sources replace chunks and removed sources disappear. Candidate validation and
+atomic private snapshots preserve the prior file on failure.
+
+An explicit reader requires a verified tenant/subject and reauthorizes each source
+before lexical retrieval. Evidence remains untrusted quoted data, not permission
+to run instructions or tools. Authored docs are labeled claims, not proof of tested
+features. Read the package README and corpus example for source/snapshot budgets,
+Git requirements, stable-checkout assumptions and host privacy/authorization duties.
+
+
+## Ranked evidence with explicit insufficiency
+
+The optional evidence entry adds configured field-weighted lexical ranking and a
+host-injected authorized-candidate embedding capability. Authorization precedes
+ranking/packing and asynchronous permission changes reject the entire result.
+Remote embedding requires explicit host approval; no SDK or upload is enabled by
+default.
+
+Full serialized prompt budgets use a declared token estimator or conservative
+UTF-8 fallback. Duplicate/overlapping chunks are removed with retained source
+spans. Results distinguish insufficient evidence, coverage and context truncation.
+The new buffered assistant rejects citations outside returned evidence and skips
+the provider when evidence is insufficient. This validates IDs, not truth or
+prompt-injection safety. See README and evidence example for exact limits and the
+small reproducible ranking comparison; no live semantic-provider evaluation is
+claimed.

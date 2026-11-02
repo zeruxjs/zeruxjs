@@ -19,8 +19,22 @@ export interface PutFileOptions {
 export interface ReadFileOptions { start?: number; end?: number; signal?: AbortSignal }
 export interface ListFileOptions { prefix?: string; limit?: number; cursor?: string }
 export interface FileListing { items: FileInfo[]; nextCursor?: string }
+/** Unknown metadata is not a guarantee. Native provider claims require provider qualification. */
+export interface StorageCapabilities {
+  readonly range: boolean | 'unknown';
+  readonly multipart: boolean | 'unknown';
+  readonly resumableMultipart?: boolean | 'unknown';
+  readonly multipartCreateOnly?: boolean | 'unknown';
+  readonly signedUrls: boolean | 'unknown';
+  readonly createOnlyWrite: boolean | 'unknown';
+  readonly createOnlyStream: boolean | 'unknown';
+  readonly createOnlyCopy: boolean | 'unknown';
+  readonly encryption: readonly string[];
+}
 export interface StorageDriver {
+  readonly capabilities?: Readonly<StorageCapabilities>;
   readonly kind: string;
+  readonly multipartOperations?: import('./multipart-types.js').NativeMultipartOperations;
   put(address: FileAddress, data: FileSource, options?: PutFileOptions): Promise<FileInfo>;
   stat(address: FileAddress): Promise<FileInfo | null>;
   read(address: FileAddress, options?: ReadFileOptions): Promise<AsyncIterable<Uint8Array>>;
@@ -34,6 +48,8 @@ export interface StorageDriver {
 export interface StorageDefinition { name: string; driver: StorageDriver; readonly?: boolean; allowedTypes?: string[]; allowedBuckets?: string[]; keyPrefix?: string; maxBytes?: number }
 export interface StorageManagerOptions { stores: StorageDefinition[]; defaultStorage?: string; cache?: { maxEntries?: number; maxBytes?: number; ttlMs?: number } }
 export interface StorageManager {
+  /** Validates write policy without opening storage resources. Required by resumable uploads. */
+  validateWrite?(address:FileAddress, options:PutFileOptions):FileAddress;
   put(address: FileAddress, data: FileSource, options?: PutFileOptions): Promise<FileInfo>;
   stat(address: FileAddress): Promise<FileInfo | null>;
   read(address: FileAddress, options?: ReadFileOptions): Promise<AsyncIterable<Uint8Array>>;

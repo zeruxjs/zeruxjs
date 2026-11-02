@@ -1,6 +1,6 @@
 import type { JsonRpcRequest, JsonRpcResponse } from './types.js';
 import { ResourceRegistry, ToolRegistry } from './registry.js';
-export interface McpServerOptions { name: string; version: string; tools?: ToolRegistry; resources?: ResourceRegistry; protocolVersion?: string }
+export interface McpServerOptions { name: string; version: string; tools?: ToolRegistry; resources?: ResourceRegistry; protocolVersion?: string; onError?:(error:unknown)=>void }
 const ok = (id: string | number | null, result: unknown): JsonRpcResponse => ({ jsonrpc: '2.0', id, result });
 const fail = (id: string | number | null, code: number, message: string): JsonRpcResponse => ({ jsonrpc: '2.0', id, error: { code, message } });
 /** MCP core tools and resources, suitable for stateless Streamable HTTP JSON responses.
@@ -10,7 +10,7 @@ export function createMcpServer(options: McpServerOptions) {
   const tools = options.tools ?? new ToolRegistry();
   const resources = options.resources ?? new ResourceRegistry();
   const protocolVersion = options.protocolVersion ?? '2025-11-25';
-  return { tools, resources, protocolVersion, async handle(request: unknown): Promise<JsonRpcResponse | null> {
+  return { tools, resources, protocolVersion, async handle(request: unknown,context:import('../json-rpc.js').RpcContext={}): Promise<JsonRpcResponse | null> {
     if (!request || typeof request !== 'object' || Array.isArray(request)) return fail(null, -32600, 'Invalid Request');
     const item = request as Partial<JsonRpcRequest>;
     if (item.jsonrpc !== '2.0' || typeof item.method !== 'string' ||
@@ -34,9 +34,9 @@ export function createMcpServer(options: McpServerOptions) {
           const p = item.params as { name?: unknown; arguments?: Record<string, unknown> } | undefined;
           if (typeof p?.name !== 'string') return fail(id, -32602, 'Tool name required');
           try {
-            const result = await tools.call(p.name, p.arguments ?? {});
+            const result = await tools.call(p.name, p.arguments ?? {},context);
             return ok(id, { content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) ?? 'null' }] });
-          } catch (err) { return ok(id, { isError: true, content: [{ type: 'text', text: err instanceof Error ? err.message : 'Tool execution failed' }] }); }
+          } catch (err) { try { options.onError?.(err); } catch {} return ok(id, { isError: true, content: [{ type: 'text', text: 'Tool execution failed' }] }); }
         }
         default: return fail(id, -32601, 'Method not found');
       }

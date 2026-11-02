@@ -44,7 +44,7 @@ Use real Mongo sessions/transactions for atomic multi-document work and journals
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/db-mongo@0.0.3
+npm install @zeruxjs/db-mongo@0.0.4
 ```
 
 This package participates in the runtime's **database** integration. Start with [database configuration](configuration-database.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.
@@ -86,7 +86,7 @@ These tables list fields declared directly on the named public contract. Referen
 | Field | Accepted type/value | Optional |
 | --- | --- | --- |
 | `db` | `MongoDbLike` | Yes |
-| `client` | `{ db(name?: string): MongoDbLike; }` | Yes |
+| `client` | `MongoClientLike` | Yes |
 | `database` | `string` | Yes |
 | `uri` | `string` | Yes |
 | `url` | `string` | Yes |
@@ -96,3 +96,13 @@ These tables list fields declared directly on the named public contract. Referen
 | `fixedDatabase` | `boolean` | Yes |
 | `locked` | `boolean` | Yes |
 | `lockDatabase` | `boolean` | Yes |
+
+## Opt-in pinned session lifecycle
+
+Set `transactions: true` with a client (or URI-created client) to run a bounded hello deployment probe before advertising transactions. Replica-set/mongos session/wire support is required; standalone fails before a callback starts. This is a prerequisite check, not certification of FCV, permissions or all shard restrictions. db-only/executor injection cannot opt in. See the package README for a compiled public-import example.
+
+The shared transaction facade passes one session through CRUD/find/aggregation and cursor creation. Only snapshot isolation is negotiated, with primary reads and majority writes. DDL, database switching, savepoints and native cancellation are unsupported. Callback execution is once; TransientTransactionError is returned after cleanup. `maxCommitAttempts` defaults to 1 (maximum 3), retrying only UnknownTransactionCommitResult on commit, without replaying writes or external side effects. Driver-internal command retries are separate.
+
+`maxSessions` defaults to 32; `maxCommitTimeMS` to 10000 and `probeTimeoutMS` to 5000. Cooperative deadlines drain native work before abort/endSession and may exceed their duration. Disconnect waits for accepted work/sessions and only closes URI-created clients; initialization failure rolls back owned acquisition. Injected clients retain host ownership.
+
+Projection/group literals are wrapped in $literal; executable expression objects and unsafe fields reject. Index definitions validate before namespace creation. Unfiltered-write protection applies to executors too: supply a predicate or explicitly enable the trusted bulk policy. Existing matched/modified counts and narrow analytics aggregation shapes are preserved. BSON parser behavior remains driver-owned; no lossless JSON-number conversion is claimed. Live checks require a disposable replica-set/sharded `ZX_TEST_MONGO_URI`; offline fixtures do not prove engine/failover/precision behavior.

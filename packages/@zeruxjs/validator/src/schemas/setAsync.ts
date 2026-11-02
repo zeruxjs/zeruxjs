@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -113,7 +114,7 @@ export function setAsync(
             async (inputValue) =>
               [
                 inputValue,
-                await this.value['~run']({ value: inputValue }, config),
+                await _runSchema(this.value, { value: inputValue }, config),
               ] as const
           )
         );

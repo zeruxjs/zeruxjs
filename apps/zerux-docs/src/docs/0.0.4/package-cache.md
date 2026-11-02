@@ -63,7 +63,7 @@ Include tenant and data-version boundaries in keys. Do not include secrets or ra
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/cache@0.0.3
+npm install @zeruxjs/cache@0.0.4
 ```
 
 This package participates in the runtime's **cache** integration. Start with [cache configuration](configuration-cache.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.
@@ -132,3 +132,11 @@ These tables list fields declared directly on the named public contract. Referen
 | `hits` | `number` | No |
 | `misses` | `number` | No |
 | `evictions` | `number` | No |
+
+## Capabilities, limits and cleanup
+
+Scoped managers snapshot optional adapter capability metadata. Missing declarations are unknown; explicit unsupported operations reject and policy.requireCapabilities demands supported declarations. Memory supports conditions/counters/namespace clear, with unsupported bulk atomicity. Void set does not reveal a conditional miss. Provider numeric ranges/TTL/bulk failure semantics differ; no distributed guarantees are synthesized.
+
+The package-owned CachePolicy bounds bulk count, pending remember jobs, key/value bytes and JSON depth. Memory applies equivalent direct-helper limits and evicts counter-created entries. Remember producers receive a cooperative signal/deadline; caller cancellation detaches only its waiter. Timed-out producers retain slots until settlement and cannot write late results. Close rejects stale use, aborts/drains production/native calls and closes an owned helper once. Use ownHelper:false when sharing a helper across tenant managers and close it from the host afterward. Active convenience APIs remain process-global compatibility APIs, not tenant/generation routing.
+
+Framework cache.policy validates before provider startup. See the package README for exact defaults, numeric semantics, compatibility limits and a compiled public-import example. No live Redis/Memcached acceptance is implied by memory/injected checks.

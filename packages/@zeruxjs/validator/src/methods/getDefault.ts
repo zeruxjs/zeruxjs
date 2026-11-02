@@ -1,3 +1,4 @@
+import { syncValue, AsyncValidationError } from '../utils/_run.js';
 import type {
   ExactOptionalSchema,
   ExactOptionalSchemaAsync,
@@ -100,10 +101,11 @@ export function getDefault<
   dataset?: UnknownDataset,
   config?: Config<InferIssue<TSchema>>
 ): InferDefault<TSchema> {
+  if (!schema.async && 'default' in schema && typeof schema.default === 'function' && schema.default.constructor.name === 'AsyncFunction') throw new AsyncValidationError();
   // @ts-expect-error
   return typeof schema.default === 'function'
     ? // @ts-expect-error
-    schema.default(dataset, config)
+    (schema.async ? schema.default(dataset, config) : syncValue(schema.default(dataset, config)))
     : // @ts-expect-error
     schema.default;
 }

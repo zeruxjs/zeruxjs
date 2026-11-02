@@ -86,6 +86,8 @@ export interface DiscoveredRoute {
 }
 
 export interface ZeruxRequestContext {
+    render<V>(renderer:import('../renderers.js').RendererRegistration<V>,view:NoInfer<V>,feature?:import('../renderers.js').RendererFeature):Promise<import('../renderers.js').RendererResult>;
+    readonly requestLifecycle?: import('@zeruxjs/hooks').RequestHookContext;
     req: IncomingMessage;
     res: ServerResponse;
     method: string;
@@ -107,15 +109,23 @@ export interface ZeruxRequestContext {
     state: Record<string, unknown>;
     env: NodeJS.ProcessEnv;
     services: {
-        get(name: import("./services.js").ServiceName): unknown;
+        get(name: import("./service-definitions.js").RuntimeServiceName): unknown;
         controllers: Record<string, unknown>;
         composables: Record<string, unknown>;
     };
 }
 
 export interface ZeruxPluginApi {
+    /** Opted-in GET routes only; handlers and source metadata remain private. */
+    navigationManifest(options: import('../navigation-manifest.js').PublicRouteManifestOptions):import('../navigation-manifest.js').PublicRouteManifest;
+    /** Generation-owned registration authority; never a process-global renderer. */
+    renderers(): import('../renderers.js').RendererRegistry;
+    /** Generation-owned cleanup, including failed preparation. */
+    onDispose(cleanup: () => void | Promise<void>): void;
+    /** Exact route/method presence for explicit registration collision checks. */
+    hasRoute(pattern: string, method: string): boolean;
     /** Get an initialized generation-scoped database/cache/files/analytics/email manager. */
-    service<T = unknown>(name: import("./services.js").ServiceName): T | undefined;
+    service<T = unknown>(name: import("./service-definitions.js").RuntimeServiceName): T | undefined;
     /** Template variables are isolated to this runtime generation. */
     variables(): import('../variables.js').VariableRegistry;
     /** Register MCP, JSON-RPC, Connect, tRPC and SSE handlers before server startup. */
@@ -190,6 +200,9 @@ export interface ZeruxRuntime {
     readonly serviceScope: import("./services.js").RuntimeServiceScope;
     readonly variables: import('../variables.js').VariableRegistry;
     closeServices(): Promise<void>;
+    activateServices(): void;
+    getHealthStatus(): import("../observability.js").HealthSnapshot;
+    getTelemetryStatus(): ReturnType<typeof import("../observability.js").createRequestObserver>["status"] extends () => infer T ? T : never;
     getLoadStatus(windowMs?: number): import("../metrics.js").ApplicationHttpStatus;
     entryModulePath: string | null;
     createHandler(): (req: IncomingMessage, res: ServerResponse) => Promise<void>;

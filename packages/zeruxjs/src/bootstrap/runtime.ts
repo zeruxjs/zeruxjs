@@ -1,3 +1,13 @@
+import {sanitizePathname,compileRoutePattern,compareRoutePatterns} from '../route-pattern.js';
+import {createPublicRouteManifest} from '../navigation-manifest.js';
+import {loadBuildParser,isClientModuleSource} from '../compiler/module-boundaries.js';
+import {createRendererRegistry,isRenderedHtml} from '../renderers.js';
+import { randomBytes } from 'node:crypto';
+import type { ServerLifecycleEvents } from '@zeruxjs/hooks';
+import { validateCoreConfig } from './config-validation.js';
+import { createServerLifecycleBridge, getServerRequestLifecycle } from './server-lifecycle.js';
+import { createRequestObserver } from '../observability.js';
+import { acceptsApiError, normalizeApiError, ApplicationError } from '../exceptions/api-error.js';
 import fs from "node:fs";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -9,7 +19,6 @@ import { isRedirectResponse } from "../navigation.js";
 import { getResolvedTheme, getThemeConfig, getThemeMode } from "../theme.js";
 import { initializeRuntimeServices, type RuntimeServiceScope } from "./services.js";
 import { registerServiceHttpRoutes, serviceRouteOverlaps } from "./service-http.js";
-import { redactManifestConfig } from "./manifest-config.js";
 import { createZeruxProtocols, type ZeruxProtocols } from "../protocols.js";
 import { ApplicationHttpMetrics } from "../metrics.js";
 import { createVariableRegistry } from "../variables.js";
@@ -94,11 +103,6 @@ const extractModuleValue = <T>(loaded: any, fallbacks: string[]): T | null => {
     return null;
 };
 
-const sanitizePathname = (pathname: string) => {
-    if (!pathname || pathname === "/") return "/";
-    const normalized = pathname.replace(/\/+/g, "/");
-    return normalized.endsWith("/") && normalized !== "/" ? normalized.slice(0, -1) : normalized;
-};
 
 const normalizeHost = (host: string) => host.split(":")[0].toLowerCase();
 
@@ -328,8 +332,12 @@ const setThemePreferenceHeaders = (res: ServerResponse, config: ZeruxConfig) => 
     res.setHeader("Permissions-Policy", "ch-prefers-color-scheme=*");
 };
 
-const sendResponse = (res: ServerResponse, payload: unknown, statusCode = 200, context?: ZeruxRequestContext) => {
+const sendResponse = async (res: ServerResponse, payload: unknown, statusCode = 200, context?: ZeruxRequestContext) => {
     if (res.writableEnded) return;
+    if(statusCode>=400 && context && (acceptsApiError(context.req.headers.accept)||context.state.zeruxApiError===true)) {
+        payload=normalizeApiError(new ApplicationError(statusCode)).body;
+        res.setHeader('cache-control','no-store');res.setHeader('vary','Accept');
+    }
 
     if (isCached(payload)) {
         applyCachePolicy(res, payload.policy);
@@ -342,7 +350,8 @@ const sendResponse = (res: ServerResponse, payload: unknown, statusCode = 200, c
         }
         payload = payload.value;
     }
-    if (isStream(payload)) { sendStream(res, payload, context?.req); return; }
+    if (isRenderedHtml(payload)) { for(const [key,value]of Object.entries(payload.headers??{}))res.setHeader(key,value);res.setHeader('Cache-Control','no-store');res.statusCode=statusCode;res.setHeader('Content-Type','text/html; charset=utf-8');if(context?.req.method==='HEAD'){res.setHeader('Content-Length',Buffer.byteLength(payload.html));res.end();}else res.end(payload.html);return; }
+    if (isStream(payload)) { await sendStream(res, payload, context?.req); return; }
     if (isRedirectResponse(payload)) {
         res.setHeader("Location", payload.location);
         res.writeHead(payload.statusCode);
@@ -415,73 +424,7 @@ const routePathFromFile = (appDir: string, filePath: string) => {
     return segments.length ? `/${segments.join("/")}` : "/";
 };
 
-const compileRoutePattern = (pattern: string) => {
-    const sanitized = sanitizePathname(pattern);
-    if (sanitized === "/") {
-        return {
-            regex: /^\/$/,
-            keys: [] as string[]
-        };
-    }
-
-    const keys: string[] = [];
-    const source = sanitized
-        .split("/")
-        .filter(Boolean)
-        .map((segment) => {
-            if (segment.startsWith(":") && segment.endsWith("*")) {
-                const key = segment.slice(1, -1);
-                keys.push(key);
-                return `(?<${key}>.+)`;
-            }
-
-            if (segment.startsWith(":")) {
-                const key = segment.slice(1);
-                keys.push(key);
-                return `(?<${key}>[^/]+)`;
-            }
-
-            if (segment.startsWith("{") && segment.endsWith("}")) {
-                const folder = segment.slice(1, -1);
-                const literal = segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                const publicSegment = folder.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                return `(?:${literal}|${publicSegment})`;
-            }
-
-            return segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        })
-        .join("/");
-
-    return {
-        regex: new RegExp(`^/${source}$`),
-        keys
-    };
-};
-
-const getRoutePriority = (route: DiscoveredRoute) => {
-    const segments = route.pattern.split("/").filter(Boolean);
-    const staticSegments = segments.filter((segment) => !segment.startsWith(":")).length;
-    const wildcardSegments = segments.filter((segment) => segment.startsWith(":") && segment.endsWith("*")).length;
-
-    return {
-        segmentCount: segments.length,
-        staticSegments,
-        wildcardSegments
-    };
-};
-
-const sortRoutes = (routes: DiscoveredRoute[]) =>
-    routes.sort((left, right) => {
-        const leftPriority = getRoutePriority(left);
-        const rightPriority = getRoutePriority(right);
-
-        return (
-            rightPriority.segmentCount - leftPriority.segmentCount ||
-            rightPriority.staticSegments - leftPriority.staticSegments ||
-            leftPriority.wildcardSegments - rightPriority.wildcardSegments ||
-            left.pattern.localeCompare(right.pattern)
-        );
-    });
+const sortRoutes = (routes:DiscoveredRoute[]) => routes.sort(compareRoutePatterns);
 
 const serveStaticFile = (res: ServerResponse, filePath: string) => {
     const content = fs.readFileSync(filePath);
@@ -585,6 +528,7 @@ const discoverRoutes = async (
             continue;
         }
 
+        if(mode==='dev'){const source=fs.readFileSync(filePath,'utf8');if(source.includes('use client')||/\.client\.[cm]?[jt]sx?$/.test(filePath)){const parser=await loadBuildParser(rootDir);if(isClientModuleSource(parser,filePath,source))continue;}}
         const loaded = await importModule(filePath, mode);
         const declaredPattern =
             typeof loaded.routePath === "string" ? loaded.routePath :
@@ -669,9 +613,11 @@ const createRuntime = async (
     mode: RuntimeMode,
     config: ZeruxConfig,
     structure: ResolvedStructure,
-    serviceScope: RuntimeServiceScope
+    serviceScope: RuntimeServiceScope,
+    notifyGeneration: (phase: Extract<keyof ServerLifecycleEvents, `generation:${string}`>) => void
 ): Promise<ZeruxRuntime> => {
     const middleware = new Map<string, MiddlewareFunction>();
+    const rendererRegistry=createRendererRegistry();
     const globalMiddleware: string[] = [];
     const controllers = new Map<string, unknown>();
     const composables = new Map<string, unknown>();
@@ -682,9 +628,17 @@ const createRuntime = async (
     const publicFiles = collectPublicFiles(rootDir, structure.publicDirs);
     const multisiteEnabled = config.multisite === true;
     const httpMetrics = new ApplicationHttpMetrics();
+    const observer = createRequestObserver(config.observability);
+    delete config.observability;
+    const lifecycleHooks = config.lifecycleHooks; delete config.lifecycleHooks;
+    const lifecycle = createServerLifecycleBridge(observer.generationId, lifecycleHooks, observer.report);
+    let closePromise: Promise<void> | undefined, activated = false;
+    let runtimeClosed=false;
     // Each generation owns its registered template values; the global singleton
     // is only a backwards-compatible convenience, never an app boundary.
     const variableRegistry = createVariableRegistry();
+    const pluginDisposers: (()=>void|Promise<void>)[] = [];
+    const disposePlugins = async () => { const errors:unknown[]=[];for(const dispose of pluginDisposers.splice(0).reverse())try{await dispose();}catch(error){errors.push(error);}if(errors.length)throw new AggregateError(errors,'Plugin cleanup failed'); };
     let routesSealed = false;
     let appProtocols: ZeruxProtocols | undefined;
     const protocols = () => {
@@ -692,6 +646,7 @@ const createRuntime = async (
         return appProtocols ??= createZeruxProtocols(config.protocols);
     };
 
+    try {
     const middlewareModules = await loadModulesFromDirectories(rootDir, structure.middlewareDirs, mode);
     for (const module of middlewareModules) {
         const fn = extractModuleValue<MiddlewareFunction>(module.exports, [
@@ -725,6 +680,12 @@ const createRuntime = async (
     let runtime!: ZeruxRuntime;
 
     const pluginApi: ZeruxPluginApi = {
+        renderers:()=>rendererRegistry,
+        navigationManifest(options) {
+            return createPublicRouteManifest({...options,routes:routes.filter(route=>route.methods.GET||route.methods.ALL).filter(route=>route.meta?.navigation!==undefined).map(route=>({...((route.meta!.navigation) as import('../navigation-manifest.js').NavigationRouteMetadata),pattern:route.pattern}))});
+        },
+        onDispose(cleanup) { if(typeof cleanup!=='function'||runtimeClosed||pluginDisposers.length>=128)throw new Error('Invalid plugin cleanup');pluginDisposers.push(cleanup); },
+        hasRoute(pattern,method) { return routes.some(route=>route.pattern===sanitizePathname(pattern)&&route.methods[normalizeMethod(method)]!==undefined); },
         protocols,
         service: (name) => serviceScope.get(name),
         variables: () => variableRegistry,
@@ -872,6 +833,7 @@ const createRuntime = async (
         }
     }
 
+    for(const route of routes.filter(route=>route.id.startsWith('module:')))for(const method of Object.keys(route.methods))if(routes.some(other=>other!==route&&other.pattern===route.pattern&&other.methods[method]))throw new Error('Module route collides with file/plugin route');
     // Reserved Fetch endpoints belong to this generation, with collision protection.
     registerServiceHttpRoutes(pluginApi, serviceScope, [...routes.map(route => route.pattern), ...publicFiles.keys()]);
     routesSealed = true;
@@ -895,10 +857,21 @@ const createRuntime = async (
         closeProtocols() { appProtocols?.close(); },
         serviceScope,
         variables: variableRegistry,
-        closeServices() { variableRegistry.clear(); return serviceScope.close(); },
+        activateServices() { try { serviceScope.activate(); if (!activated) { activated = true; notifyGeneration('generation:activate'); } } catch (error) { notifyGeneration('generation:error'); throw error; } },
+        closeServices() {
+            if (!closePromise) closePromise = Promise.resolve().then(async () => {
+                runtimeClosed=true; notifyGeneration('generation:close'); lifecycle.close(); variableRegistry.clear();
+                try { const errors:unknown[]=[];try{await disposePlugins();}catch(error){errors.push(error);}try{await rendererRegistry.close();}catch(error){errors.push(error);}try{await serviceScope.close();}catch(error){errors.push(error);}if(errors.length)throw new AggregateError(errors,'Runtime cleanup failed'); }
+                catch (error) { notifyGeneration('generation:error'); throw error; }
+                finally { try { await observer.close(); } finally { notifyGeneration('generation:closed'); } }
+            });
+            return closePromise;
+        },
+        getHealthStatus() { return {live:!runtimeClosed,ready:!runtimeClosed&&!serviceScope.status().some(item=>item.state==='degraded'||item.state==='closed')}; },
+        getTelemetryStatus() { return observer.status(); },
         getLoadStatus(windowMs) { return httpMetrics.snapshot(windowMs); },
         createHandler() {
-            return async (req: IncomingMessage, res: ServerResponse) => {
+            return observer.wrap(lifecycle.wrap(async (req: IncomingMessage, res: ServerResponse) => {
                 httpMetrics.track(req, res);
                 const host = req.headers.host || "";
                 const allowedDomains = config.server?.allowedDomains ?? config.allowedDomains ?? [];
@@ -906,19 +879,20 @@ const createRuntime = async (
                 setThemePreferenceHeaders(res, config);
 
                 if (!isAllowedHost(host, allowedDomains, allowedDevDomain)) {
-                    const message = `Access from unallowed host "${host}" is restricted. Please add it to "allowedDomains" in your zerux.config.ts if this is intended.`;
+                    const message = 'Request host is not allowed';
                     if (mode === "dev") {
                         logger.error(message);
-                        sendResponse(res, { error: "Unallowed Host", message }, 400);
+                        await sendResponse(res, acceptsApiError(req.headers.accept)?normalizeApiError(new ApplicationError(400)).body:{ error: "Unallowed Host", message }, 400);
                         return;
                     } else {
-                        logger.error(`Access from unallowed host "${host}" ignored.`);
+                        logger.error('Request host is not allowed');
                         res.destroy();
                         return;
                     }
                 }
 
                 let context: ZeruxRequestContext | undefined;
+                let declaredApi=false;
                 try {
                     const url = new URL(req.url || "/", "http://127.0.0.1");
                     const pathname = sanitizePathname(url.pathname);
@@ -934,14 +908,16 @@ const createRuntime = async (
                     const contentType = req.headers["content-type"] || "";
                     let body: unknown = undefined;
                     const earlyRoute = matchRoute(sortRoutes(routes), pathname, method);
+                    declaredApi=earlyRoute?.route.meta?.api===true;
                     const internalServiceRequest = earlyRoute?.route.id.startsWith('service:') === true;
                     const streamBody = earlyRoute?.route.meta?.streamBody === true && (!multisiteEnabled || internalServiceRequest);
                     if (req.method && !["GET", "HEAD"].includes(req.method.toUpperCase()) && !streamBody) {
                         const rawBody = await readRequestBody(req);
                         if (rawBody.length > 0) {
-                            body = contentType.includes("application/json")
-                                ? JSON.parse(rawBody.toString("utf-8"))
-                                : rawBody.toString("utf-8");
+                            if(contentType.includes("application/json")) {
+                                try { body=JSON.parse(rawBody.toString("utf-8")); }
+                                catch(error) { throw new ApplicationError(400,error); }
+                            } else body=rawBody.toString("utf-8");
                         }
                     }
 
@@ -966,6 +942,8 @@ const createRuntime = async (
                     };
 
                     context = {
+                        requestLifecycle: getServerRequestLifecycle(req)?.context,
+                        render:(registration,view,feature)=>{const request=getServerRequestLifecycle(req)?.context;if(!request)throw new Error('Renderer request lifecycle unavailable');return rendererRegistry.render(registration,view,{requestId:request.requestId,pathname:context!.pathname,signal:request.signal},feature);},
                         req,
                         res,
                         method,
@@ -988,7 +966,7 @@ const createRuntime = async (
                         logger,
                         config,
                         runtime,
-                        state: {},
+                        state: {zeruxApiError:declaredApi},
                         env: process.env,
                         services: {
                             get: name => serviceScope.get(name),
@@ -1015,7 +993,7 @@ const createRuntime = async (
                         if (current) {
                             const result = await current(context!, () => dispatchGlobal(cursor + 1));
                             if (!res.writableEnded && result !== undefined) {
-                                sendResponse(res, result, 200, context);
+                                await sendResponse(res, result, 200, context);
                             }
                             return;
                         }
@@ -1024,7 +1002,7 @@ const createRuntime = async (
 
                     await dispatchGlobal(0);
                     if (!passedGlobalMiddleware) {
-                        if (!res.headersSent && !res.writableEnded) sendResponse(res, {error: 'Forbidden'}, 403, context);
+                        if (!res.headersSent && !res.writableEnded) await sendResponse(res, {error: 'Forbidden'}, 403, context);
                         return;
                     }
                     applyRegisteredMultisite();
@@ -1032,24 +1010,25 @@ const createRuntime = async (
                     if (res.writableEnded) return;
 
                     const match = matchRoute(sortRoutes(routes), context.pathname, method);
+                    getServerRequestLifecycle(req)?.route(match?.route.pattern ?? null);
 
                     if (!match) {
-                        sendResponse(res, {
-                            message: `Route not found for ${method} ${context.pathname}`
+                        await sendResponse(res, {
+                            message: 'Route not found'
                         }, 404, context);
                         return;
                     }
 
                     if (multisiteRegistrationMissed && isRootDynamicRoute(match.route)) {
-                        sendResponse(res, {
-                            message: `Route not found for ${method} ${pathname}`
+                        await sendResponse(res, {
+                            message: 'Route not found'
                         }, 404, context);
                         return;
                     }
 
                     if (!match.handler) {
-                        sendResponse(res, {
-                            message: `Method ${method} not allowed on ${match.route.pattern}`
+                        await sendResponse(res, {
+                            message: 'Method not allowed'
                         }, 405, context);
                         return;
                     }
@@ -1059,7 +1038,7 @@ const createRuntime = async (
                     const missingMiddleware = match.route.middleware.filter(name => !globalMiddleware.includes(name) && !middleware.has(name));
                     if (missingMiddleware.length) {
                         logger.error('Route references unregistered middleware', {path: match.route.pattern});
-                        sendResponse(res, {error: 'Route middleware unavailable'}, 500, context);
+                        await sendResponse(res, {error: 'Route middleware unavailable'}, 500, context);
                         return;
                     }
                     const routeMiddlewareStack = [...new Set(match.route.middleware)]
@@ -1078,27 +1057,32 @@ const createRuntime = async (
                         if (current) {
                             const result = await current(context!, () => dispatchRoute(cursor + 1));
                             if (!res.writableEnded && result !== undefined) {
-                                sendResponse(res, result, 200, context);
+                                await sendResponse(res, result, 200, context);
                             }
                             return;
                         }
 
                         const result = await match.handler!(context!);
                         if (!res.writableEnded) {
-                            sendResponse(res, result, 200, context);
+                            await sendResponse(res, result, 200, context);
                         }
                     };
 
                     await dispatchRoute(0);
                 } catch (error) {
-                    const normalized = (error && typeof error === "object" && "statusCode" in error && error.statusCode === 413)
+                    getServerRequestLifecycle(req)?.error('handler');
+                    observer.report(error);
+                    const apiError = acceptsApiError(req.headers.accept) || declaredApi;
+                    const normalized = apiError ? normalizeApiError(error) : (error && typeof error === "object" && "statusCode" in error && error.statusCode === 413)
                         ? { status: 413, body: { error: "Payload Too Large" } }
                         : exceptionHandler(error);
-                    if (!res.writableEnded) {
-                        sendResponse(res, normalized.body, normalized.status, context);
+                    if (res.headersSent) { if(!res.writableEnded)res.destroy(); }
+                    else if (!res.writableEnded) {
+                        if(apiError){res.setHeader('cache-control','no-store');res.setHeader('vary','Accept');}
+                        await sendResponse(res, normalized.body, normalized.status, context);
                     }
                 }
-            };
+            }));
         },
         asPluginApi() {
             return pluginApi;
@@ -1109,7 +1093,7 @@ const createRuntime = async (
                 mode,
                 rootDir,
                 entryModulePath,
-                config: redactManifestConfig(config),
+                config: serviceScope.publicConfig(),
                 services: serviceScope.status(),
                 structure: {
                     ...structure,
@@ -1121,8 +1105,7 @@ const createRuntime = async (
                 controllers: [...controllers.keys()].sort(),
                 composables: [...composables.keys()].sort(),
                 workers: [...workers.values()].map((worker) => ({
-                    name: worker.name,
-                    meta: worker.meta
+                    name: worker.name
                 })),
                 threadWorkers: [...threadWorkers.values()].map((worker) => ({
                     name: worker.name,
@@ -1143,6 +1126,7 @@ const createRuntime = async (
     };
 
     return runtime;
+    } catch (error) { lifecycle.close(); variableRegistry.clear(); appProtocols?.close();const errors:unknown[]=[error];try{await disposePlugins();}catch(cleanup){errors.push(cleanup);}try{await rendererRegistry.close();}catch(cleanup){errors.push(cleanup);}await observer.close();if(errors.length>1)throw new AggregateError(errors,'Runtime preparation cleanup failed');throw error; }
 };
 
 export const bootstrapApplication = async (
@@ -1150,23 +1134,30 @@ export const bootstrapApplication = async (
     mode: RuntimeMode,
     config: ZeruxConfig,
     structure: ResolvedStructure,
-    providers: Partial<ServiceInitializers> = {}
+    providers: Partial<ServiceInitializers> = {},
+    options:{deferActivation?:boolean}={}
 ): Promise<BootstrapResult> => {
-    // Never publish raw service configuration on globalThis: it may contain
-    // DB passwords, SMTP tokens, signing keys or provider secrets.
-    const serviceScope = await initializeRuntimeServices(config, rootDir, providers);
-    let runtime: ZeruxRuntime;
+    validateCoreConfig(config);
+    const hooks = config.lifecycleHooks, generationId = config.observability?.generationId ?? randomBytes(12).toString('hex');
+    config.observability = { ...config.observability, generationId };
+    const phases = new Set<string>();
+    const notify = (phase: Extract<keyof ServerLifecycleEvents, `generation:${string}`>) => {
+        if (phases.has(phase)) return; phases.add(phase);
+        try { hooks?.dispatch(phase, Object.freeze({ generationId })); } catch { logger.error('Generation lifecycle observer failed'); }
+    };
+    notify('generation:prepare');
+    let serviceScope: RuntimeServiceScope | undefined;
     try {
-        runtime = await createRuntime(rootDir, mode, config, structure, serviceScope);
+        serviceScope = await initializeRuntimeServices(config, rootDir, providers, options);
+        const runtime = await createRuntime(rootDir, mode, config, structure, serviceScope, notify);
+        notify('generation:ready');
+        if (!options.deferActivation) runtime.activateServices();
+        return { config, structure, runtime, manifestPath: "" };
     } catch (error) {
-        await serviceScope.close().catch(() => {});
+        notify('generation:error'); notify('generation:close');
+        try { await serviceScope?.close(); }
+        catch (cleanup) { throw new AggregateError([error, cleanup], 'Application preparation and rollback failed'); }
+        finally { notify('generation:closed'); }
         throw error;
     }
-
-    return {
-        config,
-        structure,
-        runtime,
-        manifestPath: ""
-    };
 };

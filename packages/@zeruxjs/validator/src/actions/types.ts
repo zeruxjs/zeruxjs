@@ -1,3 +1,4 @@
+import type { ValidationContext } from '../types/runtime.js';
 import type { MaybePromise, MaybeReadonly } from '../types/index.js';
 
 /**
@@ -20,7 +21,8 @@ export type ArrayRequirement<TInput extends ArrayInput> = (
 export type ArrayRequirementAsync<TInput extends ArrayInput> = (
   item: TInput[number],
   index: number,
-  array: TInput
+  array: TInput,
+  context: ValidationContext
 ) => MaybePromise<boolean>;
 
 /**

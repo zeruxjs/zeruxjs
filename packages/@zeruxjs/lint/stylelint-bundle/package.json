@@ -1,6 +1,6 @@
 {
   "name": "zeruxjs-stylelint-security-bundle",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "private": true,
   "dependencies": {
     "stylelint": "17.16.0",

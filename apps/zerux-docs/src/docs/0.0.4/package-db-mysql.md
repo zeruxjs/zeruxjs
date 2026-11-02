@@ -43,7 +43,7 @@ Only connector-created pools are closed by disconnect. Budget connections across
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/db-mysql@0.0.3
+npm install @zeruxjs/db-mysql@0.0.4
 ```
 
 This package participates in the runtime's **database** integration. Start with [database configuration](configuration-database.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.
@@ -75,3 +75,11 @@ Only connector-owned pools are disconnected automatically. Use a pinned native c
 - Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
 - Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
 - Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
+
+## Pinned DML transactions and count policy
+
+`createConnector` exposes `transaction(fn, options)` on pool-backed transports and the shared manager transaction adapter. The adapter pins getConnection through commit/rollback/release; SQL DDL is excluded because MySQL can implicitly commit. Isolation uses one-shot SET TRANSACTION. Query-only clients/executors reject this capability. Cooperative timeout/cancellation drains native work before rollback, and may exceed the deadline; native query cancellation is unsupported.
+
+Owned pools enable FOUND_ROWS by default (`affectedRowsMode: 'matched'`), preserving zero CAS misses and separate changedRows. Choose `'changed'` to disable FOUND_ROWS; injected pools must declare their actual host-owned handshake policy. Owned BIGINT/DECIMAL values preserve strings; no parser can repair precision already lost by a borrowed transport. Generic RETURNING rejects before acquisition.
+
+`acquireTimeoutMs` (default 5000) and `maxPendingAcquires` (32) bound acquisition independently. Late acquisitions release once, failed transaction cleanup destroys uncertain connections, and disconnect waits before ending only owned pools. TLS objects enforce certificate/hostname verification; multiple statements and insecure TLS verification reject. See the package README for the runnable public-import claim example and exact limits. Live acceptance requires a dedicated `ZX_TEST_MYSQL_URL`; fixtures do not prove backend behavior.

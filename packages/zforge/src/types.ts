@@ -12,6 +12,8 @@ export interface SharedDevRegistrationOptions {
     allowedDevDomain?: string;
     serviceName?: string;
     devtools?: {
+        /** Exact trusted development embedding origins; not host-routing patterns. */
+        frameAncestors?: string[];
         modules: Array<string | { package: string; enabled?: boolean; options?: Record<string, unknown> }>;
     };
 }
@@ -28,6 +30,7 @@ export interface SharedDevRegistration {
     allowedDevDomain: string | null;
     serviceName: string;
     devtools: {
+        frameAncestors?: string[];
         modules: Array<string | { package: string; enabled?: boolean; options?: Record<string, unknown> }>;
     };
     startedAt: string;

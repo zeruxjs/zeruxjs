@@ -7,7 +7,11 @@
   "package": "zclivo",
   "sources": [
     "packages/zclivo/README.md",
-    "packages/zclivo/package.json"
+    "packages/zclivo/package.json",
+    "packages/zclivo/src/commands.ts",
+    "packages/zclivo/src/options.ts",
+    "packages/zclivo/src/plugin-loader.ts",
+    "packages/zclivo/src/lifecycle.ts"
   ],
   "related": [
     "packages",
@@ -20,7 +24,7 @@
 ## Installation and integration path
 
 ```sh
-npm install zclivo@0.0.3
+npm install zclivo@0.0.4
 ```
 
 This package has its own public API. Installing it does not create an automatic runtime service key in `zerux.config.js`. Use the framework integration described below or initialize it in the tool/application that owns its lifetime.
@@ -88,3 +92,102 @@ Run the real owning application/tool with a normal input and a failure input. In
 | --- | --- | --- | --- |
 | `language` | `StarterLanguage` | No | Passed using this declared shape; omission is allowed only when marked optional. |
 | `dryRun` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+## Predictable validation and lifecycle
+
+Dispatch returns 0 for success/help, 2 for unknown command or malformed/invalid
+options, 1 for handler/output/cleanup failure, and 130 for observed cancellation.
+Previously invalid typed flags returned 1; update automation relying on that status.
+Handlers may return an integer from 0 through 255. Only the owning entry point
+sets process.exitCode; reusable dispatch never exits or changes process status.
+Suggestions name visible registered commands/aliases or declared options without
+executing them. This is a flat registry, not general nested CLI framework parity.
+
+Declared boolean flags leave subsequent positional values intact (except literal
+true/false). Repeated values remain arrays. `--` ends option/help/docs recognition.
+Mixing an alias and canonical flag spelling is a conflict; repeat the same spelling.
+OptionDefinition.conflicts lists canonical flag names and checks explicit input,
+even false/empty, before defaults. Required flags still require explicit input.
+Defaults must match the declared type/choices; definitions are snapshotted/frozen.
+Argv is bounded to 1024 entries, 8192 code units each, 65536 total; schemas have at
+most 128 flags. No grouped short flags or implicit --no-* negation is provided.
+
+```ts
+import { setTimeout as delay } from 'node:timers/promises';
+import { CommandRegistry } from 'zclivo';
+const commands = new CommandRegistry();
+commands.register('tool', 'wait', async (_args, context) => {
+  const heartbeat = setInterval(() => {}, 1000);
+  context.onDispose(() => clearInterval(heartbeat));
+  await delay(25, undefined, { signal: context.signal });
+});
+const controller = new AbortController();
+const interrupt = () => controller.abort();
+process.once('SIGINT', interrupt);
+try {
+  const result = await commands.dispatch('tool', ['wait'], console.log, { signal: controller.signal });
+  process.exitCode = result.exitCode;
+} finally { process.off('SIGINT', interrupt); }
+```
+
+Invocation cleanup runs once in reverse acquisition order on success, failure or
+abort, and attempts every callback. Cleanup failures are retained in cleanupErrors;
+raw error/reason fields are internal and must not be printed wholesale. Help/docs,
+messages and legacy log/error/success remove terminal escapes and controls except
+LF/tab layout. Arbitrary handler console output remains its owner's responsibility;
+terminal filtering is not secret redaction. Node's
+[terminal stripping](https://nodejs.org/api/util.html#utilstripvtcontrolcharactersstr)
+and [AbortController](https://nodejs.org/api/globals.html#class-abortcontroller)
+are the underlying platform primitives.
+
+Dispatch waits for cooperative handler completion and cleanup; ignoring a signal
+can keep it pending indefinitely. Returning early ends invocation ownership. The
+registry does not install process handlers or kill workers/processes. Close owned
+resources through onDispose (at most 1024 callbacks), including on success.
+
+## Plugin transactions and ownership
+
+Explicit loadPlugins/loadConfiguredPlugins retain canonical package/path/symlink
+checks and never scan/execute every installed package. Both accept a fourth
+`{signal}` argument. register receives PluginContext.commands (a staging registry),
+signal and onDispose; it may also return an async/sync disposer. Register rollback
+immediately after acquiring resources. Conflicts/rejection discard all staged
+commands, aliases, keywords and descriptions. Concurrent live mutation rejects
+commit rather than overwriting it. Do not retain the staging registry for later
+registration. Module top-level execution is still trusted code and cannot be undone.
+
+Each LoadedPlugin.dispose is idempotent: abort commands, remove owned registrations,
+wait for cooperative invocation cleanup, then release plugin resources. Owners must
+await every disposer in finally even after external cancellation. A failed load
+batch disposes prior successes in reverse order. Missing configured plugin/dependency
+errors propagate; cleanup/rollback errors retain causes through AggregateError.
+ESM caching is not unloading, and transactions do not sandbox plugin side effects
+or protect writable package files against concurrent replacement. Keep code and
+allowlists trusted. No plugin is loaded until explicitly configured.
+
+ZeruxCLI.run is awaitable and dispose handles cooperative/plugin cleanup. Scheduled
+addKey compatibility still runs once, and commands without schemas retain legacy
+argument shapes. Existing framework servers are not automatically stopped by new
+hooks. Focused Node tests and an offline installed declaration consumer verify these
+contracts without starting applications; actual OS signal behavior and third-party
+plugin cooperation require checks in the owning runtime.
+
+## Shared safe generator engine
+
+`createProjectGenerator` accepts explicit reviewed template functions and a bounded
+mode/renderer/language matrix. `minimalProjectGenerator` currently exposes only
+`zerux-minimal`, mode `minimal`, renderer `none`, for JavaScript/TypeScript. Unsupported
+renderer/CMS/static combinations reject; creator packages are not auto-discovered.
+
+Plans validate names, port, destination, file paths/size and parent/target ownership
+without writes. Sync/async writers stage, exclusively claim and refuse overwrites;
+async writing observes cancellation between files. Existing targets and dangling
+symlinks remain untouched, and failure cleanup only removes owned paths.
+
+The binary supports explicit `--interactive` or equivalent `--name`, `--destination`,
+`--language`/`--js`/`--ts`, `--port`, `--mode`, `--renderer`, `--template`, `--yes` and
+`--dry-run` flags. Help/docs use the registered capabilities. CI-style noninteractive
+commands never install dependencies or start generated code. New directories are
+private; whole-directory crash atomicity and hostile same-account filesystem races
+are not claimed. See the package README and `examples/generator.mjs` for ownership,
+runtime floors, public APIs and checks.

@@ -6,3 +6,5 @@ export * from './gateway.js';
 export * from './transport.js';
 export * from './webtransport.js';
 export * from './connect-stream.js';
+export * from './lifecycle.js';
+export * from './node-adapters.js';

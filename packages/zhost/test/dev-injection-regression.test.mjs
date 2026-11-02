@@ -33,3 +33,33 @@ test('compressed HTML and non-HTML content are passed through unchanged',async()
  assert.equal(response.body.toString(),'RAW');
  assert.equal(response.headers['content-encoding'],'gzip');
 });
+
+test('enforced CSP and isolation headers survive without inline dev injection', async()=> {
+ const policy="default-src 'none'; script-src 'self'; frame-ancestors 'none'";
+ const original='<html><body>Strict application</body></html>';
+ const response=await exercise((_req,res)=> {
+  res.setHeader('Content-Type','text/html');
+  res.setHeader('Content-Security-Policy',policy);
+  res.setHeader('Cross-Origin-Embedder-Policy','require-corp');
+  res.end(original);
+ });
+ assert.equal(response.body.toString(),original);
+ assert.equal(response.headers['content-security-policy'],policy);
+ assert.equal(response.headers['cross-origin-embedder-policy'],'require-corp');
+});
+
+
+test('raw writeHead CSP pairs and early streaming headers are not weakened', async()=> {
+ const original='<html><body>Original</body></html>';
+ const policy="default-src 'none'; frame-ancestors 'none'";
+ const raw=await exercise((_req,res)=> {
+  res.writeHead(200,['Content-Type','text/html','Content-Security-Policy',policy,'Content-Security-Policy',"script-src 'none'"]);
+  res.end(original);
+ });
+ assert.equal(raw.headers['content-security-policy'],policy + ", script-src 'none'");
+ assert.equal(raw.body.toString(),original);
+ const streamed=await exercise((_req,res)=> {
+  res.setHeader('Content-Type','text/html'); res.flushHeaders(); res.end(original);
+ });
+ assert.equal(streamed.body.toString(),original);
+});

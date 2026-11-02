@@ -40,7 +40,7 @@ loadFont requires a DOM. Keep server imports separate from actually invoking bro
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/font@0.0.3
+npm install @zeruxjs/font@0.0.4
 ```
 
 There is no automatic `font` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).

@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/queue",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "description": "BullMQ-backed queues and workers with ZeruxJS lifecycle management",
   "main": "./dist/index.js",
@@ -9,6 +9,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./neutral": {
+      "types": "./dist/neutral.d.ts",
+      "default": "./dist/neutral.js"
+    },
+    "./backends": {
+      "types": "./dist/backends.d.ts",
+      "default": "./dist/backends.js"
+    },
+    "./webhooks": {
+      "types": "./dist/webhooks.d.ts",
+      "default": "./dist/webhooks.js"
     }
   },
   "scripts": {
@@ -17,7 +29,9 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@zeruxjs/queue-bullmq": "0.0.3"
+    "@zeruxjs/db": "0.0.4",
+    "@zeruxjs/queue-bullmq": "0.0.4",
+    "@zeruxjs/security": "0.0.4"
   },
   "license": "(MIT OR Apache-2.0)",
   "files": [
@@ -30,8 +44,9 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "@zeruxjs/db-sqlite": "0.0.4",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

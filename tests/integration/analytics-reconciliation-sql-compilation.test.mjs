@@ -8,7 +8,14 @@ for(const [name,dialect] of [
  ['mysql',{kind:'mysql',quoteIdentifier:s=>`\`${s}\``,placeholder:()=>'? ',functions:{},supportsIfNotExistsIndex:false,autoIncrementKeyword:'AUTO_INCREMENT'}]
 ])test(`${name} compilation supports composite uniqueness and resumable keyset queries`,async()=>{
  const seen=[];const connector=createSqlConnector(dialect,{executor:(sql,params)=>{seen.push({sql,params});return /^SELECT/i.test(sql)?[]:{affectedRows:1};}});
- await connector.execute({op:'createIndex',table:'analytics_events_numeric',name:'analytics_evt_prop_unique',columns:['event_id','property_name'],unique:true,ifNotExists:true},context);
+ const index={op:'createIndex',table:'analytics_events_numeric',name:'analytics_evt_prop_unique',columns:['event_id','property_name'],unique:true,ifNotExists:true};
+ if(!dialect.supportsIfNotExistsIndex){
+  assert.throws(()=>connector.execute(index,context),error=>error.details?.code==='UNSUPPORTED_INDEX_GUARD');
+  assert.equal(seen.length,0);
+  // This isolated compilation fixture explicitly requests unconditional DDL.
+  // Production callers must use an owning migration/external-index policy.
+  await connector.execute({...index,ifNotExists:false},context);
+ }else await connector.execute(index,context);
  await connector.execute({op:'select',table:'analytics_events',columns:['id','properties_json'],where:{and:[
   {field:'occurred_at',operator:'gte',value:100},
   {field:'occurred_at',operator:'lte',value:200},

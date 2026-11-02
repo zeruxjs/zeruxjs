@@ -21,7 +21,7 @@
 
 You do not need to know every package or understand every type table before starting. Begin with what a browser asks for, make one route respond, and add one responsibility at a time. Each lesson includes a plain-language explanation, a concrete example, an expected result, an exercise and a short knowledge check.
 
-The course takes roughly two to three hours plus practice time. It teaches the implemented 0.0.3 package contracts used by this 0.0.4 documentation preview. It is not a certification, a production security review or a promise that every ecosystem package is complete.
+The course takes roughly two to three hours plus practice time. It teaches the implemented 0.0.4 package contracts used by this 0.0.4 documentation preview. It is not a certification, a production security review or a promise that every ecosystem package is complete.
 
 ## Two ways through the handbook
 

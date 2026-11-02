@@ -1,6 +1,6 @@
 # ZeruxJS
 
-An npm monorepo for the ZeruxJS Node.js application framework, ZyroJS reactive/DOM library, and their supporting tools and services. Zenix CMS and the dedicated `create-*` CLIs are currently placeholders; their READMEs describe the available metadata and CLI behavior.
+An npm monorepo for the ZeruxJS Node.js application framework, ZyroJS reactive/DOM library, and their supporting tools and services. Zenix has a minimal SQLite domain core and an initial opt-in SSR CMS application; the Zerux and Zyro generators are implemented, and the Zenix generator emits a host-configured SQLite CMS integration scaffold. Their READMEs describe the implemented boundaries.
 
 ## Packages
 
@@ -16,14 +16,16 @@ An npm monorepo for the ZeruxJS Node.js application framework, ZyroJS reactive/D
 | [ztrial](packages/ztrial/README.md) | Test runner, assertions and optional environment adapters |
 | [zlocale](packages/zlocale/README.md) | Gettext-style localization and native Intl formatting |
 | [zuixs](packages/zuixs/README.md) | Utility CSS compiler and framework integrations |
-| [zenixjs](packages/zenixjs/README.md), [@zenixjs/core](packages/@zenixjs/core/README.md) | Future CMS placeholders |
-| [create-zerux-js](packages/create/create-zerux-app/README.md), [create-zyro-app](packages/create/create-zyro-app/README.md), [create-zenix-js](packages/create/create-zenix-app/README.md) | Placeholder generator CLIs supporting help/version only |
+| [zenixjs](packages/zenixjs/README.md), [@zenixjs/core](packages/@zenixjs/core/README.md) | Minimal SQLite domain core and initial ZyroJS/ZeruxJS CMS application |
+| [create-zerux-js](packages/create/create-zerux-app/README.md) | Safe ZyroJS/React/Vue HTML-only SSR project generator |
+| [create-zyro-app](packages/create/create-zyro-app/README.md) | Standalone client/static/SSR/hydrated ZyroJS generator |
+| [create-zenix-js](packages/create/create-zenix-app/README.md) | Host-configured SQLite CMS integration generator |
 
 Package manifests define current versions, supported Node.js versions, exports and dependencies. Read a package's README for setup, examples and limitations before using it. Frontend adapters do not imply a complete React/Vue rendering or hydration pipeline in ZeruxJS.
 
 ## Getting started
 
-For framework usage, begin with the [documentation introduction](apps/zerux-docs/src/docs/0.0.4/introduction.md), [installation guide](apps/zerux-docs/src/docs/0.0.4/installation.md) and [tutorial](apps/zerux-docs/src/docs/0.0.4/tutorial.md). The [framework README](packages/zeruxjs/README.md) covers runtime APIs. `zclivo` provides a minimal application starter; the separate `create-*` packages do not yet generate projects.
+For framework usage, begin with the [documentation introduction](apps/zerux-docs/src/docs/0.0.4/introduction.md), [installation guide](apps/zerux-docs/src/docs/0.0.4/installation.md) and [tutorial](apps/zerux-docs/src/docs/0.0.4/tutorial.md). The [framework README](packages/zeruxjs/README.md) covers runtime APIs. `zclivo` provides a minimal application starter; the separate `create-*` packages generate their documented SSR, standalone or host-configured CMS templates.
 
 For repository development, install dependencies using the committed npm lockfile (`npm ci` from the repository root), then work from the affected package directory:
 

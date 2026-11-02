@@ -51,6 +51,6 @@ Install availability varies by browser/platform. An Install button appears only 
 
 ## Content and version boundaries
 
-This is the 0.0.4 preview documentation for the stated 0.0.3 package line, including independently versioned packages. Source links point to the preview branch. Keep package versions and docs versions distinct when following examples. The capabilities page records real implemented/placeholder boundaries.
+This is the 0.0.4 preview documentation for the stated 0.0.4 package line, including independently versioned packages. Source links point to the preview branch. Keep package versions and docs versions distinct when following examples. The capabilities page records real implemented/placeholder boundaries.
 
 Each article has a raw Markdown alternative. Use View Markdown without JavaScript, or explicitly copy the Markdown when clipboard access is available. Those files are prebuilt data, not executed components. Search, course points, offline support and bookmarks are progressive enhancements; static article content and links remain usable without them.

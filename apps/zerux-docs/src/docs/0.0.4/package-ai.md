@@ -6,7 +6,17 @@
   "order": 25,
   "sources": [
     "packages/@zeruxjs/ai/README.md",
-    "packages/@zeruxjs/ai/package.json"
+    "packages/@zeruxjs/ai/package.json",
+    "packages/@zeruxjs/ai/src/model-adapters.ts",
+    "packages/@zeruxjs/ai/src/registry.ts",
+    "packages/@zeruxjs/ai/src/tools.ts",
+    "packages/@zeruxjs/ai/src/tool-transports.ts",
+    "packages/@zeruxjs/ai/examples/tools.mjs",
+    "packages/@zeruxjs/ai/src/content.ts",
+    "packages/@zeruxjs/ai/examples/content.mjs",
+    "packages/@zeruxjs/ai/src/structured.ts",
+    "packages/@zeruxjs/ai/examples/structured.mts",
+    "packages/@zeruxjs/ai/evaluation/cases.json"
   ],
   "related": [
     "packages",
@@ -45,7 +55,7 @@ Authorize requests, cap input/output budgets, manage cost and redact sensitive p
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/ai@0.0.3
+npm install @zeruxjs/ai@0.0.4
 ```
 
 There is no automatic `ai` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
@@ -109,3 +119,84 @@ These tables list fields declared directly on the named public contract. Referen
 | --- | --- | --- |
 | `maxConcurrent` | `number` | No |
 | `maxQueued` | `number` | Yes |
+
+## Dedicated model adapters
+
+`createAnthropicProvider` and `createGeminiProvider` retain string chat/stream and
+optionally expose rich text/usage/finish metadata. Explicitly register borrowed
+instances with `createAiProviderRegistry`; tools are unsupported and capability
+requirements fail closed. No provider packages are scanned or loaded.
+
+Anthropic requires an explicit API wire version; the newer version rejects removed
+sampling parameters. Gemini targets generateContent v1beta, not Interactions or
+Vertex. Keys stay server-side. Leading system messages are mapped deliberately;
+tools/non-text output reject rather than being interpreted as text.
+
+New factories share bounded FIFO admission, request/response/frame budgets and
+cancellable readers. Stream failure after output never triggers replay. Metadata
+is private response data, not telemetry; raw error bodies and keys are excluded
+from error messages. Host authentication, tenant consent, egress and credential
+ownership remain explicit. Retrieval stays in ai-model; Figma is a tool/data
+integration rather than a model provider.
+
+See the package README's capability/version matrix, official API references and
+`examples/providers.mjs`. Fixture checks use ztrial's scoped HTTP fake, not live
+Anthropic/Gemini/DeepSeek/Z.AI acceptance. Live checks need authorized credentials,
+enabled account models, quota and network access.
+
+## Controlled tool sessions
+
+The optional server-only `@zeruxjs/ai/tools` entry explicitly registers handlers,
+Standard Schema argument validation and mandatory authorization. A host authenticator
+binds each session to an immutable initiating tenant/subject; privileged handlers
+also require a fresh-proof callback. Model-produced schema-valid data never grants
+permission or supplies a trusted destination.
+
+Execution deadlines return typed outcomes with one generated execution ID. Started
+side effects that time out/fail are uncertain and are never retried automatically.
+Slots remain held until actual settlement, and close drains owned work. A separate
+host planner contract bounds steps/calls/reported tokens; the text-only model
+adapters do not silently become tool providers. Loop errors retain ID/state receipts
+without private values.
+
+Optional fixed zhost calls use authenticated, allowlisted endpoints with rejected
+redirects and bounded JSON/SSE readers. Trusted in-memory OpenAPI subset imports
+require per-operation approval and return inert descriptors only. No package,
+command, URL or remote schema is executed from model input. See the package README
+and `examples/tools.mjs` for limits, cancellation and deployment prerequisites.
+
+
+## Inert media and source data
+
+Optional `chatContent`/`streamContent` accept bounded typed parts. Anthropic maps
+images/PDF; Gemini also maps selected inline audio/video. Text files can contain
+code, JSON or markup without executing, importing, compiling or writing it. No
+file paths, media URLs, archives or automatic remote file acquisition are accepted.
+The native adapters still cannot invoke tools from a response.
+
+Buffered structured JSON output requires a host schema validator; incomplete or
+invalid JSON rejects. Streams remain untrusted partial text. Host UIs must escape
+markup, and hosts must authorize and obtain consent before sharing private files
+with a provider. See README capability/MIME/budget details and the content example.
+Opaque-byte fixtures verify transport and inertness; live media/model decoding is
+not qualified.
+
+
+## Structured request budgets and local evaluation
+
+The optional structured entry combines provider-native JSON capability checks with
+independent host schema validation. Unsupported providers reject unless text-JSON
+fallback is explicitly selected. One ledger bounds attempts, output/depth, time,
+concurrency, token reservations and optional versioned host-price estimates.
+Unknown usage stays unknown; hidden retry/tool execution layers are rejected.
+
+Repairs use a fixed instruction and never execute or replay tool effects. Timeout
+receipts retain unknown reservations, and close drains actual native work.
+Accounting/estimators are not vendor billing guarantees. See the typed structured
+example for inferred validator output and ownership.
+
+The packaged zx100-local-v1 fixture reports schema/citation/retrieval-answerability
+metrics separately from truthfulness/quality (unmeasured). It uses deterministic
+local providers, no external requests and no private repository evidence. Live
+model evaluations need separate explicit data-disclosure authorization and actual
+model/configuration reporting.

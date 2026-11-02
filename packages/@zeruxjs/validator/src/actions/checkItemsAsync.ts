@@ -1,3 +1,4 @@
+import { _asyncCallback } from '../utils/_run.js';
 import type { BaseValidationAsync, ErrorMessage } from '../types/index.js';
 import { _addIssue } from '../utils/index.js';
 import type { ArrayInput, ArrayRequirementAsync } from './types.js';
@@ -78,7 +79,7 @@ export function checkItemsAsync(
     async '~run'(dataset, config) {
       if (dataset.typed) {
         const requirementResults = await Promise.all(
-          dataset.value.map(this.requirement)
+          dataset.value.map((value, index, array) => _asyncCallback(config, () => this.requirement(value, index, array, { signal: config.signal })))
         );
         for (let index = 0; index < dataset.value.length; index++) {
           if (!requirementResults[index]) {

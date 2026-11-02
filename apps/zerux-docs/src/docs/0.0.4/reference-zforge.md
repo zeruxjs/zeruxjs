@@ -20,7 +20,7 @@
 ## Installation and integration path
 
 ```sh
-npm install zforge@0.0.3
+npm install zforge@0.0.4
 ```
 
 This package has its own public API. Installing it does not create an automatic runtime service key in `zerux.config.js`. Use the framework integration described below or initialize it in the tool/application that owns its lifetime.
@@ -91,3 +91,42 @@ Run the real owning application/tool with a normal input and a failure input. In
 | `server` | `DevtoolsModuleServerConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
 | `dependencies` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
 | `meta` | `Record<string, unknown>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+## Explicit transport module ownership
+
+The optional `zforge/modules` entry accepts an injected `zhost/protocols` kit and
+mandatory host authentication. It supports actual SSE `/events` and the existing
+stateless HTTP MCP tool subset at `/mcp`; native gRPC declarations reject before
+startup. Each endpoint declares exact origins, bounded messages/concurrency/time
+and public output fields. Loopback/forwarded headers never authenticate a caller.
+A supplied Origin must match; non-browser clients still require authentication.
+
+Await module disposal or host close. Reload disables and drains the previous module
+before starting its replacement, closing old sockets/streams; failed replacement
+leaves the module unavailable. Signals are cooperative and teardown waits for real
+handler settlement. Legacy shared UI/HTTP/WS module registration remains separate.
+
+`zforge/diagnostics` accepts real framework RequestSpan records through an optional
+TracingAdapter. Per-app count/byte/TTL caps and generation fencing bound retention.
+Headers are MIME/length only, bodies default to omitted, and normalized error codes
+exclude causes/stacks. Host authorization remains required when mounting its escaped
+request table. The package README and `examples/modules.mjs` describe the public
+integration; importing either entry starts no server. Node ephemeral HTTP fixtures
+are not browser, remote TLS or full MCP/gRPC qualification.
+
+## Development experiment controls
+
+`zforge/experiments` returns a registered MCP module over the shared deterministic
+`ztrial/experiments` API. Production mode rejects. Explicit host authorization is
+required for inspection, preview and named test callbacks; mutations also require
+POST, exact Origin and host session-bound CSRF verification. Client role/group or
+subject strings never grant overrides.
+
+Previews are expiring display-only results, capped at 60 seconds and the current
+credential/deadline. They do not write assignments or emit analytics. The separate
+stateless evaluator preserves consent/tenant/environment gates; durable `preserve`
+history is deliberately unsupported. Audit metadata excludes private traits and
+raw callback output. Dispose/reload drains the generation and closes the evaluator.
+The package's `examples/experiments.mjs` demonstrates public imports and explicit
+policies. Host authentication/audit durability and browser UI remain integrations
+that require their own acceptance checks.

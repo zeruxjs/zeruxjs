@@ -6,8 +6,8 @@ test('typed flags validate defaults, aliases, choices and rejected values',async
  registry.register('app','serve',(_args,ctx)=>{captured=ctx.options;},{flags});
  assert.equal((await registry.dispatch('app',['serve','-p','4300','--env','prod'])).exitCode,0);
  assert.deepEqual({...captured},{port:4300,env:'prod',verbose:false});
- assert.equal((await registry.dispatch('app',['serve','--port','abc'])).exitCode,1);
- assert.equal((await registry.dispatch('app',['serve','--port','2','--env','stage'])).exitCode,1);
- assert.equal((await registry.dispatch('app',['serve','--port','2','--unexpected'])).exitCode,1);
- assert.equal((await registry.dispatch('app',['serve'])).exitCode,1);
+ assert.equal((await registry.dispatch('app',['serve','--port','abc'])).exitCode,2);
+ assert.equal((await registry.dispatch('app',['serve','--port','2','--env','stage'])).exitCode,2);
+ assert.equal((await registry.dispatch('app',['serve','--port','2','--unexpected'])).exitCode,2);
+ assert.equal((await registry.dispatch('app',['serve'])).exitCode,2);
 });

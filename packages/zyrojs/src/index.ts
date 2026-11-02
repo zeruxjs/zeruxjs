@@ -1,6 +1,6 @@
 /**
  * @title ZyroJS Library
- * @description A lightweight UI library blending React-style hooks with Vue-style reactivity.
+ * @description Standalone signals, explicit component setup and lifecycle-managed DOM rendering.
  * This package serves as the main entry point for the ZyroJS ecosystem.
  */
 

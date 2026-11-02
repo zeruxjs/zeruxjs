@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/ai",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "AI Funtion Provider to easily connect APIs and Front-Backend too",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -26,7 +26,9 @@
     "dist/",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "examples/",
+    "evaluation/"
   ],
   "publishConfig": {
     "access": "public"
@@ -34,5 +36,23 @@
   "devDependencies": {
     "typescript": "^5.9.3",
     "@types/node": "^25.4.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./tools": {
+      "types": "./dist/tools.d.ts",
+      "import": "./dist/tools.js",
+      "require": "./dist/tools.js"
+    },
+    "./*": "./*",
+    "./structured": {
+      "types": "./dist/structured.d.ts",
+      "import": "./dist/structured.js",
+      "require": "./dist/structured.js"
+    }
   }
 }

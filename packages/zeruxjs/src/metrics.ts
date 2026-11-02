@@ -24,6 +24,7 @@ export class ApplicationHttpMetrics {
     let counted = false;
     const finish = () => {
       if (counted) return;
+      res.off('finish',finish);res.off('close',finish);
       counted = true; this.active = Math.max(0, this.active - 1);
       this.samples.push({ time: Date.now(), status: res.writableFinished ? res.statusCode : 499,
         elapsed: Math.min(86_400_000, performance.now() - started), version: req.httpVersion || '1.1' });

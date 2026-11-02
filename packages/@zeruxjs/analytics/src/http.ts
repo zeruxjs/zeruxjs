@@ -133,7 +133,7 @@ export function createAnalyticsCollector(options:CollectorOptions){
       if(id!==undefined&&!validRequestId(id))return json(422,'Invalid request ID',cors);
       if(options.requireRequestId&&!id)return json(422,'Request ID required',cors);
       const day=requestUtcDay();
-      try{validateEvent({...input,source:allowed?'web':input.source??'server',...(boundSite?{site:boundSite}:{}),...(id?{requestId:id,requestUtcDay:day}:{})});}
+      try{const candidate={...input,source:allowed?'web' as const:input.source??'server' as const,...(boundSite?{site:boundSite}:{}),...(id?{requestId:id,requestUtcDay:day}:{})};validateEvent(candidate);options.analytics.validateInput?.(candidate);}
       catch{return json(422,'Invalid event data',cors);}
       try{
         if(options.requestIdStore){

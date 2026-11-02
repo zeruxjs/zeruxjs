@@ -25,6 +25,11 @@ export async function resolve(
     nextResolve: NextResolve
 ): Promise<ResolveResult> {
     try {
+        // Node URL/builtin protocols are not custom path aliases. In particular,
+        // file:/// imports contain // which the private alias registry must reject.
+        if (/^(?:file|node|data|https?):/.test(specifier)) {
+            return nextResolve(specifier, context);
+        }
         if (specifier === "db" || specifier.startsWith("db:")) {
             const identifier = specifier === "db" ? "default" : specifier.slice(3);
             const service = getLoaderService();

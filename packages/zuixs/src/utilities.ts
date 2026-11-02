@@ -1,5 +1,6 @@
 import type { ZuixTheme } from './types.js';
-import {safeCssValue} from './safety.js';
+import {safeCssValue,safeDeclaration,splitToken} from './safety.js';
+import {familyUtility} from './families.js';
 export type Declarations = Record<string,string>;
 const staticRules: Record<string,Declarations> = {
  block:{display:'block'},inline:{display:'inline'},'inline-block':{display:'inline-block'},flex:{display:'flex'},'inline-flex':{display:'inline-flex'},grid:{display:'grid'},'inline-grid':{display:'inline-grid'},hidden:{display:'none'},contents:{display:'contents'},flow:{display:'flow-root'},
@@ -48,8 +49,15 @@ function arbitrary(value:string):string|undefined { if(!/^\[[^;{}]+\]$/.test(val
 function scale(theme:ZuixTheme,group:keyof ZuixTheme,value:string) { return arbitrary(value)??(theme[group][value]===undefined?undefined:String(theme[group][value])); }
 function spacingProps(prefix:string):string[]|undefined { const props:Record<string,string[]>={p:['padding'],px:['padding-left','padding-right'],py:['padding-top','padding-bottom'],pt:['padding-top'],pr:['padding-right'],pb:['padding-bottom'],pl:['padding-left'],ps:['padding-inline-start'],pe:['padding-inline-end'],m:['margin'],mx:['margin-left','margin-right'],my:['margin-top','margin-bottom'],mt:['margin-top'],mr:['margin-right'],mb:['margin-bottom'],ml:['margin-left'],ms:['margin-inline-start'],me:['margin-inline-end'],gap:['gap'],'gap-x':['column-gap'],'gap-y':['row-gap'],space:[],top:['top'],right:['right'],bottom:['bottom'],left:['left'],inset:['inset'],'inset-x':['left','right'],'inset-y':['top','bottom']};return props[prefix]; }
 function declarations(properties:string[],value:string):Declarations {return Object.fromEntries(properties.map(p=>[p,value]));}
-export function utilityFor(input:string,theme:ZuixTheme,additional:Record<string,Declarations>={}):Declarations|undefined {
- if(additional[input])return additional[input];if(staticRules[input])return staticRules[input];
+function resolveUtility(input:string,theme:ZuixTheme,additional:Record<string,Declarations>={}):Declarations|undefined {
+ if(typeof input!=='string'||input.length>4096||!splitToken(input))return;
+ if(Object.hasOwn(additional,input)){
+  const declarations=additional[input];
+  if(Object.entries(declarations).every(([property,value])=>safeDeclaration(property,String(value))))return declarations;
+  return;
+ }
+ if(Object.hasOwn(staticRules,input))return staticRules[input];
+ const family=familyUtility(input,theme);if(family)return family;
  const negative=input.startsWith('-'); const name=negative?input.slice(1):input;
  const spacing=/^(inset-x|inset-y|gap-x|gap-y|[pm][xytrblse]?|gap|top|right|bottom|left|inset)-(.+)$/.exec(name);
  if(spacing){const props=spacingProps(spacing[1]);const value=scale(theme,'spacing',spacing[2])??(spacing[2]==='auto'?'auto':spacing[2]==='full'?'100%':undefined);if(props?.length&&value&&(!negative||negativeAllowed.has(spacing[1])))return declarations(props,negative?`calc(${value} * -1)`:value);}
@@ -69,7 +77,7 @@ export function utilityFor(input:string,theme:ZuixTheme,additional:Record<string
   if(value&&(/^(?:\d*\.)?\d+(?:px|rem|em|ex|ch|cap|ic|lh|rlh|vw|vh|vi|vb|vmin|vmax|svw|svh|lvw|lvh|dvw|dvh|cqw|cqh|cqi|cqb|cqmin|cqmax|pt|pc|in|cm|mm|q|%)$/i.test(value)||/^(?:calc|min|max|clamp)\(/.test(value)))return {[sized[1]==='text'?'font-size':'border-width']:value};
  }
  const color=/^(bg|text|border|ring|fill|stroke|decoration|placeholder)-(.+)$/.exec(name);
- if(color){const group=color[1], key=color[2];const [colorKey,opacity]=key.split('/');const v=scale(theme,'colors',colorKey);if(v){const property=({bg:'background-color',text:'color',border:'border-color',ring:'--zuix-ring-color',fill:'fill',stroke:'stroke',decoration:'text-decoration-color',placeholder:'--zuix-placeholder-color'} as Record<string,string>)[group];const colorValue=opacity&&/^\d+$/.test(opacity)?`color-mix(in srgb, ${v} ${Math.min(100,Number(opacity))}%, transparent)`:v;return {[property]:colorValue};}}
+ if(color){const group=color[1], key=color[2];let depth=0,slash=-1;for(let i=0;i<key.length;i++){if(key[i]==='[')depth++;else if(key[i]===']')depth--;else if(key[i]==='/'&&depth===0){if(slash>=0)return;slash=i;}}const colorKey=slash<0?key:key.slice(0,slash),opacity=slash<0?undefined:key.slice(slash+1);if(opacity!==undefined&&(!/^\d{1,3}$/.test(opacity)||Number(opacity)>100))return;const v=scale(theme,'colors',colorKey);if(v){const property=({bg:'background-color',text:'color',border:'border-color',ring:'--zuix-ring-color',fill:'fill',stroke:'stroke',decoration:'text-decoration-color',placeholder:'--zuix-placeholder-color'} as Record<string,string>)[group];const colorValue=opacity&&/^\d+$/.test(opacity)?`color-mix(in srgb, ${v} ${Math.min(100,Number(opacity))}%, transparent)`:v;return {[property]:colorValue};}}
  const font=/^font-(.+)$/.exec(name);if(font){const v=scale(theme,'fontWeight',font[1]);if(v)return {'font-weight':v};}
  const text=/^text-(.+)$/.exec(name);if(text){const v=scale(theme,'fontSize',text[1]);if(v)return {'font-size':v};}
  const rounded=/^rounded(?:-(.+))?$/.exec(name);if(rounded){const v=scale(theme,'radius',rounded[1]??'DEFAULT');if(v)return {'border-radius':v};}
@@ -80,20 +88,29 @@ export function utilityFor(input:string,theme:ZuixTheme,additional:Record<string
  const rows=/^grid-rows-(\d+)$/.exec(name);if(rows&&Number(rows[1])<=24&&Number(rows[1])>0)return {'grid-template-rows':`repeat(${rows[1]},minmax(0,1fr))`};
  const span=/^col-span-(\d+|full)$/.exec(name);if(span)return {'grid-column':span[1]==='full'?'1 / -1':`span ${span[1]} / span ${span[1]}`};
  const border=/^border(?:-(\d+))?$/.exec(name);if(border)return {'border-width':`${border[1]??1}px`};
- const line=/^leading-(.+)$/.exec(name);if(line){const vals:Record<string,string>={none:'1',tight:'1.25',snug:'1.375',normal:'1.5',relaxed:'1.625',loose:'2'};const v=arbitrary(line[1])??vals[line[1]];if(v)return {'line-height':v};}
+ const line=/^leading-(.+)$/.exec(name);if(line){const vals:Record<string,string>={none:'1',tight:'1.25',snug:'1.375',normal:'1.5',relaxed:'1.625',loose:'2'};const v=arbitrary(line[1])??vals[line[1]]??(Object.hasOwn(theme.spacing,line[1])?String(theme.spacing[line[1]]):undefined);if(v)return {'line-height':v};}
  const tracking=/^tracking-(.+)$/.exec(name);if(tracking){const vals:Record<string,string>={tighter:'-.05em',tight:'-.025em',normal:'0',wide:'.025em',wider:'.05em',widest:'.1em'};const v=arbitrary(tracking[1])??vals[tracking[1]];if(v)return {'letter-spacing':v};}
  const duration=/^duration-(\d+)$/.exec(name);if(duration)return {'transition-duration':`${duration[1]}ms`};
  const rotate=/^rotate-(\d+)$/.exec(name);if(rotate)return {transform:`rotate(${negative?'-':''}${rotate[1]}deg)`};
- const transform=/^(translate-[xy]|scale)-(.*)$/.exec(name);if(transform){const v=transform[1]==='scale'?String(Number(transform[2])/100):scale(theme,'spacing',transform[2]);if(v)return {transform:transform[1]==='scale'?`scale(${v})`:`translate${transform[1].endsWith('x')?'X':'Y'}(${negative?'-':''}${v})`};}
+ const transform=/^(translate-[xy]|scale)-(.*)$/.exec(name);if(transform){const v=transform[1]==='scale'?(/^\d{1,5}(?:\.\d+)?$/.test(transform[2])?String(Number(transform[2])/100):undefined):scale(theme,'spacing',transform[2]);if(v)return {transform:transform[1]==='scale'?`scale(${v})`:`translate${transform[1].endsWith('x')?'X':'Y'}(${negative?'-':''}${v})`};}
  const arbitraryGeneric=/^(container-name|container|anchor-name|position-anchor|position-area|view-transition-name|scroll-timeline|scroll-timeline-name|scroll-timeline-axis|view-timeline|view-timeline-name|view-timeline-axis|animation-timeline|animation-range|animation-range-start|animation-range-end|animation-duration|animation-delay|animation-direction|animation-fill-mode|animation-iteration-count|animation-play-state|animation-timing-function|transition-behavior|transition-property|transition-duration|transition-delay|transition-timing-function|filter|backdrop-filter|clip-path|mask|mask-image|mask-size|mask-position|mask-repeat|color-scheme|accent-color|caret-color|outline-color|outline-offset|outline-width|outline-style|grid-template-columns|grid-template-rows|grid-area|grid-column|grid-row|object-position|object-fit|aspect-ratio|columns|column-count|column-width|scroll-padding|scroll-margin|text-wrap|text-decoration|text-underline-offset|font-variation-settings|font-feature-settings|font-optical-sizing|font-palette|shape-outside|shape-margin|offset-path|offset-distance|offset-rotate|perspective|perspective-origin|transform-origin|transform-style|rotate|scale|translate)-(.+)$/.exec(name);
  if(arbitraryGeneric){const value=arbitrary(arbitraryGeneric[2]);if(value)return {[arbitraryGeneric[1]]:value};}
  const values=/^(ease|delay|duration|repeat|animate-delay|animate-duration|outline-offset|outline|blur|backdrop-blur)-(.+)$/.exec(name);
  if(values){const [,kind,key]=values;const val=arbitrary(key)??(/^(?:\d+(?:\.\d+)?)$/.test(key)?key:undefined);
  if(val){if(kind==='ease')return {'transition-timing-function':val};if(kind==='delay')return {'transition-delay':`${val}ms`};if(kind==='duration')return {'transition-duration':`${val}ms`};if(kind==='repeat')return {'animation-iteration-count':val};if(kind==='animate-delay')return {'animation-delay':`${val}ms`};if(kind==='animate-duration')return {'animation-duration':`${val}ms`};if(kind==='outline-offset')return {'outline-offset':`${val}px`};if(kind==='outline')return {'outline-width':`${val}px`};if(kind==='blur'||kind==='backdrop-blur')return {[kind==='blur'?'filter':'backdrop-filter']:`blur(${/^[0-9.]+$/.test(val)?val+'px':val})`};}}
  const gridGap=/^(col-start|col-end|row-start|row-end)-(\d+|auto)$/.exec(name);
- if(gridGap)return {[`grid-${gridGap[1].replace('-','-')}`]:gridGap[2]};
+ if(gridGap)return {[`grid-${gridGap[1].replace('col-','column-')}`]:gridGap[2]};
  const flexOrder=/^(order|grow|shrink)-(\d+)$/.exec(name);if(flexOrder)return {[flexOrder[1]==='order'?'order':`flex-${flexOrder[1]}`]:flexOrder[2]};
  const anim=/^animate-\[(.+)\]$/.exec(name);if(anim){const value=arbitrary('['+anim[1]+']');if(value)return {animation:value};}
-  const arbitraryProperty=/^\[([a-zA-Z-]+):([^;{}]+)\]$/.exec(name);if(arbitraryProperty&&!/^(behavior|-moz-binding)$/i.test(arbitraryProperty[1])&&safeCssValue(arbitraryProperty[2].replace(/_/g,' ')))return {[arbitraryProperty[1]]:arbitraryProperty[2].replace(/_/g,' ')};
+  const arbitraryProperty=/^\[((?:--[a-zA-Z_][\w-]*|-?[a-zA-Z][a-zA-Z-]*)):([^;{}]+)\]$/.exec(name);if(arbitraryProperty&&!/^(behavior|-moz-binding)$/i.test(arbitraryProperty[1])&&safeCssValue(arbitraryProperty[2].replace(/_/g,' ')))return {[arbitraryProperty[1]]:arbitraryProperty[2].replace(/_/g,' ')};
  return undefined;
+}
+
+/** Public declaration lookup with the same runtime safety boundary as compiler emission.
+ * Returns a fresh declaration record or undefined; it never emits partial/unsafe rules.
+ */
+export function utilityFor(input:string,theme:ZuixTheme,additional:Record<string,Declarations>={}):Declarations|undefined {
+ const declarations=resolveUtility(input,theme,additional);
+ if(!declarations||!Object.entries(declarations).every(([property,value])=>safeDeclaration(property,String(value))))return;
+ return {...declarations};
 }

@@ -7,7 +7,7 @@ import {
 
 /** A bounded loader such as createCatalogLoader; host code owns I/O and cancellation. */
 export interface LocaleLoader {
-  preload(keys: readonly string[]): Promise<readonly Catalog[]>;
+  preload(keys: readonly string[], options?: { signal?: AbortSignal }): Promise<readonly Catalog[]>;
 }
 /** Explicit application locale allowlist and domains needed before switching. */
 export interface LocaleControllerOptions {
@@ -45,6 +45,7 @@ export function createLocaleController(
   const required = [...new Set(domains.map(validateDomain))];
   let selection = 0;
   let disposed = false;
+  let active: AbortController | undefined;
   return Object.freeze({
     /** Load all required catalogs before applying the newest selected locale. @param locale Explicit supported locale. @returns Whether this selection applied. Failed or obsolete requests do not install catalogs. Host loaders may perform I/O. */
     async switchLocale(locale: string): Promise<boolean> {
@@ -56,8 +57,14 @@ export function createLocaleController(
       const base = new Intl.Locale(requested).baseName;
       const keys = required.map((domain) => `${base}/${domain}`);
       const ticket = ++selection;
+      const previous = active;
+      const controller = new AbortController();
+      active = controller;
       try {
-        const inputs = await loader.preload(keys);
+        // Attach the new waiter before cancelling the old one, including same-locale replacement.
+        const loading = loader.preload(keys, { signal: controller.signal });
+        previous?.abort();
+        const inputs = await loading;
         if (disposed || ticket !== selection) return false;
         if (!Array.isArray(inputs) || inputs.length !== keys.length)
           throw new TypeError("zlocale: incomplete locale selection");
@@ -76,18 +83,23 @@ export function createLocaleController(
         i18n.setLocale(requested);
         return true;
       } catch (error) {
+        previous?.abort();
         if (disposed || ticket !== selection) return false;
         throw error;
+      } finally {
+        if (active === controller) active = undefined;
       }
     },
-    /** Invalidate a pending selection without cancelling shared loader work. @returns Nothing. No globals or I/O. */
+    /** Cancel this selection without aborting other shared-loader waiters. @returns Nothing. No globals or I/O. */
     cancel(): void {
       ++selection;
+      active?.abort();
     },
     /** Invalidate pending selections and reject future switches; idempotent. @returns Nothing. Shared translators/loaders stay owned by the host. */
     dispose(): void {
       disposed = true;
       ++selection;
+      active?.abort();
     },
   });
 }

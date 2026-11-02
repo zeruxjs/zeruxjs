@@ -47,7 +47,7 @@ Injected databaseInstance values are not closed by the adapter. Connector-create
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/db-sqlite@0.0.3
+npm install @zeruxjs/db-sqlite@0.0.4
 ```
 
 This package participates in the runtime's **database** integration. Start with [database configuration](configuration-database.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.
@@ -92,3 +92,12 @@ These tables list fields declared directly on the named public contract. Referen
 | `driver` | `SqliteDriver` | Yes |
 | `databaseInstance` | `SqliteDatabase` | Yes |
 | `readonly` | `boolean` | Yes |
+
+
+## Owned synchronous transactions and policies
+
+The public `SqliteConnector.transactionSync` API owns one synchronous BEGIN/callback/COMMIT interval. Its scoped CRUD/query facade rejects promises, async callbacks, nesting and use after scope completion. Failures roll back, including caught query failures. It is separate from the shared async transaction extension, which remains unsupported. Multi-statement DDL uses SQL-core's synchronous path; no await crosses the interval.
+
+Configure bounded `busyTimeoutMs`, explicit `journalMode` (preserve/wal/delete), readonly policy and optional bigint row output before opening resources. WAL still permits one writer; busy waiting blocks the JavaScript thread and does not provide retries or force cancellation. The callback timeout/signal is cooperative, checked around native work. Borrowed handles remain host-owned and requested policy changes persist on them. Captured native handles remain privileged; transactions do not authorize tenant access.
+
+Safe integer reads preserve large native values without guessing numeric precision. RETURNING capability follows the detected native SQLite version; injected executor-only versions are unknown. Backup loads Node SQLite lazily and retains online copying, integrity checks and cleanup of owned random temporary WAL/SHM sidecars. The README provides a public-import example using a disposable directory and explains missing optional native-driver prerequisites. No application files or user-managed processes are changed by these checks.

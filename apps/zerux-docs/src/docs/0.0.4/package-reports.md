@@ -39,7 +39,7 @@ Use secure host sessions, tenant filters and trusted source adapters. Dashboards
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/reports@0.0.3
+npm install @zeruxjs/reports@0.0.4
 ```
 
 This package participates in the runtime's **reports** integration. Start with [reports configuration](configuration-reports.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.

@@ -43,7 +43,7 @@ The build transpiles; it does not run a complete typecheck. Use a project tsconf
 
 ## Scaffolders
 
-The 0.0.3 create-zerux-js, create-zenix-js and create-zyro-app packages reserve names and provide help/version behavior. They are not working project generators. Follow the manual installation/tutorial until a generator is implemented.
+The workspace implements [create-zerux-js](reference-create-zerux-js.md) for selected SSR templates, [create-zyro-app](reference-create-zyro-app.md) for explicit client/static/SSR/hydrated modes, and [create-zenix-js](reference-create-zenix-js.md) for a host-configured SQLite CMS scaffold. All use safe staging and dry-run; none installs dependencies, starts applications or supplies default credentials. Verify installed release exports: source changes do not publish unchanged package versions.
 
 ## Operational diagnostics
 

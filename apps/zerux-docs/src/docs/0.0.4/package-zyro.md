@@ -6,7 +6,9 @@
   "order": 30,
   "sources": [
     "packages/@zeruxjs/zyro/README.md",
-    "packages/@zeruxjs/zyro/package.json"
+    "packages/@zeruxjs/zyro/package.json",
+    "packages/@zeruxjs/zyro/src/renderer.ts",
+    "packages/@zeruxjs/zyro/src/async.ts"
   ],
   "related": [
     "packages",
@@ -38,10 +40,43 @@ createAsyncObservable passes an AbortSignal to its loader, aborts earlier reques
 
 This package supplies state primitives and bridges, not the whole standalone zyrojs renderer. Its behavior does not certify the independent renderer's hydration or browser integration. Keep per-request server state separate from long-lived browser stores.
 
+## Explicit standalone renderer conversion
+
+The optional `@zeruxjs/zyro/renderer` subpath accepts primitives from the same
+`zyrojs/component` runtime as the owning component. Core imports stay usable
+without ZyroJS. `useZyroRendererBridge(runtime)` runs once in component setup and
+owns conversions until unmount/SSR cleanup; the manual factory also accepts an
+owner AbortSignal. The package README contains the complete Counter example.
+
+Use `read` or `select` for read-only `.value`/`.peek()` views and `write` only for
+explicit write-through. Source APIs remain `.get()`/`.set()`/`.subscribe()` and
+are not silently reclassified as signals. Selected snapshots preserve reference
+identity when equality (default Object.is) says unchanged. Use immutable source
+snapshots and `bridge.batch()` for related changes across several conversions.
+Sources are borrowed and never destroyed by conversion teardown.
+
+Each mount/request must own its source and bridge. There is no global default
+renderer: framework configuration/application code selects an explicit token
+from its generation registry. This integration adds no config key, automatic
+runtime registration, hydration protocol or React/Vue dispatcher.
+
+Owned `bridge.resource` loaders inherit scope cancellation; borrowed resources
+retain their original owner. Direct async observables accept AbortSignal,
+bounded timeout and maxPending settings. Old/timed-out work cannot commit state,
+but unsettled loaders keep their slots and cooperative cancellation cannot stop
+arbitrary code. Existing refresh promises may still resolve a stale raw result;
+render current observable state and handle rejection. Do not expose raw errors or
+private state through SSR output. No network request starts merely by import or
+resource creation.
+
+Focused tests cover packed public imports/types, deterministic DOM teardown and
+concurrent ephemeral framework requests. Live provider/browser behavior is not
+implied by those checks.
+
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/zyro@0.0.3
+npm install @zeruxjs/zyro@0.0.4
 ```
 
 There is no automatic `zyro` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).

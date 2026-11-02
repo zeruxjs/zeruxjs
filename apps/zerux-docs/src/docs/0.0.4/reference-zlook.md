@@ -7,7 +7,10 @@
   "package": "zlook",
   "sources": [
     "packages/zlook/README.md",
-    "packages/zlook/package.json"
+    "packages/zlook/package.json",
+    "packages/zlook/src/scan.ts",
+    "packages/zlook/src/watcher.ts",
+    "packages/zlook/src/types.ts"
   ],
   "related": [
     "packages",
@@ -20,7 +23,7 @@
 ## Installation and integration path
 
 ```sh
-npm install zlook@0.0.3
+npm install zlook@0.0.4
 ```
 
 This package has its own public API. Installing it does not create an automatic runtime service key in `zerux.config.js`. Use the framework integration described below or initialize it in the tool/application that owns its lifetime.
@@ -75,3 +78,72 @@ Run the real owning application/tool with a normal input and a failure input. In
 | `pollIntervalMs` | `number` | No | Fallback scan interval; also detects changes missed by native notifications. |
 | `ignored` | `(relativePath: string) => boolean` | No | Ignore paths relative to the watched root. |
 | `onError` | `(error: Error) => void` | No | Called when watching/scanning fails. |
+
+## Bounded reconciliation and subscriber isolation
+
+Sharing identity is the canonical existing root plus debounceMs, pollIntervalMs,
+maxEntries, maxPendingEvents and pollingOnly. Missing roots use a resolved lexical
+path until a new subscription canonicalizes them. Distinct settings do not change
+another subscriber's timing. Options are snapshotted; ignore/error/signal handlers
+stay local. Built-in .git/node_modules/.svn segments are pruned. Custom synchronous
+pure ignored predicates match normalized relative paths and ancestor prefixes, filter
+callbacks and flush results, and do not prune the shared scan. Configure dist/build
+explicitly to prevent rebuild loops. New subscribers cannot hide another's files.
+
+Only new/update/delete file events exist: rename is delete+new, directories produce
+no standalone event, and bursts reconcile final metadata. Baseline scan is silent.
+A create/delete between scans or same-size write preserving mtime may be missed.
+Events are path-sorted, not chronological. This is not full chokidar parity.
+
+Defaults are debounce 60ms, polling 2000ms, maxEntries 100000, maxPendingEvents 4096.
+Entry bound is 1–1000000; event bound is 1–100000. Streaming traversal counts examined
+entry names, including ignored names but not their pruned contents. There are at most
+four process-local scans, 128 admission waiters, and one active/one trailing refresh
+per identity. Additional refresh requests share work instead of growing a queue.
+Exported scan(root, ignored, {maxEntries, signal}) uses the same admission limit.
+It has no default ignores and rejects filesystem failures; watcher failures report
+through onError and flush resolves empty while preserving the previous baseline.
+
+Missing roots, permission errors and limits never become synthetic deletes. Missing
+children may race writes and are tolerated. Failed startup still resolves ready after
+reporting; a later successful poll establishes a silent baseline. ScanError exposes a
+redacted message/code; raw cause is internal and can contain private paths. Descendant
+symlinks are not traversed; trusted root aliases are canonicalized. These checks are
+not a sandbox against concurrent malicious tree replacement.
+
+```ts
+import { watchDirectory } from 'zlook';
+const watcher = watchDirectory('./src', event => console.log(event.type, event.file), {
+  ignored: file => ['dist', 'build', '.cache'].includes(file),
+  maxEntries: 100000, maxPendingEvents: 4096,
+  onError: error => console.error(error.message)
+});
+try {
+  await watcher.ready;
+  await watcher.flush();
+  console.log(watcher.diagnostics());
+} finally { watcher.close(); await watcher.closed; }
+```
+
+A subscription accepts signal and closes independently on abort. close is idempotent
+before/during startup. The last subscriber aborts traversal, removes registry membership,
+cancels timers and releases its native handle once. Await closed to observe scan/native
+cleanup. An OS read already in flight cannot be forcibly interrupted. Async consumer
+callbacks are not awaited; their owner must serialize/cancel that separate work.
+
+Native events reset a trailing debounce; periodic polling can request reconciliation
+sooner. pollingOnly=true forces fallback. A failed native backend is reported and not
+recreated repeatedly; polling continues. See [Node watch caveats](https://nodejs.org/api/fs.html#caveats)
+and [directory iteration](https://nodejs.org/api/fs.html#fspromisesopendirpath-options).
+No Windows/macOS/network filesystem parity is claimed by local Node tests.
+
+watcherDiagnostics and handle.diagnostics contain counts and lastErrorCode, not paths
+or causes. activeWatcherCount counts shared identities, not subscribers or individual
+handles. scans includes startup, scanErrors counts failed scans, emitted counts retained
+shared events before filters, coalesced counts merged notification/refresh requests,
+and dropped counts overflow only. On overflow the sorted first maxPendingEvents changes
+are delivered and PENDING_EVENT_LIMIT is reported; the full baseline advances, so
+omitted changes are not replayed. Perform full application reconciliation after that
+error. Ignore-filtered changes are not drops, and coalescing cannot measure write counts.
+Tests exercise permission denial, fallback failure, overflow, burst/rename, independent
+ignores, startup cancellation and offline installed public declarations. No app is started.

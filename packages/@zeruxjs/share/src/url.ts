@@ -1,2 +1,2 @@
-export function validatedShareUrl(value:string):string {const url=new URL(value);if(!['https:','http:'].includes(url.protocol)||url.username||url.password)throw new TypeError('Only public HTTP(S) sharing URLs are supported');return url.href;}
+export function validatedShareUrl(value:string):string {if(typeof value!=='string'||!value||value.length>8192||/[\x00-\x1f\x7f]/.test(value))throw new TypeError('Invalid share URL');const url=new URL(value);if(!['https:','http:'].includes(url.protocol)||url.username||url.password)throw new TypeError('Only public HTTP(S) sharing URLs are supported');return url.href;}
 export function normalizedShareData<T extends {url:string}>(data:T):T {return {...data,url:validatedShareUrl(data.url)};}

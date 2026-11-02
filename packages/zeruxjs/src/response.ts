@@ -2,7 +2,6 @@
 import { createHash } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
 
 export interface ResponseCachePolicy {
   /** Defaults to private; public requires an explicit opt-in. */
@@ -89,31 +88,76 @@ export function conditionalEtag(req: IncomingMessage, res: ServerResponse, body:
   return false;
 }
 
-export function sendStream(res: ServerResponse, result: StreamResult, request?: IncomingMessage): void {
-  const { source, options } = result;
-  if (res.headersSent || res.writableEnded) return;
-  res.statusCode = options.status ?? 200;
-  res.setHeader('Cache-Control', 'no-store, no-transform');
-  if (options.contentType) res.setHeader('Content-Type', options.contentType);
-  for (const [key, value] of Object.entries(options.headers ?? {})) {
-    if (!/^[a-z\d-]{1,64}$/i.test(key) || /^(?:connection|transfer-encoding|content-length|content-encoding)$/i.test(key) || /[\r\n]/.test(value)) throw new TypeError('Invalid stream header');
-    res.setHeader(key, value);
+/** Header values supplied by trusted adapters still require runtime validation. */
+export function validateResponseHeaders(headers: Record<string, string>): void {
+  if (!headers || typeof headers !== 'object' || Array.isArray(headers) || Object.keys(headers).length > 64) throw new TypeError('Invalid response headers');
+  for (const [key, value] of Object.entries(headers)) {
+    if (!/^[a-z\d-]{1,64}$/i.test(key) || /^(?:connection|transfer-encoding|content-length|content-encoding)$/i.test(key) || typeof value !== 'string' || value.length > 16384 || /[\x00-\x1f\x7f]/.test(value)) throw new TypeError('Invalid response header');
   }
-  if (options.contentType?.startsWith('text/event-stream')) res.setHeader('X-Accel-Buffering', 'no');
-  if (request?.method === 'HEAD') { res.end(); return; }
-  const iterator = Readable.from(source);
-  let bytes = 0;
-  const limited = (async function* () {
-    for await (const chunk of iterator) {
-      const item = typeof chunk === 'string' ? Buffer.from(chunk) : Buffer.from(chunk);
-      bytes += item.length;
-      if (options.maxBytes !== undefined && bytes > options.maxBytes) throw new RangeError('Stream response limit exceeded');
-      yield item;
-    }
-  })();
-  const close = () => iterator.destroy();
+}
+
+/** Await completion to observe producer failures before commitment.
+ * After the first nonempty chunk, failure terminates the connection. */
+export async function sendStream(res: ServerResponse, result: StreamResult, request?: IncomingMessage): Promise<void> {
+  const source=result.source, options={...result.options,headers:{...result.options.headers}};
+  const asyncSource=source as AsyncIterable<string|Uint8Array>;
+  const iterator = typeof asyncSource[Symbol.asyncIterator]==='function' ? asyncSource[Symbol.asyncIterator]() : (source as Iterable<string | Uint8Array>)[Symbol.iterator]();
+  let returning: Promise<unknown> | undefined;
+  const release = () => returning ??= Promise.resolve().then(() => iterator.return?.());
+  let wake: (()=>void) | undefined, transportError: Error | undefined;
+  const ready = () => { const resolve=wake;wake=undefined;resolve?.(); };
+  const failed = (error:Error) => { transportError=error;close(); };
+  const close = () => { if (source instanceof Readable) source.destroy(); void release().catch(() => {});ready(); };
   res.once('close', close);
-  void pipeline(Readable.from(limited), res).catch(error => {
-    if (!res.destroyed) res.destroy(error);
-  }).finally(() => res.off('close', close));
+  request?.once('aborted', close);
+  res.on('drain',ready);res.on('error',failed);
+  let bytes = 0, workFailed=false, workError:unknown;
+  const next = async () => {
+    const item = await iterator.next();
+    if (item.done) return item;
+    if (typeof item.value !== 'string' && !(item.value instanceof Uint8Array)) throw new TypeError('Invalid stream chunk');
+    const value = Buffer.from(item.value);
+    bytes += value.length;
+    if (options.maxBytes !== undefined && bytes > options.maxBytes) throw new RangeError('Stream response limit exceeded');
+    return {done: false as const, value};
+  };
+  try {
+    if (res.headersSent || res.writableEnded || res.destroyed) return;
+    // Validate the complete header bag before changing the response.
+    const headers = {...options.headers};
+    validateResponseHeaders(result.options.headers??{});
+    validateResponseHeaders(headers);
+    if (options.contentType !== undefined && (typeof options.contentType !== 'string' || /[\x00-\x1f\x7f]/.test(options.contentType))) throw new TypeError('Invalid stream content type');
+    // HEAD never executes the producer, but still relinquishes ownership.
+    let first = request?.method === 'HEAD' ? {done: true as const, value: undefined} : await next();
+    while (!first.done && first.value.length === 0) first = await next();
+    if(transportError)throw transportError;
+    if (res.destroyed || request?.aborted) return;
+    res.statusCode = options.status ?? 200;
+    for (const [key, value] of Object.entries(headers)) res.setHeader(key, value);
+    res.setHeader('Cache-Control', 'no-store, no-transform');
+    if (options.contentType) res.setHeader('Content-Type', options.contentType);
+    if (options.contentType?.startsWith('text/event-stream')) res.setHeader('X-Accel-Buffering', 'no');
+    if (first.done) { res.end(); return; }
+    // Write one chunk at a time; never pull another while the socket is backpressured.
+    let item:Awaited<ReturnType<typeof next>>=first;
+    while(!item.done&&!res.destroyed){
+      if(transportError)throw transportError;
+      if(!res.write(item.value)){
+        if(!res.destroyed&&!transportError)await new Promise<void>(resolve=>wake=resolve);
+        if(transportError)throw transportError;
+        if(res.destroyed)break;
+      }
+      item=await next();
+    }
+    if(!res.destroyed){
+      await new Promise<void>(resolve=>{wake=resolve;res.end(ready);});
+      if(transportError)throw transportError;
+    }
+
+  } catch(error) { workFailed=true;workError=error;throw error; } finally {
+    try { await release(); }
+    catch(error){if(workFailed)throw new AggregateError([workError,error],'Stream production and cleanup failed');throw error;}
+    finally { res.off('close', close);res.off('drain',ready);res.off('error',failed);request?.off('aborted', close); }
+  }
 }

@@ -1,6 +1,6 @@
 import { lessons, validateAcademy } from "../src/lib/academy.mjs";
 import { emitOffline } from "./offline.mjs";
-import { learningPaths } from "../src/lib/learning-paths.mjs";
+import { navigationGroups } from "../src/lib/navigation.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -251,14 +251,9 @@ export async function build({ production = true } = {}) {
         sitePath(`/docs/${site.latest}/solutions/`) +
         ") · [Glossary](" +
         sitePath(`/docs/${site.latest}/glossary/`) +
-        ")\n\n## Choose your next step\n\n" +
-        learningPaths
-          .map(([slug]) => {
-            const page = pages.find(
-              (page) => page.version === site.latest && page.slug === slug,
-            );
-            return `- [${page.title}](${page.url}) — ${page.description}`;
-          })
+        ")\n\n## Browse documentation\n\n" +
+        navigationGroups
+          .map(group => `- [${group.label}](${sitePath(`/docs/${site.latest}/${group.slug}/`)}) — ${group.description}`)
           .join("\n"),
     };
     await emitMarkdown(sitePath("/index.md"), rawMarkdown(portal, pages));

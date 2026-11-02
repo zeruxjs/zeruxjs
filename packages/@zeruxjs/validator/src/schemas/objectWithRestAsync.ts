@@ -1,4 +1,5 @@
-import { getDefault, getFallback } from '../methods/index.js';
+import { _runSchema } from '../utils/_run.js';
+import { getFallback } from '../methods/index.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -131,7 +132,7 @@ export function objectWithRestAsync(
       const input = dataset.value;
 
       // If root type is valid, check nested types
-      if (input && typeof input === 'object') {
+      if (input && typeof input === 'object' && !Array.isArray(input)) {
         // Set typed to `true` and value to blank object
         // @ts-expect-error
         dataset.typed = true;
@@ -144,7 +145,7 @@ export function objectWithRestAsync(
           Promise.all(
             Object.entries(this.entries).map(async ([key, valueSchema]) => {
               if (
-                key in input ||
+                Object.hasOwn(input, key) ||
                 ((valueSchema.type === 'exact_optional' ||
                   valueSchema.type === 'optional' ||
                   valueSchema.type === 'nullish') &&
@@ -152,15 +153,15 @@ export function objectWithRestAsync(
                   valueSchema.default !== undefined)
               ) {
                 const value: unknown =
-                  key in input
+                  Object.hasOwn(input, key)
                     ? // @ts-expect-error
                     input[key]
-                    : await getDefault(valueSchema);
+                    : undefined;
                 return [
                   key,
                   value,
                   valueSchema,
-                  await valueSchema['~run']({ value }, config),
+                  await _runSchema(valueSchema, { value }, config),
                 ] as const;
               }
               return [
@@ -179,14 +180,14 @@ export function objectWithRestAsync(
             Object.entries(input)
               .filter(
                 ([key]) =>
-                  _isValidObjectKey(input, key) && !(key in this.entries)
+                  _isValidObjectKey(input, key) && !(Object.hasOwn(this.entries, key))
               )
               .map(
                 async ([key, value]) =>
                   [
                     key,
                     value,
-                    await this.rest['~run']({ value }, config),
+                    await _runSchema(this.rest, { value }, config),
                   ] as const
               )
           ),

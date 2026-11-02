@@ -39,7 +39,7 @@ Destination timeouts isolate failures, but HTTPS hostname validation alone does 
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/tags@0.0.3
+npm install @zeruxjs/tags@0.0.4
 ```
 
 This package participates in the runtime's **tags** integration. Start with [tags configuration](configuration-tags.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.

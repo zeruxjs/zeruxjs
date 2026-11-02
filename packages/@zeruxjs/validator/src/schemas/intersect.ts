@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -105,7 +106,7 @@ export function intersect(
 
         // Parse schema of each option and collect outputs
         for (const schema of this.options) {
-          const optionDataset = schema['~run']({ value: input }, config);
+          const optionDataset = _runSchema(schema, { value: input }, config);
 
           // If there are issues, capture them
           if (optionDataset.issues) {

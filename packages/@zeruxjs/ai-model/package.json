@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/ai-model",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Document retrieval, bounded evidence excerpts and grounded prompt adapter; does not train model weights.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -26,7 +26,8 @@
     "dist/",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "examples/"
   ],
   "publishConfig": {
     "access": "public"
@@ -34,5 +35,23 @@
   "devDependencies": {
     "typescript": "^5.9.3",
     "@types/node": "^25.4.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./corpus": {
+      "types": "./dist/corpus.d.ts",
+      "import": "./dist/corpus.js",
+      "require": "./dist/corpus.js"
+    },
+    "./*": "./*",
+    "./evidence": {
+      "types": "./dist/evidence.d.ts",
+      "import": "./dist/evidence.js",
+      "require": "./dist/evidence.js"
+    }
   }
 }

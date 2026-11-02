@@ -1,0 +1,4 @@
+import type {FontDefinition} from './types.js';
+import {defineFont} from './css.js';
+export interface FontRegistry { add(key:string, definition:FontDefinition):void; delete(key:string):boolean; has(key:string):boolean; css():string; entries():readonly (readonly [string,FontDefinition])[]; clear():void }
+export function createFontRegistry():FontRegistry {const store=new Map<string,FontDefinition>(); return {add(key,definition){if(!key.trim())throw new TypeError('Font key required');defineFont(definition);store.set(key,{...definition,sources:definition.sources.map(s=>({...s}))});},delete(key){return store.delete(key);},has(key){return store.has(key);},css(){return [...store.values()].map(defineFont).join('\n');},entries(){return [...store.entries()].map(([k,v])=>[k,{...v,sources:v.sources.map(s=>({...s}))}] as const);},clear(){store.clear();}};}

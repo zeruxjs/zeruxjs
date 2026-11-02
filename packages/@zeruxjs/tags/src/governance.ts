@@ -1,3 +1,4 @@
+import {validateTagProviders,type TagProviderRegistry} from './providers.js';
 /** Durable governance is stored inside the same version-CAS document as the draft.
  * A worker can never observe a partial draft/publish transition. */
 import type {TagContainer,TagContainerStore,TagRelease,TagGovernance} from './types.js';
@@ -38,22 +39,24 @@ export function releaseSummary(document:TagContainer){
     unpublishedChanges:JSON.stringify(snapshot(parsed))!==JSON.stringify(g.published),
     history:g.history.map(({id,at,action,container})=>({id,at,action,revision:container.version}))};
 }
-export async function saveTagDraft(store:TagContainerStore,next:TagContainer,expectedVersion:number):Promise<boolean> {
+export async function saveTagDraft(store:TagContainerStore,next:TagContainer,expectedVersion:number,registry?:TagProviderRegistry):Promise<boolean> {
+  validateTagProviders(next,registry);
   const current=validateContainer(await store.load());
   if(current.version!==expectedVersion||next.version!==expectedVersion+1||next.id!==current.id)return false;
   // Governance is server-controlled; ignore any metadata sent by the editor.
   return store.save(bounded({...snapshot(next),governance:current.governance??initial(current)}),expectedVersion);
 }
-export async function publishTagDraft(store:TagContainerStore,expectedVersion:number):Promise<boolean> {
-  const current=validateContainer(await store.load());if(current.version!==expectedVersion)return false;
+export async function publishTagDraft(store:TagContainerStore,expectedVersion:number,registry?:TagProviderRegistry):Promise<boolean> {
+  const current=validateContainer(await store.load());if(current.version!==expectedVersion)return false;validateTagProviders(current,registry);
   const governance=append(current.governance??initial(current),current,'publish');
   return store.save(bounded({...current,version:current.version+1,governance}),expectedVersion);
 }
-export async function rollbackTagRelease(store:TagContainerStore,expectedVersion:number,releaseId:number):Promise<boolean> {
+export async function rollbackTagRelease(store:TagContainerStore,expectedVersion:number,releaseId:number,registry?:TagProviderRegistry):Promise<boolean> {
   const current=validateContainer(await store.load());if(current.version!==expectedVersion)return false;
   const governance=current.governance??initial(current);
   const entry=governance.history.find(item=>item.id===releaseId);
   if(!entry)throw new RangeError('Release not available in retained history');
+  validateTagProviders(entry.container,registry);
   const updated=append(governance,entry.container,'rollback');
   return store.save(bounded({...current,version:current.version+1,governance:updated}),expectedVersion);
 }

@@ -1,3 +1,4 @@
+import { _runSchema, bypassCache, consumeCachedIssues } from '../utils/_run.js';
 import type { OutputDataset } from '../types/index.js';
 import type {
   BaseIssue,
@@ -87,13 +88,16 @@ export function cache(
       return _getStandardProps(this);
     },
     '~run'(dataset, runConfig) {
+      if (bypassCache(runConfig)) return _runSchema(schema, dataset, runConfig);
       const key = this.cache.key(dataset.value, runConfig);
       let outputDataset = this.cache.get(key);
       if (!outputDataset) {
         this.cache.set(
           key,
-          (outputDataset = schema['~run'](dataset, runConfig))
+          (outputDataset = _runSchema(schema, dataset, runConfig))
         );
+      } else {
+        consumeCachedIssues(runConfig, outputDataset.issues);
       }
       // Hint: We clone the dataset before returning it so downstream pipe items
       // do not mutate the cached dataset wrapper or issues array.

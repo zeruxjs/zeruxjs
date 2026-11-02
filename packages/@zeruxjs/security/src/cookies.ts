@@ -1,11 +1,16 @@
 export interface CookieOptions { maxAgeSeconds?: number; path?: string; domain?: string; httpOnly?: boolean; secure?: boolean; sameSite?: "Strict" | "Lax" | "None"; }
 export function serializeCookie(name: string, value: string, options: CookieOptions = {}): string {
+    if (typeof name !== 'string' || typeof value !== 'string' || !options || typeof options !== 'object') throw new TypeError('Invalid cookie input');
+    for (const key of ['secure', 'httpOnly'] as const) if (options[key] !== undefined && typeof options[key] !== 'boolean') throw new TypeError('Invalid cookie flag');
+    if (options.path !== undefined && typeof options.path !== 'string') throw new TypeError('Invalid cookie path');
+    if (options.domain !== undefined && typeof options.domain !== 'string') throw new TypeError('Invalid cookie domain');
     if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name)) throw new Error("Invalid cookie name");
     // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
     if (/[\u0000-\u001f\u007f;]/.test(value)) throw new Error("Invalid cookie value");
     if (name.startsWith("__Host-") && (options.secure !== true || options.path !== "/" || options.domain)) throw new Error("__Host- cookies require Secure, Path=/ and no Domain");
     if (name.startsWith("__Secure-") && !options.secure) throw new Error("__Secure- cookies require Secure");
     const sameSite = options.sameSite ?? "Lax";
+    if (!["Strict", "Lax", "None"].includes(sameSite)) throw new TypeError("Invalid cookie SameSite policy");
     if (sameSite === "None" && !options.secure) throw new Error("SameSite=None requires Secure");
     const parts = [`${name}=${encodeURIComponent(value)}`];
     const path = options.path ?? "/";

@@ -1,4 +1,4 @@
-import type { AiProvider, ChatOptions } from './types.js';
+import type { AiProvider, ChatOptions,ChatMessage,AiContentMessage,AiContentOptions } from './types.js';
 
 export interface AiConcurrencyOptions { maxConcurrent: number; maxQueued?: number }
 /** Fair FIFO admission for chat and streaming; a streaming slot is held until iterator closes. */
@@ -34,6 +34,11 @@ export function withConcurrencyLimit(provider: AiProvider, options: AiConcurrenc
   };
   return {
     status: () => ({ active, queued: queue.length }),
+    capabilities:provider.capabilities,
+    ...(provider.chatResult?{async chatResult(messages:ChatMessage[],opts?:ChatOptions){const done=await acquire(opts?.signal);try{return await provider.chatResult!(messages,opts);}finally{done();}}}:{}),
+    ...(provider.streamEvents?{async *streamEvents(messages:ChatMessage[],opts?:ChatOptions){const done=await acquire(opts?.signal);try{yield* provider.streamEvents!(messages,opts);}finally{done();}}}:{}),
+    ...(provider.chatContent?{async chatContent(messages:AiContentMessage[],opts?:AiContentOptions){const done=await acquire(opts?.signal);try{return await provider.chatContent!(messages,opts);}finally{done();}}}:{}),
+    ...(provider.streamContent?{async *streamContent(messages:AiContentMessage[],opts?:ChatOptions){const done=await acquire(opts?.signal);try{yield* provider.streamContent!(messages,opts);}finally{done();}}}:{}),
     async chat(messages, opts?: ChatOptions) {
       const done = await acquire(opts?.signal);
       try { return await provider.chat(messages, opts); } finally { done(); }

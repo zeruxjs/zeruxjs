@@ -1,43 +1,25 @@
 ---
-{
-  "title": "create-zenix-js",
-  "description": "Current placeholder contract, installation and honest upgrade expectations.",
-  "section": "Packages",
-  "order": 210,
-  "package": "create-zenix-js",
-  "sources": [
-    "packages/create/create-zenix-app/README.md",
-    "packages/create/create-zenix-app/package.json"
-  ],
-  "related": [
-    "packages",
-    "typescript",
-    "configuration-reference"
-  ]
-}
+{"title":"create-zenix-js","description":"Safe generation of the host-configured SQLite CMS baseline.","section":"Packages","order":210,"package":"create-zenix-js","sources":["packages/create/create-zenix-app/README.md","packages/create/create-zenix-app/src/templates.ts"],"related":["packages","typescript","configuration-reference"]}
 ---
 
-## Current release contract
+## Implemented baseline
 
-`create-zenix-js@0.0.3` is a public placeholder. The CLI supports help/version only and does not create an application. The purpose of this guide is to distinguish the published contract from future plans, not to invent setup steps that the release cannot perform.
-
-## Install or inspect
+`create-zenix-js` (binary `create-zenix`) generates the existing ZyroJS server-rendered UI, ZeruxJS runtime and Zenix core integration. Only JavaScript SSR, SQLite and no binary upload storage are available. No React/Vue, hydration, plugin marketplace or automatic account provisioning is supplied. Source implementation does not imply publication of version 0.0.4.
 
 ```sh
-npx create-zenix-js@0.0.3 --help
-npx create-zenix-js@0.0.3 --version
+create-zenix cms --yes --database sqlite --storage none --port 3000 --dry-run
 ```
 
-A generation request exits with failure and does not create files. Do not make a deployment pipeline depend on a scaffold appearing after this command.
+Dry-run produces an inspectable plan without writes. Normal generation uses zclivo exclusive staging and target/symlink checks; install/build/migrate/start remain explicit user commands. `planZenixApp` from `create-zenix-js` provides the same headless planning API.
 
-## TypeScript and configuration
+## Private host preparation
 
-This is a command-line placeholder, not a typed project-generation factory. A TypeScript application generated in a future release will need its own configuration and checker settings; the current CLI does not create those files.
+The emitted host policy deliberately rejects startup with `ZENIX_HOST_POLICY_REQUIRED` until verified persistent sessions, tenant/site permissions, session-bound CSRF, admission, setup-secret verification and trusted recovery are configured. There are no default credentials. Environment templates have empty placeholders, are not auto-loaded and never contain browser secrets.
 
-There is no automatic `create-zenix-js` key in `zerux.config.js` that activates an unfinished feature. Use the [manual installation guide](installation.md) for a working Zerux application and the package guides for implemented storage/cache/queue functionality. Do not copy future-roadmap examples into production and assume package installation supplies their dependencies.
+Node >=24.15.0 and native SQLite are required. Configure an exact origin, private absolute database path, tenant and site. Create/protect the parent directory, review backups/schema, then run `npm run migrate -- --approve`. This initializes schemas without creating an administrator or site. Runtime verifies existing schemas instead of silently migrating. External database provisioning and production auth/storage qualification remain host operations.
 
-## Upgrading and troubleshooting
+After implementing private host policies, authenticate the separately provisioned privileged operator at `/cms/login` and perform one-time `/cms/setup`. Durable setup claims prevent repeated initialization. Uncertain claims require fresh authorized operator recovery, not an automatic reset. `/cms/editor` saves drafts; preview remains private/noindex; publish separately exposes plain-text content at `/cms/page`.
 
-Pin the version you actually inspected. When a future release implements functionality, review its changelog, public exports, migration/data policy and configuration contract before adopting it. Existing placeholder imports are not evidence of backward-compatible CMS implementation.
+## Qualification
 
-If a command prints help but produces no files, that is the documented placeholder behavior. If an expected factory cannot be imported, inspect the installed version and exports instead of importing internal files. A registry name reservation and a successful tarball install do not certify a working application.
+The generator's isolated workspace-linked consumer checks build, SQLite schema reload, denied unconfigured startup and resource cleanup. These are not clean registry, browser, production authentication, TLS or proxy acceptance. See the package README and generated instructions for exact prerequisites and supported limits.

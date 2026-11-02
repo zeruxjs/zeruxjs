@@ -15,6 +15,8 @@ export function validateAddress(address: FileAddress): FileAddress {
   return address;
 }
 export function validatePut(options: PutFileOptions = {}): void {
+  if(!options||typeof options!=='object')throw new TypeError('Upload options required');
+  if(options.ifNoneMatch!==undefined&&typeof options.ifNoneMatch!=='boolean')throw new TypeError('Invalid create-only condition');
   if (options.maxBytes !== undefined && (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 1)) throw new RangeError('Invalid upload size');
   if (options.contentType !== undefined && !/^[\w!#$&^.+-]+\/[\w!#$&^.+-]+$/.test(options.contentType)) throw new TypeError('Invalid content type');
   if (options.visibility !== undefined && options.visibility !== 'public' && options.visibility !== 'private') throw new TypeError('Invalid visibility');

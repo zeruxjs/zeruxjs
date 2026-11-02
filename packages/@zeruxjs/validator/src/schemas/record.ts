@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -137,7 +138,7 @@ export function record(
             const entryValue: unknown = input[entryKey as keyof typeof input];
 
             // Get dataset of key schema
-            const keyDataset = this.key['~run']({ value: entryKey }, config);
+            const keyDataset = _runSchema(this.key, { value: entryKey }, config);
 
             // If there are issues, capture them
             if (keyDataset.issues) {
@@ -170,7 +171,7 @@ export function record(
             }
 
             // Get dataset of value schema
-            const valueDataset = this.value['~run'](
+            const valueDataset = _runSchema(this.value,
               { value: entryValue },
               config
             );

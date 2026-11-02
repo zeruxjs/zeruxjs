@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   ArrayPathItem,
   BaseIssue,
@@ -101,7 +102,7 @@ export function array(
         // Parse schema of each array item
         for (let key = 0; key < input.length; key++) {
           const value = input[key];
-          const itemDataset = this.item['~run']({ value }, config);
+          const itemDataset = _runSchema(this.item, { value }, config);
 
           // If there are issues, capture them
           if (itemDataset.issues) {

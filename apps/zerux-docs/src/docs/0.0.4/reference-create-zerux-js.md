@@ -1,7 +1,7 @@
 ---
 {
   "title": "create-zerux-js",
-  "description": "Current placeholder contract, installation and honest upgrade expectations.",
+  "description": "Safe SSR project generation for the verified ZeruxJS renderer contracts.",
   "section": "Packages",
   "order": 210,
   "package": "create-zerux-js",
@@ -17,27 +17,35 @@
 }
 ---
 
-## Current release contract
+## Implemented generator
 
-`create-zerux-js@0.0.3` is a public placeholder. The CLI supports help/version only and does not create an application. The purpose of this guide is to distinguish the published contract from future plans, not to invent setup steps that the release cannot perform.
-
-## Install or inspect
+`create-zerux-js` now uses zclivo's safe generator engine. The existing `create-zerux`
+binary and help/version behavior remain, with a matching `create-zerux-js` alias.
+Source version remains 0.0.4; inspect installed registry artifacts before assuming
+new checkout contracts were published.
 
 ```sh
-npx create-zerux-js@0.0.3 --help
-npx create-zerux-js@0.0.3 --version
+npm create zerux-js@latest -- my-app --yes
+npx create-zerux-js@0.0.4 my-app --renderer react --language typescript --port 4000 --dry-run
 ```
 
-A generation request exits with failure and does not create files. Do not make a deployment pipeline depend on a scaffold appearing after this command.
+The default is TypeScript/ZyroJS HTML-only SSR. React and Vue templates emit only
+their selected runtime/adapter dependencies; JavaScript is also supported. `ssr` is
+the sole mode. Hydration, client-only rendering, static export and automatic browser
+navigation are deliberately not generated. Ordinary links work without JavaScript.
 
-## TypeScript and configuration
+## Safety and generated files
 
-This is a command-line placeholder, not a typed project-generation factory. A TypeScript application generated in a future release will need its own configuration and checker settings; the current CLI does not create those files.
+Projects include private manifests, build/dev/start scripts, explicit config/entry,
+minimal renderer routes, public styles, a secret-free env example and a smoke check.
+Names, paths, port and capabilities validate before writing. Existing/dangling targets
+and unsafe parents reject; dry-run is read-only. Staging/exclusive promotion, rollback
+and cancellation are supplied by zclivo. No install, server start, port takeover or
+unreviewed template loading occurs. Use another port on conflict; never stop an
+unrelated app to make this sample run.
 
-There is no automatic `create-zerux-js` key in `zerux.config.js` that activates an unfinished feature. Use the [manual installation guide](installation.md) for a working Zerux application and the package guides for implemented storage/cache/queue functionality. Do not copy future-roadmap examples into production and assume package installation supplies their dependencies.
-
-## Upgrading and troubleshooting
-
-Pin the version you actually inspected. When a future release implements functionality, review its changelog, public exports, migration/data policy and configuration contract before adopting it. Existing placeholder imports are not evidence of backward-compatible CMS implementation.
-
-If a command prints help but produces no files, that is the documented placeholder behavior. If an expected factory cannot be imported, inspect the installed version and exports instead of importing internal files. A registry name reservation and a successful tarball install do not certify a working application.
+The package README and public `examples/generate.mjs` document exact flags, runtime
+versions and renderer prerequisites. Qualification covers all six language/renderer
+combinations with offline local-link installs, actual builds/typechecks and owned
+production HTTP fixtures. It is not clean-registry, live-browser, hydration or
+production hosting acceptance.

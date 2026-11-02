@@ -25,7 +25,7 @@ A reusable package owns its message identifiers, translator contexts, text domai
 
 Use a stable domain such as `acme-cart`, rather than the host's `default` domain. Domain names accept letters, digits, dots, underscores and hyphens, must start with a letter/digit and are bounded to 128 characters. A domain is a translation namespace; it does not isolate untrusted package code or authorize access to user data.
 
-Install `zlocale@0.0.3` for development. A package exposing integration with a host-owned translator can declare a compatible peer dependency and install it as a development dependency for TypeScript. Do not construct a mutable translator singleton when the module is imported. Type-only imports disappear from compiled JavaScript.
+Install `zlocale@0.0.4` for development. A package exposing integration with a host-owned translator can declare a compatible peer dependency and install it as a development dependency for TypeScript. Do not construct a mutable translator singleton when the module is imported. Type-only imports disappear from compiled JavaScript.
 
 ## Export messages as typed functions
 
@@ -92,14 +92,14 @@ Use `satisfies Catalog` for authoring feedback and `defineCatalog(unknown)` when
     }
   },
   "files": ["dist", "README.md", "LICENSE"],
-  "peerDependencies": { "zlocale": "^0.0.3" },
-  "devDependencies": { "zlocale": "0.0.3" }
+  "peerDependencies": { "zlocale": "^0.0.4" },
+  "devDependencies": { "zlocale": "0.0.4" }
 }
 ```
 
-This is an excerpt, not a complete release manifest. Add the package's own version, license and build settings. `^0.0.3` intentionally accepts only that patch line under npm's 0.0.x rules; review later versions before broadening the range. Only declare `sideEffects: false` if it is true for your entire package.
+This is an excerpt, not a complete release manifest. Add the package's own version, license and build settings. `^0.0.4` intentionally accepts only that patch line under npm's 0.0.x rules; review later versions before broadening the range. Only declare `sideEffects: false` if it is true for your entire package.
 
-Do not re-export every locale from the main entry. Hosts can then omit unused locales or split explicit dynamic imports into locale chunks. No extraction CLI, PO/MO parser, Jed converter or automatic bundler integration is supplied by zlocale 0.0.3; produce the documented catalog shape in your own build pipeline.
+Do not re-export every locale from the main entry. Hosts can then omit unused locales or split explicit dynamic imports into locale chunks. No extraction CLI, PO/MO parser, Jed converter or automatic bundler integration is supplied by zlocale 0.0.4; produce the documented catalog shape in your own build pipeline.
 
 ## Let the application load the catalog
 

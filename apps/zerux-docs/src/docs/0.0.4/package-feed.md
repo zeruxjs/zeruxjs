@@ -6,7 +6,9 @@
   "order": 16,
   "sources": [
     "packages/@zeruxjs/feed/README.md",
-    "packages/@zeruxjs/feed/package.json"
+    "packages/@zeruxjs/feed/package.json",
+    "packages/@zeruxjs/feed/src/types.ts",
+    "packages/@zeruxjs/feed/examples/publication.ts"
   ],
   "related": [
     "packages",
@@ -39,7 +41,7 @@ Only publish content intended for all feed readers. Personalized feeds require a
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/feed@0.0.3
+npm install @zeruxjs/feed@0.0.4
 ```
 
 There is no automatic `feed` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
@@ -105,3 +107,30 @@ These tables list fields declared directly on the named public contract. Referen
 | `tags` | `string[]` | Yes |
 | `image` | `string` | Yes |
 | `enclosure` | `{url:string;type:string;length:number}` | Yes |
+
+## Choose deliberate format coverage
+
+The package README provides a precise RSS/Atom/JSON Feed compatibility matrix.
+Structured authors/categories/attachments supplement legacy author/tags/enclosure
+fields. RSS supports one enclosure and rejects multiple; Atom/JSON support multiple.
+Person email/URI/avatar and category label/domain have format-specific mappings,
+not a promise that every field survives every representation.
+
+Set strict:true for Atom author, absolute IRI identity and known timestamp checks.
+Default legacy mode preserves opaque IDs/missing authors and deterministic epoch
+fallback, which is not a content fact or a full Atom-validity claim. Duplicate
+logical IDs reject; supplied atomId values must also be unique. No ID or timestamp
+is randomized at build time. Only validated authored dates drive Last-Modified.
+
+Use contentText or host-sanitized contentHtml. XML escaping prevents markup from
+breaking the feed document but does not sanitize HTML that readers later render.
+Attachment URL/MIME/length are validated metadata, not permission to fetch a file;
+generation performs no remote inspection. Do not publish signed/private URLs.
+
+Fetch publication preserves weighted Accept, representation ETags, HEAD/304 and
+Vary behavior, adds explicit truncation reporting and bounded producer cancellation,
+and returns redacted 503 on dependency failure. Await handler.close during teardown;
+actual producer settlement owns capacity and borrowed resources remain with the
+host. This public helper does not authenticate a tenant or personalize a feed.
+The public-import example covers strict authored publication; parser/HTTP fixtures
+are separate from live reader or HTML-sanitizer qualification.

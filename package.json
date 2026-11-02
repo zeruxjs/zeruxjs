@@ -82,11 +82,11 @@
     "sample-packages/*"
   ],
   "devDependencies": {
+    "@zeruxjs/performance": "0.0.4",
+    "@zeruxjs/typescript": "0.0.4",
     "better-sqlite3": "^12.6.2",
     "postcss-media-query-parser": "file:vendor/zeruxjs-scss-media-parser-0.2.3.tgz",
-    "@zeruxjs/typescript": "0.0.3",
-    "@zeruxjs/performance": "0.0.3",
-    "zuixs": "0.0.3"
+    "zuixs": "0.0.4"
   },
   "releaseWorkspaces": [
     "packages/@zenixjs/*",

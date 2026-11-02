@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchemaAsync,
@@ -154,7 +155,7 @@ export function variantAsync(
                 if (
                   currentKey in input
                     ? (
-                      await discriminatorSchema['~run'](
+                      await _runSchema(discriminatorSchema,
                         // @ts-expect-error
                         { typed: false, value: input[currentKey] },
                         { abortEarly: true }
@@ -200,7 +201,7 @@ export function variantAsync(
 
               // If all discriminators are valid, parse input with schema of option
               if (keysAreValid) {
-                const optionDataset = await schema['~run'](
+                const optionDataset = await _runSchema(schema,
                   { value: input },
                   config
                 );

@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/cache-memcache",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "description": "Bounded Memcached text-protocol adapter for @zeruxjs/cache",
   "main": "./dist/index.js",
@@ -20,7 +20,7 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@zeruxjs/cache": "0.0.3"
+    "@zeruxjs/cache": "0.0.4"
   },
   "license": "(MIT OR Apache-2.0)",
   "files": [
@@ -33,8 +33,8 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

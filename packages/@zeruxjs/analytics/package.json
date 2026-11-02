@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/analytics",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "description": "Database-backed application and email event analytics with Fetch endpoints",
   "license": "(MIT OR Apache-2.0)",
@@ -22,6 +22,10 @@
     "./browser": {
       "types": "./dist/browser.d.ts",
       "default": "./dist/browser.js"
+    },
+    "./durable": {
+      "types": "./dist/durable.d.ts",
+      "default": "./dist/durable.js"
     }
   },
   "scripts": {
@@ -30,7 +34,7 @@
     "prepack": "npm run build"
   },
   "peerDependencies": {
-    "@zeruxjs/db": "0.0.3"
+    "@zeruxjs/db": "0.0.4"
   },
   "peerDependenciesMeta": {
     "@zeruxjs/db": {
@@ -41,14 +45,15 @@
     "dist/",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "examples/"
   ],
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

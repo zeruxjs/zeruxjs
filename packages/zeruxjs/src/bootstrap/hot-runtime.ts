@@ -43,10 +43,10 @@ export function createHotRuntime<T>(initial: T, options: {
         lastError = null;
         // Dispose failures must not roll back a successfully activated generation.
         try { await options.dispose(previous); }
-        catch (error) { lastError = `Previous generation cleanup: ${String(error)}`; }
+        catch (error) { lastError = 'Previous generation cleanup failed'; }
       } catch (error) {
         failures++;
-        lastError = error instanceof Error ? error.message : String(error);
+        lastError = 'Application generation preparation failed';
         throw error;
       } finally { rebuilding = false; }
     };

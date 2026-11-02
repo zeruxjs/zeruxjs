@@ -1,3 +1,4 @@
+import { _runSchema, bypassCache, consumeCachedIssues } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -137,12 +138,14 @@ export function cacheAsync(
       return _getStandardProps(this);
     },
     async '~run'(dataset, runConfig) {
+      if (bypassCache(runConfig)) return _runSchema(schema, dataset, runConfig);
       // Create cache key based on input and config
       const key = this.cache.key(dataset.value, runConfig);
 
       // Check and return cached output if exists
       const cached = this.cache.get(key);
       if (cached) {
+        consumeCachedIssues(runConfig, cached.issues);
         // Hint: We clone the dataset before returning it so downstream pipe
         // items do not mutate the cached dataset wrapper or issues array.
         return _cloneDataset(cached);
@@ -150,15 +153,17 @@ export function cacheAsync(
 
       // If not cached, check if a matching run is already in progress
       let promise = activeRuns?.get(key);
+      const shared = !!promise;
       if (!promise) {
         activeRuns ??= new Map();
-        promise = Promise.resolve(schema['~run'](dataset, runConfig));
+        promise = Promise.resolve(_runSchema(schema, dataset, runConfig));
         activeRuns.set(key, promise);
       }
 
       // Await pending promise, cache output and return
       try {
         const outputDataset = await promise;
+        if (shared) consumeCachedIssues(runConfig, outputDataset.issues);
         this.cache.set(key, outputDataset);
         // Hint: We clone the dataset before returning it so downstream pipe
         // items do not mutate the cached dataset wrapper or issues array.

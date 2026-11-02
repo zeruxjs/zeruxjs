@@ -331,7 +331,7 @@ export const validateOperation = <T extends QueryOperation>(operation: T): T => 
         });
     }
 
-    if (typeof operation.op !== "string") {
+    if (typeof operation.op !== "string" || !['createDb','dropDb','switchDB','createTable','dropTable','alterTable','turcunateTable','createIndex','dropIndex','insert','select','update','delete'].includes(operation.op)) {
         throw createDatabaseError({
             code: "INVALID_OPERATION",
             message: "Database operation is missing the op property"

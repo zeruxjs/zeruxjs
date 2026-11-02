@@ -1,3 +1,4 @@
+import { countIssue } from './_run.js';
 import {
   getGlobalMessage,
   getSchemaMessage,
@@ -74,6 +75,7 @@ export function _addIssue<const TContext extends Context>(
   config: Config<InferIssue<TContext>>,
   other?: Other<TContext>
 ): void {
+  countIssue(config);
   // Get expected and received string
   const input = other && 'input' in other ? other.input : dataset.value;
   const expected = other?.expected ?? context.expects ?? null;
@@ -84,6 +86,7 @@ export function _addIssue<const TContext extends Context>(
   // for performance reasons
   const issue: BaseIssue<unknown> = {
     kind: context.kind,
+    code: `${context.kind}.${context.type}`,
     type: context.type,
     input,
     expected,

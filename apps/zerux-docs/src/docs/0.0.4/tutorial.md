@@ -21,14 +21,14 @@ This walkthrough uses the actual file-route runtime. It deliberately starts with
 
 ## 1. Create the project
 
-The current `create-zerux-js` release does not scaffold projects. Create a directory manually and install the runtime:
+This walkthrough creates files manually so the routing and storage choices are visible. The source implementation also offers a [safe SSR generator](reference-create-zerux-js.md); verify installed release exports before using unpublished source features. For the manual route:
 
 ```sh
 mkdir notes-app
 cd notes-app
 npm init -y
 npm pkg set type=module
-npm install zeruxjs@0.0.3 @zeruxjs/typescript@0.0.3
+npm install zeruxjs@0.0.4 @zeruxjs/typescript@0.0.4
 mkdir -p app/api/notes middleware lib
 ```
 

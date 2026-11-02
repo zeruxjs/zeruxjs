@@ -1,3 +1,4 @@
+import {resolveApplicationConfig,type ConfigLayers} from './config-validation.js';
 import path from "node:path";
 
 import type { ZeruxConfig, ZeruxStructureConfig } from "../index.js";
@@ -33,7 +34,7 @@ export const resolveDefaultEnvFiles = (rootDir: string, mode: RuntimeMode): stri
     ]);
 };
 
-export const loadConfig = async (rootDir: string, mode: RuntimeMode): Promise<ZeruxConfig> => {
+export const loadConfig = async (rootDir: string, mode: RuntimeMode, layers:Omit<ConfigLayers,'file'>={}): Promise<ZeruxConfig> => {
     const configPath = findExistingFile(rootDir, [
         "zerux.config.ts",
         "zerux.config.js",
@@ -42,11 +43,11 @@ export const loadConfig = async (rootDir: string, mode: RuntimeMode): Promise<Ze
     ]);
 
     if (!configPath) {
-        return {};
+        return resolveApplicationConfig(layers);
     }
 
     const loaded = await importModule(configPath, mode);
-    return (loaded.default || loaded.zeruxConfig || loaded.zdevConfig || loaded) as ZeruxConfig;
+    return resolveApplicationConfig({...layers,file:(loaded.default || loaded.zeruxConfig || loaded.zdevConfig || loaded) as ZeruxConfig});
 };
 
 export const resolveStructure = (

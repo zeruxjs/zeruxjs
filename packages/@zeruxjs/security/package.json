@@ -1,7 +1,7 @@
 {
   "name": "@zeruxjs/security",
-  "version": "0.0.3",
-  "description": "A security Plugin to secure application by auto CFSR, XSS and many other attacks, validate schema, escaping, sanitization, CROS, and much more",
+  "version": "0.0.4",
+  "description": "Context-specific encoding, Node crypto record policies, CSRF, CORS, cookies and security headers",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
     "url": "https://github.com/zeruxjs/zeruxjs/issues"
@@ -24,10 +24,31 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./encoding": {
+      "types": "./dist/encoding.d.ts",
+      "import": "./dist/encoding.js"
+    },
+    "./crypto": {
+      "types": "./dist/cryptography.d.ts",
+      "import": "./dist/cryptography.js"
+    },
+    "./policy": {
+      "types": "./dist/policy.d.ts",
+      "import": "./dist/policy.js"
+    },
+    "./jwt": {
+      "types": "./dist/jwt-entry.d.ts",
+      "import": "./dist/jwt-entry.js"
     }
   },
   "keywords": [
-    "A security Plugin to secure application by auto CFSR, XSS and many other attacks, validate schema, escaping, sanitization, CROS, and much more"
+    "security",
+    "csrf",
+    "cors",
+    "aes-gcm",
+    "hmac",
+    "output-encoding"
   ],
   "files": [
     "dist/",
@@ -39,7 +60,10 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "jose": "6.2.13"
   }
 }

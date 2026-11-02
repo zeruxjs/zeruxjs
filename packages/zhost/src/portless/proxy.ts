@@ -73,7 +73,7 @@ function findRoute(routes: { hostname: string; port: number }[], host: string) {
 }
 
 /** Server type returned by createProxyServer (plain HTTP/1.1 or net.Server TLS wrapper). */
-export type ProxyServer = (http.Server | net.Server) & { connectionTracker: ConnectionTracker; backendPool: BackendPool; backendConnections: BackendConnections; responseCache: ProxyResponseCache; telemetry: ProxyTelemetry; getLoadStatus: (windowMs?: number) => import("./proxy-telemetry.js").ProxyLoadStatus; getApplicationLoad: (hostname: string, windowMs?: number) => import("./proxy-telemetry.js").RouteLoadStatus; getApplicationUsage: (hostname: string, pids?: readonly number[], windowMs?: number) => Promise<import("./application-load.js").ApplicationUsage>; capabilities: import("../protocols/transport.js").TransportCapabilities };
+export type ProxyServer = (http.Server | net.Server) & { connectionTracker: ConnectionTracker; backendPool: BackendPool; backendConnections: BackendConnections; responseCache: ProxyResponseCache; telemetry: ProxyTelemetry; getLoadStatus: (windowMs?: number) => import("./proxy-telemetry.js").ProxyLoadStatus; getApplicationLoad: (hostname: string, windowMs?: number) => import("./proxy-telemetry.js").RouteLoadStatus; getApplicationUsage: (hostname: string, pids?: readonly number[], windowMs?: number) => Promise<import("./application-load.js").ApplicationUsage>; getAdmissionStatus: () => ReturnType<ProxyAdmission["stats"]>; capabilities: import("../protocols/transport.js").TransportCapabilities };
 
 /**
  * Create an HTTP proxy server that routes requests based on the Host header.
@@ -390,7 +390,7 @@ export function createProxyServer(options: ProxyServerOptions): ProxyServer {
       socket.end("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
       return;
     }
-    const upgradePermit = admission.acquire(socket.remoteAddress);
+    const upgradePermit = admission.acquire(socket.remoteAddress, 'stream');
     if (!upgradePermit.allowed) {
       socket.end(`HTTP/1.1 ${upgradePermit.status} ${upgradePermit.status === 429 ? 'Too Many Requests' : 'Service Unavailable'}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
       return;
@@ -547,15 +547,17 @@ export function createProxyServer(options: ProxyServerOptions): ProxyServer {
 
     // The wrapper owns the listening socket and tracks even TLS/HTTP2 tunnels.
     // Inner servers never listen directly, so calling close() on them throws.
+    if (admission.maxConnections !== undefined) wrapper.maxConnections = admission.maxConnections;
     wrapper.once('close', () => { backendPool.close(); protocols?.close(); });
     closeProtocolStreams(wrapper, protocols);
-    return Object.assign(wrapper, { connectionTracker: trackConnections(wrapper), backendPool, backendConnections, ...metrics });
+    return Object.assign(wrapper, { getAdmissionStatus: () => admission.stats(), connectionTracker: trackConnections(wrapper), backendPool, backendConnections, ...metrics });
   }
 
   const httpServer = http.createServer(handleRequest);
   httpServer.on("upgrade", handleUpgrade);
+  if (admission.maxConnections !== undefined) httpServer.maxConnections = admission.maxConnections;
 
   httpServer.once('close', () => { backendPool.close(); protocols?.close(); });
   closeProtocolStreams(httpServer, protocols);
-  return Object.assign(httpServer, { connectionTracker: trackConnections(httpServer), backendPool, backendConnections, ...metrics });
+  return Object.assign(httpServer, { getAdmissionStatus: () => admission.stats(), connectionTracker: trackConnections(httpServer), backendPool, backendConnections, ...metrics });
 }

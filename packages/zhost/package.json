@@ -1,6 +1,6 @@
 {
   "name": "zhost",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Server Creator and Handle Auto load and so via @zerux/watcher",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,14 +20,18 @@
     "./protocols": {
       "types": "./dist/protocols/index.d.ts",
       "import": "./dist/protocols/index.js"
+    },
+    "./compression": {
+      "types": "./dist/compression.d.ts",
+      "import": "./dist/compression.js"
     }
   },
   "license": "(MIT OR Apache-2.0)",
   "dependencies": {
     "chalk": "^4.1.2",
     "ws": "^8.22.0",
-    "zforge": "0.0.3",
-    "zlook": "0.0.3"
+    "zforge": "0.0.4",
+    "zlook": "0.0.4"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -53,7 +57,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
   }
 }

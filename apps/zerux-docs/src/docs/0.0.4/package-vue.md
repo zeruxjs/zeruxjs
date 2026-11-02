@@ -1,12 +1,15 @@
 ---
 {
-  "title": "Vue state bridges",
+  "title": "Vue bindings and native rendering",
   "description": "Inject real Vue 3 APIs and connect stores within an explicit effect scope.",
   "section": "Packages",
   "order": 29,
   "sources": [
     "packages/@zeruxjs/vue/README.md",
-    "packages/@zeruxjs/vue/package.json"
+    "packages/@zeruxjs/vue/package.json",
+    "packages/@zeruxjs/vue/src/browser.ts",
+    "packages/@zeruxjs/vue/src/server.ts",
+    "packages/@zeruxjs/vue/src/rendering.ts"
   ],
   "related": [
     "packages",
@@ -36,10 +39,44 @@ Use useStore(store, { ssr: true }) for a one-time snapshot without a long-lived 
 
 createVueRef is a framework-independent primitive, not Vue's native ref. fromVueRef without a subscription callback does not watch future writes. Use injected Vue watch for real reactive interoperability, and dispose synchronization on teardown.
 
+## Opt-in native runtime entries
+
+`@zeruxjs/vue/browser` owns native runtime-only mount/update/unmount and hydration.
+`@zeruxjs/vue/server` uses a new app per render and Vue's exported compiler-free
+server-renderer build. `@zeruxjs/vue/rendering` validates explicit component/view
+registrations and exports the app-scoped context key. Core standalone helpers
+still import no Vue. Optional peers target matching Vue/runtime-dom/server-renderer
+3.5.44+ within the 3.5 line; qualification uses 3.5.44.
+
+Author render/setup functions or use externally precompiled output. This package
+adds no SFC/compiler pipeline: templates/compiler options reject, nested server
+templates hit a compiler-free stub, and native renderer realms with a registered runtime
+compiler reject. External SSR helper imports must also resolve compiler-free builds. Build-generated code still needs source maps and host import
+boundary validation; no client authorization comes from a compiler label.
+
+Each app provides VUE_RENDER_CONTEXT with SSR mode, a cooperative AbortSignal and
+bounded explicit disposers. Native component scopes stop watchers on unmount;
+SSR bridges must use snapshot mode, because SSR does not run component unmount
+hooks. Register request resources before awaiting and await explicit teardown.
+Errors retain private causes in bounded fixed-code records. SSR teleport targets
+and streaming are unsupported rather than silently dropped.
+
+Use the same public state/tree/idPrefix on both sides. Vue's controlled input
+hydration replaces a prior DOM edit with the model; subsequent native events
+update normally. Retained detached nodes may still have direct native listeners,
+so guards can check the render signal. No cross-framework form/focus parity is
+claimed. The README supplies the public-import example, checked from installed
+archives. Actual Vue/jsdom checks are DOM emulation, not real-browser acceptance.
+
+Only register a framework renderer through api.renderers(); explicitly forward
+its context.signal for async SSR. No token/default renderer, bundle or client
+hydration transport is selected automatically. Keep one source/app per request
+and never serialize private callbacks, refs or credentials as hydration props.
+
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/vue@0.0.3
+npm install @zeruxjs/vue@0.0.4
 ```
 
 There is no automatic `vue` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
@@ -78,14 +115,14 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### VueRuntime
 
-Vue 3 runtime injection. Nothing imports Vue at module evaluation / during SSR.
+Core Vue runtime injection loads no UI runtime on import; optional native entries load peers only when called.
 
 | Field | Accepted type/value | Optional |
 | --- | --- | --- |
 | `shallowRef` | `{value:T}` | No |
 | `getCurrentScope` | `unknown` | No |
 | `onScopeDispose` | `void` | No |
-| `readonly` | `T` | Yes |
+| `readonly` | `(value:{value:any}) => {readonly value:any}` | Yes |
 | `watch` | `()=>void` | Yes |
 
 ### VueStore

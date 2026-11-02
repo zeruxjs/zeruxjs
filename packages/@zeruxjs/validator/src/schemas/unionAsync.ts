@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -120,7 +121,7 @@ export function unionAsync(
 
       // Parse schema of each option and collect datasets
       for (const schema of this.options) {
-        const optionDataset = await schema['~run'](
+        const optionDataset = await _runSchema(schema,
           { value: dataset.value },
           config
         );

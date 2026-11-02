@@ -55,7 +55,7 @@ Campaign planning, outbox checkpoints, suppression, dashboards and exports are o
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/email@0.0.3
+npm install @zeruxjs/email@0.0.4
 ```
 
 This package participates in the runtime's **email** integration. Start with [email configuration](configuration-email.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.

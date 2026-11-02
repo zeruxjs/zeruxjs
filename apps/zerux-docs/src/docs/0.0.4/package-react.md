@@ -1,12 +1,15 @@
 ---
 {
-  "title": "React state bridges",
-  "description": "Connect stable external stores to real React hooks without bundling React.",
+  "title": "React stores and native rendering",
+  "description": "Use independent store hooks and optional native React DOM mount, SSR and hydration entries.",
   "section": "Packages",
   "order": 28,
   "sources": [
     "packages/@zeruxjs/react/README.md",
-    "packages/@zeruxjs/react/package.json"
+    "packages/@zeruxjs/react/package.json",
+    "packages/@zeruxjs/react/src/browser.ts",
+    "packages/@zeruxjs/react/src/server.ts",
+    "packages/@zeruxjs/react/src/hydration.mts"
   ],
   "related": [
     "frontend-ssr",
@@ -32,11 +35,52 @@ function Counter() {
 }
 ```
 
-Use the real React hooks inside components. Stable selectors and equality prevent accidental snapshot churn. The package does not install React or register an application renderer.
+Use the real React hooks inside components. Stable selectors and equality prevent accidental snapshot churn. Core imports do not load React DOM or register an application renderer. Optional native entries use matching host peers.
 
 ## SSR and hydration
 
-Provide a stable server snapshot and serialize the same initial state into the client hydration payload. Do not let a shared server singleton leak one user's state into another request. A store bridge does not create HTML rendering, hydration transport or route transitions for the framework.
+Provide a stable server snapshot and serialize the same initial state into the client hydration payload. Do not let a shared server singleton leak one user's state into another request. The optional native renderer entries supply explicit HTML/mount/hydration APIs; they do not add automatic state transport, route transitions or framework renderer selection.
+
+## Native renderer entries
+
+Use `@zeruxjs/react/server` for lazy `renderReactToString` (hydratable SSR) or
+`renderReactToStaticMarkup` (non-hydratable static HTML). The server import runs
+without DOM globals and does not load the client entry. `@zeruxjs/react/browser`
+wraps native createRoot/hydrateRoot with explicit update/unmount and one owner per
+element container. Acquisition is asynchronous; React commit/scheduling is separate.
+Unmount releases subscriptions and runs the accepted owner's explicit onDispose,
+including peer-load failure or later abort. Preflight rejection does not transfer
+ownership. Strict Mode probes do not destroy the host's store.
+
+React/React DOM are optional peers, never bundled copies. Keep identical versions
+and one React module resolution for component hooks and React DOM. Qualification
+uses 19.3.1; the declared React 18/19 API range is not full-version certification.
+The core entry remains usable without React DOM. Browser bundles are host-owned;
+the framework's closed local ESM compiler does not bundle bare client packages.
+
+`@zeruxjs/react/hydration` is an ESM-only bounded codec. Create one public state
+projection per request with createReactHydrationState; its pinned server snapshot
+is exactly the independently script-encoded payload. Restore with
+readReactHydrationState and the same validator/prefix, then pass that store to the
+same React tree. Invalid/private/executable JSON state rejects; a non-idempotent
+client validator is not allowed to alter serialized state. The README has a
+complete three-file example, checked against packed public exports.
+
+Data belongs in a fixed application/json script text sink, not an attribute or
+existing JavaScript string. React owns HTML encoding; private component props and
+store objects are never automatically serialized. Schema projection, tenant
+permissions, consent and authorization remain host responsibilities.
+
+Native hydration mismatches follow React recovery and produce bounded fixed-code
+errors. Original causes are retained for trusted diagnostics, not sent to clients.
+The adapter reports no streaming/RSC/server-action support. Native renderToString
+cannot await suspended data; HTML limits apply after rendering and signals cannot
+interrupt synchronous component code. Prefixes must match on both ends and are
+identifiers, not authorization tokens.
+
+Real React/React DOM and development-only jsdom checks cover Strict Mode, selector
+stability, hydration/input retention and cleanup. jsdom is not a live browser:
+layout, cross-engine behavior and other React versions require separate acceptance.
 
 ## Ownership
 
@@ -45,7 +89,7 @@ Batch/transaction operations coordinate store notifications. Observable adapters
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/react@0.0.3
+npm install @zeruxjs/react@0.0.4
 ```
 
 There is no automatic `react` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
