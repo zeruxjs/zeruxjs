@@ -1,5 +1,6 @@
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { npmCommand } from './npm-command.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -143,4 +144,105 @@ test('export verification rejects symlinked generated entrypoints', t => {
     catch (error) { if (error.code === 'EPERM') return t.skip('Platform disallows test symlinks'); throw error; }
     assert.ok(verifyWorkspaceArtifacts(f.entries, ['alpha']).some(x => x.includes('dist/index.js')));
   } finally { f.close(); fs.rmSync(outside, { recursive: true, force: true }); }
+});
+
+test('site tooling plans build-time watcher declarations before Zuixs without requiring its runtime peer', async () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const entries = discoverWorkspaces(root);
+  const manifest = entries.get('zuixs').pkg;
+  assert.equal(manifest.peerDependenciesMeta.zlook.optional, true);
+  assert.equal(manifest.dependencies?.zlook, undefined);
+  assert.equal(manifest.devDependencies.zlook, entries.get('zlook').pkg.version);
+  const plan = planWorkspaces(entries, { scopes: ['zuixs', '@zeruxjs/typescript', '@zeruxjs/performance', '@zeruxjs/search'] });
+  assert.ok(plan.dependencies.get('zuixs').includes('zlook'));
+  const completed = new Set();
+  await executeWorkspacePlan(plan, { concurrency: 4, run: async name => {
+    if (name === 'zuixs') assert.ok(completed.has('zlook'));
+    completed.add(name);
+  }});
+  assert.ok(completed.has('zuixs'));
+});
+
+function stagedFixture() {
+  const f = fixture({ devtools: [], host: ['devtools'], runtime: ['host', 'devtools'], unrelated: [] });
+  const file = path.join(f.root, 'packages/devtools/package.json');
+  const manifest = JSON.parse(fs.readFileSync(file));
+  manifest.scripts['build:core'] = 'echo strict core';
+  manifest.workspaceBuild = { bootstrapScript: 'build:core', finalizeDependencies: ['host', 'runtime'] };
+  fs.writeFileSync(file, JSON.stringify(manifest));
+  return f;
+}
+
+test('explicit strict-core bootstrap includes peer owners and always finalizes optional integrations', async () => {
+  const f = stagedFixture();
+  try {
+    const calls = [];
+    const options = parseBuildOptions(['--scope', 'devtools', '--concurrency', '3']);
+    const result = await runWorkspaceBuild(f.root, options, { run: async (name, signal, script) => {
+      assert.ok(signal instanceof AbortSignal);
+      calls.push([name, script]);
+      if (name === 'host') assert.deepEqual(calls[0], ['devtools', 'build:core']);
+      if (name === 'devtools' && script === 'build') assert.ok(calls.some(([owner]) => owner === 'runtime'));
+    }});
+    assert.deepEqual(result.planned, ['devtools', 'host', 'runtime']);
+    assert.deepEqual(result.finalized, ['devtools']);
+    assert.deepEqual(calls.at(-1), ['devtools', 'build']);
+    assert.equal(calls.some(([name]) => name === 'unrelated'), false);
+  } finally { f.close(); }
+});
+
+test('bootstrap/finalization failures fail the build; a successful core is never final success', async () => {
+  const f = stagedFixture();
+  try {
+    for (const failingScript of ['build:core', 'build']) {
+      const calls = [];
+      await assert.rejects(runWorkspaceBuild(f.root, parseBuildOptions(['--scope', 'devtools']), {run: async (name, signal, script) => {
+        calls.push([name, script]);
+        if (name === 'devtools' && script === failingScript) throw Error('strict compiler failure');
+      }}), /devtools.*strict compiler failure/);
+      if (failingScript === 'build:core') assert.deepEqual(calls, [['devtools', 'build:core']]);
+    }
+  } finally { f.close(); }
+});
+
+test('bootstrap metadata rejects undeclared commands, unknown peers and nested finalizers', () => {
+  const f = stagedFixture();
+  try {
+    const entries = discoverWorkspaces(f.root);
+    const metadata = entries.get('devtools').pkg.workspaceBuild;
+    metadata.bootstrapScript = 'start';
+    assert.throws(() => planWorkspaces(entries), /Invalid workspace build bootstrap/);
+    metadata.bootstrapScript = 'build:core'; metadata.finalizeDependencies = ['missing'];
+    assert.throws(() => planWorkspaces(entries), /Invalid workspace build bootstrap/);
+    metadata.finalizeDependencies = ['host'];
+    entries.get('host').pkg.scripts['build:core'] = 'echo core';
+    entries.get('host').pkg.workspaceBuild = {bootstrapScript:'build:core', finalizeDependencies:['runtime']};
+    assert.throws(() => planWorkspaces(entries), /Nested workspace build finalization/);
+  } finally { f.close(); }
+});
+
+test('literal workspace peer imports have development declarations or an explicit finalization owner', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const entries = discoverWorkspaces(root);
+  for (const { name, dir, pkg } of entries.values()) {
+    const peers = new Set(Object.keys(pkg.peerDependencies ?? {}).filter(peer => entries.has(peer)));
+    if (!peers.size) continue;
+    const scan = directory => {
+      if (!fs.existsSync(directory)) return;
+      for (const item of fs.readdirSync(directory, {withFileTypes:true})) {
+        const file = path.join(directory, item.name);
+        if (item.isDirectory()) scan(file);
+        else if (/\.[mc]?tsx?$/.test(item.name)) {
+          const source = fs.readFileSync(file, 'utf8');
+          for (const match of source.matchAll(/\b(?:from\s+|import\s*\(\s*)['"]([^'"]+)['"]/g)) {
+            const specifier = match[1], peer = specifier.startsWith('@') ? specifier.split('/').slice(0, 2).join('/') : specifier.split('/')[0];
+            if (!peers.has(peer)) continue;
+            const dependency = pkg.dependencies?.[peer] ?? pkg.devDependencies?.[peer] ?? pkg.optionalDependencies?.[peer];
+            assert.ok(dependency || pkg.workspaceBuild?.finalizeDependencies.includes(peer), `${name}: ${path.relative(dir, file)} needs ${peer} declarations in a clean source build`);
+          }
+        }
+      }
+    };
+    scan(path.join(dir, 'src'));
+  }
 });

@@ -16,7 +16,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "build:core": "tsc -p tsconfig.core.json"
   },
   "exports": {
     ".": {
@@ -60,7 +61,8 @@
   },
   "devDependencies": {
     "@types/node": "^25.4.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "ztrial": "0.0.4"
   },
   "peerDependencies": {
     "zeruxjs": "0.0.4",
@@ -77,5 +79,12 @@
     "ztrial": {
       "optional": true
     }
+  },
+  "workspaceBuild": {
+    "bootstrapScript": "build:core",
+    "finalizeDependencies": [
+      "zhost",
+      "zeruxjs"
+    ]
   }
 }

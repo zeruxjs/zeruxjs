@@ -199,3 +199,10 @@ aborts/drains handlers through the module host and closes its owned evaluator. L
 results are rejected, old handles cannot dispose replacements, and imported definitions
 start no work. Existing custom sections/components can render these headless results;
 no browser dashboard or statistical significance claim is added.
+
+
+## Building from workspace source
+
+Use `node scripts/build-workspaces.mjs --scope zforge` from the repository root for a clean checkout. The manifest's repository-only `workspaceBuild` metadata selects `build:core` first, then builds the declared zhost/ZeruxJS owners and runs the normal full `build`. Both TypeScript configurations inherit strict checking. The core entry does not import the optional modules/diagnostics/experiments entries; the final pass must compile those entries successfully before the workspace build succeeds.
+
+This resolves the source dependency cycle without duplicating transport/tracing types or adding eager runtime dependencies. `build:core` alone is an intermediate developer step, not a complete package/archive build. `npm run build` and prepack remain the full compiler check once prerequisite declarations exist. Invalid bootstrap metadata and either compilation-stage failure reject the build; the planner does not run applications or listeners. Optional peers remain host-selected for consumers of the compiled package.

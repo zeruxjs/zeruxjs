@@ -53,6 +53,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.4.0",
+    "@zeruxjs/db": "0.0.4",
     "typescript": "^5.9.3"
   },
   "repository": {

@@ -130,3 +130,8 @@ raw callback output. Dispose/reload drains the generation and closes the evaluat
 The package's `examples/experiments.mjs` demonstrates public imports and explicit
 policies. Host authentication/audit durability and browser UI remain integrations
 that require their own acceptance checks.
+
+
+## Clean source builds
+
+The repository build planner compiles zforge's independent strict core first, then its hosting/framework owners, then the normal full strict package build. This explicit manifest metadata resolves declaration cycles for optional integrations; it does not create runtime services. Use `node scripts/build-workspaces.mjs --scope zforge` in a checkout. The intermediate `build:core` does not certify the full archive. Published consumers still select the actual optional peers and own host authorization and teardown.

@@ -58,13 +58,14 @@ export function verifyWorkspaceArtifacts(entries, ordered) {
  * Windows uses the spawned npm process kill. Build durations are bounded so CI
  * cannot remain hung forever when a package build stops making progress.
  */
-export function runNpmWorkspaceBuild(root, name, signal, timeoutMs = 300_000) {
+export function runNpmWorkspaceBuild(root, name, signal, timeoutMs = 300_000, script = 'build') {
+  if (typeof script !== 'string' || !/^build(?::[a-z0-9-]+)?$/.test(script)) throw new TypeError('Invalid workspace build script');
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 3_600_000) {
     throw new RangeError('Build timeout must be 100–3600000ms');
   }
   return new Promise((resolve, reject) => {
     const controller = new AbortController();
-    const npm = npmCommand(['run', 'build', '--workspace', name]);
+    const npm = npmCommand(['run', script, '--workspace', name]);
     const child = spawn(npm.command, npm.args, {
       cwd: root, stdio: 'inherit', shell: false, detached: process.platform !== 'win32'
     });
@@ -97,10 +98,17 @@ export function runNpmWorkspaceBuild(root, name, signal, timeoutMs = 300_000) {
 export async function runWorkspaceBuild(root, options, { run, onEvent } = {}) {
   const entries = discoverWorkspaces(root);
   const plan = planWorkspaces(entries, options);
-  if (options.dryRun) return { planned: plan.ordered, completed: [], missing: [] };
-  const execute = run ?? ((name, signal) => runNpmWorkspaceBuild(root, name, signal, options.timeoutMs));
-  const results = await executeWorkspacePlan(plan, { concurrency: options.concurrency, run: execute, onEvent });
+  if (options.dryRun) return { planned: plan.ordered, completed: [], missing: [], finalization: plan.finalize };
+  const execute = run ?? ((name, signal, script = 'build') => runNpmWorkspaceBuild(root, name, signal, options.timeoutMs, script));
+  const results = await executeWorkspacePlan(plan, { concurrency: options.concurrency,
+    run: (name, signal) => execute(name, signal, plan.bootstrapScripts.get(name) ?? 'build'), onEvent });
+  const finalized = [], finalizationController = new AbortController();
+  for (const name of plan.finalize) {
+    onEvent?.({ type: 'finalize', name });
+    try { await execute(name, finalizationController.signal, 'build'); finalized.push(name); }
+    catch (error) { finalizationController.abort(error); throw new Error(`Workspace ${name} final build failed: ${error?.message ?? String(error)}`, {cause:error}); }
+  }
   const missing = options.verify ? verifyWorkspaceArtifacts(entries, plan.ordered) : [];
   if (missing.length) throw new Error('Missing built entrypoints:\n' + missing.join('\n'));
-  return { planned: plan.ordered, completed: results.map(result => result.name), missing };
+  return { planned: plan.ordered, completed: results.map(result => result.name), missing, finalized };
 }

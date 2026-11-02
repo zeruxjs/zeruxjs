@@ -247,6 +247,8 @@ Qualification uses exact declaration fixtures and CSS Tree grammar/parser checks
 
 ## Shared watch workflow and output manifests
 
+For source/workspace builds, `zlook` is also an explicit development dependency so the build planner compiles its declarations before Zuixs. It remains an optional peer for consumers; ordinary compiler imports do not load or start it.
+
 Install `zlook@0.0.4` when using `zuix watch` or the Node watch API. It is an optional peer, loaded only when watching; ordinary build/core/browser imports do not start or require a watcher. The package remains `zuixs`, the binary remains `zuix`.
 
 ```ts

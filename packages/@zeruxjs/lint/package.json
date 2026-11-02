@@ -73,7 +73,8 @@
   },
   "devDependencies": {
     "@types/node": "^25.4.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "zlocale": "0.0.4"
   },
   "bundleDependencies": [
     "stylelint",

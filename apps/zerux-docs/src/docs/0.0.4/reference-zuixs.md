@@ -110,3 +110,8 @@ npx zuix watch -i src/styles.css -o public/zuix.css
 Link the generated stylesheet. Native variables, keyframes, layers, media/supports/container conditions and overrides are preserved. The compiler discovers literal class attributes and supported class helpers in templates/components. Runtime-built class strings need an optional safelist. `@apply` accepts base utilities; write responsive/state conditions as CSS around the rule. The docs application keeps its optional recipes for Markdown typography; application authors do not need recipe/config files for classes-first styling.
 
 For Vite, register `zuixVite()` and import the stylesheet from the application entry. For TypeScript build integrations, import `compileStylesheet` from `zuixs` or `buildZuixStylesheet` from `zuixs/node`; the latter reads/scans files and writes output. CSS entries and generated output must be distinct paths inside the project. Other CSS imports are resolved by your bundler, not by this CLI. Tailwind-specific `@theme`, `@utility`, `@source` and custom variant directives are not supported; this is not a complete Tailwind compatibility implementation.
+
+
+## Source build dependency
+
+`zlook` remains an optional peer loaded only for watching, and is also a development dependency so source compilation receives its actual declarations first. The Pages tooling build uses the shared dependency planner; adding an independent parallel build command is not sufficient to establish that ordering. Core/compiler imports still do not start watchers.
