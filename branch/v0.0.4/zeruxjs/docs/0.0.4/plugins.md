@@ -58,6 +58,66 @@ Test duplicate route registration, overlapping service routes, disabled dependen
 
 Publish domain-isolated locale catalogs and receive the host-selected translator instead of owning a global language. The [module/plugin translation guide](/branch/v0.0.4/zeruxjs/docs/0.0.4/localization-package-authoring.md) explains packaging, explicit imports and typed route integration. The [site language guide](/branch/v0.0.4/zeruxjs/docs/0.0.4/localization-site-settings.md) covers host settings and request isolation.
 
+## Explicit module registration
+
+Use `registerModule(api, definition)` from `zeruxjs/modules` inside the awaited
+entry/plugin registration function. `defineProvider`, `createProviderToken` and
+`defineController` retain provider/dependency and Standard Schema output types.
+The package README contains a minimal validator-backed greeting controller.
+Factories and provider instances stay private to that generation; nothing is
+scanned or activated on import.
+
+Provider scopes are generation singleton, request and transient. Dependencies are
+module-local and explicit; missing/cyclic graphs and singleton captures of shorter
+scopes reject before construction. Lazy construction shares cached in-flight work;
+only explicit eager singletons run during registration. Factory `onDispose`
+handles partial acquisition; scope disposal releases dependents first and continues
+through cleanup errors. Framework managers borrowed through `api.service` retain
+their original ownership.
+
+Existing global/route middleware runs before module guards, schema input pipes,
+module middleware and the controller. Guards require exactly true and do not get
+a provider resolver; denied or invalid input cannot construct controller providers.
+Reuse auth session verification, tenant authorization and the HTTP origin/CSRF/rate
+policies. A Standard Schema pipe supplies transformed handler input without
+changing the original context body. Exception filters can return handler results,
+write an explicit response, or throw an `ApplicationError`; unhandled failures use
+the framework's sanitized API envelope.
+
+Request scopes reuse lifecycle cancellation and live through streamed responses;
+disconnect signals cooperative factories/handlers and disposal waits for actual
+settlement. `api.onDispose` now registers explicit generation teardown, including
+failed preparation. It does not interpret arbitrary plugin return values.
+`api.hasRoute` supports collision preflight. Modules reject exact existing routes;
+later-discovered file conflicts fail preparation and reserved service routes stay
+protected. Static module paths coexist with existing dynamic file routing; this
+layer requires no decorators and promises no full external framework parity.
+
+## Explicit service endpoints and pinned outbox hooks
+
+`zeruxjs/service-endpoints` exports `registerServiceEndpoints`, `defineServiceEndpoint`,
+`createServiceClient` and `createTransactionalOutbox`. Register an explicit endpoint
+group in an entry/plugin; its startup worker starts zhost-owned HTTP/WS adapters
+and its generation disposer closes them. Programmatic owners explicitly start the
+returned group. Names, independent numeric-IP/port binds, authorization and full
+resource limits are required; duplicate binds and failed startup roll back through
+zhost. No arbitrary installed packages or optional transports are discovered.
+
+The typed client is a fixed-destination bounded JSON POST transport with required
+response schema, egress decision and injected Fetch-compatible transport. The host
+owns TLS/DNS/egress and authentication, including DNS rebinding protection; an
+origin predicate alone is insufficient. Retries require declared idempotence and
+are capped at three attempts inside one deadline. Close cancels and drains actual
+work. `x-zerux-deadline` only shortens zhost policy; it is never authentication.
+
+The outbox hook requires a real negotiated pinned database transaction and supplies
+that same facade to both business work and the journal writer. It bounds and awaits
+all enqueues, rejects unsupported adapters, and makes journal failure roll back even
+when caught by the callback. It does not create a separate transaction system or
+publish messages. A durable relay, event schema, tenant/idempotency policy and live
+connector acceptance remain host-owned. The package README includes a public-import
+endpoint factory and the exact resource, cancellation and retry limits.
+
 
 ## Implementation sources
 

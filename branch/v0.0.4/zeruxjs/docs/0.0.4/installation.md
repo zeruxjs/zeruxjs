@@ -9,10 +9,10 @@ Use a supported Node.js version satisfying the engines field of your installed p
 
 ## Install the runtime
 
-For an existing ESM Node application, add the framework. The project generator is reserved and does not scaffold projects yet.
+For an existing ESM Node application, add the framework. The [Zerux generator](/branch/v0.0.4/zeruxjs/docs/0.0.4/reference-create-zerux-js.md) supplies supported SSR templates; manual setup remains available.
 
 ```sh
-npm install zeruxjs@0.0.3 @zeruxjs/typescript@0.0.3
+npm install zeruxjs@0.0.4 @zeruxjs/typescript@0.0.4
 ```
 
 ## Create your first route

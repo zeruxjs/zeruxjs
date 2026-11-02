@@ -56,6 +56,49 @@ Static paths win against competing dynamic paths, but avoid overlapping registra
 
 TypeScript context types document fields but do not narrow body from unknown automatically. Use schema parsing or explicit guards, and test the compiled route after build. Reserved layout/loading/template names are not proof of a component renderer or automatic frontend loading state.
 
+## Opt-in progressive navigation
+
+`api.navigationManifest({ basePath, assets, boundaries })` projects only actual
+GET/ALL routes with `meta.navigation`. Public IDs, parameter patterns, structural
+layout IDs and manifest-selected client assets share the server's matcher; handlers,
+source paths and arbitrary metadata stay private. The optional
+`zeruxjs/browser-navigation` entry consumes that snapshot and the normal authorized
+HTML response. It does not create an alternative authentication layer.
+
+Marked documents identify the route, opaque current principal/session scope and
+host shell-policy generation. Scope/policy mismatch, authorization denial or an
+incompatible response falls back to ordinary document navigation. Links remain
+usable without JavaScript. Eligible clicks, history, hash anchors, focus/scroll and
+polite announcements are managed explicitly; form submission remains native.
+Common structural layouts may retain their outlets, while optional authored page
+modules hydrate only detached page roots and own cleanup. Route splitting and
+bounded asset-only intent prefetch use emitted manifest URLs/integrity, never
+inferred filenames. Loader memoization is navigation/scope-local and never bypasses
+server reauthorization. See the framework README's complete public-import example,
+limits, module-loader ownership and real-browser qualification limits.
+
+
+## Explicit server mutations
+
+`zeruxjs/actions` allowlists server callbacks; arbitrary exports and client directives
+never create remote functions. Every POST checks verified principal/tenant permission,
+configured origin, session-bound CSRF and validator schemas. The initial transport
+accepts bounded URL-encoded forms, rejects duplicate fields and permits zero files.
+Native forms receive a sanitized error or a post-commit 303. The optional
+`zeruxjs/action-form` enhancement owns pending buttons, disposable ARIA feedback,
+error focus and explicit optimistic rollback without automatic retries.
+
+Protected writes require a host-provisioned durable unique-key journal.
+`zeruxjs/action-stores` consumes real database pins; its separate `/sqlite` helper
+keeps SQLite writes synchronous. A durable claim precedes the business transaction,
+whose completion record shares the write's connection/session. Pending/uncertain
+claims stay blocked, including after a lost acknowledgement. Freshly authorized
+committed replays rerun only idempotent revalidation. Signed keys expire, and journal
+retention includes the declared clock-skew bound. Cache invalidation runs after
+confirmed persistence; a committed invalidation failure is distinct from an uncertain
+write. External effects still need an outbox/reconciler. See the framework README's
+public-import plugin, journal prerequisites and browser/live-backend limits.
+
 
 ## Implementation sources
 

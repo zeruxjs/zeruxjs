@@ -3,7 +3,7 @@
 Choose implemented features without confusing packages, adapters and future plans.
 
 
-These docs describe workspace source at 0.0.3, an early release. Availability is a code contract, not a statement that every deployment combination has been certified.
+These docs describe workspace source at 0.0.4, an early release. Availability is a code contract, not a statement that every deployment combination has been certified.
 
 ## Framework capabilities
 
@@ -16,9 +16,9 @@ These docs describe workspace source at 0.0.3, an early release. Availability is
 | Compiled application build | Server modules and manifest, not a static-site export |
 | Multisite mapping | Host/path-to-folder routing; authorization is separate |
 | Fetch-compatible endpoints | Explicit adapter with streamed request/response handling |
-| React/Vue adapters | State-store bridges; no automatic component rendering pipeline |
-| Project generators | Current create-* packages are placeholders |
-| Zenix CMS | Reserved early packages, not a complete CMS |
+| React/Vue adapters | Optional explicit native browser/server entries; store bridges remain separate |
+| Project generators | Zerux SSR; Zyro client/static/SSR/hydrated; Zenix host-configured SQLite scaffold |
+| Zenix CMS | Minimal SQLite core plus authenticated host-integrated setup/editor/published page; not a complete CMS |
 
 ## Independent packages
 
@@ -26,7 +26,7 @@ Cache, search, feed, SEO, validation, file storage and many browser helpers can 
 
 ## Durability is feature-specific
 
-Memory caches, local search indexes, hook state and local snapshots are not distributed databases. BullMQ provides durable scheduling through Redis, but handlers are at-least-once. Analytics events are best effort. Numeric aggregates report indexed-only coverage. A shared versioned document store can coordinate control-plane writes only when the underlying store provides atomic compare-and-swap.
+Memory caches, local search indexes, hook state and local snapshots are not distributed databases. BullMQ provides durable scheduling through Redis, but handlers are at-least-once. Analytics best-effort tracking remains the default; an explicit host-durable ingestion API has separate prerequisites. Numeric aggregates report indexed-only coverage. A shared versioned document store can coordinate control-plane writes only when the underlying store provides atomic compare-and-swap.
 
 ## Future documentation versions
 
@@ -42,7 +42,7 @@ A package export also describes an available function, not all of its operationa
 
 Start from the installed package version and its public entry point. Follow the guide's setup, run one real operation, exercise invalid input/unavailable dependencies, then verify cleanup and production output. Report which environment was exercised. Source-level type checks, injected-driver tests, a static export and a real multi-instance deployment establish different evidence.
 
-Placeholder packages intentionally document only metadata or help/version output. Do not turn roadmap language into a deployment dependency. Use the manually configured runtime, implemented package APIs and a supported hosting model until a future release supplies the missing application behavior.
+Use implemented exports and explicitly supported hosting modes. Generator output does not create production identity/storage policies. Roadmap entries never activate optional providers, and injected fixtures do not certify live infrastructure.
 
 
 ## Implementation sources

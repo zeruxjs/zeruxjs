@@ -204,12 +204,12 @@ Install dependencies with a repaired registry-backed lockfile, use isolated Redi
 
 ```bash
 # Real standalone, two BullMQ service instances, delayed/retry/concurrent workers:
-QUEUE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/queue/test/section75-live-certification.test.mjs
+QUEUE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/queue/test/live-redis-integration.test.mjs
 # Standalone namespace safety:
-CACHE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/cache-redis/test/section75-live-redis.test.mjs
+CACHE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/cache-redis/test/live-redis.test.mjs
 # Real Redis Cluster masters, e.g. ephemeral ports (never production):
-QUEUE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/queue/test/section75-live-certification.test.mjs
-CACHE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/cache-redis/test/section75-live-redis.test.mjs
+QUEUE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/queue/test/live-redis-integration.test.mjs
+CACHE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/cache-redis/test/live-redis.test.mjs
 ```
 
 Use dedicated throwaway test Redis instances, correct authentication and TLS as appropriate. Live tests do not intentionally stop Redis: a full outage/restart and worker crash-injection rehearsal, DST boundary verification, cluster resharding, and long-running load/retention/ACL testing are **separate operational gates**. In an offline environment these suites are intentionally skipped; mocked tests are not live certification. The clean `npm ci` check is also not satisfied by locally generated `dist` files.
@@ -221,7 +221,7 @@ This package owns the extracted BullMQ implementation. `@zeruxjs/queue` reexport
 
 ## Public entry points
 
-Manifest reference for `@zeruxjs/queue-bullmq@0.0.3`.
+Manifest reference for `@zeruxjs/queue-bullmq@0.0.4`.
 
 ```json
 {
@@ -279,8 +279,8 @@ Manifest reference for `@zeruxjs/queue-bullmq@0.0.3`.
     "node": ">=20"
   },
   "dependencies": {
+    "@zeruxjs/cache-redis": "0.0.4",
     "bullmq": "^5.61.0",
-    "@zeruxjs/cache-redis": "0.0.3",
     "ioredis": "^5.4.0"
   },
   "peerDependencies": {},
@@ -406,7 +406,7 @@ await enqueueEmailById(service.queue('emails'),'mail_123',{delay:30_000});
 
 **Delivery contract:** `deliver()` must atomically claim an ID in a shared durable store, recheck consent at the send boundary via the email manager for marketing, and return `'sent'`, `'already-sent'` or `'suppressed'`. BullMQ is at-least-once; an SMTP acceptance followed by a crash before marking sent remains ambiguous, so neither BullMQ nor this adapter can promise exactly-once delivery. Provider idempotency where available, a transactional outbox, an explicit uncertain-delivery state, and manual reconciliation are recommended. Do not retry unknown SMTP outcomes blindly. Queue worker errors and operations callbacks do not govern optional email tracking.
 
-**Deployment status:** Unit tests use injected BullMQ classes. Live Redis/BullMQ and multi-worker recovery were not exercised without installed dependencies and `QUEUE_REDIS_URL`. Reinstall with network access and regenerate the npm lockfile before `npm ci` or production rollout.
+**Deployment status:** Unit tests use injected BullMQ classes. Live Redis/BullMQ and multi-worker recovery were not exercised without installed dependencies and `QUEUE_REDIS_URL`. Use the committed npm lockfile and explicitly qualify the installed driver/backend before production rollout.
 
 ## Authenticated queue operations dashboard
 
@@ -493,12 +493,12 @@ Install dependencies with a repaired registry-backed lockfile, use isolated Redi
 
 ```bash
 # Real standalone, two BullMQ service instances, delayed/retry/concurrent workers:
-QUEUE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/queue/test/section75-live-certification.test.mjs
+QUEUE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/queue/test/live-redis-integration.test.mjs
 # Standalone namespace safety:
-CACHE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/cache-redis/test/section75-live-redis.test.mjs
+CACHE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/cache-redis/test/live-redis.test.mjs
 # Real Redis Cluster masters, e.g. ephemeral ports (never production):
-QUEUE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/queue/test/section75-live-certification.test.mjs
-CACHE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/cache-redis/test/section75-live-redis.test.mjs
+QUEUE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/queue/test/live-redis-integration.test.mjs
+CACHE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/cache-redis/test/live-redis.test.mjs
 ```
 
 Use dedicated throwaway test Redis instances, correct authentication and TLS as appropriate. Live tests do not intentionally stop Redis: a full outage/restart and worker crash-injection rehearsal, DST boundary verification, cluster resharding, and long-running load/retention/ACL testing are **separate operational gates**. In an offline environment these suites are intentionally skipped; mocked tests are not live certification. The clean `npm ci` check is also not satisfied by locally generated `dist` files.
@@ -506,6 +506,42 @@ Use dedicated throwaway test Redis instances, correct authentication and TLS as 
 ## Compatibility and development
 
 This package owns the extracted BullMQ implementation. `@zeruxjs/queue` reexports its existing API for backward compatibility; there is no dependency back to the facade. Historical queue test paths remain in `packages/@zeruxjs/queue/test`. Build this package before the facade and run the focused existing facade tests to check compatibility. This package does not implement RabbitMQ or MemcacheQ.
+
+## Bounded enqueue and shutdown diagnostics
+
+```ts
+import {createQueueService, QUEUE_JOB_LIMITS} from '@zeruxjs/queue-bullmq';
+
+export async function enqueueReferences(redisUrl: string) {
+  const service = await createQueueService({redis: {url: redisUrl}, queues: ['emails']});
+  try {
+    await service.queue('emails').addBulk([
+      {name: 'email.deliver', data: {messageId: 'mail_123'}},
+      {name: 'email.deliver', data: {messageId: 'mail_456'}}
+    ]);
+    return QUEUE_JOB_LIMITS.maxBulk;
+  } finally {
+    await service.close();
+    // Trusted path/payload-free counters; not a worker crash-recovery claim.
+    const status = service.shutdownStatus();
+    if (status.state !== 'closed') throw new Error('Queue shutdown needs host reconciliation');
+  }
+}
+```
+
+Direct enqueue now validates and snapshots **plain JSON objects** before calling BullMQ: maximum 64 KiB UTF-8 JSON, 32 levels and 8192 visited values. Classes, cycles, accessors, functions, non-finite numbers, unsafe property names and sparse/extended arrays reject rather than invoking serialization hooks or silently dropping values. Existing typed `QueueJobOptions` remain supported; unrecognized top-level job option names reject. Names and job options still receive their existing validation. Do not put secrets/PII in payloads, names or IDs. These fixed limits are public through `QUEUE_JOB_LIMITS`, not mutable runtime configuration.
+
+`addBulk` accepts at most 256 entries and 1 MiB aggregate **data JSON**, with each item subject to the individual limit. Empty arrays remain accepted. The complete batch validates before a native call, so a bad later item cannot enqueue earlier items through the wrapper. This is input prevalidation, not a new cross-queue/Redis transaction or a guarantee about ambiguous network outcomes. Job names/options/protocol overhead are outside the aggregate data-byte budget and retain their own validation. At most 256 configured queues are accepted before connection allocation.
+
+The service's one-off scheduler and recurring template path use the same enqueue guard. The existing task registry retains its stricter 8 KiB payload bound and 32-level nesting rule, now checked before serialization. Incoming processor data is also checked before application code runs; invalid jobs fail using native BullMQ retry/failure policy. Old oversized or non-JSON jobs need host migration/reconciliation. Native processors still receive the original BullMQ Job object/token; no wrapper replaces its methods or changes the durable email consent/CAS/uncertain-delivery state machine.
+
+`shutdownStatus()` returns a fresh record of `state`, `activeProcessors`, `pendingClosures`, `workerDeadlines`, `forceCloseAttempts`, `cleanupDeadlines` and `cleanupFailures`. No queue, job, tenant, Redis endpoint or error text is included. State is `open`, `draining`, `closed`, `incomplete` or `failed`. Counts track actual processor/native-close Promise settlement even after a caller's close deadline. Late settlement can move `incomplete` to `closed`; `failed` retains a failed cleanup outcome. A force-close **attempt** is not proof a processor stopped. Native BullMQ may reuse an already-pending close Promise, and arbitrary JavaScript cannot be force-cancelled by a Promise timeout.
+
+The existing per-worker grace (default 30 seconds, 1–300000 ms) and native force-close fallback remain; auxiliary close deadlines are at most five seconds each. These are per-resource bounds, not one global drain deadline. Shutdown rejects new facade enqueue/scheduler work, attempts workers → events → queues → owned Cluster clients, and reports failed cleanup through the existing AggregateError. Cluster quit failure/deadline additionally calls native `disconnect` when available; injected clients without that method retain their stated limitations. Acquired workers are registered before listeners, so listener failure participates in startup rollback. Events and Cluster resources remain owned through startup failure and shutdown. Raw error callbacks/causes remain trusted server diagnostics and may contain native details; do not forward them to clients.
+
+The extraction keeps a one-way dependency: queue facade → queue-bullmq → cache-redis. All twelve extracted modules were inspected for their imports/public contracts. Reporting, history, recovery and ledger logic use local types; cross-module references to the root Job/queue interfaces are erased type imports. Existing public subpaths already let consumers import these utilities without importing the facade. They remain in their owning package to preserve imports; moving them into the facade would introduce a reverse edge. No backend-independent outbox system or new transaction mechanism is introduced. Archive qualification checks every declared root/subpath JS/declaration target and packaged licenses with a real packed consumer; no API snapshots or versions are regenerated.
+
+Focused injected checks cover whole-batch rejection, source snapshotting, UTF-8/depth/unsafe input, worker deadline/late settlement, listener/event startup rollback and Cluster cleanup failure, alongside existing admin authorization, scheduler and dashboard checks. Real Redis acceptance still requires isolated `QUEUE_REDIS_URL` (and separate Cluster configuration). Worker crash/restart, stalled-job redelivery, network partition and durable SMTP recovery are not proved by a compile, injected fixture or archive test. Native semantics follow [BullMQ graceful shutdown](https://docs.bullmq.io/guide/workers/graceful-shutdown) and its [bulk enqueue API](https://docs.bullmq.io/guide/queues/adding-bulks).
 
 
 ## Implementation sources

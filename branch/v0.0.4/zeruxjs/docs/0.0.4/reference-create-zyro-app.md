@@ -1,48 +1,53 @@
 # create-zyro-app
 
-Current placeholder contract, installation and honest upgrade expectations.
+Safe standalone ZyroJS generators with explicit rendering modes.
 
 
-## Current release contract
+## Generate deliberately
 
-`create-zyro-app@0.0.3` is a public placeholder. The CLI supports help/version only and does not create an application. The purpose of this guide is to distinguish the published contract from future plans, not to invent setup steps that the release cannot perform.
-
-## Install or inspect
+The source implementation provides `client`, `static`, `ssr` and `hydrated` modes in JavaScript and TypeScript. Package versions are unchanged; inspect the installed release before assuming these source changes are published.
 
 ```sh
-npx create-zyro-app@0.0.3 --help
-npx create-zyro-app@0.0.3 --version
+create-zyro-app demo --yes --language typescript --mode static --base-path /demo --dry-run
 ```
 
-A generation request exits with failure and does not create files. Do not make a deployment pipeline depend on a scaffold appearing after this command.
+Remove dry-run to write through zclivo's exclusive staging engine. Installation and execution remain explicit: `npm install`, `npm run typecheck`, `npm test`, `npm run build`, `npm start`. Node >=24.15.0 is required. A conflicting port fails without stopping another process.
 
-## TypeScript and configuration
+## Rendering boundaries
 
-This is a command-line placeholder, not a typed project-generation factory. A TypeScript application generated in a future release will need its own configuration and checker settings; the current CLI does not create those files.
+Client mode requires JavaScript. Static mode uses the general exporter for script-free HTML/CSS, mounted assets, canonical and real 404 output; configure production origin and host-specific missing-page handling. SSR supplies HTML only. Hydrated mode adds ZyroJS V1 whole-root hydration with validated public props; selective hydration is unavailable. The preview server is loopback-only, not a production TLS host. Dev builds once; it does not watch.
 
-There is no automatic `create-zyro-app` key in `zerux.config.js` that activates an unfinished feature. Use the [manual installation guide](/branch/v0.0.4/zeruxjs/docs/0.0.4/installation.md) for a working Zerux application and the package guides for implemented storage/cache/queue functionality. Do not copy future-roadmap examples into production and assume package installation supplies their dependencies.
+No React/Vue dependencies, server secrets or server entry points are included in the public browser graph. CSS and scripts use hashed mounted URLs. Saved configuration is public, and generated server routes do not imply authentication or authorization services.
 
-## Upgrading and troubleshooting
+## Headless planning
 
-Pin the version you actually inspected. When a future release implements functionality, review its changelog, public exports, migration/data policy and configuration contract before adopting it. Existing placeholder imports are not evidence of backward-compatible CMS implementation.
-
-If a command prints help but produces no files, that is the documented placeholder behavior. If an expected factory cannot be imported, inspect the installed version and exports instead of importing internal files. A registry name reservation and a successful tarball install do not certify a working application.
+`planZyroApp` from `create-zyro-app` returns an inspectable plan without writes. `writeProjectPlanAsync` from `zclivo` performs the explicit write. Unsupported modes, invalid names/base paths and occupied targets reject. Consult the package README for the feature matrix, example and precise build/test limitations. Workspace-linked fixtures qualify generated builds and jsdom interactions, not all browser engines or clean published installation.
 
 
 ## Public entry points
 
-Manifest reference for `create-zyro-app@0.0.3`.
+Manifest reference for `create-zyro-app@0.0.4`.
 
 ```json
 {
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./templates": {
+      "types": "./dist/templates.d.ts",
+      "import": "./dist/templates.js"
+    }
   },
   "engines": {},
-  "dependencies": {},
+  "dependencies": {
+    "zclivo": "0.0.4"
+  },
   "peerDependencies": {},
   "bin": {
-    "create-zyro": "./dist/index.js"
+    "create-zyro": "./dist/index.js",
+    "create-zyro-app": "./dist/index.js"
   }
 }
 ```
@@ -52,30 +57,57 @@ Manifest reference for `create-zyro-app@0.0.3`.
 
 # create-zyro-app
 
-Placeholder package for future development.
-
-This package is a placeholder. Project generation is not implemented. The CLI supports `--help` and `--version` (exit status 0). Requests to generate a project report the limitation and exit with status 1 without creating files.
-
-## Future implementation
-
-This package is intended to generate projects using [`zyrojs`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zyrojs/README.md). Scaffolding will be added in a future release; the current CLI only provides placeholder help/version output.
-
-## Invocation
+Safe standalone ZyroJS project generation through the public zclivo staging engine. The package remains `create-zyro-app`; both `create-zyro` and `create-zyro-app` binaries work. Importing the package does not run the CLI.
 
 ```sh
-npm create zyro-app@latest
+node packages/create/create-zyro-app/dist/index.js my-app --yes --language typescript --mode hydrated --port 3000 --base-path /demo --dry-run
 ```
 
-## Development
+Remove `--dry-run` to create the project. Then explicitly run `npm install`, `npm run typecheck`, `npm test`, `npm run build` and `npm start` inside it. Generation never installs dependencies or executes generated code. With a published compatible release, the equivalent invocation is `npm create zyro-app -- my-app --yes`; these source changes do not publish that release.
 
-Run `npm run build` from this package directory.
+| Mode | Output and requirements |
+| --- | --- |
+| `client` (default) | Browser component bundle; JavaScript required for content. Node preview server included. |
+| `static` | General `zeruxjs/static-export` pipeline; HTML, CSS, canonical and real 404, no JavaScript. Deploy the mounted directory with host-specific 404 handling. |
+| `ssr` | Standalone Node HTML server with disabled demo interaction; no hydration. |
+| `hydrated` | Standalone Node SSR plus ZyroJS V1 whole-root hydration and retained form edits. |
 
-## License
+All modes support JavaScript or TypeScript. Selective hydration, template compilation, framework routing, React and Vue templates are unavailable. Static exports never embed a server runtime. SSR/hydration use `zyrojs/server`, `/component`, `/hydrate` and `/dom` public APIs, not a claimed complete framework integration.
 
-MIT OR Apache-2.0.
+## Options and output
+
+Use `--help` for shared name/destination/language/port/mode/renderer/interactive/yes/dry-run flags. `--base-path /demo` is creator-owned and defaults to `/branch/v0.0.4/`; it is validated and recorded in `zyro.config.json`. Interactive prompts use the same template capabilities as noninteractive flags. Existing targets, dangling symlinks, reserved names and unavailable modes fail without overwriting files. Ctrl-C cancels cooperative generation and removes staging. Only the Zyro renderer is offered.
+
+Generated files include an authored component, public props validation, scoped stylesheet, public asset directory, build/preview scripts, configuration, smoke check, private package manifest, README and secret-free environment example. Node >=24.15.0 and the platform esbuild binary are required. `dev` builds once and starts preview; it is not a watch server. Change the configured origin from localhost before publishing canonicals. A port conflict fails visibly; another application is never stopped.
+
+For `/demo`, content and hashed assets live below `/demo/`; static files are under `dist/demo`. The supplied preview serves a real 404 and supports HEAD. Static hosts need their own redirect/404 configuration; there is no universal SPA fallback. The preview binds loopback and is not a production TLS host.
+
+## Build and security boundaries
+
+The build uses the [esbuild JavaScript API](https://esbuild.github.io/api/#build), with explicit [browser versus Node platforms](https://esbuild.github.io/api/#platform). Browser bundles permit only the generated public source graph and declared ZyroJS/security entry points. Extend that reviewed allowlist deliberately when adding public modules; server files and secrets do not belong there. Builds stage candidates, hash assets and preserve a verified previous output when compilation fails. This is not a hostile-code sandbox or crash-atomic deployment system.
+
+Client/hydrated page scopes dispose on non-bfcache pagehide. Hydration uses validated public props, native script-safe data and external scripts; normal HTML escaping is not reused for script payloads. CSP allows the generated same-origin scripts/styles. Apps must separately implement authentication, authorization, CSRF and secret management for any server functionality they add.
+
+## Public planning API
+
+```js
+import { planZyroApp } from 'create-zyro-app';
+import { writeProjectPlanAsync } from 'zclivo';
+const plan = planZyroApp({name: 'demo', destination: './demo', language: 'javascript', mode: 'static', port: 3000, basePath: '/demo'});
+console.log(plan.files); // inspect without writing
+// await writeProjectPlanAsync(plan); // explicit write
+```
+
+See [the inert example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zyro-app/examples/plan.mjs). The generator and `/templates` export share the same plans; no source-internal imports are needed.
+
+## Verification and limits
+
+Run `npm run build --workspace=create-zyro-app` and `node --test packages/create/create-zyro-app/test/consumer.test.mjs` from the repository. Fixtures install local workspace packages offline into temporary consumers, build all eight mode/language combinations twice, typecheck, serve `/demo`, exercise DOM/hydration in jsdom and clean owned servers/files. These are not clean-registry installation or real-browser acceptance. Production hosting, TLS, assistive technology and other browser engines remain unqualified.
+
+License: MIT OR Apache-2.0.
 
 
 ## Implementation sources
 
 - [packages/create/create-zyro-app/README.md](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zyro-app/README.md)
-- [packages/create/create-zyro-app/package.json](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zyro-app/package.json)
+- [packages/create/create-zyro-app/src/templates.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zyro-app/src/templates.ts)

@@ -1,45 +1,51 @@
 # create-zenix-js
 
-Current placeholder contract, installation and honest upgrade expectations.
+Safe generation of the host-configured SQLite CMS baseline.
 
 
-## Current release contract
+## Implemented baseline
 
-`create-zenix-js@0.0.3` is a public placeholder. The CLI supports help/version only and does not create an application. The purpose of this guide is to distinguish the published contract from future plans, not to invent setup steps that the release cannot perform.
-
-## Install or inspect
+`create-zenix-js` (binary `create-zenix`) generates the existing ZyroJS server-rendered UI, ZeruxJS runtime and Zenix core integration. Only JavaScript SSR, SQLite and no binary upload storage are available. No React/Vue, hydration, plugin marketplace or automatic account provisioning is supplied. Source implementation does not imply publication of version 0.0.4.
 
 ```sh
-npx create-zenix-js@0.0.3 --help
-npx create-zenix-js@0.0.3 --version
+create-zenix cms --yes --database sqlite --storage none --port 3000 --dry-run
 ```
 
-A generation request exits with failure and does not create files. Do not make a deployment pipeline depend on a scaffold appearing after this command.
+Dry-run produces an inspectable plan without writes. Normal generation uses zclivo exclusive staging and target/symlink checks; install/build/migrate/start remain explicit user commands. `planZenixApp` from `create-zenix-js` provides the same headless planning API.
 
-## TypeScript and configuration
+## Private host preparation
 
-This is a command-line placeholder, not a typed project-generation factory. A TypeScript application generated in a future release will need its own configuration and checker settings; the current CLI does not create those files.
+The emitted host policy deliberately rejects startup with `ZENIX_HOST_POLICY_REQUIRED` until verified persistent sessions, tenant/site permissions, session-bound CSRF, admission, setup-secret verification and trusted recovery are configured. There are no default credentials. Environment templates have empty placeholders, are not auto-loaded and never contain browser secrets.
 
-There is no automatic `create-zenix-js` key in `zerux.config.js` that activates an unfinished feature. Use the [manual installation guide](/branch/v0.0.4/zeruxjs/docs/0.0.4/installation.md) for a working Zerux application and the package guides for implemented storage/cache/queue functionality. Do not copy future-roadmap examples into production and assume package installation supplies their dependencies.
+Node >=24.15.0 and native SQLite are required. Configure an exact origin, private absolute database path, tenant and site. Create/protect the parent directory, review backups/schema, then run `npm run migrate -- --approve`. This initializes schemas without creating an administrator or site. Runtime verifies existing schemas instead of silently migrating. External database provisioning and production auth/storage qualification remain host operations.
 
-## Upgrading and troubleshooting
+After implementing private host policies, authenticate the separately provisioned privileged operator at `/cms/login` and perform one-time `/cms/setup`. Durable setup claims prevent repeated initialization. Uncertain claims require fresh authorized operator recovery, not an automatic reset. `/cms/editor` saves drafts; preview remains private/noindex; publish separately exposes plain-text content at `/cms/page`.
 
-Pin the version you actually inspected. When a future release implements functionality, review its changelog, public exports, migration/data policy and configuration contract before adopting it. Existing placeholder imports are not evidence of backward-compatible CMS implementation.
+## Qualification
 
-If a command prints help but produces no files, that is the documented placeholder behavior. If an expected factory cannot be imported, inspect the installed version and exports instead of importing internal files. A registry name reservation and a successful tarball install do not certify a working application.
+The generator's isolated workspace-linked consumer checks build, SQLite schema reload, denied unconfigured startup and resource cleanup. These are not clean registry, browser, production authentication, TLS or proxy acceptance. See the package README and generated instructions for exact prerequisites and supported limits.
 
 
 ## Public entry points
 
-Manifest reference for `create-zenix-js@0.0.3`.
+Manifest reference for `create-zenix-js@0.0.4`.
 
 ```json
 {
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./templates": {
+      "types": "./dist/templates.d.ts",
+      "import": "./dist/templates.js"
+    }
   },
   "engines": {},
-  "dependencies": {},
+  "dependencies": {
+    "zclivo": "0.0.4"
+  },
   "peerDependencies": {},
   "bin": {
     "create-zenix": "./dist/index.js"
@@ -52,30 +58,46 @@ Manifest reference for `create-zenix-js@0.0.3`.
 
 # create-zenix-js
 
-Placeholder package for future development.
-
-This package is a placeholder. Project generation is not implemented. The CLI supports `--help` and `--version` (exit status 0). Requests to generate a project report the limitation and exit with status 1 without creating files.
-
-## Future implementation
-
-This package is intended to generate projects using [`zenixjs`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zenixjs/README.md). Scaffolding will be added in a future release; the current CLI only provides placeholder help/version output.
-
-## Invocation
+Safe generator for the implemented **ZyroJS UI + ZeruxJS runtime + Zenix core** baseline. npm name `create-zenix-js`, binary `create-zenix`, version unchanged. Only JavaScript SSR, file-backed SQLite and no binary upload storage are supported. No React/Vue CMS modes or invented dashboard are emitted.
 
 ```sh
-npm create zenix-js@latest
+node packages/create/create-zenix-app/dist/index.js cms --yes --database sqlite --storage none --port 3000 --dry-run
 ```
 
-## Development
+Remove `--dry-run` to write the inspected plan. `npm create zenix-js -- cms --yes` is the corresponding registry invocation only when the installed release contains these APIs; this change does not publish a release. `--help`/branch/v0.0.4/`--version` remain usable. With no arguments a TTY prompts for the same supported setup, name/path/port/language/mode choices. Noninteractive `--yes`, `--name`, `--destination`, `--port`, `--mode ssr`, `--renderer zyro`, `--language javascript` and `--dry-run` reuse zclivo. Unsupported providers/modes/languages fail visibly. Importing this package does not run the CLI.
 
-Run `npm run build` from this package directory.
+## Required host integration
 
-## License
+This is a durable CMS **integration scaffold**, not a bundled authentication service. The application contract exists in `zenixjs/application` and `@zenixjs/core/cms`; generation uses those public exports. Generated `src/host-policy.mjs` deliberately raises `ZENIX_HOST_POLICY_REQUIRED` before database startup until the operator implements persistent verified sessions, tenant/site permissions, CSRF, bounded login/setup admission, constant-time setup-secret verification and trusted recovery. It supplies no default admin, passwords, setup tokens, permissive principals or public secrets. Host authentication is a real prerequisite, not a fake login UI backed by arbitrary browser roles.
 
-MIT OR Apache-2.0.
+After reviewing output, explicitly install dependencies, typecheck, test and build. Node >=24.15.0 with native `node:sqlite` is required. Configure private process environment (`ZENIX_ORIGIN`, absolute `ZENIX_DATABASE`, `ZENIX_TENANT`, `ZENIX_SITE`); `.env.example` has empty placeholders and is not automatically loaded. Secret/session implementation remains host-owned. Database files and backups belong in a private, qualified existing directory, outside public assets.
+
+`npm run migrate -- --approve` is a separate, reviewed operator action that initializes core/setup schemas; neither generation, build nor runtime silently migrates. It creates no account/site/content and does not claim both schemas migrate atomically. Startup uses `migrate:false`. External database installation, backups, migration coordination and production durability qualification remain explicit host operations. Media authorization always denies; there is no filesystem upload or remote storage template.
+
+After real host policies and schema preparation, run dev or build/start. The configured port is not reserved; change it on conflict without stopping another application. The generated README explains `/cms/login`, one-time authenticated `/cms/setup`, editor/draft/private-preview/publish workflow and published `/cms/page`. A claimed setup is not deleted/retried automatically after uncertain failure: use the trusted application's recovery API with fresh privileged proof. No unprotected HTTP recovery route is generated.
+
+## Safety and public API
+
+zclivo validates names, paths, ports and template capabilities, refuses occupied/dangling-symlink targets, stages writes and rolls back partial output. Dry-run writes nothing. Ctrl-C owns cooperative cancellation and closes prompt resources. The generator never installs packages, runs migrations/generated code, provisions accounts or starts a server.
+
+```js
+import { planZenixApp } from 'create-zenix-js';
+import { writeProjectPlanAsync } from 'zclivo';
+const plan = planZenixApp({name:'cms',destination:'./cms',port:3000});
+console.log(plan.files); // inspect only
+// await writeProjectPlanAsync(plan);
+```
+
+The root and `/templates` exports expose the same generator. See [inert example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zenix-app/examples/plan.mjs). Executable policies are trusted authored server modules, never discovered plugins or saved content. Host authentication resources remain borrowed; generated teardown drains the application before core/database shutdown and cleans failed startup. No hydration/browser secret bundle is supplied.
+
+## Verification and limits
+
+`npm run build --workspace=create-zenix-js` and `node --test packages/create/create-zenix-app/test/generator.test.mjs` check CLI safety and an isolated consumer using offline workspace links. The fixture builds, migrates/reloads synthetic SQLite, exercises unconfigured/missing-dependency failure, installs an explicitly denying synthetic policy and drains cleanup. It does not prove clean registry installation, real auth/TLS/proxy deployment or browser/assistive-technology behavior. Existing Zenix application tests qualify its setup/editor/publication behavior separately. Do not claim complete CMS parity or automatic security compliance.
+
+License: MIT OR Apache-2.0.
 
 
 ## Implementation sources
 
 - [packages/create/create-zenix-app/README.md](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zenix-app/README.md)
-- [packages/create/create-zenix-app/package.json](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zenix-app/package.json)
+- [packages/create/create-zenix-app/src/templates.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zenix-app/src/templates.ts)

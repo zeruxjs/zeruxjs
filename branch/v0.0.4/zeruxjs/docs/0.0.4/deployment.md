@@ -1,6 +1,6 @@
 # Build and deployment
 
-Choose a server build or a fully static documentation export.
+Choose a Node build, explicit public static export or the docs application exporter.
 
 
 ## Framework server build
@@ -26,7 +26,7 @@ npm run preview
 
 ## Hosting
 
-For documentation, serve directory index.html files and use dist/404.html as the missing-page response. Do not configure an SPA fallback: every page is already rendered. For framework applications, configure TLS, application domains, process restarts and service credentials at the host.
+For documentation, serve directory index.html files and use dist/zeruxjs/404.html as the missing-page response. Do not configure an SPA fallback: every page is already rendered. For framework applications, configure TLS, application domains, process restarts and service credentials at the host.
 
 ## Build a reproducible artifact
 
@@ -49,6 +49,17 @@ Test graceful shutdown while requests, streams and workers are active. Verify ow
 ## Static docs deployment
 
 The repository docs build renders HTML and raw Markdown, minifies production HTML/CSS/JS and validates links/content hashes. GitHub Pages deploys static files, so no database/cache runtime starts there. The zerux.config documentation namespace configures that exporter only. See the repository SITE_DEPLOYMENT.md for the shared root and per-site mounts.
+
+
+## Explicit public static export
+
+[General static export](/branch/v0.0.4/zeruxjs/docs/0.0.4/deploy-static.md) uses `zeruxjs/static-export` with opted-in public pages, finite parameters, an explicit renderer/asset manifest and staging limits. It rejects request-dependent/private pages, actions and scripts. Static hosts cannot run unexported Node handlers. The docs app remains its own exporter; its `documentation` namespace is not a generic framework switch.
+
+## Deployment topics
+
+- [Production checklist](/branch/v0.0.4/zeruxjs/docs/0.0.4/production-checklist.md): host policy, credentials, backups and observable shutdown.
+- [Service lifecycle](/branch/v0.0.4/zeruxjs/docs/0.0.4/service-lifecycle.md): worker-before-cache/database disposal.
+- [Troubleshooting](/branch/v0.0.4/zeruxjs/docs/0.0.4/troubleshooting.md): distinguish source/config/build/provider failures.
 
 
 ## Implementation sources

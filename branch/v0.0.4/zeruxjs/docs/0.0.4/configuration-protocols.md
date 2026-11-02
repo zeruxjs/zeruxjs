@@ -38,6 +38,11 @@ Infer callback input from `NonNullable<ZeruxConfig['protocols']>['authorize']` i
 The fields below come from the current source declarations. Optional is not a default value. A callback is application code, not a string naming a role.
 
 
+## Package ownership
+
+The protocol implementation belongs to `zhost`, not a separate MCP dependency. The framework facade imports `zhost/protocols`. Follow [MCP migration](/branch/v0.0.4/zeruxjs/docs/0.0.4/mcp-migration.md) when updating an application that used the removed package name; keep authentication, origin checks and operation authorization explicit.
+
+
 ## Implementation sources
 
 - [packages/zeruxjs/src/index.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/src/index.ts)

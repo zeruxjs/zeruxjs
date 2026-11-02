@@ -49,7 +49,7 @@ Include tenant and data-version boundaries in keys. Do not include secrets or ra
 ## Install and select the integration
 
 ```sh
-npm install @zeruxjs/cache@0.0.3
+npm install @zeruxjs/cache@0.0.4
 ```
 
 This package participates in the runtime's **cache** integration. Start with [cache configuration](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-cache.md), which documents `zerux.config.js`, its exact values and the matching TypeScript setup. Runtime setup and standalone factory input are different contracts; do not paste a factory argument under a config key without checking the adapter layer.
@@ -119,10 +119,18 @@ These tables list fields declared directly on the named public contract. Referen
 | `misses` | `number` | No |
 | `evictions` | `number` | No |
 
+## Capabilities, limits and cleanup
+
+Scoped managers snapshot optional adapter capability metadata. Missing declarations are unknown; explicit unsupported operations reject and policy.requireCapabilities demands supported declarations. Memory supports conditions/counters/namespace clear, with unsupported bulk atomicity. Void set does not reveal a conditional miss. Provider numeric ranges/TTL/bulk failure semantics differ; no distributed guarantees are synthesized.
+
+The package-owned CachePolicy bounds bulk count, pending remember jobs, key/value bytes and JSON depth. Memory applies equivalent direct-helper limits and evicts counter-created entries. Remember producers receive a cooperative signal/deadline; caller cancellation detaches only its waiter. Timed-out producers retain slots until settlement and cannot write late results. Close rejects stale use, aborts/drains production/native calls and closes an owned helper once. Use ownHelper:false when sharing a helper across tenant managers and close it from the host afterward. Active convenience APIs remain process-global compatibility APIs, not tenant/generation routing.
+
+Framework cache.policy validates before provider startup. See the package README for exact defaults, numeric semantics, compatibility limits and a compiled public-import example. No live Redis/Memcached acceptance is implied by memory/injected checks.
+
 
 ## Public entry points
 
-Manifest reference for `@zeruxjs/cache@0.0.3`.
+Manifest reference for `@zeruxjs/cache@0.0.4`.
 
 ```json
 {
@@ -130,6 +138,10 @@ Manifest reference for `@zeruxjs/cache@0.0.3`.
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./policy": {
+      "types": "./dist/policy.d.ts",
+      "default": "./dist/policy.js"
     }
   },
   "engines": {},
@@ -182,6 +194,43 @@ Concurrent misses for the same key **within one manager process** share one pend
 - Conditional writes are atomic only when the provider supports them. `setMany` across multiple keys is not guaranteed atomic.
 
 Run package tests after building: `npm run build && node --test test/*.test.mjs`.
+
+## Scoped managers
+
+```ts
+import { createMemoryCacheHelper, createCacheManagerWithHelper } from '@zeruxjs/cache';
+
+export async function example() {
+  const helper = createMemoryCacheHelper({maxEntries: 100});
+  const cache = createCacheManagerWithHelper(helper, {prefix: 'tenant:verified-id',
+    policy: {maxBulk: 20, maxPendingProducers: 4, ownHelper: false,
+      requireCapabilities: ['conditionalWrites', 'counters']} });
+  try {
+    return await cache.remember('catalog', async ({signal}) => {
+      signal.throwIfAborted();
+      return {items: ['example']};
+    }, {ttlSeconds: 30, timeoutMs: 1000});
+  } finally { await cache.close(); helper.close?.(); }
+}
+```
+
+Bind the tenant namespace from trusted server context, never a caller's tenant assertion. Prefixing isolates ordinary keys; it is not authorization or a collision-proof tenant encoding (use unambiguous application-owned prefixes/keys). Multiple managers can share a helper with `policy.ownHelper: false`; the host closes it after all managers. Default true preserves manager-owned helper cleanup, including the previous injected-helper behavior. Backend ownership reported by a helper is separate from whether a manager owns the helper wrapper.
+
+`capabilities` snapshots optional helper declarations for conditionalWrites, counters, namespaceClear and bulkAtomicity (`supported`, `unsupported`, `unknown`), plus backend ownership (`owned`, `borrowed`, `unknown`). Explicit unsupported operations reject before dispatch. Missing metadata remains unknown for compatibility; it does not prove atomicity. `policy.requireCapabilities` fails construction unless every requested capability is explicitly supported. A failed dynamically loaded helper negotiation closes that acquired wrapper. No distributed operation is emulated. The Redis adapter declares supported conditions/counters/namespace clear and unsupported overall bulk atomicity; Memcached declares supported conditions/counters and unsupported namespace clear/bulk atomicity; requiring a guarantee needs an adapter with reviewed metadata.
+
+Memory advertises supported conditional writes, counters and namespace clear; multi-key atomicity is unsupported. `set`/branch/v0.0.4/`setMany` return void: a conditional miss does **not** report success/failure. Never use that void result as lock acquisition or authorization. Memory counters are signed safe integers, create missing counters at zero and preserve existing TTL. Redis uses server signed integer arithmetic (missing keys start at zero), and its native range can exceed JS precision; manager results outside safe integers reject after the server mutation, without rollback. Memcached counters require an existing numeric item and decrement clamps at zero. See [Redis integer semantics](https://redis.io/docs/latest/commands/incr/) and [Memcached text operations](https://docs.memcached.org/protocols/basic/). Their conditional writes use native NX/XX or add/replace; TTL precision and global-clear policy remain provider-owned. Bulk operations can partially succeed and must not be used as transactions.
+
+## Runtime limits and producer lifecycle
+
+`policy` defaults: maxBulk 1000 (maximum 10000), maxPendingProducers 64 (1024), maxKeyBytes 1024 (65536), maxValueBytes 1048576 (16777216), maxDepth 32 (64). Values must be plain JSON data, without getters, toJSON, cycles, undefined or nonfinite numbers; traversal also caps at 100000 nodes. Both input writes and returned values are bounded; logical and fully prefixed keys must fit the key budget. Direct memory helpers accept the same policy through `{policy: {...}}`, enforce bulk/key/value limits without a manager, and evict excess counter entries as well as normal writes. Native handles are privileged host-owned escape hatches; direct native mutations bypass facade guarantees. External direct helpers retain their own package limits; this facade does not certify their direct API. Smaller helper limits still apply beneath a manager.
+
+`remember` bounds all pending miss jobs, including the initial lookup. It coalesces one job per manager/key, not across processes. The first job's TTL/condition/deadline options govern production; subsequent callers only join. Producers receive `{signal, deadline}`. timeoutMs is 1–600000; absolute deadlines must be safe integer timestamps no more than ten minutes ahead. A deadline aborts cooperative production and prevents late cache writes, but the producer retains capacity until it actually settles. A caller's signal only detaches that waiter; it does not cancel another subscriber. Manager close aborts production, rejects stale use immediately, waits for native calls/producers and closes an owned helper once. An uncooperative producer/provider can delay cleanup indefinitely; no Promise is forcibly cancelled. Failed producers are removed after settlement and can retry. Do not call close from inside that manager's own producer.
+
+The active `cache`, get/set/remember exports and configureCacheManager are a process-global compatibility layer. Generation/request code should retain its own manager; replacing the active manager does not close the previous generation. Runtime `cache.policy` uses this package-owned contract and validates limits before service factories. No Redis/Memcached service starts until configured. Offline tests and packed public imports do not prove live-provider behavior.
+
+### Valkey adapter and shared policy
+
+The explicit [`@zeruxjs/cache-valkey`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/cache-valkey/README.md) adapter uses iovalkey with bounded command ownership; select it by helper package name. The public `@zeruxjs/cache/policy` subpath exports the same key, JSON, bulk and condition validators used by the manager, so adapter authors can enforce these limits at direct boundaries. This export does not grant distributed atomicity.
 
 
 ## Implementation sources

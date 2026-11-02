@@ -18,7 +18,7 @@ Use public export-map entries. Private source paths and generated dist internals
 
 ## Public entry points
 
-Manifest reference for `zeruxjs@0.0.3`.
+Manifest reference for `zeruxjs@0.0.4`.
 
 ```json
 {
@@ -49,21 +49,78 @@ Manifest reference for `zeruxjs@0.0.3`.
     "./variables": {
       "types": "./dist/variables.d.ts",
       "import": "./dist/variables.js"
+    },
+    "./modules": {
+      "types": "./dist/modules.d.ts",
+      "import": "./dist/modules.js"
+    },
+    "./service-endpoints": {
+      "types": "./dist/service-endpoints.d.ts",
+      "import": "./dist/service-endpoints.js"
+    },
+    "./graphql": {
+      "types": "./dist/graphql.d.ts",
+      "import": "./dist/graphql.js"
+    },
+    "./renderers": {
+      "types": "./dist/renderers.d.ts",
+      "import": "./dist/renderers.js"
+    },
+    "./browser-navigation": {
+      "types": "./dist/browser-navigation.d.ts",
+      "import": "./dist/browser-navigation.js"
+    },
+    "./navigation-manifest": {
+      "types": "./dist/navigation-manifest.d.ts",
+      "import": "./dist/navigation-manifest.js"
+    },
+    "./actions": {
+      "types": "./dist/actions.d.ts",
+      "import": "./dist/actions.js"
+    },
+    "./action-stores": {
+      "types": "./dist/action-stores.d.ts",
+      "import": "./dist/action-stores.js"
+    },
+    "./action-form": {
+      "types": "./dist/action-form.d.ts",
+      "import": "./dist/action-form.js"
+    },
+    "./action-stores/sqlite": {
+      "types": "./dist/action-sqlite-store.d.ts",
+      "import": "./dist/action-sqlite-store.js"
+    },
+    "./static-export": {
+      "types": "./dist/static-export.d.ts",
+      "import": "./dist/static-export.js"
+    },
+    "./route-data-cache": {
+      "types": "./dist/route-data-cache.d.ts",
+      "import": "./dist/route-data-cache.js"
+    },
+    "./privacy": {
+      "types": "./dist/privacy.d.ts",
+      "browser": null,
+      "import": "./dist/privacy.js"
     }
   },
   "engines": {},
   "dependencies": {
-    "@zeruxjs/cache": "0.0.3",
-    "@zeruxjs/db": "0.0.3",
-    "@zeruxjs/lint": "0.0.3",
-    "zforge": "0.0.3",
-    "@zeruxjs/hooks": "0.0.3",
-    "zlook": "0.0.3",
-    "zhost": "0.0.3",
-    "zclivo": "0.0.3"
+    "@zeruxjs/cache": "0.0.4",
+    "@zeruxjs/db": "0.0.4",
+    "@zeruxjs/hooks": "0.0.4",
+    "@zeruxjs/lint": "0.0.4",
+    "zclivo": "0.0.4",
+    "zforge": "0.0.4",
+    "zhost": "0.0.4",
+    "zlook": "0.0.4"
   },
   "peerDependencies": {
-    "@zeruxjs/queue": "0.0.3"
+    "@zeruxjs/db-sqlite": "0.0.4",
+    "@zeruxjs/queue": "0.0.4",
+    "@zeruxjs/security": "0.0.4",
+    "@zeruxjs/validator": "0.0.4",
+    "parse5": "7.3.0"
   },
   "bin": {
     "zerux": "./dist/bin/zerux.js"

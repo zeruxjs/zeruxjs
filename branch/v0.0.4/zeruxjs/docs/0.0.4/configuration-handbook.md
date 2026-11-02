@@ -44,7 +44,7 @@ Unknown HTTP bodies, environment strings and persisted snapshots still require r
 
 ## A small complete application
 
-Follow [complete configuration examples](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-examples.md) for a local SQLite/memory-cache/files setup and a production-shaped PostgreSQL/Redis configuration. These examples choose a narrow set of services rather than relying on unavailable secrets or a generator placeholder. Add protected email/analytics/admin integrations only after their identity, storage and failure policies are defined.
+Follow [complete configuration examples](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-examples.md) for a local SQLite/memory-cache/files setup and a production-shaped PostgreSQL/Redis configuration. These examples choose a narrow set of services rather than relying on unavailable secrets. Add protected email/analytics/admin integrations only after their identity, storage and failure policies are defined.
 
 ## Reference and troubleshooting
 

@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "markdownFiles": {
-    "/branch/v0.0.4/index.md": "becf253a8101275d9438e4af3b453ce29b7211a1c89b24aabcb396ab53bd1f0f",
+    "/branch/v0.0.4/index.md": "40b8a6a37db4464f5d1b6b998d210f4033fe2df3f557207d785169dc61456b73",
     "/branch/v0.0.4/404.md": "9ede8c0a1d5f592a3d2bb8e522e079bbe76045ed444376a14b7eb25f74fff52b",
-    "/branch/v0.0.4/zeruxjs.md": "54afa8d8e0ecbdac170526c2a7e70e1d6226ad41b412ef98f5f734471121d418"
+    "/branch/v0.0.4/zeruxjs.md": "8b65b09332263212ef904cfdec90e4978a78d233dd7cd1fcc682e4a3eac076bc"
   },
   "outputBranch": "master-site",
   "rootOwned": [
@@ -23,6 +23,6 @@
       "mount": "/zeruxjs"
     }
   ],
-  "packages": 52,
+  "packages": 55,
   "previewMount": "/branch/v0.0.4"
 }
