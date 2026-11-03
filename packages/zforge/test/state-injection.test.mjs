@@ -44,7 +44,22 @@ test('injection escapes script ending, quotes and Unicode separators; is idempot
   });
   assert.equal((injected.match(/<script\b/gi) ?? []).length, 1);
   assert.ok(!injected.includes('</script><script>alert'));
-  const script = injected.match(/<script[^>]*>([\s\S]*?)<\/script\s*>/i)[1];
+  // The producer emits fixed canonical delimiters; this extracts its owned
+  // script for a syntax check, rather than treating a regex as an HTML parser.
+  const opening=injected.indexOf('<script');
+  const start=injected.indexOf('>',opening)+1,end=injected.lastIndexOf('</script>');
+  assert.ok(opening>=0&&start>opening&&end>=start);
+  const script=injected.slice(start,end);
   assert.doesNotThrow(() => new vm.Script(script));
   assert.equal(injectDevClient(injected, { routeName: 'x', serviceName: 'z', devServerUrl: 'https://a', devPortLessAlias: {value: false} }), injected);
+});
+
+test('script-ending variants in bootstrap data remain escaped inside the owned script',()=>{
+ for(const routeName of ['</ScRiPt\t\n bar><script>alert(1)</script>','</script data-x="value"><script>alert(2)</script>']){
+  const injected=injectDevClient('<body><h1>Known document</h1></body>',{routeName,serviceName:'fixture',devServerUrl:'http://127.0.0.1:9000',allowedDevDomain:null,devPortLessAlias:{value:null}});
+  assert.equal((injected.match(/<script\b/gi)??[]).length,1);
+  const start=injected.indexOf('>',injected.indexOf('<script'))+1,end=injected.lastIndexOf('</script>');
+  assert.ok(start>0&&end>start);
+  assert.doesNotThrow(()=>new vm.Script(injected.slice(start,end)));
+ }
 });

@@ -33,8 +33,18 @@ export async function executeTests(context: TestContext, options: RunOptions = {
   const ancestors = (test: TestCase): Suite[] => [...context.suites.get(test.suiteId)!.ancestors, test.suiteId].map(id => context.suites.get(id)!);
   const match=options.match;
   if(match!==undefined&&typeof match!=='string'&&!(match instanceof RegExp))throw new TypeError('Test match must be literal text or an explicit RegExp');
-  const pattern=match instanceof RegExp?new RegExp(match,match.flags.replace(/[gy]/g,'')):undefined;
-  const eligible = (test: TestCase) => !test.skip && (!hasOnly || test.only) && (match === undefined || (typeof match === 'string' ? test.name.includes(match) : pattern!.test(test.name)));
+  // Copy an already-compiled host pattern; CLI strings never become patterns.
+  // The private copy also preserves frozen/borrowed RegExp ownership.
+  const pattern=match instanceof RegExp?structuredClone(match):undefined;
+  const matchesPattern=(name:string):boolean=>{
+    if(!pattern)return true;
+    if(!pattern.sticky){pattern.lastIndex=0;return pattern.test(name);}
+    // Historical matching ignored g/y positioning. Search a sticky pattern at
+    // every start position without compiling any user-supplied pattern text.
+    for(let index=0;index<=name.length;index++){pattern.lastIndex=index;if(pattern.test(name))return true;}
+    return false;
+  };
+  const eligible = (test: TestCase) => !test.skip && (!hasOnly || test.only) && (match === undefined || (typeof match === 'string' ? test.name.includes(match) : matchesPattern(test.name)));
   const selected = tests.filter(eligible);
   const suiteCount = new Map<number, number>(); for (const t of selected) for (const suite of ancestors(t)) suiteCount.set(suite.id, (suiteCount.get(suite.id) || 0) + 1);
   const started = new Set<number>(); const closed = new Set<number>(); const finished = new Map<number, number>(); const suiteErrors = new Map<number, Error>();

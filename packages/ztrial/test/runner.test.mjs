@@ -57,3 +57,11 @@ test('CLI-style match strings stay literal; only actual RegExp objects enable pa
  const matched=await runner.runTests({match:pattern});assert.equal(matched.passed,2);assert.equal(pattern.lastIndex,99);
  await assert.rejects(runner.runTests({match:{source:'.*',flags:''}}),/explicit RegExp/);
 });
+
+test('borrowed frozen and sticky patterns retain unanchored selection without mutation',async()=>{
+ const runner=createRunner();runner.test('prefix target',()=>{});runner.test('other',()=>{});
+ for(const pattern of [Object.freeze(/target/g),Object.freeze(/target/y),/target/gy]){
+  const previous=pattern.lastIndex;
+  const result=await runner.runTests({match:pattern});assert.equal(result.passed,1);assert.equal(pattern.lastIndex,previous);
+ }
+});

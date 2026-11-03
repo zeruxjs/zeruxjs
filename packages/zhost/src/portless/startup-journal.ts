@@ -17,7 +17,7 @@ export function regularFile(file: string, limit = MAX_FILE): Buffer | null {
     return readStateFile(file,limit).bytes;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    if(error instanceof Error&&error.message.startsWith('Unsafe'))throw new Error(`Unsafe proxy state file: ${file}`,{cause:error});
+    if((error instanceof Error)&&error.message.startsWith('Unsafe'))throw new Error(`Unsafe proxy state file: ${file}`,{cause:error});
     throw error;
   }
 }

@@ -71,3 +71,16 @@ test('pending store failure retains admission until native settlement and deadli
   let closed=false;const closing=client.close().then(()=>closed=true);await Promise.resolve();assert.equal(closed,false);release();await closing;assert.equal(base.calls.length,0);
  }finally{release?.();await client.close();await base.close();}
 });
+
+test('OAuth state indexes are keyed MACs of generated 256-bit tokens, not password hashes',async()=>{
+ const {createHmac}=require('node:crypto');const f=await fixture();
+ try{
+  const callback=await f.begin(),state=callback.get('state'),record=f.records.at(-1);
+  assert.match(state,/^[A-Za-z0-9_-]{43}$/);assert.equal(Buffer.from(state,'base64url').length,32);
+  const index=(domain,values)=>createHmac('sha256',f.options.bindingKey).update(JSON.stringify(['zeruxjs.auth.provider.v1',domain,...values])).digest('base64url');
+  assert.equal(record.key,index('state',[f.config.id,state]));
+  assert.equal(record.session,index('session',[owner.tenant,owner.session]));
+  assert.notEqual(record.key,state);assert.notEqual(record.session,owner.session);
+  assert.equal(f.calls.length,0,'creating a local login attempt makes no provider request');
+ }finally{await f.close();}
+});
