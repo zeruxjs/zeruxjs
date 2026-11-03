@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Private, bounded on-disk checkpoint for the proxy's backend circuit breakers.
  * A checkpoint is diagnostic/recovery state, never authority to modify routes. */
 import * as fs from 'node:fs';
@@ -26,8 +27,7 @@ function checkDirectory(directory: string): void {
   if (typeof process.getuid === 'function' && stat.uid !== process.getuid()) throw new Error('Backend health directory owner mismatch');
   if ((stat.mode & 0o022) !== 0) throw new Error('Backend health directory is writable by other users');
 }
-function checkFile(file: string): void {
-  const stat = fs.lstatSync(file);
+function checkFile(file: string, stat = fs.lstatSync(file)): void {
   if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_BYTES || (stat.mode & 0o077) !== 0 ||
       (typeof process.getuid === 'function' && stat.uid !== process.getuid())) {
     throw new Error('Unsafe backend health snapshot');
@@ -71,13 +71,8 @@ export class BackendHealthStore {
   read(now = Date.now()): readonly SavedBackendHealth[] {
     try {
       checkDirectory(path.dirname(this.file));
-      checkFile(this.file);
-      const fd = fs.openSync(this.file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
-      let raw: string;
-      try {
-        if (fs.fstatSync(fd).size > MAX_BYTES) throw new Error('Backend health snapshot too large');
-        raw = fs.readFileSync(fd, 'utf8');
-      } finally { fs.closeSync(fd); }
+      const opened=readStateFile(this.file,MAX_BYTES);checkFile(this.file,opened.stat);
+      const raw=opened.bytes.toString('utf8');
       const snapshot = decode(raw);
       if (snapshot.savedAt > now + 30_000 || now - snapshot.savedAt > this.maxAgeMs) return [];
       return snapshot.entries.map(value => ({ ...value }));
@@ -98,7 +93,7 @@ export class BackendHealthStore {
       try { checkFile(this.file); } catch (error) { if (errno(error) !== 'ENOENT') throw error; }
       fs.renameSync(temporary, this.file);
       try {
-        const fd = fs.openSync(path.dirname(this.file), 'r');
+        const fd = fs.openSync(path.dirname(this.file), 'r', 0o600);
         try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
       } catch { /* Directory fsync unavailable on some platforms. */ }
     // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.

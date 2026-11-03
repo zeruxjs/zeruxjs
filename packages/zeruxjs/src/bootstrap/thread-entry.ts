@@ -20,7 +20,7 @@ type ThreadHandler = (payload: unknown, context: {
 
 const data = workerData as ThreadBootstrapData;
 
-registerLoader(data.serviceName);
+registerLoader(data.serviceName, data.mode === "dev" ? {sourceRoot: data.rootDir} : {});
 
 const toModuleUrl = (script: string) => {
     const moduleUrl = script.startsWith("file://")

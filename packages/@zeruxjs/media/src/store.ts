@@ -1,6 +1,6 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { constants } from 'node:fs';
-import { mkdir, readFile, writeFile, unlink, stat, readdir, open, lstat, realpath } from 'node:fs/promises';
+import { mkdir, writeFile, unlink, stat, readdir, open, lstat, realpath } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { StoredMedia, UploadOptions, ListOptions, CleanupResult } from './types.js';
 import { safePath, assertId, validateUpload } from './validation.js';

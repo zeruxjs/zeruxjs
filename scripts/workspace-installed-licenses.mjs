@@ -1,3 +1,5 @@
+import fileIO from './file-io.cjs';
+const {readRegularFileSync}=fileIO;
 /** Post-install third-party license metadata inspection, not legal clearance. */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,15 +31,13 @@ export function inspectInstalledLicenses(root,lock) {
       discrepancies.push({package:relative,reason:'Lockfile package path escapes workspace'});continue;
     }
     const manifestPath=path.join(dir,'package.json');
-    if(!fs.statSync(manifestPath,{throwIfNoEntry:false})?.isFile()) {
-      // npm legitimately omits optional native binaries on unsupported platforms or failed optional installs.
-      if(entry.optional===true||entry.devOptional===true)optionalNotInstalled.push(relative);
-      else uninstalled.push(relative);
+    let manifest;
+    try{manifest=JSON.parse(readRegularFileSync(manifestPath,1024*1024).toString('utf8'));}
+    catch(error){
+      if(error.code==='ENOENT'){if(entry.optional===true||entry.devOptional===true)optionalNotInstalled.push(relative);else uninstalled.push(relative);}
+      else discrepancies.push({package:relative,reason:'Invalid installed manifest'});
       continue;
     }
-    let manifest;
-    try{manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));}
-    catch{discrepancies.push({package:relative,reason:'Invalid installed manifest'});continue;}
     const name=manifest.name??relative,license=declaredLicense(manifest);
     if(entry.version&&manifest.version!==entry.version)discrepancies.push({package:relative,reason:`Version ${manifest.version} differs from lock ${entry.version}`});
     const files=fs.readdirSync(dir);

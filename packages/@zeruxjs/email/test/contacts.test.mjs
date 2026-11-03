@@ -11,7 +11,7 @@ test('contact list management and campaign cursor stay deterministic',async()=>{
  assert.equal(await service.removeFromList('FIRST@example.test','vip'),true);
  assert.equal((await service.page('vip')).contacts.length,1);
  await assert.rejects(service.upsert('a@example.test',['bad:list']),/memberships/);
- await assert.rejects(service.upsert('a@example.test',[],{'__proto__':'bad'}),/Invalid/).catch(()=>{});
+ await assert.rejects(service.upsert('a@example.test',[],JSON.parse('{"__proto__":"bad"}')),/Invalid/);
 });
 test('database contact store shares updates and uses versioned CAS',async()=>{
  const records=new Map();const db={

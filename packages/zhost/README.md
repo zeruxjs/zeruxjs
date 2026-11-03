@@ -1223,3 +1223,14 @@ relative directories excluded before source traversal. `createDevelopmentWatchIg
 validates and snapshots up to 128 bounded relative paths; subscriber ignores never
 change another app’s mutable configuration. The framework forwards its stricter
 `server.watchIgnoredPaths` policy together with its runtime directory.
+
+`startServer({config:{server:{portless:false}}, app: ...})` starts the direct
+loopback HTTP application without starting the shared portless proxy or registering
+proxy aliases. The default remains true. This setting does not change devtools
+host checks or grant access to an existing proxy's PID/state files.
+
+Proxy/fleet/control-state readers validate type, size, owner and private-mode
+requirements against the same open inode whose bytes they consume. Reads are
+bounded and reject leaf symlinks. Private parent ownership and the existing
+operation/route locks still belong to the host; these helpers do not create a
+filesystem sandbox or an atomic compare-and-delete primitive.

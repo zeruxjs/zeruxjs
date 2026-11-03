@@ -21,7 +21,7 @@ export const ensureParentDirectory = (filePath: string) => {
 /** Optional missing files are allowed; corrupt, oversized or linked files fail closed. */
 export const readJsonFile = <T>(filePath: string, fallback: T): T => {
   let fd: number;
-  try { fd = fs.openSync(filePath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK); }
+  try { fd = fs.openSync(filePath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK, 0o600); }
   catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return fallback; if ((error as NodeJS.ErrnoException).code === 'ELOOP') throw new Error('Unsafe devtools state file', {cause:error}); throw error; }
   try {
     const st = fs.fstatSync(fd);

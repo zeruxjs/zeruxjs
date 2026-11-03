@@ -44,7 +44,8 @@ async function uploadArchive(callArgs,cwd) {
 }
 /** Read public registry metadata; only a confirmed 404 is considered unpublished. */
 async function metadata(name, version) {
-  const response = await fetch(`${registry}${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {cache:'no-store',signal:AbortSignal.timeout(30000)});
+  if(typeof name!=='string'||name.length>214||!/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/.test(name)||typeof version!=='string'||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version))throw Error('Invalid public registry package identity');
+  const response = await fetch(`${registry}${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {cache:'no-store',redirect:'error',signal:AbortSignal.timeout(30000)});
   if (response.status === 404) return null;
   if (!response.ok) throw Error(`Registry lookup failed for ${name}@${version}: HTTP ${response.status}`);
   const manifest = await response.json();

@@ -31,8 +31,6 @@ export interface NumericReconciliationResult {
 type Predicate={field:string;operator:'eq'|'gte'|'lte'|'gt';value:string|number};
 type NumericFact={id:string;event_id:string;property_name:string;numeric_value:number;event_name:string;source:string;site:string;pathname:string;occurred_at:number};
 const valuesEqual=(left:unknown,right:unknown):boolean=>typeof left==='number'&&typeof right==='number'?Object.is(left,right):left===right;
-const matches=(row:Record<string,unknown>,fact:NumericFact)=>
-  (Object.keys(fact) as Array<keyof NumericFact>).every(key=>valuesEqual(row[key],fact[key]));
 async function checkedSelect(connection:AnalyticsConnection,operation:Parameters<AnalyticsConnection['select']>[0]):Promise<Record<string,unknown>[]> {
   const response=await connection.select(operation);
   if(!response?.ok||!Array.isArray(response.rows))throw new Error('Numeric reconciliation read failed');

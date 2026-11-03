@@ -44,7 +44,7 @@ test('injection escapes script ending, quotes and Unicode separators; is idempot
   });
   assert.equal((injected.match(/<script\b/gi) ?? []).length, 1);
   assert.ok(!injected.includes('</script><script>alert'));
-  const script = injected.match(/<script[^>]*>([\s\S]*?)<\/script>/i)[1];
+  const script = injected.match(/<script[^>]*>([\s\S]*?)<\/script\s*>/i)[1];
   assert.doesNotThrow(() => new vm.Script(script));
   assert.equal(injectDevClient(injected, { routeName: 'x', serviceName: 'z', devServerUrl: 'https://a', devPortLessAlias: {value: false} }), injected);
 });

@@ -1,3 +1,5 @@
+import fileIO from '../../../scripts/file-io.cjs';
+const {readRegularFile}=fileIO;
 import http from "node:http";
 import { site, sitePath } from "../src/site.config.mjs";
 import { watch } from "node:fs";
@@ -95,7 +97,7 @@ async function handle(request, response) {
       }
       filename = path.join(filename, "index.html");
     }
-    const data = await fs.readFile(filename);
+    const data = await readRegularFile(filename);
     response.writeHead(200, {
       "Content-Type":
         types[path.extname(filename)] || "application/octet-stream",

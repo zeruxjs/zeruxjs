@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Private, bounded audit trail for fleet lifecycle and scaling decisions. */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -31,10 +32,10 @@ export function readFleetHistory(stateDir: string, hostname: string): FleetEvent
   const filename = fleetHistoryPath(stateDir, hostname);
   try {
     ensureControlDirectory(stateDir);
-    const info = fs.lstatSync(filename);
+    const {stat: info, bytes} = readStateFile(filename, MAX_BYTES);
     if (!info.isFile() || info.isSymbolicLink() || info.size > MAX_BYTES || (info.mode & 0o077) !== 0 ||
       (typeof process.getuid === 'function' && info.uid !== process.getuid())) throw new Error('Unsafe fleet history file');
-    const content: unknown = JSON.parse(fs.readFileSync(filename, 'utf8'));
+    const content: unknown = JSON.parse(bytes.toString('utf8'));
     if (!Array.isArray(content) || content.length > MAX_EVENTS || !content.every(isEvent)) throw new Error('Invalid fleet history');
     return content;
   } catch (error) {

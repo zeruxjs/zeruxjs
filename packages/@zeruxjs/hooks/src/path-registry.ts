@@ -19,11 +19,14 @@ export function createPathRegistry(options: PathRegistryOptions = {}) {
   const read = (): PathMap => {
     let raw: string;
     try {
-      const stat = fs.lstatSync(filename);
-      if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024 * 1024) throw new Error('[zerux] Unsafe path registry');
-      raw = fs.readFileSync(filename, 'utf8');
+      const fd=fs.openSync(filename,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK,0o600);
+      try{const stat=fs.fstatSync(fd);if(!stat.isFile()||stat.size>1024*1024)throw new Error('[zerux] Unsafe path registry');
+        const bytes=Buffer.alloc(stat.size+1);let size=0;while(size<bytes.length){const count=fs.readSync(fd,bytes,size,bytes.length-size,null);if(!count)break;size+=count;}
+        if(size>stat.size)throw new Error('[zerux] Path registry changed');raw=bytes.subarray(0,size).toString('utf8');
+      }finally{fs.closeSync(fd);}
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return Object.create(null);
+      if ((error as NodeJS.ErrnoException).code === 'ELOOP') throw new Error('[zerux] Unsafe path registry',{cause:error});
       throw error;
     }
     const data: unknown = JSON.parse(raw);

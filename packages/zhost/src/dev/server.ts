@@ -19,13 +19,7 @@ import {
 } from "zforge";
 
 import { createInjectedAppHandler } from './injection.js';
-import {
-    portlessProxy,
-    portlessAlias,
-    portlessGet,
-    portlessStop,
-    portlessRestart
-} from "../portless/portless.js";
+import { portlessProxy, portlessAlias, portlessGet } from "../portless/portless.js";
 
 /* ---------------- UTIL ---------------- */
 
@@ -241,6 +235,8 @@ const removeSerDetails = (file: string, type: string) => {
 
 export const startServer = async (details: any) => {
     const ignoredDevelopmentPath = createDevelopmentWatchIgnore(details.dev?.watchIgnoredPaths);
+    const portless = details.config?.server?.portless ?? true;
+    if (typeof portless !== 'boolean') throw new TypeError('Invalid server.portless setting');
     if (!details?.app?.func) {
         throw new Error("App func required");
     }
@@ -256,11 +252,11 @@ export const startServer = async (details: any) => {
 
     /* ---------------- PROXY ---------------- */
 
-    console.log("- Starting portless proxy");
-    if (!(await portlessProxy(undefined, { https: true }))) {
-        throw new Error('Failed to start the portless proxy');
+    if (portless) {
+        console.log("- Starting portless proxy");
+        if (!(await portlessProxy(undefined, { https: true }))) throw new Error('Failed to start the portless proxy');
+        console.log("- Portless proxy ready");
     }
-    console.log("- Portless proxy ready");
 
     /* ---------------- APP ---------------- */
 
@@ -294,7 +290,7 @@ export const startServer = async (details: any) => {
             ensureSharedDevSockets(sharedDevHandle.server);
         }
 
-        devAlias = await portlessAlias(service, devInfo.port);
+        devAlias = portless ? await portlessAlias(service, devInfo.port) : false;
 
         const devAliasBase = devAlias ? await portlessGet(service) : false;
         const devUrls = [
@@ -390,9 +386,9 @@ export const startServer = async (details: any) => {
         appServer.listen(appPort, '127.0.0.1', () => { appServer.off('error', reject); resolve(); });
     });
 
-    const appAlias = await portlessAlias(appName, appPort);
+    if (portless) await portlessAlias(appName, appPort);
 
-    const appAliasUrl = await portlessGet(appName);
+    const appAliasUrl = portless ? await portlessGet(appName) : false;
 
     const appUrls = [
         `http://127.0.0.1:${appPort}`,

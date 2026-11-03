@@ -38,6 +38,6 @@ try{
  check(prefersReducedMotion()===window.matchMedia('(prefers-reduced-motion: reduce)').matches,'reduced motion query');
  check(window.getComputedStyle(document.getElementById('motion')).transitionDuration==='0s','reduced-motion CSS');
  r.destroy();
-}catch(error){errors.push(String(error.stack||error))}
+}catch(error){errors.push(String(error.stack||error));}
 const out=document.getElementById('browser-result');out.textContent=JSON.stringify({pass:errors.length===0,errors});
 </script></body></html>

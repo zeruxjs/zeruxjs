@@ -32,7 +32,7 @@ test('real ZeruxJS routes serve searchable docs, dynamic sitemap, feed and font 
   {pattern:'/feed',handler:createFeedFetchHandler({feed:{title:'News',description:'News feed',siteUrl:'https://example.com',items:[{id:'1',title:'Post',url:'https://example.com/post'}]}})},
   ...createCrawlerRoutes({origin:'https://example.com',entries:[{loc:'https://example.com/post'},{loc:'https://example.com/other'}],maxUrlsPerSitemap:1}),
   {pattern:'/fonts.css',handler:createFontStylesheetHandler({registry:fonts})},
-  {pattern:'/download',handler:()=>new Response(new ReadableStream({start(c){c.enqueue(new TextEncoder().encode('abc'));c.enqueue(new TextEncoder().encode('def'));c.close()}}),{headers:{'content-type':'application/octet-stream'}})},
+  {pattern:'/download',handler:()=>new Response(new ReadableStream({start(c){c.enqueue(new TextEncoder().encode('abc'));c.enqueue(new TextEncoder().encode('def'));c.close();}}),{headers:{'content-type':'application/octet-stream'}})},
   {pattern:'/upload',handler:async request=>new Response(JSON.stringify({bytes:(await request.arrayBuffer()).byteLength}),{headers:{'content-type':'application/json'}})}
  ]);
  const server=http.createServer(runtime.createHandler());const port=await listen(server);
@@ -49,7 +49,7 @@ test('real ZeruxJS routes serve searchable docs, dynamic sitemap, feed and font 
   assert.equal((await request(port,'/feed',{method:'POST'})).status,405);
   const upload=await request(port,'/upload',{method:'POST',body:Buffer.alloc(1024*1024+67)});assert.deepEqual(JSON.parse(upload.body),{bytes:1024*1024+67});
   assert.ok(runtime.getLoadStatus().statusFamilies['2xx']>=7);
- } finally{runtime.closeProtocols();await stop(server);await rm(dir,{recursive:true,force:true})}
+ } finally{runtime.closeProtocols();await stop(server);await rm(dir,{recursive:true,force:true});}
 });
 
 test('Fetch destination adapter applies pressure and cancels its source on downstream close', {timeout:5000}, async()=>{

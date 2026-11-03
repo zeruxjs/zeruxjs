@@ -16,7 +16,6 @@ test('stable hooks preserve state and functional updates', () => runWithState(()
 test('undefined is a valid persisted state', () => runWithState(() => {
   let initialCalls = 0;
   const fn = () => useState(() => { initialCalls++; return undefined; });
-  fn;
   runHooks(fn); runHooks(fn);
   assert.equal(initialCalls, 1);
 }));

@@ -41,8 +41,17 @@ test('theme script encodes script terminators and does not treat replacement tok
     try {
       assert.equal(dom.window.document.scripts.length,1);
       assert.equal(dom.window.document.querySelector('h1').textContent,'Known content');
-      assert.match(dom.window.document.scripts[0].textContent,/\\u003c/);
+      assert.doesNotMatch(dom.window.document.scripts[0].textContent,/forged|theme<|\$&/);
+      const settings=JSON.parse(Buffer.from(dom.window.document.scripts[0].getAttribute('data-zerux-theme'),'base64').toString('utf8'));
+      assert.equal(settings.cookieName,'theme</script><script>forged()</script>$&');
+      const vm=await import('node:vm');
+      const script=dom.window.document.scripts[0].textContent;
+      vm.runInNewContext(script,{document:dom.window.document,window:dom.window,TextDecoder,Uint8Array,atob},{timeout:1000});
       assert.equal(dom.window.document.documentElement.style.colorScheme,'light');
+      const element=dom.window.document.scripts[0];
+      element.setAttribute('data-zerux-theme',Buffer.from(JSON.stringify({cookieName:'theme',default:'dark'})).toString('base64'));
+      vm.runInNewContext(script,{document:dom.window.document,window:dom.window,TextDecoder,Uint8Array,atob},{timeout:1000});
+      assert.equal(dom.window.document.documentElement.style.colorScheme,'dark');
     } finally {dom.window.close();}
   } finally {
     if(server){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

@@ -9,12 +9,7 @@ export * from "./hosts.js";
 import chalk from "chalk";
 import * as fs from "node:fs";
 
-import {
-    createSNICallback,
-    ensureCerts,
-    isCATrusted,
-    trustCA,
-} from "./certs.js";
+import { createSNICallback, ensureCerts, trustCA } from "./certs.js";
 
 import { createProxyServer } from "./proxy.js";
 import { validateProxyBindAddress } from "./proxy-headers.js";
@@ -28,25 +23,9 @@ import { assertStartupOwnership, publishStartupState, recoverInterruptedStartup 
 import { withOperationLock } from "./operation-lock.js";
 import { formatUrl, parseHostname } from "./utils.js";
 import { syncHostsFile, cleanHostsFile } from "./hosts.js";
-import { RouteStore, RouteConflictError } from "./routes.js";
+import { RouteStore } from "./routes.js";
 
-import {
-    DEFAULT_HTTPS_PROXY_PORT,
-    DEFAULT_TLD,
-    discoverState,
-    discoverStateWithRecovery,
-    findFreePort,
-    getDefaultPort,
-    injectFrameworkFlags,
-    isHttpsEnvEnabled,
-    isProxyRunning,
-    waitForProxy,
-    readTlsMarker,
-    readTldFromDir,
-    resolveStateDir,
-    writeTlsMarker,
-    writeTldFile,
-} from "./cli-utils.js";
+import { DEFAULT_HTTPS_PROXY_PORT, DEFAULT_TLD, discoverState, discoverStateWithRecovery, findFreePort, getDefaultPort, injectFrameworkFlags, isHttpsEnvEnabled, isProxyRunning, waitForProxy, resolveStateDir } from "./cli-utils.js";
 
 import { inferProjectName, detectWorktreePrefix } from "./auto.js";
 import { validateAppPort, exitStatus } from './process-supervisor.js';

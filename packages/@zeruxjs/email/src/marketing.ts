@@ -228,7 +228,7 @@ export function createMarketingCampaignService(options:MarketingCampaignServiceO
     const text=input.content!==undefined&&input.contentType==='text'?input.content:input.text;
     if(input.contentType!==undefined&&!['html','text'].includes(input.contentType)||input.content!==undefined&&
       (typeof input.content!=='string'||input.html!==undefined||input.text!==undefined))throw new TypeError('Ambiguous marketing content');
-    if(!input||typeof input.name!=='string'||!input.name.trim()||input.name.length>120||typeof input.subject!=='string'||!input.subject||input.subject.length>998||
+    if(typeof input.name!=='string'||!input.name.trim()||input.name.length>120||typeof input.subject!=='string'||!input.subject||input.subject.length>998||
       typeof html!=='string'&&typeof text!=='string'||html!==undefined&&html.length>55_000||text!==undefined&&text.length>55_000)
       throw new TypeError('Campaign name, subject and HTML or text are required');
     const providers=input.providers??(input.account?[input.account]:[]);

@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
@@ -277,7 +278,7 @@ function detectWorktreeViaFilesystem(startDir: string): WorktreePrefix | null {
         return null;
       }
       if (stat.isFile()) {
-        const content = fs.readFileSync(gitPath, "utf-8").trim();
+        const content = readStateFile(gitPath,65536).bytes.toString('utf8').trim();
         const match = content.match(/^gitdir:\s*(.+)$/);
         if (!match) return null;
 

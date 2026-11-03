@@ -8,8 +8,9 @@ test('email tracking is explicit opt-in, signs click and pixel, never inserts JS
   const unchanged=tracking.instrumentHtml(html,{id:'message-1',account:'support',message:{}});
   assert.equal(unchanged,html);
   const marked=tracking.instrumentHtml(html,{id:'message-1',account:'support',message:{tracking:{enabled:true,campaign:'launch'}}});
-  assert.match(marked,/\/open\//);assert.match(marked,/\/click\//);assert.doesNotMatch(marked,/<script/);
-  assert.match(marked,/https:\/\/evil.example\/path/);assert.match(marked,/https:\/\/app.example.com\/unsubscribe/);
+  assert.match(marked,/\/open\//);assert.match(marked,/\/click\//);assert.doesNotMatch(marked,/<script/i);
+  assert.ok(marked.match(/href="([^"]+)"/g).some(value=>value==="href=\"https://evil.example/path\""));
+  assert.ok(marked.match(/href="([^"]+)"/g).some(value=>value==="href=\"https://app.example.com/unsubscribe\""));
   const urls=[...marked.matchAll(/(?:src|href)="([^"]+)"/g)].map(x=>x[1].replace(/&amp;/g,'&'));
   const pixel=urls.find(u=>u.includes('/open/')),click=urls.find(u=>u.includes('/click/'));
   assert.equal((await tracking.handle(new Request(pixel))).status,200);

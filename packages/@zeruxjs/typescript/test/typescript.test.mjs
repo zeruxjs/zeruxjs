@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
-import { createTsConfig, transformTypescript, transpileTypescriptFile, checkTypes, registerTypescript } from '../dist/index.js';
+import { createTsConfig, transformTypescript, checkTypes, registerTypescript } from '../dist/index.js';
 import { load } from '../dist/loader.js';
 
 test('transpile ESM and CJS and detect syntax errors', () => {

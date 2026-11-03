@@ -54,15 +54,15 @@ export function createCrawlerService(options:CrawlerRoutesOptions): {routes:Craw
   };
   let cached:Snapshot|undefined;
   let expires=0;
-  let pending:Promise<Snapshot>|undefined;
+  let pending:{promise:Promise<Snapshot>}|undefined;
   let generation=0;
   const read=async():Promise<Snapshot>=>{
     if(snapshotTtlMs && cached && Date.now()<expires)return cached;
-    if(pending)return pending;
+    if(pending)return pending.promise;
     const current=generation;
-    const task=build();pending=task;
-    try{const result=await task;if(snapshotTtlMs&&current===generation){cached=result;expires=Date.now()+snapshotTtlMs;}return result;}
-    finally{if(pending===task)pending=undefined;}
+    const slot={promise:build()};pending=slot;
+    try{const result=await slot.promise;if(snapshotTtlMs&&current===generation){cached=result;expires=Date.now()+snapshotTtlMs;}return result;}
+    finally{if(pending===slot)pending=undefined;}
   };
   const dispatch = async (request:Request) => {
     if(request.method!=='GET'&&request.method!=='HEAD')return new Response(null,{status:405,headers:{allow:'GET, HEAD'}});

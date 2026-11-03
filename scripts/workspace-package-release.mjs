@@ -127,7 +127,7 @@ export function npmPackDryRun(dir, { timeout = 30_000 } = {}) {
 export function inspectPublishableWorkspaces(root, { built = false, npmPack = npmPackDryRun } = {}) {
   const entries = discoverWorkspaces(root);
   const packages = [];
-  for (const [name, entry] of [...entries].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [, entry] of [...entries].sort(([a], [b]) => a.localeCompare(b))) {
     if (entry.pkg.private) { packages.push(inspectPublishablePackage({ ...entry, entries })); continue; }
     let packedFiles, packFailure;
     try { packedFiles = npmPack(entry.dir); }

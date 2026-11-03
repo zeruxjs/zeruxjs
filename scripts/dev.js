@@ -1,3 +1,4 @@
+const {resetLogFileSync} = require('./file-io.cjs');
 const { getSafeName, writeState, readState, stopProcess } = require('./helper');
 const path = require('path');
 const fs = require('fs');
@@ -34,11 +35,8 @@ if (process.argv.includes('--run-packages-watcher')) {
                     const outPath = path.join(proc.dir, `${proc.safeName}-dev-out.log`);
                     const errPath = path.join(proc.dir, `${proc.safeName}-dev-err.log`);
 
-                    if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
-                    if (fs.existsSync(errPath)) fs.unlinkSync(errPath);
-
-                    const out = fs.openSync(outPath, 'a');
-                    const err = fs.openSync(errPath, 'a');
+                    const out = resetLogFileSync(outPath);
+                    const err = resetLogFileSync(errPath);
 
                     const child = spawn('npm', ['run', 'dev'], {
                         cwd: proc.dir,
@@ -184,11 +182,9 @@ folders.forEach(({ dir, pkgName }) => {
     const errPath = path.join(dir, `${safeName}-dev-err.log`);
 
     // Reset logs
-    if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
-    if (fs.existsSync(errPath)) fs.unlinkSync(errPath);
 
-    const out = fs.openSync(outPath, 'a');
-    const err = fs.openSync(errPath, 'a');
+    const out = resetLogFileSync(outPath);
+    const err = resetLogFileSync(errPath);
 
     const child = spawn('npm', ['run', 'dev'], {
         cwd: dir,

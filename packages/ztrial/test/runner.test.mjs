@@ -49,3 +49,11 @@ test('bail skips remaining tests, forbidOnly rejects focus',async()=>{
  runner.clearTests();runner.test.only('focus',()=>{});
  await assert.rejects(runner.runTests({forbidOnly:true}),/forbidden/);
 });
+
+test('CLI-style match strings stay literal; only actual RegExp objects enable pattern matching',async()=>{
+ const runner=createRunner();runner.test('literal [a]+',()=>{});runner.test('aaa',()=>{});
+ const literal=await runner.runTests({match:'[a]+'});assert.equal(literal.passed,1);
+ const pattern=/a+/gy;pattern.lastIndex=99;
+ const matched=await runner.runTests({match:pattern});assert.equal(matched.passed,2);assert.equal(pattern.lastIndex,99);
+ await assert.rejects(runner.runTests({match:{source:'.*',flags:''}}),/explicit RegExp/);
+});

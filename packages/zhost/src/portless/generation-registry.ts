@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Crash-recovery records for rolling wrappers. Never use PID alone as proof of
  * ownership: every recorded child and controller needs its OS start identity.
  * This file is private local state, not an authorization mechanism. */
@@ -51,8 +52,7 @@ function validateRecord(record: unknown, hostname: string): record is Generation
       typeof c.identity === 'string' && FINGERPRINT.test(c.identity) &&
       Number.isSafeInteger(c.port) && c.port >= 1 && c.port <= 65535);
 }
-function assertPrivate(file: string): void {
-  const st = fs.lstatSync(file);
+function assertPrivate(file: string, st = fs.lstatSync(file)): void {
   if (!st.isFile() || st.isSymbolicLink() || (st.mode & 0o077) !== 0 || st.size > MAX_BYTES ||
       (typeof process.getuid === 'function' && st.uid !== process.getuid())) {
     throw new Error('Unsafe rolling generation record');
@@ -61,8 +61,8 @@ function assertPrivate(file: string): void {
 export function readGenerationRecord(stateDir: string, hostname: string): GenerationRecord | null {
   try {
     const file = generationRecordPath(stateDir, hostname);
-    assertPrivate(file);
-    const parsed: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const opened=readStateFile(file,MAX_BYTES);assertPrivate(file,opened.stat);
+    const parsed: unknown = JSON.parse(opened.bytes.toString('utf8'));
     if (!validateRecord(parsed, hostname)) throw new Error('Malformed rolling generation record');
     return parsed;
   } catch (error) {
@@ -79,16 +79,16 @@ function atomicWrite(file: string, value: GenerationRecord): void {
     try { fs.writeFileSync(fd, payload); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
     try { assertPrivate(file); } catch (error) { if (!isGone(error)) throw error; }
     fs.renameSync(tmp, file);
-    try { const fd = fs.openSync(path.dirname(file), 'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } catch { /* Unsupported on some filesystems. */ }
+    try { const fd = fs.openSync(path.dirname(file), 'r', 0o600); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } catch { /* Unsupported on some filesystems. */ }
   // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
   } finally { try { fs.unlinkSync(tmp); } catch (error) { if (!isGone(error)) throw error; } }
 }
 /** Delete only if contents and inode are still the observed record. */
 function deleteUnchanged(file: string, expectedNonce: string): boolean {
   try {
-    const before = fs.lstatSync(file);
-    assertPrivate(file);
-    const value = JSON.parse(fs.readFileSync(file, 'utf8')) as GenerationRecord;
+    const {stat:before,bytes} = readStateFile(file,MAX_BYTES);
+    if((before.mode&0o077)!==0||(typeof process.getuid==='function'&&before.uid!==process.getuid()))throw new Error('Unsafe generation record');
+    const value = JSON.parse(bytes.toString('utf8')) as GenerationRecord;
     if (value.owner?.nonce !== expectedNonce) return false;
     const after = fs.lstatSync(file);
     if (before.ino !== after.ino || before.dev !== after.dev) return false;

@@ -70,3 +70,10 @@ test('private development watch directories validate before startup and stay out
     await assert.rejects(prepareConfiguration({ server: { watchIgnoredPaths } }));
   }
 });
+
+test('direct HTTP is explicitly configured and does not enter the public config',async()=>{
+ const prepared=await prepareConfiguration({server:{portless:false,port:3010}});
+ assert.equal(prepared.config.server.portless,false);
+ assert.equal(prepared.publicConfig.server.portless,undefined);
+ await assert.rejects(prepareConfiguration({server:{portless:'false'}}),/INVALID_PORTLESS_OPTION/);
+});

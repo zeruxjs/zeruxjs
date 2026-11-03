@@ -3,7 +3,7 @@ import { createServerLifecycleHooks } from '@zeruxjs/hooks/lifecycle'
 
 const zeruxConfig: ZeruxConfig = {
     "type": "fix",
-    server: { watchIgnoredPaths: [".workspace"] },
+    server: { portless: process.env.ENABLE_PORTLESS_PROXY === "true", watchIgnoredPaths: [".workspace"] },
     lifecycleHooks: createServerLifecycleHooks(),
     "connectorManager": "@zeruxjs/db",
     "worker": {

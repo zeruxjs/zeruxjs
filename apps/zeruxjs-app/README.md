@@ -36,7 +36,16 @@ build script resolves that ordering. Do not run the complete workspace test suit
    its zlook subscriptions exclude generated output/private state, coalesce bursts,
    retain prior assets on errors and dispose on Ctrl-C. Default dev port is **3010**.
    If occupied, choose a free port with `zerux dev -p <port>` and update
-   `WORKSPACE_ORIGIN`; never stop another app.
+   `WORKSPACE_ORIGIN`; never stop another app. The default profile binds direct
+   loopback HTTP and does not start or modify the shared portless proxy. Set
+   `ENABLE_PORTLESS_PROXY=true` only to opt into that separately managed proxy;
+   an unverifiable PID marker remains an operator recovery issue, never a reason
+   to kill an unknown process or remove its ownership evidence.
+
+Development uses Node's native TypeScript stripping. App classes use explicit
+fields rather than parameter properties. The CLI's project-scoped source loader
+maps missing local `.js`/`.mjs` imports to `.ts`/`.mts` sources; real JavaScript
+files take precedence. This is not a general TypeScript/JSX transpiler.
 
 The framework loads its configured environment files for dev/start. The initialization
 command deliberately uses `.env.local`; use the same settings for all commands.

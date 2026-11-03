@@ -1,3 +1,4 @@
+import {readLocalFileSync} from '../utils/file-content.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -17,13 +18,7 @@ const inspect = (file: string) => {
 
 /** Load optional runtime metadata without following symlinks or unbounded reads. */
 export function readRuntimeJson<T>(file: string, fallback: T): T {
-  if (!inspect(file)) return fallback;
-  const fd = fs.openSync(file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
-  try {
-    const value = fs.readFileSync(fd, 'utf8');
-    if (Buffer.byteLength(value) > MAX_BYTES) throw new Error('Zerux runtime state exceeds 4 MiB');
-    return JSON.parse(value) as T;
-  } finally { fs.closeSync(fd); }
+  try{return JSON.parse(readLocalFileSync(file,MAX_BYTES).toString('utf8')) as T;}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return fallback;throw error;}
 }
 
 /** Replace a complete runtime manifest in one rename; deny linked or huge files. */

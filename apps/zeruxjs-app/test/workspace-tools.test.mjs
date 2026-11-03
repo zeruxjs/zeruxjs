@@ -1,3 +1,4 @@
+import fileIO from '../../../scripts/file-io.cjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm, readFile, writeFile, mkdir, readdir, stat, symlink, unlink } from 'node:fs/promises';
@@ -20,13 +21,13 @@ test('operator configuration is validated, secret-free in receipts, private and 
     await assert.rejects(configureWorkspace({ ...input, argv: ['--origin', 'http://remote.invalid'] }), /origin/);
     await assert.rejects(configureWorkspace({ ...input, argv: ['--username', '../bad'] }), /identity/);
     const receipt = await configureWorkspace(input); assert.equal(receipt.status, 'written'); assert.doesNotMatch(JSON.stringify(receipt), /scrypt:|synthetic-operator-password/);
-    const file = join(root, '.env.local'), original = await readFile(file, 'utf8'), settings = parseEnv(original);
+    const file = join(root, '.env.local'), original = fileIO.readRegularFileSync(file,65536).toString('utf8'), settings = parseEnv(original);
     assert.equal((await stat(file)).mode & 0o077, 0); assert.doesNotMatch(original, /Only-a-synthetic-operator-password/);
     assert.equal(Buffer.from(settings.WORKSPACE_KEY, 'base64url').length, 32);
     const previous = process.env.SECURITY_PASSWORD_SALT;
     try { process.env.SECURITY_PASSWORD_SALT = settings.SECURITY_PASSWORD_SALT; assert.equal(verifyPassword(password, settings.WORKSPACE_PASSWORD_HASH), true); }
     finally { if (previous === undefined) delete process.env.SECURITY_PASSWORD_SALT; else process.env.SECURITY_PASSWORD_SALT = previous; }
-    await assert.rejects(configureWorkspace(input), error => error.code === 'EEXIST'); assert.equal(await readFile(file, 'utf8'), original);
+    await assert.rejects(configureWorkspace(input), error => error.code === 'EEXIST'); assert.equal(fileIO.readRegularFileSync(file,65536).toString('utf8'), original);
     await unlink(file); const destination = join(root, 'retained'); await writeFile(destination, 'retain'); await symlink(destination, file);
     await assert.rejects(configureWorkspace(input), error => error.code === 'EEXIST'); assert.equal(await readFile(destination, 'utf8'), 'retain');
     assert.deepEqual((await readdir(root)).filter(name => name.startsWith('.workspace-config-')), []);

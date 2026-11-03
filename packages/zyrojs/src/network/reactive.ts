@@ -67,7 +67,7 @@ export function createEventChannel(url: string, options: EventStreamOptions & { 
   const latest = signal<ServerEvent | undefined>(undefined);
   const error = signal<unknown>(undefined);
   let controller: AbortController | undefined;
-  let currentTask: Promise<void> | undefined;
+  let currentTask: {promise:Promise<void>} | undefined;
   let cursor = options.lastEventId;
   const reconnectMs = options.reconnectMs ?? 1000;
   const maxReconnects = options.maxReconnects ?? 0;
@@ -76,7 +76,7 @@ export function createEventChannel(url: string, options: EventStreamOptions & { 
   return {
     connected, latest, error,
     async start() {
-      if (currentTask) return currentTask;
+      if (currentTask) return currentTask.promise;
       controller = new AbortController();
       const active = controller;
       const external = options.signal;
@@ -107,8 +107,8 @@ export function createEventChannel(url: string, options: EventStreamOptions & { 
           }
         } finally { connected.value = false; external?.removeEventListener('abort', abort); if (controller === active) controller = undefined; }
       })();
-      currentTask = task;
-      try { await task; } finally { if (currentTask === task) currentTask = undefined; }
+      const slot={promise:task};currentTask=slot;
+      try { await slot.promise; } finally { if (currentTask === slot) currentTask = undefined; }
     },
     stop
   };

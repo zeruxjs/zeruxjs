@@ -26,17 +26,17 @@ export function filterProxyHeaders(
   if (options.preserveUpgrade) {
     forbidden.delete('upgrade');
   }
-  const result: http.OutgoingHttpHeaders = {};
+  const result = new Map<string, string | number | string[]>();
   for (const [name, value] of Object.entries(headers)) {
     const lower = name.toLowerCase();
     if (!lower.startsWith(':') && !forbidden.has(lower) && value !== undefined) {
-      Object.defineProperty(result, lower, {value, enumerable: true, configurable: true, writable: true});
+      if(!['__proto__','constructor','prototype'].includes(lower))result.set(lower,value);
     }
   }
   if (options.preserveUpgrade) {
-    result.connection = 'Upgrade';
+    result.set('connection','Upgrade');
   }
-  return result;
+  return Object.fromEntries(result);
 }
 
 /**

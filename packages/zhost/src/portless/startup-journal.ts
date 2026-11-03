@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Crash-recoverable journal for the four proxy startup metadata files.
  * Callers must hold the proxy operation lock throughout recovery/publication.
  */
@@ -13,19 +14,17 @@ const MAX_FILE = 64 * 1024;
 
 export function regularFile(file: string, limit = MAX_FILE): Buffer | null {
   try {
-    const stat = fs.lstatSync(file);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > limit)
-      throw new Error(`Unsafe proxy state file: ${file}`);
-    return fs.readFileSync(file);
+    return readStateFile(file,limit).bytes;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    if(error instanceof Error&&error.message.startsWith('Unsafe'))throw new Error(`Unsafe proxy state file: ${file}`,{cause:error});
     throw error;
   }
 }
 
 function syncDirectory(dir: string): void {
   // Not all platforms permit directory fsync. File fsync/rename still applies.
-  try { const fd = fs.openSync(dir, 'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } }
+  try { const fd = fs.openSync(dir, 'r', 0o600); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } }
   catch (error) { if (!['EINVAL', 'EISDIR', 'EBADF', 'EPERM', 'EACCES', 'ENOTSUP'].includes((error as NodeJS.ErrnoException).code ?? '')) throw error; }
 }
 

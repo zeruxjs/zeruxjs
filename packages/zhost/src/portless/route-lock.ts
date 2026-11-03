@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** A synchronous, process-identity-verified lock for route registry mutations.
  * Never steal a lock merely because a slow operation exceeded an age threshold.
  * Orphaned directories without a valid owner require manual inspection.
@@ -18,9 +19,7 @@ function attemptRecovery(dir: string): boolean {
   try {
     before = fs.lstatSync(dir);
     if (!before.isDirectory() || before.isSymbolicLink()) throw new Error('Unsafe route lock directory');
-    const ownerStat = fs.lstatSync(markerPath);
-    if (!ownerStat.isFile() || ownerStat.isSymbolicLink() || ownerStat.size > 4096) throw new Error('Unsafe route lock owner');
-    raw = fs.readFileSync(markerPath, 'utf8');
+    raw = readStateFile(markerPath,4096).bytes.toString('utf8');
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       // Owner creation could still be underway. Do not steal ownerless directories.
@@ -35,7 +34,7 @@ function attemptRecovery(dir: string): boolean {
   }
   try {
     const after = fs.lstatSync(dir);
-    if (before.ino !== after.ino || before.dev !== after.dev || fs.readFileSync(markerPath, 'utf8') !== raw) return false;
+    if (before.ino !== after.ino || before.dev !== after.dev || readStateFile(markerPath,4096).bytes.toString('utf8') !== raw) return false;
     fs.unlinkSync(markerPath);
     fs.rmdirSync(dir);
     return true;
@@ -67,7 +66,7 @@ export function acquireRouteLock(directory: string, options: RouteLockOptions = 
         try {
           const current = fs.lstatSync(lockDir);
           if (stat.ino !== current.ino || stat.dev !== current.dev ||
-              fs.readFileSync(markerPath, 'utf8') !== raw) return;
+              readStateFile(markerPath,4096).bytes.toString('utf8') !== raw) return;
           fs.unlinkSync(markerPath);
           fs.rmdirSync(lockDir);
         } catch (error) {

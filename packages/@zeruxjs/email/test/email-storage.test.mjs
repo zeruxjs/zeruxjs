@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,readFile,symlink} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';
-import {createEmailManager,saveEmailState,loadEmailState,createTemplateRegistry,createRecipientFilter,resolveAttachments} from '../dist/index.js';
+import { saveEmailState, loadEmailState, createTemplateRegistry, createRecipientFilter, resolveAttachments } from '../dist/index.js';
 test('private atomic saved templates and filters; no SMTP credentials saved',async()=>{
   const root=await mkdtemp(join(tmpdir(),'email-state-')),path=join(root,'email-state.json');
   const a=createTemplateRegistry([{id:'welcome',subject:'Hello',html:'<b>{{name}}</b>'}]);const b=createRecipientFilter([{action:'block',pattern:'*@blocked.com'}],['oops@example.com']);

@@ -26,6 +26,8 @@ export interface ZeruxStructureConfig {
 export interface ZeruxServerConfig {
     port?: number;
     devPort?: number;
+    /** Set false for direct loopback HTTP without managing the shared portless proxy. */
+    portless?: boolean;
     allowedDomains?: string | string[];
     allowedDevDomain?: string;
     /** Up to 64 project-relative directories excluded from development source scans. */

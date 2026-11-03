@@ -10,7 +10,7 @@ test('history audit detects missing and stale current state without fabricating 
  const db=Object.fromEntries(['createTable','createIndex','insert','select','update'].map(op=>[op,args=>c.execute({op,...args},ctx)]));
  try{
   const history=createDatabaseEmailDeliveryHistory(db);const base=createDatabaseEmailDeliveryStore(db);
-  const store=createJournaledEmailDeliveryStore(base,history);const t=Date.parse('2026-10-13T12:00:00Z');
+  createJournaledEmailDeliveryStore(base,history);const t=Date.parse('2026-10-13T12:00:00Z');
   for(const id of ['mail-a','mail-b','mail-c'])await base.create({id,campaignId:'camp-1',version:1,purpose:'marketing',recipient:`${id}@example.com`,state:'pending',lease:null,updatedAt:t});
   await history.record({messageId:'mail-a',campaignId:'camp-1',version:1,from:null,to:'pending',occurredAt:t});
   await history.record({messageId:'mail-b',campaignId:'camp-1',version:1,from:null,to:'sent',occurredAt:t});

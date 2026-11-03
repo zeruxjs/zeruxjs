@@ -53,7 +53,7 @@ test('local forms, SQLite reload, private/public search, feeds, object storage a
     assert.equal((await f.call('/workspace/save', { method: 'POST', body: { csrf, id: '', title: 'Private secret', body: 'Never publish me', revision: '0', published: 'false' } })).status, 303);
     assert.equal((await f.call('/workspace/save', { method: 'POST', body: { csrf, id: '', title: 'Café notebook', body: '<script>neverExecute()</script>', revision: '0', published: 'true' } })).status, 303);
     const publicPage = await (await f.call('/workspace/search?q=Café')).text();
-    assert.match(publicPage, /Café notebook/); assert.doesNotMatch(publicPage, /Private secret/); assert.match(publicPage, /&lt;script&gt;/); assert.doesNotMatch(publicPage, /<script>/);
+    assert.match(publicPage, /Café notebook/); assert.doesNotMatch(publicPage, /Private secret/); assert.match(publicPage, /&lt;script&gt;/); assert.doesNotMatch(publicPage, /<script\s*>\s*neverExecute\(\)\s*<\/script\s*>/i);
     await f.reopen();
     const notes = await (await f.call('/workspace/notes')).text(); assert.match(notes, /Private secret/); assert.match(notes, /Café notebook/);
     const id = notes.match(/name="id"[^>]*value="([a-f0-9-]{36})"/)[1]; csrf = await f.csrf('/workspace/notes');

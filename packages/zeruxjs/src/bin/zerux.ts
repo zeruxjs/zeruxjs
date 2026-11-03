@@ -15,7 +15,7 @@ const addCommands = () => {
         "dev",
         async (args) => {
             const serviceName = "zerux";
-            registerLoader(serviceName);
+            registerLoader(serviceName, { sourceRoot: process.cwd() });
             await server('dev', { ...args, serviceName });
         },
         {
@@ -44,7 +44,7 @@ const addCommands = () => {
         "zerux",
         "build",
         async () => {
-            registerLoader("zerux");
+            registerLoader("zerux", { sourceRoot: process.cwd() });
             await buildProject();
         },
         {

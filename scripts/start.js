@@ -1,3 +1,4 @@
+const {resetLogFileSync} = require('./file-io.cjs');
 const { getSafeName, readState, writeState } = require('./helper');
 const path = require('path');
 const fs = require('fs');
@@ -69,11 +70,9 @@ folders.forEach(({ dir, pkgName }) => {
     const errPath = path.join(dir, `${safeName}-start-err.log`);
 
     // Reset logs
-    if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
-    if (fs.existsSync(errPath)) fs.unlinkSync(errPath);
     
-    const out = fs.openSync(outPath, 'a');
-    const err = fs.openSync(errPath, 'a');
+    const out = resetLogFileSync(outPath);
+    const err = resetLogFileSync(errPath);
     
     const child = spawn('npm', ['run', 'start'], {
         cwd: dir,

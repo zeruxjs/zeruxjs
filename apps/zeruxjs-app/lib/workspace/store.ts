@@ -4,7 +4,9 @@ import type { SqliteConnector } from '@zeruxjs/db-sqlite';
 
 export interface Note { id: string; title: string; body: string; revision: number; published: boolean; updatedAt: number }
 export class WorkspaceError extends Error {
-  constructor(readonly status: number, readonly code: string) { super(code); }
+  readonly status: number;
+  readonly code: string;
+  constructor(status: number, code: string) { super(code); this.status = status; this.code = code; }
 }
 export function createNotebook(connection: SqliteConnector, tenant: string, migrate: boolean) {
   const db = connection.getNativeConnection() as DatabaseSync;

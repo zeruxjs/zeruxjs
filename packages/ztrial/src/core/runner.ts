@@ -31,7 +31,10 @@ export async function executeTests(context: TestContext, options: RunOptions = {
   const tests = [...context.cases]; const hasOnly = tests.some(test => test.only && !test.skip);
   if(hasOnly && options.forbidOnly)throw new Error('Focused tests are forbidden by configuration');
   const ancestors = (test: TestCase): Suite[] => [...context.suites.get(test.suiteId)!.ancestors, test.suiteId].map(id => context.suites.get(id)!);
-  const eligible = (test: TestCase) => !test.skip && (!hasOnly || test.only) && (options.match === undefined || (typeof options.match === 'string' ? test.name.includes(options.match) : new RegExp(options.match.source, options.match.flags.replace('g','').replace('y','')).test(test.name)));
+  const match=options.match;
+  if(match!==undefined&&typeof match!=='string'&&!(match instanceof RegExp))throw new TypeError('Test match must be literal text or an explicit RegExp');
+  const pattern=match instanceof RegExp?new RegExp(match,match.flags.replace(/[gy]/g,'')):undefined;
+  const eligible = (test: TestCase) => !test.skip && (!hasOnly || test.only) && (match === undefined || (typeof match === 'string' ? test.name.includes(match) : pattern!.test(test.name)));
   const selected = tests.filter(eligible);
   const suiteCount = new Map<number, number>(); for (const t of selected) for (const suite of ancestors(t)) suiteCount.set(suite.id, (suiteCount.get(suite.id) || 0) + 1);
   const started = new Set<number>(); const closed = new Set<number>(); const finished = new Map<number, number>(); const suiteErrors = new Map<number, Error>();

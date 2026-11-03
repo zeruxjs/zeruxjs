@@ -1,3 +1,5 @@
+import fileIO from './file-io.cjs';
+const {readRegularFile}=fileIO;
 import http from "node:http";
 import fs from "node:fs/promises";
 import { watch } from "node:fs";
@@ -128,7 +130,7 @@ async function handle(req, res) {
       }
       filename = path.join(filename, "index.html");
     }
-    let data = await fs.readFile(filename);
+    let data = await readRegularFile(filename);
     if (development && path.extname(filename) === ".html")
       data = Buffer.from(
         data

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { object, string, number, array, HttpValidationError, parseJsonRequest, parseQuery, readJsonBody, validatedJsonHandler } from '../dist/index.js';
+import { object, string, array, HttpValidationError, parseJsonRequest, parseQuery, readJsonBody, validatedJsonHandler } from '../dist/index.js';
 
 const make = (body, headers = {'content-type':'application/json'}) => new Request('https://api.test/',{method:'POST',headers,body});
 test('validated JSON request returns parsed typed body', async () => {

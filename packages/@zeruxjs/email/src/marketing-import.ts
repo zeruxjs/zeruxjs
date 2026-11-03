@@ -16,23 +16,23 @@ export async function importMarketingRecipients(
   service:CampaignAppendPort,code:string,source:AsyncIterable<string|MarketingRecipient>|Iterable<string|MarketingRecipient>,
   options:CampaignImportOptions={}
 ){
-  if(!service||typeof service.appendRecipients!=='function'||typeof service.enqueue!=='function'||!source||
-    !(Symbol.asyncIterator in Object(source)||Symbol.iterator in Object(source)))throw new TypeError('Invalid campaign import');
+  if((((!service||(typeof service.appendRecipients!=='function'))||(typeof service.enqueue!=='function'))||!source)||
+    !((Symbol.asyncIterator in Object(source))||(Symbol.iterator in Object(source))))throw new TypeError('Invalid campaign import');
   const size=options.batchSize??200,max=options.maxRecipients??100_000;
-  if(!Number.isSafeInteger(size)||size<1||size>1000||!Number.isSafeInteger(max)||max<1||max>1_000_000||
-    (options.enqueueAfter!==undefined&&typeof options.enqueueAfter!=='boolean'))throw new RangeError('Invalid campaign import bounds');
+  if((((((!Number.isSafeInteger(size)||(size<1))||(size>1000))||!Number.isSafeInteger(max))||(max<1))||(max>1_000_000))||
+    ((options.enqueueAfter!==undefined)&&(typeof options.enqueueAfter!=='boolean')))throw new RangeError('Invalid campaign import bounds');
   let processed=0,added=0,existing=0,queued=0;
   const batch:(string|MarketingRecipient)[]=[];
   const check=()=>{if(options.signal?.aborted)throw options.signal.reason??new Error('Campaign import aborted');};
   const flush=async()=>{
     if(!batch.length)return;
     check();const result=await service.appendRecipients(code,batch,false);
-    if(!Number.isSafeInteger(result.added)||!Number.isSafeInteger(result.existing)||result.added+result.existing!==batch.length)throw new Error('Invalid import checkpoint');
+    if((!Number.isSafeInteger(result.added)||!Number.isSafeInteger(result.existing))||((result.added+result.existing)!==batch.length))throw new Error('Invalid import checkpoint');
     processed+=batch.length;added+=result.added;existing+=result.existing;batch.length=0;
     await options.onProgress?.({processed,added,existing});
   };
   for await(const entry of source){
-    check();if(processed+batch.length>=max)throw new RangeError('Import recipient limit exceeded');
+    check();if((processed+batch.length)>=max)throw new RangeError('Import recipient limit exceeded');
     batch.push(entry);if(batch.length===size)await flush();
   }
   await flush();
@@ -50,20 +50,20 @@ export async function* parseMarketingRecipientCSV(
   options:{maxRows?:number;maxBytes?:number}={}
 ):AsyncGenerator<MarketingRecipient>{
   const maxRows=options.maxRows??100_000,maxBytes=options.maxBytes??50_000_000;
-  if(!Number.isSafeInteger(maxRows)||maxRows<1||maxRows>1_000_000||
-    !Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>500_000_000)throw new RangeError('Invalid CSV limits');
+  if(((((!Number.isSafeInteger(maxRows)||(maxRows<1))||(maxRows>1_000_000))||
+    !Number.isSafeInteger(maxBytes))||(maxBytes<1))||(maxBytes>500_000_000))throw new RangeError('Invalid CSV limits');
   const decoder=new StringDecoder('utf8');
-  const sourceChunks:AsyncIterable<string|Uint8Array>=typeof source==='string'?(async function*(){yield source;})():source;
-  if(!sourceChunks||typeof sourceChunks[Symbol.asyncIterator]!=='function')throw new TypeError('CSV input must be text or an async stream');
+  const sourceChunks:AsyncIterable<string|Uint8Array>=(typeof source==='string')?(async function*(){yield source;})():source;
+  if(!sourceChunks||(typeof sourceChunks[Symbol.asyncIterator]!=='function'))throw new TypeError('CSV input must be text or an async stream');
   let headers:string[]|null=null,rows=0,bytes=0,field='',cells:string[]=[],quoted=false,afterQuote=false,started=false,firstChar=true,skipLF=false,recordLength=0;
   function finishField(){if(field.length>16_384)throw new RangeError('CSV field exceeds limit');cells.push(field);field='';if(cells.length>64)throw new RangeError('Too many CSV columns');afterQuote=false;}
   const parseRecord=():MarketingRecipient|null=>{
     finishField();const values=cells;cells=[];recordLength=0;
-    if(values.length===1&&!values[0].trim())return null;
+    if((values.length===1)&&!values[0].trim())return null;
     if(!headers){
       headers=values.map(v=>v.trim().replace(/^\uFEFF/,''));
-      if(headers[0]!=='email'||headers.some((v,i)=>headers!.indexOf(v)!==i)||
-        headers.some(v=>v!=='email'&&v!=='name'&&v!=='data'&&!/^data\.[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(v))||
+      if((((headers[0]!=='email')||headers.some((v,i)=>headers!.indexOf(v)!==i))||
+        headers.some(v=>(((v!=='email')&&(v!=='name'))&&(v!=='data'))&&!/^data\.[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(v)))||
         headers.some(v=>v.split('.').some(x=>['constructor','prototype','__proto__'].includes(x))))throw new TypeError('CSV headers must start with email and use safe names');
       return null;
     }
@@ -73,9 +73,9 @@ export async function* parseMarketingRecipientCSV(
     for(let i=1;i<headers.length;i++){
       const key=headers[i],value=values[i];
       if(key==='name')record.name=value;
-      else if(key==='data'&&value.trim()){
+      else if((key==='data')&&value.trim()){
         let parsed:unknown;try{parsed=JSON.parse(value);}catch{throw new TypeError('Invalid CSV JSON data');}
-        if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new TypeError('CSV data must be a JSON object');
+        if((!parsed||(typeof parsed!=='object'))||Array.isArray(parsed))throw new TypeError('CSV data must be a JSON object');
         for(const [name,v] of Object.entries(parsed)){
           if(['constructor','prototype','__proto__'].includes(name))throw new TypeError('Unsafe CSV JSON key');
           data[name]=v;
@@ -93,12 +93,12 @@ export async function* parseMarketingRecipientCSV(
     if(quoted){if(character==='"'){quoted=false;afterQuote=true;}else field+=character;return null;}
     if(afterQuote){
       if(character==='"'){field+='"';quoted=true;afterQuote=false;return null;}
-      if(character!==','&&character!=='\n'&&character!=='\r')throw new TypeError('Malformed CSV quote');
+      if(((character!==',')&&(character!=='\n'))&&(character!=='\r'))throw new TypeError('Malformed CSV quote');
     }else if(character==='"'){
       if(field.length)throw new TypeError('Unexpected CSV quote');quoted=true;started=true;return null;
     }
     if(character===','){finishField();started=true;return null;}
-    if(character==='\n'||character==='\r'){
+    if((character==='\n')||(character==='\r')){
       if(character==='\r')skipLF=true;
       started=false;return parseRecord();
     }
@@ -106,13 +106,13 @@ export async function* parseMarketingRecipientCSV(
     started=true;return null;
   };
   for await(const chunk of sourceChunks){
-    bytes+=typeof chunk==='string'?Buffer.byteLength(chunk):chunk.byteLength;
+    bytes+=(typeof chunk==='string')?Buffer.byteLength(chunk):chunk.byteLength;
     if(bytes>maxBytes)throw new RangeError('CSV input exceeds limit');
-    const value=typeof chunk==='string'?chunk:decoder.write(Buffer.from(chunk));
+    const value=(typeof chunk==='string')?chunk:decoder.write(Buffer.from(chunk));
     for(const char of value){const record=consume(char);if(record)yield record;}
   }
   for(const char of decoder.end()){const record=consume(char);if(record)yield record;}
   if(quoted)throw new TypeError('Unterminated CSV quoted field');
-  if(started||cells.length||field.length){const record=parseRecord();if(record)yield record;}
+  if((started||cells.length)||field.length){const record=parseRecord();if(record)yield record;}
   if(!headers)throw new TypeError('Missing CSV header');
 }

@@ -2,7 +2,7 @@
 import path from "node:path";
 import {readProjectFile} from "./outputs.js";
 import { outputPath } from "./node-build.js";
-import fs from "node:fs";
+import "node:fs";
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { buildZuix, watchZuix, buildZuixStylesheet } from "./node.js";

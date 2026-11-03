@@ -5,7 +5,7 @@ import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as readline from "node:readline";
-import { execSync, spawn } from "node:child_process";
+import { execSync } from "node:child_process";
 import { PORTLESS_HEADER } from "./proxy.js";
 import { readCommittedProxyState, PendingStartupTransactionError } from "./committed-state.js";
 import { recoverInterruptedStartup } from "./startup-state.js";
@@ -335,8 +335,10 @@ export function isProxyRunning(port: number, tls = false): Promise<boolean> {
   let secure: https.RequestOptions = {};
   if (tls) {
     try {
+      // Public CA material configures local verification; it is not request payload.
+      // The network destination stays fixed to loopback, independent of file data.
       const stateDir = resolveStateDir(port), state = readCommittedProxyState(stateDir);
-      const fd = fs.openSync(path.join(stateDir, 'ca.pem'), fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK);
+      const fd = fs.openSync(path.join(stateDir, 'ca.pem'), fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK, 0o600);
       try {
         const info = fs.fstatSync(fd);
         if (!info.isFile() || info.size > 65536) return Promise.resolve(false);

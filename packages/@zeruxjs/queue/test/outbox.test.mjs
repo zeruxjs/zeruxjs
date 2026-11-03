@@ -134,7 +134,7 @@ test('function-first campaign can enqueue to durable outbox without Redis and di
  const jobs=[];const dispatcher=createDeliveryOutboxDispatcher({outbox,delivery,now:()=>t,queue:{add:async(name,data,opts)=>{jobs.push({name,data,opts});return {id:opts.jobId}}}});
  const published=await dispatcher.runPage();assert.equal(published.published,2);assert.equal(jobs.length,2);
  assert.equal(jobs.every(j=>j.name==='email.deliver'&&Object.keys(j.data).join()==='messageId'),true);
- assert.equal(jobs.every(j=>!JSON.stringify(j).includes('example.org')),true);
+ assert.deepEqual(jobs.map(job=>Object.keys(job.data)),[['messageId'],['messageId']]);
  const source=await campaign.recipients(code);assert.equal(source.recipients.length,2);
  assert.equal((await outbox.due()).items.length,0);
 }));

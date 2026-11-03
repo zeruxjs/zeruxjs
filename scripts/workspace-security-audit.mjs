@@ -1,3 +1,5 @@
+import fileIO from './file-io.cjs';
+const {readRegularFileSync}=fileIO;
 import fs from 'node:fs';
 import path from 'node:path';
 import { discoverWorkspaces } from './workspace-graph.mjs';
@@ -39,7 +41,7 @@ export function inspectPackageReleaseSecurity(root) {
           for (const child of fs.readdirSync(current)) pending.push(path.join(current, child));
         } else if (stat.isFile() && /\.(?:[cm]?js|tsx?|jsx|json|pem|key)$/i.test(current)) {
           if (stat.size > 4 * 1024 * 1024) { issues.push({ code: 'UNSCANNED_SOURCE', package: name }); continue; }
-          if (secretPattern.test(fs.readFileSync(current, 'utf8'))) issues.push({ code: 'EMBEDDED_CREDENTIAL', package: name, file: path.relative(dir, current) });
+          if (secretPattern.test(readRegularFileSync(current).toString('utf8'))) issues.push({ code: 'EMBEDDED_CREDENTIAL', package: name, file: path.relative(dir, current) });
         }
       }
     }
