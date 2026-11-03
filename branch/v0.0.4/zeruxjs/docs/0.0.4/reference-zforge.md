@@ -239,6 +239,9 @@ embedding now requires exact canonical origins in the registration's
 validates the list before writing registry state. Existing allowedDomains routing
 rules and untrusted Origin/Referer/Host headers never grant framing. Configure the
 parent application's frame-src separately; both sides must permit the embed.
+Theme synchronization additionally checks the actual parent window and exact
+origin. Messages target same-origin or explicitly approved development ancestors;
+there is no wildcard postMessage target or trust derived from a request header.
 
 `createDevtoolsDocumentPolicy({mode, frameAncestors})` is a public, side-effect-free
 per-document helper, defaulting to production. Each call returns fresh nonce and
