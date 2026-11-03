@@ -1849,6 +1849,24 @@ Trusted plugin observers may borrow an explicitly configured lifecycle bus with
 or public manifests. Remove every registration token through `api.onDispose`;
 plugins do not own bus replacement or disposal.
 
+The CLI `dev` and `build` loaders opt into project-scoped source resolution:
+missing local `.js`, `.mjs` and `.cjs` imports can resolve to `.ts`, `.mts` and
+`.cts` siblings. Existing JavaScript always wins; package dependencies, paths
+outside the selected root and production `start` do not use this fallback.
+Programmatic users can opt in through `registerLoader('zerux', {sourceRoot})`
+from `zeruxjs/loader`. Native Node TypeScript stripping still applies, so this
+is not support for JSX, enums or parameter-property compilation.
+
+Set `server.portless: false` for direct loopback HTTP without starting or changing
+the shared portless proxy or its aliases. The default remains true for existing
+consumers. Proxy state recovery and certificate trust remain explicit operator
+operations; an unverifiable PID marker is never silently discarded.
+
+Legacy theme bootstrap code is static; cookie-name/default settings travel as
+inert UTF-8 base64 data on its script element. Runtime metadata is read through a
+bounded descriptor. Explicit host environment files retain symlink-based secret
+rotation support and are limited to 1 MiB each; their contents are never logs.
+
 
 ## Implementation sources
 

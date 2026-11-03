@@ -189,7 +189,10 @@ console.log(result.engine, result.errors, result.warnings); // engine: 'stylelin
 
 `configFile` is also accepted by `lintCss`. Use `cssConfigFile` to select a separate Stylelint config when calling `lintAll`. Existing Stylelint configuration formats remain supported; no Biome migration is required.
 
-Source discovery skips symlinks and build directories and caps the file count (`maxFiles`, default 10,000). The runner supplies each source as `code` plus `codeFilename`, so input filenames are not expanded as glob expressions. Each stylesheet is limited to 5 MiB. `fix: true` writes Stylelint's fixes; read-only checks leave source files unchanged. Syntax errors and configuration failures do not report a passing check.
+Source discovery skips symlinks and build directories and caps the file count (`maxFiles`, default 10,000). The runner supplies each source as `code` plus `codeFilename`, so input filenames are not expanded as glob expressions. Each stylesheet is limited to 5 MiB. `fix: true` writes Stylelint's fixes; read-only checks leave source files unchanged.
+Reads inspect one opened regular file. Fixes reject a replaced symlink and recheck
+the expected content on the same descriptor before writing; this is not a
+cross-process source-editing lock. Syntax errors and configuration failures do not report a passing check.
 
 ### Dependency advisory
 

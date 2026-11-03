@@ -564,6 +564,12 @@ SMTP acceptance measures acceptance by the configured outbound transport, not de
 
 Qualification includes signed HMAC fixture tamper/stale-window checks (not a vendor protocol claim), conflicting/duplicate feedback, late/zero-denominator cohorts, authorized report access, source failure, Reports DOM-emulated tables, and a disposable SQLite two-connection/reopen fixture with cleanup. Live SMTP/provider webhook, production DB engines, DNS checks, browsers and assistive technologies remain separate prerequisites; no live-provider acceptance is claimed.
 
+Inbound markup heuristics scan at most 1 MiB of UTF-16 text, bound individual tag
+analysis to 8 KiB, and report `body_truncated` when those limits are reached. They
+compare apparent link text with literal destinations without fetching URLs or
+executing markup. These lexical warnings are advisory, not an HTML sanitizer,
+complete browser parser, authentication result or malware certification.
+
 
 ## Implementation sources
 
