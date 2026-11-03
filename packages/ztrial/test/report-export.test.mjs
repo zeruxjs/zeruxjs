@@ -76,7 +76,7 @@ test('custom adapters are scoped and optional dependencies fail without mutating
 
 test('default optional loaders report actual absent modules without auto-installing',async t=>{
  for(const [name,adapter] of [['pdfkit',createPdfExporter({fontFile:'/synthetic/font.ttf'})],['exceljs',createXlsxExporter({fontFamily:'Test'})],['sharp',createPngExporter({fontFile:'/synthetic/font.ttf',fontFamily:'Test'})]]){
-  try{import.meta.resolve(name);t.diagnostic(name+' installed; absence covered through explicit failing loader');}
+  try{const resolved=import.meta.resolve(name);assert.equal(typeof resolved,'string');t.diagnostic(name+' installed; absence covered through explicit failing loader');}
   catch{await assert.rejects(createReportExporters([adapter]).render(summary([row('safe')]),adapter.format),error=>error.code==='DEPENDENCY_UNAVAILABLE'&&error.dependency===name);}
  }
 });

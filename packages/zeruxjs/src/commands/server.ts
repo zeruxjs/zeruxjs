@@ -234,6 +234,7 @@ export const server = async (
             func: appHandler
         },
         dev: mode === "dev" ? {
+            watchIgnoredPaths: [`.${serviceName}`, ...(config.server?.watchIgnoredPaths ?? [])],
             port: devPort,
             dataFilePath: devDataPath,
             logFilePath: logger.getFilePath(),

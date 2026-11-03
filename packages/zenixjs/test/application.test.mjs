@@ -265,7 +265,7 @@ test('login, denied editor, private session-bound previews, stored XSS and publi
     assert.equal(response.status, 200);
     assert.match(response.headers.get('x-robots-tag'), /noindex/);
     assert.match(response.headers.get('cache-control'), /no-store/);
-    assert.doesNotMatch(await response.text(), /<script>/);
+    assert.doesNotMatch(await response.text(), /<script>/i);
     assert.equal(
       (await f.call(previewPath, { cookie: 'sid=other' })).status,
       403,
@@ -278,7 +278,7 @@ test('login, denied editor, private session-bound previews, stored XSS and publi
     const page = await f.call('/page', { cookie: '' });
     assert.equal(page.status, 200);
     const html = await page.text();
-    assert.match(html, /&lt;script&gt;/);
+    assert.match(html, /&lt;script&gt;/i);
     assert.match(html, /Draft only/);
     assert.doesNotMatch(html, /csrf-fixture|sid=|host-secret/);
     assert.match(page.headers.get('content-security-policy'), /default-src/);

@@ -1,4 +1,4 @@
-import { commitOutputs, attachManifest } from "./outputs.js";
+import { commitOutputs, attachManifest, readProjectFile } from "./outputs.js";
 import { compileStylesheet } from "./stylesheet.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -120,7 +120,7 @@ export function createProjectScanner(root: string, config: ZuixConfig = {}) {
           const classes =
             old && old.size === stat.size && old.mtimeMs === stat.mtimeMs
               ? old.classes
-              : extractClasses(fs.readFileSync(abs, "utf8"), { limits: config.limits });
+              : extractClasses(readProjectFile(abs, limits.maxFileBytes), { limits: config.limits });
           files.set(rel, classes);
           nextCache.set(rel, {
             size: stat.size,
@@ -207,9 +207,8 @@ export function buildFromFiles(
     const manifestFile=config.buildManifest?outputPath(root,path.join('.zuix',createHash('sha256').update(path.relative(root,directory)).digest('hex').slice(0,24),'manifest.json')):legacyManifest;
     const previousFile=fs.existsSync(manifestFile)?manifestFile:legacyManifest;
     if (fs.existsSync(previousFile)) {
-      if(fs.statSync(previousFile).size>resolveLimits(config.limits).maxOutputBytes)throw new Error('zuix: previous manifest too large');
       const previous = JSON.parse(
-        fs.readFileSync(previousFile, "utf8"),
+        readProjectFile(previousFile, resolveLimits(config.limits).maxOutputBytes),
       ) as Record<string, string>;
       for (const [source, filename] of Object.entries(previous)) {
         if (
@@ -240,9 +239,8 @@ export function buildFromFiles(
 function collectOldMaps(root:string,plan:Map<string,string>,stale:string[]):void {
  for(const file of [...plan.keys(),...stale]){
   if(!file.endsWith('.css')||!fs.existsSync(file))continue;
-  const stat=fs.lstatSync(file);if(!stat.isFile()||stat.size>64*1024*1024)throw new Error('zuix: invalid old stylesheet');
   const marker=`/*# sourceMappingURL=${encodeURIComponent(path.basename(file+'.map'))} */`;
-  if(!fs.readFileSync(file,'utf8').trimEnd().endsWith(marker))continue;
+  if(!readProjectFile(file,64*1024*1024).trimEnd().endsWith(marker))continue;
   const map=outputPath(root,file+'.map');if(!plan.has(map)&&fs.existsSync(map))stale.push(map);
  }
 }
@@ -270,13 +268,10 @@ export function buildZuixStylesheet(
 export function buildStylesheetFromFiles(absolute:string,input:string,config:ZuixConfig,files:Map<string,string[]>):GenerateResult {
   const entry = outputPath(absolute, input),
     destination = outputPath(absolute, config.output ?? "zuix.css");
-  const stat = fs.statSync(entry);
-  if (!stat.isFile() || stat.size > resolveLimits(config.limits).maxFileBytes)
-    throw new Error("zuix: invalid CSS entry size");
   if (entry === destination)
     throw new Error("zuix: CSS input and output must differ");
   const result = compileStylesheet(
-    fs.readFileSync(entry, "utf8"),
+    readProjectFile(entry, resolveLimits(config.limits).maxFileBytes),
     [...new Set([...files.values()].flat())],
     config,
   );

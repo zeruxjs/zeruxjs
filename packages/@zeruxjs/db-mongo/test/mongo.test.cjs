@@ -20,7 +20,7 @@ test('Mongo connector inserts and rejects selector injection',async()=>{
  assert.equal(calls.filter(x=>x[0]==='insertOne').length,1);
 });
 test('Mongo protects destructive writes and validates fields',async()=>{
- const {db,calls}=mockDatabase(), connector=await mongo.createConnector({db},context.connection);
+ const {db}=mockDatabase(), connector=await mongo.createConnector({db},context.connection);
  await assert.rejects(connector.execute({op:'delete',table:'users'},context), /requires a where/);
  await assert.rejects(connector.execute({op:'update',table:'users',values:{name:'x'}},context), /requires a where/);
  await assert.rejects(connector.execute({op:'delete',table:'$users',where:{field:'a',operator:'eq',value:'b'}},context), /Unsafe MongoDB field/);

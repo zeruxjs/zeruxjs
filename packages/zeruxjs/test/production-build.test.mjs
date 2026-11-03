@@ -129,3 +129,15 @@ test('nested symlink output parents are rejected in build and production modes',
 test('source roots cannot escape through a symlinked parent',async()=>{
  const f=await fixture(),other=await fixture();try{await fs.symlink(other.rootDir,path.join(f.rootDir,'linked'),'dir');await assert.rejects(buildProjectSources({rootDir:f.rootDir,config:{structure:{app:'linked/app'}},transform:source=>source}),/Unsafe build source/);}finally{await f.close();await other.close();}
 });
+
+test('browser bundles may use local exports data while Node/global exports remain forbidden', async () => {
+  const { classifyModules } = await import('../dist/compiler/module-boundaries.js');
+  const ts = await import('typescript');
+  const fixture = source => [{ relative: 'public/client.js', source, publicPath: 'client.js' }];
+  const wrapped = 'const wrap=(factory,state)=>()=>{state ||= {exports:{}}; factory(state.exports,state); return state.exports}; const value=wrap((target)=>{target.answer=42}); value();';
+  assert.ok(classifyModules(ts, fixture(wrapped)).clientModules.has('public/client.js'));
+  assert.ok(classifyModules(ts, fixture('const wrap=(fn,s)=>()=>{return s||fn((s={exports:{}}).exports,s),s.exports};')).clientModules.has('public/client.js'));
+  for (const source of ['exports.secret=1;', 'module.exports={};', 'require("node:fs");', 'globalThis.exports;', 'window.exports;', 'self.exports;', 'globalThis["exports"];', 'missing.exports;', 'const data={exports:process.env.SECRET};']) {
+    assert.throws(() => classifyModules(ts, fixture(source)), error => error.code === 'CLIENT_USES_SERVER_GLOBAL', source);
+  }
+});

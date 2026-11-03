@@ -22,14 +22,21 @@ export function serve({ directory, config, files, render, notFound }) {
     )
       throw Error('Invalid asset path');
     let location = directory;
-    for (const part of file.split('/')) {
+    for (const part of file.split('/').slice(0, -1)) {
       location = path.join(location, part);
       if (fs.lstatSync(location).isSymbolicLink())
         throw Error('Symlink asset rejected');
     }
-    const info = fs.statSync(location);
-    if (!info.isFile() || info.size > 2097152) throw Error('Asset limit');
-    return fs.readFileSync(location);
+    location = path.join(location, file.split('/').at(-1));
+    const fd = fs.openSync(location, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK);
+    try {
+      const info = fs.fstatSync(fd);
+      if (!info.isFile() || info.size > 2097152) throw Error('Asset limit');
+      const buffer = Buffer.alloc(info.size + 1), size = fs.readSync(fd, buffer, 0, buffer.length, 0);
+      if (size > info.size) throw Error('Asset changed during read');
+      return buffer.subarray(0, size);
+    } finally {fs.closeSync(fd);}
+
   }
   const server = createServer(async (req, res) => {
     for (const [key, value] of Object.entries(policy.createResponse().headers))

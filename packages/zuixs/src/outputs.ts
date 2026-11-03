@@ -6,6 +6,19 @@ import { createZuix } from './compiler.js';
 import type { ZuixConfig, ZuixBuildManifest } from './types.js';
 const require = createRequire(import.meta.url);
 
+/** Read a bounded regular inode rather than checking and reopening a pathname. */
+export function readProjectFile(file:string,maximum:number):string {
+ const fd=fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK);
+ try {
+  const stat=fs.fstatSync(fd);
+  if(!stat.isFile()||stat.size>maximum)throw new Error('zuix: unsafe or oversized file');
+  const buffer=Buffer.alloc(stat.size+1);let size=0;
+  while(size<buffer.length){const count=fs.readSync(fd,buffer,size,buffer.length-size,null);if(!count)break;size+=count;}
+  if(size>stat.size)throw new Error('zuix: file changed during read');
+  return buffer.subarray(0,size).toString('utf8');
+ } finally {fs.closeSync(fd);}
+}
+
 /** Prepare every changed file before replacing any output. Each rename is atomic;
  * ordinary failures roll back replaced files. This is not a crash-atomic multi-file deployment.
  */
@@ -17,7 +30,7 @@ export function commitOutputs(files: Map<string,string>, maxBytes:number, deleti
   for(const [file,text] of files){
    bytes+=Buffer.byteLength(text);if(bytes>maxBytes)throw new Error('zuix: maxOutputBytes exceeded');
    let before:string|null=null;
-   try{const stat=fs.lstatSync(file);if(!stat.isFile()||stat.isSymbolicLink()||stat.size>maxBytes)throw new Error('zuix: unsafe existing output');before=fs.readFileSync(file,'utf8');}
+   try{before=readProjectFile(file,maxBytes);}
    catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
    if(before===text)continue;
    fs.mkdirSync(path.dirname(file),{recursive:true});
@@ -28,8 +41,8 @@ export function commitOutputs(files: Map<string,string>, maxBytes:number, deleti
   }
   for(const file of new Set(deletions)){
    if(files.has(file))continue;
-   const stat=fs.lstatSync(file);if(!stat.isFile()||stat.isSymbolicLink()||stat.size>maxBytes)throw new Error('zuix: unsafe stale output');
-   prepared.push({file,temp:path.join(path.dirname(file),`.zuix-${randomUUID()}.tmp`),before:fs.readFileSync(file,'utf8'),deleting:true});
+   const before=readProjectFile(file,maxBytes);
+   prepared.push({file,temp:path.join(path.dirname(file),`.zuix-${randomUUID()}.tmp`),before,deleting:true});
   }
   for(const item of prepared){if(item.deleting)fs.unlinkSync(item.file);else fs.renameSync(item.temp,item.file);replaced.push(item);}
  }catch(error){

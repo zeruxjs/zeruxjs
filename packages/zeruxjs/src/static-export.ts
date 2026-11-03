@@ -1,12 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {constants} from 'node:fs';
 import {createHash,randomUUID} from 'node:crypto';
 import {parseFragment} from 'parse5';
 import {escapeHtmlText,escapeHtmlAttribute} from '@zeruxjs/security/encoding';
 import {createRendererRegistry,isRenderedHtml,type RendererAdapter} from './renderers.js';
 import {createPublicRouteManifest} from './navigation-manifest.js';
-import {assertSafeBuildDirectories,assertDisjointBuildSources} from './commands/build-paths.js';
+import {assertSafeBuildDirectories,assertDisjointBuildSources,readBuildFile} from './commands/build-paths.js';
 import {redactManifestConfig} from './bootstrap/manifest-config.js';
 
 export interface StaticExportContext {
@@ -77,9 +76,7 @@ function publicValue<T>(input:T):T {
 }
 async function safeFile(root:string,file:string,maximum:number):Promise<Buffer>{
  await assertSafeBuildDirectories(root,path.dirname(file),'static source');
- const entry=await fs.lstat(file);if(!entry.isFile()||entry.isSymbolicLink())fail('STATIC_ASSET_INVALID');
- const handle=await fs.open(file,constants.O_RDONLY|constants.O_NOFOLLOW);
- try{const stat=await handle.stat();if(!stat.isFile()||stat.size>maximum||stat.nlink!==1)fail('STATIC_ASSET_INVALID');const data=await handle.readFile();if(data.length>maximum)fail('STATIC_ASSET_INVALID');return data;}finally{await handle.close();}
+ try{return await readBuildFile(file,maximum,true);}catch(error){if((error as NodeJS.ErrnoException).code==='ELOOP'||error instanceof Error&&error.message==='Invalid or oversized build file')fail('STATIC_ASSET_INVALID');throw error;}
 }
 /** Explicit request-free static export. It does not discover or execute app routes/services. */
 export async function exportStaticSite<V>(options:StaticExportOptions<V>):Promise<StaticExportManifest>{
@@ -181,7 +178,7 @@ export async function exportStaticSite<V>(options:StaticExportOptions<V>):Promis
   const serialized=JSON.stringify(manifest,null,2)+'\n';if(total+Buffer.byteLength(serialized)>maxBytes)fail('STATIC_OUTPUT_LIMIT');await fs.writeFile(path.join(stage,'static-export.json'),serialized,{flag:'wx',mode:0o644});
   for(const file of manifest.files){check();if(digest(await safeFile(root,path.join(stage!,file.file),16777216))!==file.sha256)fail('STATIC_CANDIDATE_MODIFIED');}
   await assertSafeBuildDirectories(root,out);await fs.chmod(stage!,0o755);check();const backup=path.join(parent,'.static-previous-'+randomUUID());let saved=false;
-  try{try{await fs.rename(out,backup);saved=true;}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}try{check();await fs.rename(stage,out);stage=undefined;}catch(error){if(saved)await fs.rename(backup,out);saved=false;throw error;}if(saved)await fs.rm(backup,{recursive:true,force:true});}catch(cause){throw new StaticExportError('STATIC_PROMOTION_FAILED',cause);}
+  try{try{await fs.rename(out,backup);saved=true;}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}try{check();await fs.rename(stage,out);stage=undefined;}catch(error){if(saved)await fs.rename(backup,out);throw error;}if(saved)await fs.rm(backup,{recursive:true,force:true});}catch(cause){throw new StaticExportError('STATIC_PROMOTION_FAILED',cause);}
   return manifest;
  }catch(cause){throw cause instanceof StaticExportError?cause:new StaticExportError('STATIC_EXPORT_FAILED',cause);}
  finally{controller.abort();clearTimeout(timer);options.signal?.removeEventListener('abort',abort);try{if(adapter&&!disposed)await adapter.dispose?.();}finally{try{if(stage)await fs.rm(stage,{recursive:true,force:true});}finally{await lock.close();await fs.unlink(lockPath);}}}

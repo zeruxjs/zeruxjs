@@ -51,5 +51,5 @@ $('save').onclick=async()=>{try{const proposal=JSON.parse($('editor').value);del
 $('publish').onclick=async()=>{try{await transition('publish',{expectedVersion:current.version});say('Draft published successfully');}catch(e){say('Publish failed: '+e.message);}};
 $('rollback').onclick=async()=>{try{const id=Number($('rollbackRelease').value);if(!Number.isSafeInteger(id))throw Error('Select a release');await transition('rollback',{expectedVersion:current.version,releaseId:id});say('Live release rolled back; draft unchanged');}catch(e){say('Rollback failed: '+e.message);}};
 load();})();</script></body></html>`;
-  return settings.scriptSrc?html.replace(/<script>[\s\S]*?<\/script>/,'<script type="module" src="'+attr(settings.scriptSrc)+'"></script>'):html;
+  return settings.scriptSrc?html.replace(/<script>[\s\S]*?<\/script>/i,'<script type="module" src="'+attr(settings.scriptSrc)+'"></script>'):html;
 }

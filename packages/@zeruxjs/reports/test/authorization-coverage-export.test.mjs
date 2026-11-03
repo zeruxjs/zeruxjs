@@ -144,3 +144,12 @@ test('malformed persisted documents are unavailable, not invalid user submission
  const routes=getRoutes({store:corrupted,authorize:()=>true});
  assert.equal((await routes.get('/api')(req('/api'))).status,503);
 });
+
+test('custom uppercase HTML script and style tags receive matching CSP hashes',async()=>{
+ const {createHash}=await import('node:crypto');
+ const script='window.example = 1;',style='body { color: teal; }';
+ const routes=getRoutes({authorize:()=>true,renderDashboard:()=>`<!doctype html><HTML><HEAD><STYLE>${style}</STYLE></HEAD><BODY><SCRIPT>${script}</SCRIPT></BODY></HTML>`});
+ const response=await routes.get('')(req(''));
+ const csp=response.headers.get('content-security-policy');
+ for(const text of [script,style])assert.ok(csp.includes("'sha256-"+createHash('sha256').update(text).digest('base64')+"'"));
+});

@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {constants} from 'node:fs';
 import path from 'node:path';
 import type { ReportExporter } from './export.js';
 import { reportColumns, spreadsheetText, xml } from './export.js';
@@ -13,8 +14,15 @@ function fontPath(value:unknown):string {
 }
 async function font(file:string):Promise<Buffer>{
   fontPath(file);
-  const absolute=path.resolve(file),stat=await fs.lstat(absolute);if(!stat.isFile()||stat.isSymbolicLink()||stat.size>8388608||await fs.realpath(absolute)!==absolute)throw new ReportExportError('INVALID_FONT');
-  return fs.readFile(absolute);
+  const absolute=path.resolve(file);
+  if(await fs.realpath(absolute)!==absolute)throw new ReportExportError('INVALID_FONT');
+  const handle=await fs.open(absolute,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
+  try{
+    const stat=await handle.stat();if(!stat.isFile()||stat.size>8388608)throw new ReportExportError('INVALID_FONT');
+    const bytes=Buffer.alloc(stat.size+1);let size=0;
+    while(size<bytes.length){const chunk=await handle.read(bytes,size,bytes.length-size,null);if(!chunk.bytesRead)break;size+=chunk.bytesRead;}
+    if(size>stat.size)throw new ReportExportError('INVALID_FONT');return bytes.subarray(0,size);
+  }finally{await handle.close();}
 }
 const lines=(report:ResultReportV1)=>[
   'Ztrial results schema v1',`${report.passed} passed / ${report.failed} failed / ${report.skipped} skipped / ${report.unavailable} unavailable`,`${report.durationMs} ms; ${report.results.length} test results`,

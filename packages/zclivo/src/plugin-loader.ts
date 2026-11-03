@@ -1,4 +1,4 @@
-import {readFileSync,realpathSync,statSync} from 'node:fs';
+import {readSync,realpathSync,openSync,fstatSync,closeSync,constants} from 'node:fs';
 import {resolve,join,dirname} from 'node:path';
 import {createRequire} from 'node:module';
 import {resolvePluginEntry} from './plugins.js';
@@ -8,8 +8,9 @@ export interface PluginContext { commands:CommandRegistry; keyword?:string; sign
 export interface PluginLoadOptions { signal?:AbortSignal }
 export interface LoadedPlugin { name:string; entry:string; signal:AbortSignal; /** Abort active commands, remove registrations, await cooperative completion and cleanup. */ dispose:()=>Promise<void> }
 function readManifest(file:string): Record<string,unknown> {
-  if(statSync(file).size>256*1024)throw new Error('Plugin manifest too large');
-  const raw=JSON.parse(readFileSync(file,'utf8'));
+  const fd=openSync(file,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
+  let raw;
+  try {const info=fstatSync(fd);if(!info.isFile()||info.size>256*1024)throw new Error('Plugin manifest too large');const buffer=Buffer.alloc(info.size+1),size=readSync(fd,buffer,0,buffer.length,0);if(size>info.size)throw new Error('Plugin manifest changed');raw=JSON.parse(buffer.subarray(0,size).toString('utf8'));}finally{closeSync(fd);}
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new TypeError('Invalid package.json');
   return raw as Record<string,unknown>;
 }

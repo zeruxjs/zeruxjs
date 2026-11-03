@@ -761,6 +761,9 @@ or authorization, and `use server` creates no RPC/action endpoint. Development i
 still the Node module loader; full transitive browser checks and browser assets
 belong to the staged build, not an implied dev frontend bundler.
 
+Prebundled browser assets may contain local CommonJS wrapper data such as
+`state.exports` and `{exports:{}}`. These are data properties, not permission to
+use free `exports`, `module`, `require` or `globalThis.exports` in client code.
 Client graphs reject Node built-ins/globals, server-only module labels, server
 service imports, unresolved/out-of-build relative imports and nonliteral dynamic
 imports. Explicit type-only imports are erased and do not authorize a runtime
@@ -1613,3 +1616,14 @@ data was deleted. Production durable stores/receipts, account proof, legal polic
 provider/backups reconciliation and host HTTP/browser integration remain prerequisites.
 
 Loader integration: standard `file:`, `node:` and `data:` imports delegate to Node resolution before custom path aliases. Alias validation still rejects unsafe custom names; standard URLs are not private registry keys.
+
+Development hosts can set `server.watchIgnoredPaths` to at most 64 validated
+project-relative directories, for example `[".workspace"]`. These private paths
+are omitted from public config and passed to zhost before source traversal; the
+service runtime directory is excluded automatically. No absolute paths or traversal
+segments are accepted. This is watch policy, not filesystem authorization.
+
+Trusted plugin observers may borrow an explicitly configured lifecycle bus with
+`api.lifecycleHooks?.()`. Its optional result is never included in `getConfig()`
+or public manifests. Remove every registration token through `api.onDispose`;
+plugins do not own bus replacement or disposal.

@@ -60,7 +60,7 @@ export class MemcacheTextClient {
     if (Buffer.byteLength(command) > this.#options.maxBytes + 512) return Promise.reject(memcacheError('MEMCACHE_COMMAND_LIMIT'));
     const payload=Buffer.from(command);
     return new Promise((resolve, reject) => {
-      const {host, port, tls, timeoutMs, maxBytes} = this.#options;
+      const {host, port, tls, maxBytes} = this.#options;
       let socket:Socket;try{socket = tls ? connectTls({host, port, servername: host,rejectUnauthorized:true}) : createConnection({host, port});}catch(cause){reject(memcacheError('MEMCACHE_CONNECTION_FAILED',cause));return;}
       this.#sockets.add(socket);
       let data = Buffer.alloc(0), settled = false;let outcome:{error?:Error;reply?:TextReply}|undefined;

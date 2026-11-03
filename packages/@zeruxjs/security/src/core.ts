@@ -13,13 +13,19 @@ export const createNonce = (size = 16) => {
 export const escapeHtml = escapeHtmlText;
 export { serializeJsonForScript } from './encoding.js';
 
+const trimDashes = (value: string) => {
+    let start = 0, end = value.length;
+    while (start < end && value[start] === '-') start++;
+    while (end > start && value[end - 1] === '-') end--;
+    return value.slice(start, end);
+};
 export const sanitizeIdentifier = (value: unknown, fallback = "item") => {
-    const normalized = String(value ?? "")
+    const normalized = trimDashes(String(value ?? "")
         .trim()
         .replace(/[^a-zA-Z0-9_-]+/g, "-")
         .replace(/-{2,}/g, "-")
-        .replace(/^-+|-+$/g, "");
-    const safeFallback = String(fallback ?? 'item').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+        );
+    const safeFallback = trimDashes(String(fallback ?? 'item').replace(/[^a-zA-Z0-9_-]+/g, '-'));
     return normalized || safeFallback || 'item';
 };
 

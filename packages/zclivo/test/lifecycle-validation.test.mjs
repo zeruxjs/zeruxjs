@@ -70,7 +70,7 @@ function fixture() {
 test('plugin conflict rolls back partial registration and releases acquired resources', async () => {
   const f=fixture();try {
     const marker=join(f.root,'cleaned');
-    f.plugin('conflicting',`import {writeFileSync} from 'node:fs';export function register({commands,onDispose}){onDispose(()=>writeFileSync(${JSON.stringify(marker)},'done'));commands.register('app','partial',()=>{});commands.register('app','run',()=>{});}`);
+    f.plugin('conflicting',`import {writeFileSync} from 'node:fs';export function register({commands,onDispose}){onDispose(()=>writeFileSync(new URL('../../cleaned',import.meta.url),'done'));commands.register('app','partial',()=>{});commands.register('app','run',()=>{});}`);
     const registry=new CommandRegistry();registry.register('app','run',()=>0);
     await assert.rejects(loadPlugins(['conflicting'],registry,f.root),/already registered/);
     assert.equal(registry.lookup('app','partial'),undefined);assert.equal((await registry.dispatch('app',['run'])).exitCode,0);assert.equal(readFileSync(marker,'utf8'),'done');

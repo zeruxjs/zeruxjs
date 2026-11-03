@@ -28,6 +28,8 @@ export interface ZeruxServerConfig {
     devPort?: number;
     allowedDomains?: string | string[];
     allowedDevDomain?: string;
+    /** Up to 64 project-relative directories excluded from development source scans. */
+    watchIgnoredPaths?: string[];
 }
 
 export interface ZeruxDevtoolsModuleConfig {

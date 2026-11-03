@@ -116,6 +116,8 @@ export interface ZeruxRequestContext {
 }
 
 export interface ZeruxPluginApi {
+    /** Borrowed host bus for trusted plugin observers. Never part of public config. Remove owned registrations onDispose. */
+    lifecycleHooks?(): import('@zeruxjs/hooks/lifecycle').ServerLifecycleHooks | undefined;
     /** Opted-in GET routes only; handlers and source metadata remain private. */
     navigationManifest(options: import('../navigation-manifest.js').PublicRouteManifestOptions):import('../navigation-manifest.js').PublicRouteManifest;
     /** Generation-owned registration authority; never a process-global renderer. */

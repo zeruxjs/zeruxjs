@@ -5,7 +5,7 @@ import {
     getDbDemoTableName,
     listDbDemoSubmissions,
     normalizeDbDemoInput
-} from "../../../db-demo.ts";
+} from "../../../lib/db-demo.js";
 
 /**
  * Title: Demo submission list endpoint

@@ -5,10 +5,12 @@ import { readJsonFile, writeJsonFile } from "./fs.js";
 import type { SharedDevRegistration, SharedDevSnapshot } from "./types.js";
 
 export const readTailLines = (filePath: string | null, limit = LOG_LINE_LIMIT) => {
-    if (!filePath || !fs.existsSync(filePath)) return [];
+    if (!filePath) return [];
 
     // Keep memory bounded even when the application's log file is very large.
-    const fd = fs.openSync(filePath, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+    let fd: number;
+    try { fd = fs.openSync(filePath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []; throw error; }
     let content: string;
     try {
         const info = fs.fstatSync(fd);

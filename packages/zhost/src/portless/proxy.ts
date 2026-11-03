@@ -91,7 +91,7 @@ export function createProxyServer(options: ProxyServerOptions): ProxyServer {
     getRoutes,
     proxyPort,
     tld = "localhost",
-    onError = (msg: string) => console.error(msg),
+    onError = (msg: string) => console.error(JSON.stringify(msg)),
     tls,
     allowPlainHttp = false,
     backendHealth,

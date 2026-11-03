@@ -102,3 +102,18 @@ per-chunk authorization/expiry checks and no public URLs. Host routes still own
 CSRF/authentication, private attachment headers and disconnect cleanup. The public
 `examples/privacy.mjs` demonstrates explicit injection. Synthetic fixtures verify
 checkpoint recovery and partial completion; no real user-data deletion was run.
+
+## Local integration hosts
+
+`server.watchIgnoredPaths` accepts up to 64 project-relative directories, such as
+`[".workspace"]`, and is omitted from public config. ZeruxJS forwards these
+exclusions and its runtime directory to zhost before source scanning. This is
+watch policy, not file authorization.
+
+Trusted plugins can obtain the optional borrowed host bus through
+`api.lifecycleHooks?.()`. Register observers only when a host supplied the bus and
+remove their tokens with `api.onDispose`; `getConfig()` deliberately does not expose
+the private lifecycle authority. No bus is created implicitly.
+
+Prebundled browser assets may use local `{exports:{}}` wrapper data. That does not
+permit free `exports`, `module`, `require` or `globalThis.exports` in client graphs.

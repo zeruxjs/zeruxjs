@@ -10,7 +10,7 @@ const require=createRequire(import.meta.url);
 test('packed core needs no ZyroJS runtime; renderer subpath owns types through real installed exports',()=>{
  const root=mkdtempSync(join(tmpdir(),'zyro-bridge-public-'));
  const run=(command,args,cwd)=>execFileSync(command,args,{cwd,encoding:'utf8',env:{...process.env,npm_config_cache:join(root,'cache')}});
- const pack=directory=>{const result=JSON.parse(run('npm',['pack','--ignore-scripts','--json','--pack-destination',root],directory));return join(root,(Array.isArray(result)?result:Object.values(result))[0].filename)};
+ const pack=directory=>{const result=JSON.parse(run('npm',['pack','--ignore-scripts','--json','--pack-destination',root],directory));return join(root,(Array.isArray(result)?result:Object.values(result))[0].filename);};
  try{
   const archive=pack(resolve('.')),consumer=join(root,'consumer');mkdirSync(consumer);
   writeFileSync(join(consumer,'package.json'),'{"private":true,"type":"module"}');
@@ -36,5 +36,5 @@ const writable=bridge.write(source);writable.value=2;bridge.destroy();
   writeFileSync(join(consumer,'tsconfig.json'),JSON.stringify({compilerOptions:{module:'NodeNext',moduleResolution:'NodeNext',target:'ES2022',lib:['ES2022','DOM','DOM.Iterable'],types:[],strict:true,noEmitOnError:true,outDir:'out'},include:['consumer.ts','counter.ts']}));
   run(process.execPath,[require.resolve('typescript/bin/tsc'),'-p','tsconfig.json'],consumer);
   writeFileSync(join(consumer,'check.mjs'),`import * as Zyro from 'zyrojs/component';import {createZyroRendererBridge} from '@zeruxjs/zyro/renderer';import {createObservable} from '@zeruxjs/zyro';const source=createObservable(1),bridge=createZyroRendererBridge(Zyro),view=bridge.write(source);view.value=4;if(source.get()!==4)throw Error('write failed');bridge.destroy();`);run(process.execPath,['check.mjs'],consumer);
- }finally{rmSync(root,{recursive:true,force:true})}
+ }finally{rmSync(root,{recursive:true,force:true});}
 });

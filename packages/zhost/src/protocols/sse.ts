@@ -1,6 +1,6 @@
 import type { ServerResponse } from 'node:http';
 export interface SseEvent { id: string; event: string; data: string; }
-export interface SseOptions { maxClients?: number; historySize?: number; heartbeatMs?: number; }
+export interface SseOptions { maxClients?: number; historySize?: number; heartbeatMs?: number; /** Authenticated event streams must not enter shared/private HTTP caches. */ privateCache?: boolean; }
 function lineSafe(text: string): string { return text.replace(/[\r\0]/g, ''); }
 export function formatSse(event: SseEvent): string {
   if (!/^[\w.-]{1,64}$/.test(event.event) || !/^\d{1,20}$/.test(event.id)) throw new TypeError('Invalid SSE event');
@@ -16,16 +16,19 @@ export class SseHub {
   private readonly maxClients: number;
   private readonly historySize: number;
   private readonly heartbeatMs: number;
+  private readonly privateCache: boolean;
   constructor(options: SseOptions = {}) {
     this.maxClients = options.maxClients ?? 100;
     this.historySize = options.historySize ?? 100;
     this.heartbeatMs = options.heartbeatMs ?? 15000;
+    if (options.privateCache !== undefined && typeof options.privateCache !== 'boolean') throw new TypeError('Invalid SSE cache policy');
+    this.privateCache = options.privateCache ?? false;
     if (![this.maxClients, this.historySize, this.heartbeatMs].every(Number.isSafeInteger) || this.maxClients < 1 || this.maxClients > 10000 || this.historySize < 0 || this.historySize > 1000 || this.heartbeatMs < 1000 || this.heartbeatMs > 120000) throw new RangeError('Invalid SSE options');
   }
   get clientCount(): number { return this.clients.size; }
   subscribe(res: ServerResponse, lastEventId?: string): boolean {
     if (this.closed || this.clients.size >= this.maxClients) { res.writeHead(503); res.end('SSE client limit reached'); return false; }
-    res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+    res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': this.privateCache ? 'private, no-store, no-transform' : 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     res.flushHeaders?.();
     if (lastEventId && /^\d{1,20}$/.test(lastEventId)) {
       const id = Number(lastEventId);

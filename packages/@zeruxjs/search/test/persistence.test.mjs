@@ -11,7 +11,7 @@ test('atomic snapshot restore and rollback on corrupted file',async()=>{
   assert.equal(await loadSearchSnapshot(file,index),true);assert.equal(index.size,1);assert.equal(index.get('b'),undefined);
   await writeFile(file,'corrupted JSON');await assert.rejects(loadSearchSnapshot(file,index));assert.equal(index.size,1);
   await assert.rejects(saveSearchSnapshot(file,index,{maxBytes:256/2}),RangeError);
- } finally {await rm(dir,{recursive:true,force:true})}
+ } finally {await rm(dir,{recursive:true,force:true});}
 });
 test('snapshot refuses symlink targets and traversal directory aliases',async()=>{
  const dir=await mkdtemp(path.join(os.tmpdir(),'search-symlink-'));
@@ -22,7 +22,7 @@ test('snapshot refuses symlink targets and traversal directory aliases',async()=
   assert.equal(await (await import('node:fs/promises')).readFile(target,'utf8'),'{}');
   const alias=path.join(dir,'alias');await symlink(dir,alias,'dir');
   await assert.rejects(saveSearchSnapshot(path.join(alias,'snapshot.json'),index));
- }finally{await rm(dir,{recursive:true,force:true})}
+ }finally{await rm(dir,{recursive:true,force:true});}
 });
 test('filtered results cannot leak suggestions or get public cached',async()=>{
  const index=createSearchIndex();index.add({id:'secret',text:'private secret'});

@@ -774,6 +774,10 @@ implications. Dynamic TLS certificates are restricted to the configured local
 TLD namespace and exact requested hostnames. Cached contexts and concurrent
 certificate generation are bounded.
 
+TLS liveness probes verify the private state directory's bounded `ca.pem` and
+configured hostname. A missing, mismatched or untrusted CA returns an unsuccessful
+probe; verification is never disabled. This does not install system trust.
+
 HTTP request and response headers now filter both fixed hop-by-hop headers
 and the additional fields nominated by `Connection`; WebSocket handshakes
 retain the necessary upgrade headers. Managed `/etc/hosts` entries are
@@ -875,6 +879,11 @@ console.log(proxy.getApplicationLoad('my-app.localhost'));
 Protocol endpoints are `POST /mcp`, `POST /rpc`,
 `POST /<package.Service>/<Method>` for **Connect unary JSON**, `POST /trpc/<procedure>`
 for the basic tRPC-compatible procedure bridge, and `GET /events` for SSE.
+Authenticated applications can supply `events: new SseHub({privateCache:true})`
+to emit `private, no-store, no-transform`. Omitting `privateCache` preserves the
+legacy `no-cache, no-transform` policy. Event-stream connection lifetimes remain
+a host responsibility; the gateway's dispatch deadline is not an SSE lifetime.
+
 The Connect and tRPC bridges are lightweight JSON subsets: use their official
 framework adapters for full schema, codecs, bidirectional streams and client
 compatibility. gRPC-over-HTTP/2 requests with `application/grpc` are forwarded
@@ -1208,3 +1217,9 @@ compression globally. See the performance package's response integration for
 private cache policy and single-layer ownership. HEAD and bodyless statuses close
 the unused source without consuming it; identity streaming errors terminate the
 downstream response.
+
+For an owned development server, `dev.watchIgnoredPaths` is an optional list of
+relative directories excluded before source traversal. `createDevelopmentWatchIgnore`
+validates and snapshots up to 128 bounded relative paths; subscriber ignores never
+change another app’s mutable configuration. The framework forwards its stricter
+`server.watchIgnoredPaths` policy together with its runtime directory.

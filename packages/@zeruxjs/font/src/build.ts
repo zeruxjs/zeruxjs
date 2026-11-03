@@ -1,7 +1,7 @@
 import {createHash,randomUUID} from 'node:crypto';
 import {constants} from 'node:fs';
 import {open,mkdir,lstat,realpath,rename,rm,rmdir} from 'node:fs/promises';
-import {resolve,join,dirname,relative,isAbsolute} from 'node:path';
+import { resolve, join, dirname, isAbsolute } from 'node:path';
 import {defineFont} from './css.js';
 import {validateSvgIcon,svgIconMarkup,fontIcon} from './icons.js';
 import type {SvgIcon} from './icons.js';
@@ -104,7 +104,7 @@ export async function buildFontAssets(options:FontBuildOptions):Promise<FontAsse
   for(const icon of icons){if(icon.kind==='font'){if(!coverage.get(icon.fontKey)?.has(icon.codePoint))throw new Error('Icon glyph missing from emitted font');manifest.icons.push({key:icon.key,kind:'font',fontKey:icon.fontKey,codePoint:icon.codePoint});continue;}const svg=svgIconMarkup(icon.geometry),sha256=hash(svg),file=sha256+'.svg';if(!emitted.has(file)){await emit(file,svg);emitted.add(file);}manifest.icons.push({key:icon.key,kind:'svg',file,url:options.publicBase+file,sha256,bytes:Buffer.byteLength(svg),license:icon.license});}
   const stylesheet=css.join('\n'),styleHash=hash(stylesheet),styleFile=styleHash+'.css';await emit(styleFile,stylesheet);manifest.css={file:styleFile,url:options.publicBase+styleFile,sha256:styleHash};manifest.digest=hash(JSON.stringify(manifest));await emit('manifest.json',JSON.stringify(manifest,null,2));cancelled();
   try{await secure(output);await rename(output,backup);moved=true;}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
-  try{await rename(staging,output);promoted=true;}catch(error){if(moved){await rename(backup,output);moved=false;}throw error;}
+  try{await rename(staging,output);promoted=true;}catch(error){if(moved){await rename(backup,output);}throw error;}
   if(moved)await rm(backup,{recursive:true});return structuredClone(manifest);
  }finally{if(!promoted)await rm(staging,{recursive:true,force:true});await rmdir(lock);}
 }

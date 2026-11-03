@@ -1,4 +1,4 @@
-import { lessons, validateAcademy } from "../src/lib/academy.mjs";
+import { validateAcademy } from "../src/lib/academy.mjs";
 import { emitOffline } from "./offline.mjs";
 import { navigationGroups } from "../src/lib/navigation.mjs";
 import fs from "node:fs/promises";

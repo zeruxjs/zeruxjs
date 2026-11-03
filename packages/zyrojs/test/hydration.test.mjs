@@ -8,7 +8,7 @@ import { hydrate, HydrationError } from '../dist/hydrate.js';
 import { render, unmount, renderToString } from '../dist/dom/index.js';
 import { root } from './dom-fixture.mjs';
 const validateProps = input => {
-  if (!input || typeof input !== 'object' || typeof input.label !== 'string' || Object.keys(input).some(key=>key!=='label')) throw Error('invalid public props');
+  if (((!input || (typeof input !== 'object')) || (typeof input.label !== 'string')) || Object.keys(input).some(key=>key!=='label')) throw Error('invalid public props');
   return {label: input.label};
 };
 function parsed(html) {
@@ -17,13 +17,13 @@ function parsed(html) {
     if (source.nodeName === '#text') {parent.appendChild(doc.createTextNode(source.value));return;}
     if (source.nodeName === '#comment') {parent.appendChild(doc.createComment(source.data));return;}
     const node=doc.createElement(source.tagName);for(const {name,value} of source.attrs)node.setAttribute(name,value);
-    node.value=node.getAttribute('value')??'';node.checked=node.getAttribute('checked')!==null;node.selected=node.getAttribute('selected')!==null;
+    node.value=(node.getAttribute('value')??'');node.checked=(node.getAttribute('checked')!==null);node.selected=(node.getAttribute('selected')!==null);
     parent.appendChild(node);for(const child of source.childNodes??[])append(child,node);
   };
   for(const child of parseFragment(html).childNodes)append(child,container);
   return container;
 }
-function all(root, name) {return root.childNodes.flatMap(node=>[...(node.nodeName===name.toUpperCase()?[node]:[]),...all(node,name)]);}
+function all(root, name) {return root.childNodes.flatMap(node=>[...((node.nodeName===name.toUpperCase())?[node]:[]),...all(node,name)]);}
 const options={idPrefix:'test',validateProps};
 
 test('deterministic server IDs/fragments, context escaping and script data stay separate',()=>{
@@ -78,10 +78,10 @@ test('mismatch has redacted diagnostics, default preserves nodes and replacement
 test('unsafe markup and unsupported runtime props reject without reflecting private values',()=>{
   const identity=x=>x, C=props=>h('a',props,'text');
   for(const props of [{href:'javascript:bad()'},{onClick:'private script'},{onclick:'bad()'},{srcdoc:'<script>bad()</script>'},{innerHTML:'raw'},{href:'//untrusted.test'}]) {
-    assert.throws(()=>renderToHydratable(()=>h('a',props),{label:'a'},options),e=>e instanceof HydrationError&&!e.message.includes('bad()'));
+    assert.throws(()=>renderToHydratable(()=>h('a',props),{label:'a'},options),e=>(e instanceof HydrationError)&&!e.message.includes('bad()'));
   }
   for(const props of [{password:'SECRET'}, {value:()=>1}, {value:new Date()}, {value:NaN}, {value:undefined}, Object.assign(Object.create({inherited:true}),{value:1})]) {
-    assert.throws(()=>renderToHydratable(C,props,{idPrefix:'public',validateProps:identity}),e=>e instanceof HydrationError&&!e.message.includes('SECRET'));
+    assert.throws(()=>renderToHydratable(C,props,{idPrefix:'public',validateProps:identity}),e=>(e instanceof HydrationError)&&!e.message.includes('SECRET'));
   }
   let getter=0;const value={};Object.defineProperty(value,'value',{enumerable:true,get(){getter++;return 'private';}});
   assert.throws(()=>renderToHydratable(C,value,{idPrefix:'public',validateProps:identity}),/accessors/);assert.equal(getter,0);
@@ -96,7 +96,7 @@ test('server failure/abort/budgets dispose effects, hydrated abort releases list
     useEffect(()=>{source.value;observed++;});onScopeDispose(()=>releases++);
     return ()=>{controller.abort(Error('private reason'));return 'never';};
   });
-  assert.throws(()=>renderToHydratable(C,{label:'a'},{...options,signal:controller.signal}),e=>e.name==='AbortError'&&e.cause===controller.signal.reason&&!e.message.includes('private'));
+  assert.throws(()=>renderToHydratable(C,{label:'a'},{...options,signal:controller.signal}),e=>((e.name==='AbortError')&&(e.cause===controller.signal.reason))&&!e.message.includes('private'));
   source.value++;assert.equal(observed,1);assert.equal(releases,1);
   const Broken=defineComponent(()=>{onScopeDispose(()=>releases++);throw Error('dependency unavailable');});
   assert.throws(()=>renderToHydratable(Broken,{label:'a'},options),/dependency unavailable/);assert.equal(releases,2);
@@ -142,7 +142,7 @@ test('hydration handles do not dispose a replacement owner; malformed and oversi
   const handle=hydrate(C,container,{data:output.data,validateProps});render(h('b',{},'new owner'),container);handle.dispose();assert.equal(container.textContent,'new owner');unmount(container);
   assert.throws(()=>renderToHydratable(()=>null,{value:[,1]},{...options,validateProps:x=>x}),e=>e.code==='INVALID_PUBLIC_PROPS');
   assert.throws(()=>renderToHydratable(()=>null,{label:'a'},{...options,maxPropsBytes:10}),e=>e.code==='PROPS_LIMIT');
-  assert.throws(()=>renderToHydratable(()=>h('input',{type:'password',value:'PRIVATE'}),{label:'a'},options),e=>e.code==='PRIVATE_FORM_VALUE'&&!e.message.includes('PRIVATE'));
+  assert.throws(()=>renderToHydratable(()=>h('input',{type:'password',value:'PRIVATE'}),{label:'a'},options),e=>(e.code==='PRIVATE_FORM_VALUE')&&!e.message.includes('PRIVATE'));
 });
 
 test('replacement depth is bounded; schema and observer failure do not remount',()=>{

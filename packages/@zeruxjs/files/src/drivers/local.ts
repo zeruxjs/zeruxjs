@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { DecipherGCM } from 'node:crypto';
 import { constants } from 'node:fs';
-import { mkdir, lstat, realpath, open, link, rename, unlink, readdir, readFile } from 'node:fs/promises';
+import { mkdir, lstat, realpath, open, link, rename, unlink, readdir } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import type { FileAddress, FileInfo, FileSource, ListFileOptions, FileListing, PutFileOptions, ReadFileOptions, StorageDriver } from '../types.js';
 import { chunks, ensureNotExpired, validateAddress, validateBucket, validateKey, validatePut, validateRange } from '../validation.js';

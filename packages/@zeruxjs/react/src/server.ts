@@ -9,7 +9,7 @@ async function peers(){
   validateReactVersions(React.version,server.version);
   if(typeof React.isValidElement!=='function'||typeof server.renderToString!=='function'||typeof server.renderToStaticMarkup!=='function')throw new ReactAdapterError('REACT_CAPABILITY_UNAVAILABLE');
   return {React,server};
- }catch(cause){throw cause instanceof ReactAdapterError?cause:new ReactAdapterError('REACT_DEPENDENCY_UNAVAILABLE',cause)}
+ }catch(cause){throw cause instanceof ReactAdapterError?cause:new ReactAdapterError('REACT_DEPENDENCY_UNAVAILABLE',cause);}
 }
 async function render(view:ReactElement|null,options:ReactServerOptions,staticOnly:boolean):Promise<string>{
  options={...options};
@@ -24,10 +24,10 @@ async function render(view:ReactElement|null,options:ReactServerOptions,staticOn
   if(html.includes('<!--$!-->'))throw new ReactAdapterError('REACT_INCOMPLETE_SSR');
   if(new TextEncoder().encode(html).length>limit)throw new ReactAdapterError('HTML_BYTE_LIMIT');
   return html;
- }catch(cause){throw cause instanceof ReactAdapterError?cause:new ReactAdapterError('REACT_RENDER_FAILED',cause)}
+ }catch(cause){throw cause instanceof ReactAdapterError?cause:new ReactAdapterError('REACT_RENDER_FAILED',cause);}
 }
 /** Native synchronous SSR behind an async peer-load boundary; does not wait for suspended data. */
-export function renderReactToString(view:ReactElement|null,options:ReactServerOptions={}):Promise<string>{return render(view,options,false)}
+export function renderReactToString(view:ReactElement|null,options:ReactServerOptions={}):Promise<string>{return render(view,options,false);}
 /** Static HTML is deliberately separate and must not be supplied to hydrateRoot. */
-export function renderReactToStaticMarkup(view:ReactElement|null,options:ReactServerOptions={}):Promise<string>{return render(view,options,true)}
-export async function getReactServerCapabilities(){const {React}=await peers();return Object.freeze({version:React.version,ssr:true,staticHtml:true,hydration:true,streaming:false})}
+export function renderReactToStaticMarkup(view:ReactElement|null,options:ReactServerOptions={}):Promise<string>{return render(view,options,true);}
+export async function getReactServerCapabilities(){const {React}=await peers();return Object.freeze({version:React.version,ssr:true,staticHtml:true,hydration:true,streaming:false});}

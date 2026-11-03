@@ -33,7 +33,8 @@ function pointer(path: Array<string | number>) {
 }
 
 function emailLike(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value);
+  const at = value.indexOf('@'), dot = value.lastIndexOf('.');
+  return at > 0 && at === value.lastIndexOf('@') && dot > at + 1 && dot < value.length - 1 && !/\s/u.test(value);
 }
 
 function validateJsonSchema(

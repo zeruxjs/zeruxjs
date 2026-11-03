@@ -15,20 +15,20 @@ export function observeWebVitals(options:VitalObserverOptions):()=>void {
  if(!factory)return()=>{};
  const last=new Map<VitalName,number>();let cls=0,session=0,sessionStart=0,sessionLast=0;
  let active=true;
- const publish=(name:VitalName,value:number)=>{if(!active||!Number.isFinite(value)||value<0||last.get(name)===value)return;last.set(name,value);options.onMetric(createPerformanceMetric(name,value))};
+ const publish=(name:VitalName,value:number)=>{if(!active||!Number.isFinite(value)||value<0||last.get(name)===value)return;last.set(name,value);options.onMetric(createPerformanceMetric(name,value));};
  const observers:Array<{disconnect():void}>=[];
  const supported=options.supportedEntryTypes??(options.createObserver?undefined:Observer?.supportedEntryTypes);
  const watch=(type:string,callback:(entry:PerformanceEntry)=>void)=>{
   if(supported&&!supported.includes(type)){options.onUnsupported?.(type);return;}
   let observer:ReturnType<NonNullable<typeof factory>>|undefined;
-  try{observer=factory(entries=>{for(const entry of entries)if(active)callback(entry)});observer.observe({type,buffered:true});observers.push(observer)}catch{observer?.disconnect();options.onUnsupported?.(type)}
+  try{observer=factory(entries=>{for(const entry of entries)if(active)callback(entry);});observer.observe({type,buffered:true});observers.push(observer);}catch{observer?.disconnect();options.onUnsupported?.(type);}
  };
  watch('largest-contentful-paint',entry=>publish('LCP',entry.startTime));
- watch('paint',entry=>{if(entry.name==='first-contentful-paint')publish('FCP',entry.startTime)});
+ watch('paint',entry=>{if(entry.name==='first-contentful-paint')publish('FCP',entry.startTime);});
  watch('layout-shift',entry=>{const e=entry as PerformanceEntry & {value?:number;hadRecentInput?:boolean};if(e.hadRecentInput||!Number.isFinite(e.value)||!e.value||e.value<0)return;
-   if(!sessionStart||entry.startTime-sessionLast>1000||entry.startTime-sessionStart>5000){session=0;sessionStart=entry.startTime}
-   session+=e.value;sessionLast=entry.startTime;cls=Math.max(cls,session);publish('CLS',cls)});
+   if(!sessionStart||entry.startTime-sessionLast>1000||entry.startTime-sessionStart>5000){session=0;sessionStart=entry.startTime;}
+   session+=e.value;sessionLast=entry.startTime;cls=Math.max(cls,session);publish('CLS',cls);});
  try{const nav=options.navigation?.()??(typeof performance!=='undefined'?performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined:undefined);
- if(nav)publish('TTFB',Math.max(0,nav.responseStart-nav.requestStart))}catch{/* unsupported */}
- return()=>{if(!active)return;active=false;for(const observer of observers)observer.disconnect()};
+ if(nav)publish('TTFB',Math.max(0,nav.responseStart-nav.requestStart));}catch{/* unsupported */}
+ return()=>{if(!active)return;active=false;for(const observer of observers)observer.disconnect();};
 }

@@ -1,7 +1,10 @@
 import type { ZeruxConfig } from 'zeruxjs'
+import { createServerLifecycleHooks } from '@zeruxjs/hooks/lifecycle'
 
 const zeruxConfig: ZeruxConfig = {
     "type": "fix",
+    server: { watchIgnoredPaths: [".workspace"] },
+    lifecycleHooks: createServerLifecycleHooks(),
     "connectorManager": "@zeruxjs/db",
     "worker": {
         "minThreads": 1,
@@ -18,7 +21,7 @@ const zeruxConfig: ZeruxConfig = {
     },
     "allowedDomains": ["zerux.shubkb.me"],
     "allowedDevDomain": "zdev.shubkb.me",
-    "db": {
+    ...(process.env.ENABLE_MYSQL_DEMO === "true" ? { "db": {
         "default": "something",
         "connections": [
             {
@@ -37,10 +40,8 @@ const zeruxConfig: ZeruxConfig = {
                 }
             }
         ]
-    },
-    "apiKeys": {
-        "lighthouse": process.env.LIGHTHOUSE_API_KEY
     }
+    } : {})
 };
 
 export default zeruxConfig;

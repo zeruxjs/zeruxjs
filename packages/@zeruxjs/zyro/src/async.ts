@@ -14,8 +14,8 @@ export function createAsyncObservable<T>(load:(signal:AbortSignal)=>Promise<T>,o
  if(parent!==undefined&&(!(parent instanceof AbortSignal)))throw new TypeError('Invalid abort signal');
  const state=createObservable<AsyncState<T>>({status:options.initial===undefined?'idle':'success',data:options.initial,error:undefined,updatedAt:0});
  let active:AbortController|undefined,activeTimer:ReturnType<typeof setTimeout>|undefined,sequence=0,disposed=false,pending=0;
- const cancelActive=(reason?:unknown)=>{sequence++;const previous=active;active=undefined;if(activeTimer!==undefined)clearTimeout(activeTimer);activeTimer=undefined;previous?.abort(reason)};
- const cancel=(reason?:unknown)=>{const expected=sequence+1;cancelActive(reason);if(!disposed&&sequence===expected&&state.get().status==='loading')state.set(s=>({...s,status:'idle',error:undefined}))};
+ const cancelActive=(reason?:unknown)=>{sequence++;const previous=active;active=undefined;if(activeTimer!==undefined)clearTimeout(activeTimer);activeTimer=undefined;previous?.abort(reason);};
+ const cancel=(reason?:unknown)=>{const expected=sequence+1;cancelActive(reason);if(!disposed&&sequence===expected&&state.get().status==='loading')state.set(s=>({...s,status:'idle',error:undefined}));};
  const parentAbort=()=>cancel(parent?.reason);
  parent?.addEventListener('abort',parentAbort,{once:true});
  return {get:state.get,subscribe:state.subscribe,cancel,
@@ -29,7 +29,7 @@ export function createAsyncObservable<T>(load:(signal:AbortSignal)=>Promise<T>,o
    if(disposed||sequence!==expected||parent?.aborted)throw aborted(parent?.reason);
    const id=sequence,controller=new AbortController();active=controller;pending++;
    const timer=options.timeoutMs===undefined?undefined:setTimeout(()=>{
-    if(active===controller){controller.abort(aborted());if(!disposed&&id===sequence)state.set(s=>({...s,status:'idle',error:undefined}))}
+    if(active===controller){controller.abort(aborted());if(!disposed&&id===sequence)state.set(s=>({...s,status:'idle',error:undefined}));}
    },options.timeoutMs);
    activeTimer=timer;
    try{
@@ -43,9 +43,9 @@ export function createAsyncObservable<T>(load:(signal:AbortSignal)=>Promise<T>,o
    }catch(error){
     if(!disposed&&id===sequence)state.set(s=>({...s,status:controller.signal.aborted?'idle':'error',error:controller.signal.aborted?undefined:error}));
     throw error;
-   }finally{if(timer!==undefined)clearTimeout(timer);if(activeTimer===timer)activeTimer=undefined;pending--;if(active===controller)active=undefined}
+   }finally{if(timer!==undefined)clearTimeout(timer);if(activeTimer===timer)activeTimer=undefined;pending--;if(active===controller)active=undefined;}
   },
-  reset(){const expected=sequence+1;cancelActive();if(!disposed&&sequence===expected)state.set({status:'idle',data:options.initial,error:undefined,updatedAt:0})},
-  destroy(){if(disposed)return;disposed=true;parent?.removeEventListener('abort',parentAbort);try{cancelActive()}finally{state.destroy()}}
+  reset(){const expected=sequence+1;cancelActive();if(!disposed&&sequence===expected)state.set({status:'idle',data:options.initial,error:undefined,updatedAt:0});},
+  destroy(){if(disposed)return;disposed=true;parent?.removeEventListener('abort',parentAbort);try{cancelActive();}finally{state.destroy();}}
  };
 }

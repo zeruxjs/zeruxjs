@@ -20,6 +20,22 @@ export async function loadBuildParser(root:string):Promise<typeof TypeScript>{
 function parsed(ts:typeof TypeScript,file:BuildSource){return ts.createSourceFile(file.relative,file.source,ts.ScriptTarget.Latest,true, /\.tsx$/i.test(file.relative)?ts.ScriptKind.TSX:/\.jsx$/i.test(file.relative)?ts.ScriptKind.JSX:ts.ScriptKind.TS);}
 function imports(ts:typeof TypeScript,source:TypeScript.SourceFile){
   const found:{specifier:string;start:number;end:number}[]=[];let dynamic=false,serverUse=false;
+  // Browser bundlers wrap compatible CommonJS modules in local {exports:{}} data.
+  // Property names are not references to Node's free `exports` binding. Require
+  // an actual local base; globalThis/window/self.exports remain server use.
+  const bindings=new Set<string>();
+  const bind=(name:TypeScript.BindingName)=>{if(ts.isIdentifier(name))bindings.add(name.text);else for(const item of name.elements)if(ts.isBindingElement(item))bind(item.name);};
+  const collect=(node:TypeScript.Node)=>{if(ts.isVariableDeclaration(node)||ts.isParameter(node))bind(node.name);ts.forEachChild(node,collect);};
+  collect(source);
+  const localBase=(input:TypeScript.Expression):boolean=>{
+    let node=input;while(ts.isParenthesizedExpression(node))node=node.expression;
+    if(ts.isBinaryExpression(node)&&node.operatorToken.kind===ts.SyntaxKind.EqualsToken)node=node.left;
+    return ts.isIdentifier(node)&&bindings.has(node.text)&&!serverGlobals.has(node.text)&&!['globalThis','window','self'].includes(node.text);
+  };
+  const localExportProperty=(node:TypeScript.Identifier)=>node.text==='exports'&&(
+    ts.isPropertyAssignment(node.parent)&&node.parent.name===node||
+    ts.isPropertyAccessExpression(node.parent)&&node.parent.name===node&&localBase(node.parent.expression)
+  );
   const literal=(node:TypeScript.Node)=>{if(ts.isStringLiteral(node))found.push({specifier:node.text,start:node.getStart(source),end:node.end});else dynamic=true;};
   const walk=(node:TypeScript.Node)=>{
     if(ts.isTypeNode(node))return;
@@ -31,7 +47,7 @@ function imports(ts:typeof TypeScript,source:TypeScript.SourceFile){
     if(ts.isExportDeclaration(node)&&node.moduleSpecifier){if(node.isTypeOnly)return;if(node.exportClause&&ts.isNamedExports(node.exportClause)&&node.exportClause.elements.every(item=>item.isTypeOnly))return;literal(node.moduleSpecifier);return;}
     if(ts.isImportEqualsDeclaration(node)){if(node.isTypeOnly)return;if(ts.isExternalModuleReference(node.moduleReference)&&node.moduleReference.expression)literal(node.moduleReference.expression);else dynamic=true;serverUse=true;return;}
     if(ts.isCallExpression(node)&&(node.expression.kind===ts.SyntaxKind.ImportKeyword||ts.isIdentifier(node.expression)&&node.expression.text==='require')){if(node.arguments.length!==1)dynamic=true;else literal(node.arguments[0]);}
-    if(ts.isIdentifier(node)&&serverGlobals.has(node.text))serverUse=true;
+    if(ts.isIdentifier(node)&&serverGlobals.has(node.text)&&!localExportProperty(node))serverUse=true;
     if(ts.isElementAccessExpression(node)&&node.argumentExpression&&ts.isStringLiteral(node.argumentExpression)&&serverGlobals.has(node.argumentExpression.text))serverUse=true;
     if(ts.isMetaProperty(node))serverUse=true; // import.meta/env has no declared public substitution policy.
     ts.forEachChild(node,walk);

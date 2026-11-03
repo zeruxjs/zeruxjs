@@ -63,3 +63,10 @@ test('cache policy validates before providers and preserves owner-scoped policy'
  assert.equal(calls,0);
  const prepared=await prepareConfiguration({cache:{connector:'memory',policy:{maxBulk:10,requireCapabilities:['conditionalWrites']}}});assert.equal(prepared.config.cache.policy.maxBulk,10);
 });
+test('private development watch directories validate before startup and stay out of public config', async () => {
+  const result = await prepareConfiguration({ server: { port: 3010, watchIgnoredPaths: ['.workspace', 'private/cache'] } });
+  assert.deepEqual({ ...result.publicConfig.server }, { port: 3010 });
+  for (const watchIgnoredPaths of [['../secret'], ['/absolute'], ['foo//bar'], 'all', Array.from({length:65},()=>'.private')]) {
+    await assert.rejects(prepareConfiguration({ server: { watchIgnoredPaths } }));
+  }
+});

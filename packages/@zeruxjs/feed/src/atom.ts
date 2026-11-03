@@ -1,16 +1,5 @@
 import type { FeedOptions } from "./types.js";
-import {
-  escapeXml as x,
-  safeFeedUrl,
-  date,
-  updated,
-  normalizeFeed,
-  finishFeed,
-  authors,
-  attachments,
-  categories,
-  atomId,
-} from "./utils.js";
+import { escapeXml as x, date, updated, normalizeFeed, finishFeed, authors, attachments, categories, atomId } from "./utils.js";
 export function createAtomFeed(input: FeedOptions): string {
   const options = normalizeFeed(input),
     feedAuthors = options.authors ?? [],

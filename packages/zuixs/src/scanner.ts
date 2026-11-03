@@ -22,8 +22,7 @@ export function extractClasses(source:string,options:{limits?:ZuixLimits}={}):st
  for(const match of source.matchAll(attrs))add(match[1]??match[2]??'');
  for(const match of source.matchAll(/\bclass:([\w:![\]#%./-]+)/g))add(match[1]);
  const helpers=/\b(?:cn|clsx|cx|classNames)\s*\(/g;
- let match:RegExpExecArray|null;
- while((match=helpers.exec(source))){
+ while(helpers.exec(source)!==null){
   const stack=['('],literals:string[]=[];
   let index=helpers.lastIndex,quote='',start=0,comment='';
   for(;index<source.length;index++){

@@ -23,6 +23,7 @@ export default ({ app, snapshot, identifier, sectionId, sections, modules, nonce
     nonce,
     config: {
       page: "application",
+      themeParentOrigins: process.env.NODE_ENV === "production" ? [] : (app.devtools.frameAncestors ?? []),
       app: { routeName: app.routeName, appName: app.appName },
       identifier,
       sectionId: activeId,

@@ -10,7 +10,7 @@ const require=createRequire(import.meta.url);
 test('core stays peer-free; packed Vue entries and authored example use real installed exports',()=>{
  const temporary=mkdtempSync(join(tmpdir(),'vue-render-public-'));
  const run=(command,args,cwd)=>execFileSync(command,args,{cwd,encoding:'utf8',env:{...process.env,npm_config_cache:join(temporary,'cache')}});
- const pack=directory=>{const report=JSON.parse(run('npm',['pack','--ignore-scripts','--json','--pack-destination',temporary],directory));return join(temporary,(Array.isArray(report)?report:Object.values(report))[0].filename)};
+ const pack=directory=>{const report=JSON.parse(run('npm',['pack','--ignore-scripts','--json','--pack-destination',temporary],directory));return join(temporary,(Array.isArray(report)?report:Object.values(report))[0].filename);};
  try{
   const archive=pack(resolve('.')),consumer=join(temporary,'consumer');mkdirSync(consumer);writeFileSync(join(consumer,'package.json'),'{"private":true,"type":"module"}');
   run('npm',['install','--offline','--legacy-peer-deps','--ignore-scripts','--no-audit','--no-fund','--no-package-lock',archive],consumer);
@@ -21,10 +21,10 @@ test('core stays peer-free; packed Vue entries and authored example use real ins
   const directories=new Map();
   const packageDirectory=(name,from)=>{
    const local=createRequire(join(from,'package.json'));let path;
-   try{path=local.resolve(name+'/package.json')}catch{path=local.resolve(name)}
+   try{path=local.resolve(name+'/package.json');}catch{path=local.resolve(name);}
    let directory=dirname(path);
    while(directory!==dirname(directory)){
-    const manifest=join(directory,'package.json');if(existsSync(manifest)){const data=JSON.parse(readFileSync(manifest,'utf8'));if(data.name===name)return directory}directory=dirname(directory);
+    const manifest=join(directory,'package.json');if(existsSync(manifest)){const data=JSON.parse(readFileSync(manifest,'utf8'));if(data.name===name)return directory;}directory=dirname(directory);
    }
    throw Error('Installed package not found: '+name);
   };
@@ -40,7 +40,7 @@ test('core stays peer-free; packed Vue entries and authored example use real ins
   const dependencies=[...directories.values()].map(pack);
   run('npm',['install','--offline','--ignore-scripts','--no-audit','--no-fund','--no-package-lock',...dependencies],consumer);
   const readme=readFileSync(new URL('../README.md',import.meta.url),'utf8');
-  for(const name of ['counter.ts','server-example.ts','browser-example.ts']){const code=readme.split('```ts title="'+name+'"\n')[1]?.split('```')[0];assert.ok(code,'Example missing: '+name);writeFileSync(join(consumer,name),code)}
+  for(const name of ['counter.ts','server-example.ts','browser-example.ts']){const code=readme.split('```ts title="'+name+'"\n')[1]?.split('```')[0];assert.ok(code,'Example missing: '+name);writeFileSync(join(consumer,name),code);}
   writeFileSync(join(consumer,'consumer.ts'),`import * as Vue from '@vue/runtime-dom';import {createVueBindings} from '@zeruxjs/vue';import {createVueView} from '@zeruxjs/vue/rendering';import {renderVueToString} from '@zeruxjs/vue/server';const bridge=createVueBindings(Vue);const scope=Vue.effectScope();scope.run(()=>{const value=bridge.useStore({getSnapshot:()=>1,subscribe:()=>()=>{}});const checked:number=value.value;
 // @ts-expect-error converted snapshots have a read-only value
 value.value=2;
@@ -48,5 +48,5 @@ value.value=2;
   writeFileSync(join(consumer,'tsconfig.json'),JSON.stringify({compilerOptions:{module:'NodeNext',moduleResolution:'NodeNext',target:'ES2022',lib:['ES2022','DOM','DOM.Iterable'],types:[],strict:true,noEmitOnError:true,outDir:'out'},include:['consumer.ts','counter.ts','server-example.ts','browser-example.ts']}));
   run(process.execPath,[require.resolve('typescript/bin/tsc'),'-p','tsconfig.json'],consumer);
   writeFileSync(join(consumer,'check.mjs'),`import {createRequire} from 'node:module';import {renderVueToString} from '@zeruxjs/vue/server';import {createVueView} from '@zeruxjs/vue/rendering';import {Counter} from './out/counter.js';const html=await renderVueToString(createVueView(Counter,{initial:2,label:'Count'}));if(!html.includes('Count')||!html.includes('4'))throw Error('SSR example failed');const require=createRequire(import.meta.url),vueRequire=createRequire(require.resolve('vue/package.json'));if(require.resolve('@vue/runtime-dom')!==vueRequire.resolve('@vue/runtime-dom'))throw Error('duplicate Vue runtime');`);run(process.execPath,['check.mjs'],consumer);
- }finally{rmSync(temporary,{recursive:true,force:true})}
+ }finally{rmSync(temporary,{recursive:true,force:true});}
 });

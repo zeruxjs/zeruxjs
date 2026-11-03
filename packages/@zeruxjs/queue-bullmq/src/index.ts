@@ -128,16 +128,16 @@ export interface QueueOperations {
   cancelOneOff(queue:string,id:string,context:unknown):Promise<boolean>;
 }
 const allowedStates=new Set<QueueJobState>(['waiting','active','delayed','failed','completed','paused','waiting-children','prioritized']);
-const validJobId=(id:string)=>typeof id==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(id);
-const validPositive=(n:number,min:number,max:number,label:string)=>{if(!Number.isSafeInteger(n)||n<min||n>max)throw new RangeError(`Invalid ${label}`);return n;};
+const validJobId=(id:string)=>(typeof id==='string')&&/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(id);
+const validPositive=(n:number,min:number,max:number,label:string)=>{if((!Number.isSafeInteger(n)||(n<min))||(n>max))throw new RangeError(`Invalid ${label}`);return n;};
 const validName = (name:string, kind:string) => {
-  if (typeof name !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(name)) throw new TypeError(`Invalid ${kind} name`);
+  if ((typeof name !== 'string') || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(name)) throw new TypeError(`Invalid ${kind} name`);
   return name;
 };
 function validateJobOptions(options:QueueJobOptions | undefined) {
   if (options === undefined) return;
-  if (!options || typeof options !== 'object' || Array.isArray(options)||Object.keys(options).some(key=>!['jobId','delay','priority','attempts','backoff','removeOnComplete','removeOnFail','repeat','deduplication'].includes(key))) throw new TypeError('Invalid job options');
-  if (options.jobId !== undefined && !validJobId(options.jobId)) throw new TypeError('Invalid jobId');
+  if (((!options || (typeof options !== 'object')) || Array.isArray(options))||Object.keys(options).some(key=>!['jobId','delay','priority','attempts','backoff','removeOnComplete','removeOnFail','repeat','deduplication'].includes(key))) throw new TypeError('Invalid job options');
+  if ((options.jobId !== undefined) && !validJobId(options.jobId)) throw new TypeError('Invalid jobId');
   if (options.delay !== undefined) validPositive(options.delay,0,366*86_400_000,'job delay');
   if (options.priority !== undefined) validPositive(options.priority,0,2_097_152,'job priority');
   if (options.attempts !== undefined) validPositive(options.attempts,1,50,'job attempts');
@@ -148,9 +148,9 @@ function validateJobOptions(options:QueueJobOptions | undefined) {
   }
   for (const key of ['removeOnComplete','removeOnFail'] as const) {
     const value=options[key];
-    if (value===undefined || typeof value==='boolean') continue;
+    if ((value===undefined) || (typeof value==='boolean')) continue;
     if (typeof value==='number') validPositive(value,0,1_000_000, key);
-    else if (!value || typeof value!=='object' || Array.isArray(value)) throw new TypeError(`Invalid ${key}`);
+    else if ((!value || (typeof value!=='object')) || Array.isArray(value)) throw new TypeError(`Invalid ${key}`);
     else {
       if (value.age!==undefined) validPositive(value.age,0,366*86_400,key+' age');
       if (value.count!==undefined) validPositive(value.count,0,1_000_000,key+' count');
@@ -162,10 +162,10 @@ function validateJobOptions(options:QueueJobOptions | undefined) {
   }
   if (options.repeat!==undefined) {
     const r=options.repeat;
-    if (!r || typeof r!=='object'||Array.isArray(r)) throw new TypeError('Invalid repeat options');
+    if ((!r || (typeof r!=='object'))||Array.isArray(r)) throw new TypeError('Invalid repeat options');
     if (r.every!==undefined) validPositive(r.every,1000,366*86_400_000,'Repeat interval');
     if (r.limit!==undefined) validPositive(r.limit,1,1_000_000,'repeat limit');
-    if (r.pattern!==undefined && (typeof r.pattern!=='string'||r.pattern.length>100||!([5,6].includes(r.pattern.trim().split(/\s+/).length))))throw new TypeError('Invalid repeat cron pattern');
+    if ((r.pattern!==undefined) && (((typeof r.pattern!=='string')||(r.pattern.length>100))||!([5,6].includes(r.pattern.trim().split(/\s+/).length))))throw new TypeError('Invalid repeat cron pattern');
   }
 }
 const deadline = async <T>(promise:Promise<T>, ms:number, message:string,onTimeout?:()=>void):Promise<T> => {
@@ -176,21 +176,21 @@ const deadline = async <T>(promise:Promise<T>, ms:number, message:string,onTimeo
 
 /** Create a managed BullMQ service. Inject a factory in unit tests; normally load real bullmq. */
 export async function createQueueService(config:QueueServiceConfig, injected?:BullMQFactory, injectedCluster?:BullMQClusterConstructor) {
-  if (!config || !config.redis || !Array.isArray(config.queues) || !config.queues.length || config.queues.length>256) throw new TypeError('Queue requires Redis settings and at least one named queue');
+  if ((((!config || !config.redis) || !Array.isArray(config.queues)) || !config.queues.length) || (config.queues.length>256)) throw new TypeError('Queue requires Redis settings and at least one named queue');
   const prefix = config.prefix ?? 'zerux';
   if (config.redis.cluster) {
     if (!/^\{[A-Za-z0-9][A-Za-z0-9_.-]{0,63}\}$/.test(prefix))throw new TypeError('Redis Cluster needs an explicit hash-tagged BullMQ prefix, e.g. {tenant-a}');
   } else validName(prefix,'queue prefix');
-  const queueDefs = config.queues.map(item=>typeof item==='string'? {name:item}:item);
+  const queueDefs = config.queues.map(item=>(typeof item==='string')? {name:item}:item);
   const defined=new Set<string>();
   for(const def of queueDefs) {validName(def.name,'queue');if(defined.has(def.name))throw new TypeError('Duplicate queue name');defined.add(def.name);validateJobOptions(def.defaultJobOptions);}
   for(const name of Object.keys(config.workers??{})) {
     if(!defined.has(name))throw new TypeError(`Worker targets unknown queue ${name}`);
     const w=config.workers![name];if(typeof w.processor !== 'function')throw new TypeError('Worker processor must be a function');
-    if(w.concurrency !== undefined && (!Number.isSafeInteger(w.concurrency)||w.concurrency<1||w.concurrency>1024))throw new TypeError('Worker concurrency must be 1..1024');
-    if(w.autorun!==undefined&&typeof w.autorun!=='boolean')throw new TypeError('Worker autorun must be boolean');
+    if((w.concurrency !== undefined) && ((!Number.isSafeInteger(w.concurrency)||(w.concurrency<1))||(w.concurrency>1024)))throw new TypeError('Worker concurrency must be 1..1024');
+    if((w.autorun!==undefined)&&(typeof w.autorun!=='boolean'))throw new TypeError('Worker autorun must be boolean');
     if(w.lockDuration!==undefined)validPositive(w.lockDuration,1000,600_000,'worker lock duration');
-    if(w.limiter&&(!Number.isSafeInteger(w.limiter.max)||w.limiter.max<1||w.limiter.max>1_000_000||!Number.isSafeInteger(w.limiter.duration)||w.limiter.duration<1000||w.limiter.duration>86_400_000))throw new RangeError('Invalid Redis worker rate limit');
+    if(w.limiter&&(((((!Number.isSafeInteger(w.limiter.max)||(w.limiter.max<1))||(w.limiter.max>1_000_000))||!Number.isSafeInteger(w.limiter.duration))||(w.limiter.duration<1000))||(w.limiter.duration>86_400_000)))throw new RangeError('Invalid Redis worker rate limit');
   }
   // Validate host-controlled operational limits before allocating Cluster sockets.
   if(config.shutdownGraceMs!==undefined)validPositive(config.shutdownGraceMs,1,300_000,'shutdown grace period');
@@ -224,7 +224,7 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
   };
   const prepareJob=(jobName:string,data:JobData,opts?:QueueJobOptions)=>{validName(jobName,'job');validateJobOptions(opts);return {name:jobName,data:copyJobPayload(data),opts};};
   const prepareBulk=(jobs:Array<{name:string;data:JobData;options?:QueueJobOptions}>)=>{
-    if(!Array.isArray(jobs)||jobs.length>QUEUE_JOB_LIMITS.maxBulk||Object.keys(jobs).length!==jobs.length||Object.keys(jobs).some((key,index)=>key!==String(index)))throw new RangeError('Queue bulk count limit exceeded');
+    if(((!Array.isArray(jobs)||(jobs.length>QUEUE_JOB_LIMITS.maxBulk))||(Object.keys(jobs).length!==jobs.length))||Object.keys(jobs).some((key,index)=>key!==String(index)))throw new RangeError('Queue bulk count limit exceeded');
     let bytes=0;return jobs.map(job=>{const prepared=prepareJob(job.name,job.data,job.options);bytes+=Buffer.byteLength(JSON.stringify(prepared.data));if(bytes>QUEUE_JOB_LIMITS.maxBulkBytes)throw new RangeError('Queue bulk byte limit exceeded');return prepared;});
   };
 
@@ -232,10 +232,10 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
   const policy=config.administration;
   const authorize=async(action:QueueAdminAction,name:string,context:unknown)=>{
     getQueue(name);
-    if(!policy?.authorize||await policy.authorize(action,name,context)!==true)throw new Error('Queue administrative operation forbidden');
+    if(!policy?.authorize||(await policy.authorize(action,name,context)!==true))throw new Error('Queue administrative operation forbidden');
   };
   const audit=async(action:QueueAdminAction,queue:string,success:boolean,jobId?:string)=>{
-    try{await policy?.onAudit?.({action,queue,success,at:new Date().toISOString(),...(jobId&&validJobId(jobId)?{jobId}:{})});}
+    try{await policy?.onAudit?.({action,queue,success,at:new Date().toISOString(),...((jobId&&validJobId(jobId))?{jobId}:{})});}
     catch{/* Audit hook cannot cause a successful state transition to be retried. */}
   };
   const perform=async(action:QueueAdminAction,name:string,context:unknown,operation:()=>Promise<void>,id?:string)=>{
@@ -258,16 +258,16 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
     async inspect(name,options,context){
       await authorize('inspect',name,context);
       const states=options?.states??['failed'];
-      if(!Array.isArray(states)||!states.length||states.length>8||states.some(s=>!allowedStates.has(s)))throw new TypeError('Invalid job states');
+      if(((!Array.isArray(states)||!states.length)||(states.length>8))||states.some(s=>!allowedStates.has(s)))throw new TypeError('Invalid job states');
       const start=validPositive(options?.start??0,0,1_000_000,'inspection offset');
       const limit=validPositive(options?.limit??20,1,policy?.maxPageSize??50,'inspection limit');
       const q=getQueue(name);
       if(typeof q.getJobs!=='function')throw new Error('Queue driver does not support job inspection');
-      const jobs=await q.getJobs(states,start,start+limit-1,false);
+      const jobs=await q.getJobs(states,start,(start+limit)-1,false);
       await audit('inspect',name,true);
       const summaries=await Promise.all(jobs.slice(0,limit).map(async job=>({
         id:String(job.id??''),name:String(job.name),
-        state:job.getState?await job.getState():states.length===1?states[0]:'unknown',
+        state:job.getState?await job.getState():(states.length===1)?states[0]:'unknown',
         attemptsMade:Number.isSafeInteger(job.attemptsMade)?job.attemptsMade!:0,
         ...(Number.isFinite(job.timestamp)?{timestamp:job.timestamp}:{}),
         ...(Number.isFinite(job.processedOn)?{processedOn:job.processedOn}:{}),
@@ -279,7 +279,7 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
       if(!validJobId(id))return Promise.reject(new TypeError('Invalid job ID'));
       return perform('retry',name,context,async()=>{
         const job=await getQueue(name).getJob(id);
-        if(!job||typeof job.retry!=='function'||typeof job.getState!=='function')throw new Error('Job not found or retry unsupported');
+        if((!job||(typeof job.retry!=='function'))||(typeof job.getState!=='function'))throw new Error('Job not found or retry unsupported');
         if(await job.getState()!=='failed')throw new Error('Only failed jobs can be retried');
         await job.retry('failed');
       },id);
@@ -311,7 +311,7 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
   const manager={
     operations,
     shutdownStatus():QueueShutdownStatus {
-      const state=closingState==='incomplete'&&!pendingClosures&&!activeProcessors?'closed':closingState;
+      const state=(((closingState==='incomplete')&&!pendingClosures)&&!activeProcessors)?'closed':closingState;
       return {state,activeProcessors,pendingClosures,workerDeadlines,forceCloseAttempts,cleanupDeadlines,cleanupFailures};
     },
     routes:()=>config.dashboard?createQueueDashboard({names:()=>[...queues.keys()],operations},config.dashboard).routes():[],
@@ -372,9 +372,9 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
         workers.clear();eventStreams.clear();queues.clear();
         if(ownedCluster)for(const cluster of [ownedCluster.worker,ownedCluster.producer]){
           try{await closeResource(()=>cluster.quit(),Math.min(grace,5_000),'Redis Cluster close deadline');}
-          catch(error){errors.push(error);if('disconnect' in cluster&&typeof cluster.disconnect==='function')try{cluster.disconnect();}catch(disconnectError){errors.push(disconnectError);}}
+          catch(error){errors.push(error);if(('disconnect' in cluster)&&(typeof cluster.disconnect==='function'))try{cluster.disconnect();}catch(disconnectError){errors.push(disconnectError);}}
         }
-        cleanupFailures=errors.length;closingState=errors.length?'failed':pendingClosures||activeProcessors?'incomplete':'closed';
+        cleanupFailures=errors.length;closingState=errors.length?'failed':(pendingClosures||activeProcessors)?'incomplete':'closed';
         if(errors.length)throw new AggregateError(errors,'Queue service shutdown failed');
       })();
       return closePromise;
@@ -390,7 +390,7 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
       queues.set(def.name,q);
     }
     const timeout=config.readyTimeoutMs??3_000;
-    if(!Number.isSafeInteger(timeout)||timeout<1||timeout>120_000)throw new TypeError('Invalid queue readyTimeoutMs');
+    if((!Number.isSafeInteger(timeout)||(timeout<1))||(timeout>120_000))throw new TypeError('Invalid queue readyTimeoutMs');
     for(const q of queues.values()) await deadline(q.waitUntilReady(),timeout,'Queue Redis connection timed out');
     if(config.events?.enabled){
       if(!bullmq.QueueEvents)throw new Error('QueueEvents is unavailable in the installed BullMQ driver');
@@ -399,8 +399,8 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
         eventStreams.set(def.name,stream);
         for(const type of ['completed','failed','waiting','active','stalled','progress'] as const){
           stream.on(type,(payload:unknown)=>{
-            const obj=payload&&typeof payload==='object'?payload as {jobId?:unknown}:{};
-            const jobId=typeof obj.jobId==='string'&&obj.jobId.length<=256&&!/[\x00-\x1f\x7f]/.test(obj.jobId)?obj.jobId:undefined;
+            const obj=(payload&&(typeof payload==='object'))?payload as {jobId?:unknown}:{};
+            const jobId=(((typeof obj.jobId==='string')&&(obj.jobId.length<=256))&&!/[\x00-\x1f\x7f]/.test(obj.jobId))?obj.jobId:undefined;
             try{config.events?.onEvent?.({queue:def.name,type,at:new Date().toISOString(),...(jobId?{jobId}:{})});}catch{/* No callback may crash the stream */}
           });
         }
@@ -432,7 +432,7 @@ export function createAnalyticsReconciliationProcessor(
   return async (job) => {
     if(job.name!=='analytics.reconcile') throw new Error('Unexpected analytics maintenance job');
     const id=job.data.id;
-    if(typeof id!=='string'||!Object.hasOwn(jobs,id)) throw new Error('Unknown analytics reconciliation job');
+    if((typeof id!=='string')||!Object.hasOwn(jobs,id)) throw new Error('Unknown analytics reconciliation job');
     const target=jobs[id];
     const result=await target.runOnce(`bullmq-${randomUUID()}`);
     return {busy:result.busy,status:result.state.status};
@@ -468,12 +468,12 @@ export function createEmailDeliveryProcessor(adapter:QueuedEmailDeliveryAdapter)
   return async(job)=>{
     if(job.name!=='email.deliver')throw new Error('Unexpected email queue job name');
     const messageId=job.data?.messageId;
-    if(typeof messageId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(messageId))throw new TypeError('Invalid queued message ID');
+    if((typeof messageId!=='string')||!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(messageId))throw new TypeError('Invalid queued message ID');
     const message=await adapter.load(messageId);
     if(!message)throw new Error('Queued email record missing');
-    if(message.id!==messageId||!['marketing','transactional'].includes(message.purpose))throw new Error('Invalid queued email record');
+    if((message.id!==messageId)||!['marketing','transactional'].includes(message.purpose))throw new Error('Invalid queued email record');
     if(message.purpose==='marketing'){
-      if(typeof message.recipient!=='string'||!message.recipient.trim())throw new Error('Marketing recipient unavailable');
+      if((typeof message.recipient!=='string')||!message.recipient.trim())throw new Error('Marketing recipient unavailable');
       // No fallback to transactional, no stale cached opt-in, and no dependence on tracking policy.
       if(!await adapter.isSubscribed(message.recipient)){
         await adapter.suppress(messageId,'unsubscribed');
@@ -490,11 +490,11 @@ export function createEmailDeliveryProcessor(adapter:QueuedEmailDeliveryAdapter)
 export async function enqueueEmailById(
   queue:ZeruxQueue,messageId:string,options:{delay?:number;attempts?:number}={}
 ):Promise<BullJobLike>{
-  if(typeof messageId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(messageId))throw new TypeError('Invalid queued message ID');
-  if(options.delay!==undefined)validPositive(options.delay,0,365*24*60*60*1000,'email delay');
+  if((typeof messageId!=='string')||!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(messageId))throw new TypeError('Invalid queued message ID');
+  if(options.delay!==undefined)validPositive(options.delay,0,(((365*24)*60)*60)*1000,'email delay');
   if(options.attempts!==undefined)validPositive(options.attempts,1,20,'email attempts');
   return queue.add('email.deliver',{messageId},{
-    jobId:`email-${messageId}`,...(options.delay===undefined?{}:{delay:options.delay}),
+    jobId:`email-${messageId}`,...((options.delay===undefined)?{}:{delay:options.delay}),
     attempts:options.attempts??5,backoff:{type:'exponential',delay:5000}
   });
 }

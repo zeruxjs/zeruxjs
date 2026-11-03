@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import {mkdtemp,mkdir,writeFile,rename,rm,symlink,chmod} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {watchDirectory,scan,ScanError,activeWatcherCount,watcherDiagnostics} from 'zlook';
+import { watchDirectory, scan, activeWatcherCount, watcherDiagnostics } from 'zlook';
 const fixture=()=>mkdtemp(join(tmpdir(),'zlook-bounded-'));
 const options={pollingOnly:true,pollIntervalMs:60000};
 

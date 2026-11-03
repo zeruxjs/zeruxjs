@@ -1,7 +1,7 @@
 import {createHash,randomUUID} from 'node:crypto';
 import {classifySmtpRecipients,EmailSubmissionError,smtpSubmissionFailure,classifySmtpAcceptance} from './smtp-outcomes.js';
 import type {EmailAccount, EmailAddress, EmailManagerOptions, EmailMessage, EmailResult, SmtpAuth, TransportLike} from './types.js';
-import {validateEmailAddress,validateMessage,validateSmtp,recipientList,addressString} from './validation.js';
+import { validateEmailAddress, validateMessage, validateSmtp, recipientList } from './validation.js';
 import {createRecipientFilter} from './filters.js';
 import {createTemplateRegistry} from './templates.js';
 import {convertHtmlToEmail,plainTextFromHtml} from './html.js';

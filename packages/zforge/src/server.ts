@@ -6,10 +6,10 @@ import { readLimitedBody, localDevHost } from "./request.js";
 import { createDevtoolsDocumentPolicy } from "./framing.js";
 
 import { readModuleAsset, readModulePublicAsset, resolveModuleApiRequest, resolveModuleSocketRequest } from "./module-loader.js";
-import { readDevAsset, renderApplicationPage, renderHomePage, resolveCustomApiHandler, loadApplicationSections } from "./render.js";
+import { readDevAsset, renderApplicationPage, renderHomePage, resolveCustomApiHandler } from "./render.js";
 import { appendSnapshotEvent, normalizeSnapshot } from "./state.js";
 import { getRegistryApp, readRegistry, readSharedDevRouteName, registerSharedDevApp, unregisterSharedDevApp, isPortFree, findPort, writeRegistry } from "./registry.js";
-import type { SharedDevEvent, SharedDevServerHandle, SharedDevRegistration } from "./types.js";
+import type { SharedDevEvent, SharedDevServerHandle } from "./types.js";
 
 let sharedServerHandle: SharedDevServerHandle | null = null;
 let sharedDevEventBroadcaster: ((appName: string, event: SharedDevEvent) => void) | null = null;
@@ -108,7 +108,7 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
             }
 
             if (!allowed) {
-                console.error(`[Dev] Blocked unallowed host access to devtools: ${host} (App: ${app.appName})`);
+                console.error(`[Dev] Blocked unallowed host access to devtools: ${JSON.stringify(host)} (App: ${JSON.stringify(app.appName)})`);
                 sendJson(res, { error: "Unallowed Host", message: `Host ${host} is not allowed to access devtools for ${app.appName}.` }, 403);
                 return;
             }
@@ -144,7 +144,7 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
 
     const globalAssetMatch = pathname.match(/^\/__([^/]+)\/assets\/(style\.css|app\.js)$/);
     if (globalAssetMatch) {
-        const [, serviceName, assetName] = globalAssetMatch;
+        const [, , assetName] = globalAssetMatch;
         const asset = readDevAsset(assetName);
         if (!asset) {
             sendJson(res, { message: "Asset not found" }, 404);
@@ -168,7 +168,7 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
                 }
             }
             if (!hostAllowed) {
-                console.error(`[Dev] Blocked unallowed host access to root dashboard: ${host}`);
+                console.error(`[Dev] Blocked unallowed host access to root dashboard: ${JSON.stringify(host)}`);
                 sendJson(res, { error: "Unallowed Host", message: `Host ${host} is not allowed to access the devtools dashboard.` }, 403);
                 return;
             }

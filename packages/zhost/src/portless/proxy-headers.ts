@@ -30,7 +30,7 @@ export function filterProxyHeaders(
   for (const [name, value] of Object.entries(headers)) {
     const lower = name.toLowerCase();
     if (!lower.startsWith(':') && !forbidden.has(lower) && value !== undefined) {
-      result[lower] = value;
+      Object.defineProperty(result, lower, {value, enumerable: true, configurable: true, writable: true});
     }
   }
   if (options.preserveUpgrade) {

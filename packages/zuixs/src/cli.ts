@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import path from "node:path";
+import {readProjectFile} from "./outputs.js";
 import { outputPath } from "./node-build.js";
 import fs from "node:fs";
 import { createHash } from "node:crypto";
@@ -53,8 +54,7 @@ export async function runCli(
     let loaded:ZuixConfig={};
     if(configPath){
       const file=outputPath(root,configPath);
-      const stat=fs.statSync(file);if(!stat.isFile()||stat.size>1024*1024)throw new Error('zuix: invalid config file size');
-      const revision=createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+      const revision=createHash('sha256').update(readProjectFile(file,1024*1024)).digest('hex');
       const mod=await import(pathToFileURL(file).href+'?zuix='+revision);
       loaded={...(mod.default??mod.config??{})};
     }

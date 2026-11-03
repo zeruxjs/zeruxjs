@@ -205,3 +205,8 @@ Run the real owning application/tool with a normal input and a failure input. In
 | `mode` | `'any'\|'all'` | No | Passed using this declared shape; omission is allowed only when marked optional. |
 | `prefix` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
 | `signal` | `AbortSignal` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+
+The protocol client preserves the native Fetch global receiver. Application hosts
+can still inject a borrowed transport and must own endpoint/authentication policy;
+client calls are not implicitly retried. The local integration app qualifies
+RPC/MCP/Connect/tRPC calls in Chrome, not every browser or complete vendor parity.

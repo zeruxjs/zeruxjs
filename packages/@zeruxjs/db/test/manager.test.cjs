@@ -14,7 +14,7 @@ test('failed database manager initialization disconnects earlier connectors', as
   fs.writeFileSync(path.join(root,'package.json'),'{}');
   const mod=path.join(root,'node_modules','test-first');fs.mkdirSync(mod,{recursive:true});
   const recorded=path.join(root,'closed');
-  fs.writeFileSync(path.join(mod,'index.js'),`exports.createConnector=()=>({kind:'fake',options:{},connect(){},disconnect(){require('node:fs').writeFileSync(${JSON.stringify(recorded)},'yes')},execute(){return {ok:true}}});`);
+  fs.writeFileSync(path.join(mod,'index.js'),`exports.createConnector=()=>({kind:'fake',options:{},connect(){},disconnect(){require('node:fs').writeFileSync(require('node:path').join(__dirname,'../../closed'),'yes')},execute(){return {ok:true}}});`);
   const fail=path.join(root,'node_modules','test-second'); fs.mkdirSync(fail,{recursive:true});
   fs.writeFileSync(path.join(fail,'index.js'),`exports.createConnector=()=>({kind:'fake',options:{},connect(){throw Error('connect exploded')},disconnect(){}});`);
   process.chdir(root);

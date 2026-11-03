@@ -1,0 +1,14 @@
+.workspace/
+.env
+.env.local
+.zerux/
+dist/
+nohup.out
+
+/public/workspace-client.js
+/public/workspace-utilities.css
+/public/.workspace-*
+
+!.env.workspace.example
+
+/.workspace-config-*

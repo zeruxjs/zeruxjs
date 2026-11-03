@@ -84,7 +84,7 @@ test('invalid browser options reject before driver allocation and backend runner
 });
 
 test('optional installed environment check reports unavailable without installing or launching apps',async t=>{
- try{import.meta.resolve('playwright');t.diagnostic('Playwright installed: real browser execution is handled only by the optional browser smoke check');}
+ try{const resolved=import.meta.resolve('playwright');assert.equal(typeof resolved,'string');t.diagnostic('Playwright installed: real browser execution is handled only by the optional browser smoke check');}
  catch{const result=await runBrowserTests([{name:'missing dependency',run:()=>assert.fail('not run')}]);assert.equal(result.unavailable,1);assert.equal(result.failed,0);assert.equal(result.skipped,0);}
 });
 

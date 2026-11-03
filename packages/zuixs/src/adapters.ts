@@ -69,7 +69,7 @@ export function zuixVite(config: ZuixConfig = {}) {
     },
     transform(code: string, id: string) {
       if (
-        /\.css(?:\?.*)?$/.test(id) &&
+        id.split('?',1)[0].endsWith('.css') &&
         /@import\s+([\"'])zuixs\1\s*;/.test(code)
       ) {
         cssEntries.add(id);
@@ -80,7 +80,7 @@ export function zuixVite(config: ZuixConfig = {}) {
           for (const value of values) tokens.add(value);
         return { code: compileStylesheet(code, tokens, config).css, map: null };
       }
-      if (!/\.(?:tsx?|jsx?|vue|svelte|astro|html)(?:\?.*)?$/.test(id))
+      if (!/\.(?:tsx?|jsx?|vue|svelte|astro|html)$/.test(id.split('?',1)[0]))
         return null;
       const file = relative(id);
       if (!file) return null;

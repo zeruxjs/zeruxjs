@@ -24,21 +24,9 @@ import { ApplicationHttpMetrics } from "../metrics.js";
 import { createVariableRegistry } from "../variables.js";
 import type { ServiceInitializers } from "./services.js";
 import { applyCachePolicy, isCached, isStream, conditionalEtag, sendStream, stream } from "../response.js";
-import type {
-    BootstrapResult,
-    DiscoveredRoute,
-    LoadedModule,
-    MiddlewareFunction,
-    RegisteredRouteInput,
-    ResolvedStructure,
-    RouteHandler,
-    RuntimeMode,
-    ZeruxPluginApi,
-    ZeruxRequestContext,
-    ZeruxRuntime
-} from "./types.js";
+import type { BootstrapResult, DiscoveredRoute, LoadedModule, MiddlewareFunction, ResolvedStructure, RouteHandler, RuntimeMode, ZeruxPluginApi, ZeruxRequestContext, ZeruxRuntime } from "./types.js";
 import { logger } from "./logger.js";
-import { isAllowedHost, isLocalHost } from "../utils/host.js";
+import { isAllowedHost } from "../utils/host.js";
 import { normalizeThreadWorker, normalizeWorker, ThreadWorkerPool } from "./worker.js";
 
 type HttpMethod = "ALL" | "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT";
@@ -259,29 +247,29 @@ const presetHtmlTheme = (html: string, mode: string, resolvedColorScheme: "light
     let attrs = htmlMatch[1];
     const themeClasses = mode === "system" ? ["system", resolvedColorScheme] : [mode];
 
-    const classMatch = attrs.match(/class=(['"])(.*?)\1/i);
+    const classMatch = attrs.match(/\bclass=("[^"<>]*"|'[^'<>]*')/i);
     if (classMatch) {
-        const quote = classMatch[1];
-        const existingClasses = classMatch[2].split(/\s+/).filter((item) =>
+        const quote = classMatch[1][0];
+        const existingClasses = classMatch[1].slice(1, -1).split(/\s+/).filter((item) =>
             item && item !== "light" && item !== "dark" && item !== "system"
         );
         const newClassAttr = `class=${quote}${[...existingClasses, ...themeClasses].join(" ")}${quote}`;
-        attrs = attrs.replace(/class=(['"])(.*?)\1/i, newClassAttr);
+        attrs = attrs.replace(/\bclass=("[^"<>]*"|'[^'<>]*')/i, newClassAttr);
     } else {
         attrs += ` class="${themeClasses.join(" ")}"`;
     }
 
-    const styleMatch = attrs.match(/style=(['"])(.*?)\1/i);
+    const styleMatch = attrs.match(/\bstyle=("[^"<>]*"|'[^'<>]*')/i);
     if (styleMatch) {
-        const quote = styleMatch[1];
-        const existingStyle = styleMatch[2]
+        const quote = styleMatch[1][0];
+        const existingStyle = styleMatch[1].slice(1, -1)
             .replace(/color-scheme\s*:\s*[^;]+;?/gi, "")
             .trim()
             .replace(/;?$/, ";")
             .replace(/^;$/, "");
         const style = `${existingStyle ? `${existingStyle} ` : ""}color-scheme: ${resolvedColorScheme};`;
         const newStyleAttr = `style=${quote}${style}${quote}`;
-        attrs = attrs.replace(/style=(['"])(.*?)\1/i, newStyleAttr);
+        attrs = attrs.replace(/\bstyle=("[^"<>]*"|'[^'<>]*')/i, newStyleAttr);
     } else {
         attrs += ` style="color-scheme: ${resolvedColorScheme};"`;
     }
@@ -294,7 +282,7 @@ const processThemeHtml = (html: string, context: ZeruxRequestContext): string =>
     const mode = getThemeMode(context);
     const colorScheme = getResolvedTheme(mode, context);
     let updatedHtml = presetHtmlTheme(html, mode, colorScheme);
-    const scriptContent = `(function(){var name=${JSON.stringify(themeConfig.cookieName)},def=${JSON.stringify(themeConfig.default)},theme=def,cookies=document.cookie.split(";");for(var i=0;i<cookies.length;i++){var c=cookies[i].trim();if(c.indexOf(name+"=")===0){theme=decodeURIComponent(c.substring(name.length+1));break}}if(theme!=="light"&&theme!=="dark"&&theme!=="system")theme=def;var doc=document.documentElement;function apply(){var resolved=theme==="system"&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":theme==="dark"?"dark":"light";doc.classList.remove("light","dark","system");doc.classList.add(theme);if(theme==="system")doc.classList.add(resolved);doc.style.colorScheme=resolved}apply();if(window.matchMedia){var media=window.matchMedia("(prefers-color-scheme: dark)");var listener=function(){if(theme==="system")apply()};if(media.addEventListener)media.addEventListener("change",listener);else if(media.addListener)media.addListener(listener)}})();`;
+    const scriptContent = `(function(){var name=${JSON.stringify(themeConfig.cookieName).replace(/</g, '\\u003c')},def=${JSON.stringify(themeConfig.default)},theme=def,cookies=document.cookie.split(";");for(var i=0;i<cookies.length;i++){var c=cookies[i].trim();if(c.indexOf(name+"=")===0){theme=decodeURIComponent(c.substring(name.length+1));break}}if(theme!=="light"&&theme!=="dark"&&theme!=="system")theme=def;var doc=document.documentElement;function apply(){var resolved=theme==="system"&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":theme==="dark"?"dark":"light";doc.classList.remove("light","dark","system");doc.classList.add(theme);if(theme==="system")doc.classList.add(resolved);doc.style.colorScheme=resolved}apply();if(window.matchMedia){var media=window.matchMedia("(prefers-color-scheme: dark)");var listener=function(){if(theme==="system")apply()};if(media.addEventListener)media.addEventListener("change",listener);else if(media.addListener)media.addListener(listener)}})();`;
     const scriptAttrs = [
         themeConfig.scriptType === "module" ? `type="module"` : "nomodule",
         themeConfig.scriptLoadType
@@ -302,11 +290,11 @@ const processThemeHtml = (html: string, context: ZeruxRequestContext): string =>
     const scriptTag = `<script ${scriptAttrs.join(" ")}>${scriptContent}</script>`;
 
     if (themeConfig.scriptPosition === "head") {
-        updatedHtml = updatedHtml.replace(/(<head\b[^>]*>)/i, `$1${scriptTag}`);
+        updatedHtml = updatedHtml.replace(/(<head\b[^>]*>)/i, (_match, opening: string) => opening + scriptTag);
     } else if (themeConfig.scriptPosition === "body-top") {
-        updatedHtml = updatedHtml.replace(/(<body\b[^>]*>)/i, `$1${scriptTag}`);
+        updatedHtml = updatedHtml.replace(/(<body\b[^>]*>)/i, (_match, opening: string) => opening + scriptTag);
     } else {
-        updatedHtml = updatedHtml.replace(/(<\/body>)/i, `${scriptTag}$1`);
+        updatedHtml = updatedHtml.replace(/(<\/body>)/i, (closing: string) => scriptTag + closing);
     }
 
     return updatedHtml;
@@ -681,6 +669,7 @@ const createRuntime = async (
 
     const pluginApi: ZeruxPluginApi = {
         renderers:()=>rendererRegistry,
+        lifecycleHooks:()=>lifecycleHooks,
         navigationManifest(options) {
             return createPublicRouteManifest({...options,routes:routes.filter(route=>route.methods.GET||route.methods.ALL).filter(route=>route.meta?.navigation!==undefined).map(route=>({...((route.meta!.navigation) as import('../navigation-manifest.js').NavigationRouteMetadata),pattern:route.pattern}))});
         },

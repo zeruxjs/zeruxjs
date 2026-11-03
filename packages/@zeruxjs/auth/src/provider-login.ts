@@ -58,6 +58,8 @@ export function createProviderLogin(options: ProviderLoginOptions) {
   const key = Buffer.from(options.bindingKey), pending = new Set<Promise<unknown>>(), controllers = new Set<AbortController>();
   const verifiers = new Map<string, Promise<ReturnType<JwtLibrary['createJwtVerifier']>>>(); let closed = false, closing: Promise<void> | undefined;
   const now = () => { const value = clock(); if (!Number.isSafeInteger(value) || value < 0 || value > 8e15) throw loginDenied(); return value; };
+  // HMAC binds high-entropy session/state/PKCE tokens, not human passwords.
+  // S256 PKCE and these opaque-token indexes must remain interoperable.
   const digest = (domain: string, values: unknown[]) => createHmac('sha256', key).update(JSON.stringify(['zeruxjs.auth.provider.v1', domain, ...values])).digest('base64url');
   function context(value: ProviderLoginContext) {
     if (!value || !loginText(value.tenant, 128) || !loginText(value.session, 128)) throw loginDenied();

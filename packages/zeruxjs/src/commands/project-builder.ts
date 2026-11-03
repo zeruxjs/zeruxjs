@@ -1,4 +1,4 @@
-import {assertSafeBuildDirectories,assertDisjointBuildSources} from './build-paths.js';
+import {assertSafeBuildDirectories,assertDisjointBuildSources,readBuildFile} from './build-paths.js';
 import {ModuleBoundaryError,classifyModules,loadBuildParser,rewriteClientModule,type BuildSource} from '../compiler/module-boundaries.js';
 import {prepareConfiguration} from '../bootstrap/config-validation.js';
 import fs from 'node:fs/promises';
@@ -133,9 +133,7 @@ export async function buildProjectSources(options: ProjectBuildOptions): Promise
         if (emitted.has(relative)) continue; // Nested source roots may overlap.
         emitted.add(relative);
         if (/^\.env(?:\.|$)/.test(path.basename(relative)) || /\.(?:key|pem)$/i.test(relative)) throw new Error(`Potential secret file in build sources: ${relative}`);
-        const inputStat = await fs.lstat(file);
-        if (!inputStat.isFile() || inputStat.size > MAX_FILE) throw new Error(`Invalid or oversized build source: ${relative}`);
-        const raw = await fs.readFile(file);
+        const raw = await readBuildFile(file, MAX_FILE);
         const posix=relative.split(path.sep).join('/');const publicRoot=publicRoots.find(base=>posix.startsWith(base+'/'));
         if(/\.[cm]?[jt]sx?$/.test(relative)){scriptBytes+=raw.length;if(buildSources.length>=5000||scriptBytes>64*1024*1024||raw.length>1048576)throw new ModuleBoundaryError('MODULE_GRAPH_LIMIT',[posix]);buildSources.push({relative:posix,source:raw.toString('utf8'),serverOnly:posix===entryRelative||serverRoots.some(base=>posix.startsWith(base+'/')),routeModule:appRoots.some(base=>posix.startsWith(base+'/')),...(publicRoot?{publicPath:posix.slice(publicRoot.length+1)}:{})});}
         const isCode = CODE.test(relative);
@@ -175,7 +173,7 @@ export async function buildProjectSources(options: ProjectBuildOptions): Promise
     }
     for(const module of classification.modules)if(module.environment==='client'&&buildSources.find(item=>item.relative===module.path)?.publicPath===undefined)await fs.rm(path.join(staging,emittedFile(module.path)),{force:true});
     const privateManifest={schema:1,modules:classification.modules.map(module=>({...module,...(module.environment!=='client'?{serverFile:emittedFile(module.path)}:{}),...(ids.has(module.path)?{clientAsset:`/_zerux/client/${graphId}/${ids.get(module.path)}.js`}:{})}))};
-    const selectedAssets=new Map<string,{url:string;integrity:string;bytes:number;kind:string}>();for(const {priority,source,...asset}of [...publicAssets].sort((a,b)=>a.priority-b.priority))selectedAssets.set(asset.url,asset);for(const asset of clientAssets){if(selectedAssets.has(asset.url))throw new Error('Generated client asset path conflicts with public source');selectedAssets.set(asset.url,asset);}
+    const selectedAssets=new Map<string,{url:string;integrity:string;bytes:number;kind:string}>();for(const item of [...publicAssets].sort((a,b)=>a.priority-b.priority)){const {url,integrity,bytes,kind}=item;selectedAssets.set(url,{url,integrity,bytes,kind});}for(const asset of clientAssets){if(selectedAssets.has(asset.url))throw new Error('Generated client asset path conflicts with public source');selectedAssets.set(asset.url,asset);}
     const namedEntries:Record<string,string>=Object.create(null);
     if(options.clientEntries!==undefined){
       if(!options.clientEntries||typeof options.clientEntries!=='object'||Array.isArray(options.clientEntries)||Object.keys(options.clientEntries).length>32)throw new TypeError('Invalid client entries');
@@ -196,7 +194,7 @@ export async function buildProjectSources(options: ProjectBuildOptions): Promise
     try { await fs.rename(final, backup); backedUp = true; }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     try { await fs.rename(staging, final); published = true; }
-    catch (error) { if (backedUp) await fs.rename(backup, final); backedUp = false; throw error; }
+    catch (error) { if (backedUp) await fs.rename(backup, final); throw error; }
     if (backedUp) await fs.rm(backup, { recursive: true, force: true });
     return manifest;
   } finally {
@@ -218,9 +216,9 @@ export async function resolveProductionStructure(rootDir: string, serviceName: s
   try {
     const buildStat = await fs.lstat(buildDir);
     if (!buildStat.isDirectory() || buildStat.isSymbolicLink()) throw new Error('Unsafe production build directory');
-    const stat = await fs.lstat(file);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 64 * 1024) throw new Error('Unsafe production build manifest');
-    manifest = JSON.parse(await fs.readFile(file, 'utf8')) as ProductionBuildManifest;
+    let bytes:Buffer;
+    try { bytes=await readBuildFile(file,64*1024); } catch(error) { if((error as NodeJS.ErrnoException).code==='ENOENT')throw error;throw new Error('Unsafe production build manifest',{cause:error}); }
+    manifest = JSON.parse(bytes.toString('utf8')) as ProductionBuildManifest;
   }
   catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return config;

@@ -11,13 +11,13 @@ import type {
     SharedDevStartResult
 } from "./types.js";
 
-const sanitizeAppName = (value: string) =>
-    value
-        .trim()
-        .replace(/^@/, "")
-        .replace(/[\\/]+/g, "_")
-        .replace(/[^a-zA-Z0-9_-]+/g, "_")
-        .replace(/^_+|_+$/g, "") || "app";
+const sanitizeAppName = (value: string) => {
+    const name = value.trim().replace(/^@/, "").replace(/[\\/]+/g, "_").replace(/[^a-zA-Z0-9_-]+/g, "_");
+    let start = 0, end = name.length;
+    while (start < end && name[start] === '_') start++;
+    while (end > start && name[end - 1] === '_') end--;
+    return name.slice(start, end) || 'app';
+};
 
 const isPidAlive = (pid?: number) => {
     if (!pid) return false;

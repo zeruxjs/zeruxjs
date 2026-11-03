@@ -10,6 +10,7 @@ export {
 } from './portless/portless.js';
 
 export { startServer } from './dev/server.js';
+export { createDevelopmentWatchIgnore } from './dev/watch-policy.js';
 
 export * from "./portless/health.js";
 export * from "./portless/managed-app.js";

@@ -5,7 +5,7 @@ import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { once } from 'node:events';
-import { createServiceScope, initializeRuntimeServices } from '../dist/bootstrap/services.js';
+import { createServiceScope } from '../dist/bootstrap/services.js';
 import { bootstrapApplication } from '../dist/bootstrap/runtime.js';
 
 const structure = rootDir => ({ mode: 'fix', rootDir, serviceName: 'zerux', entryPointName: 'index',

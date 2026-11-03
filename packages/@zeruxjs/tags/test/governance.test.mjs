@@ -110,7 +110,7 @@ test('browser cannot overwrite configured site/debug or choose request IDs; deny
 });
 
 test('admin CSP uses an exact script hash instead of unrestricted inline scripts',async()=>{
-  const a=app(),res=await a.call('admin');const html=await res.text(),source=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+  const a=app(),res=await a.call('admin');const html=await res.text(),source=html.match(/<script>([\s\S]*?)<\/script>/i)?.[1];
   const hash=createHash('sha256').update(source).digest('base64');
   assert.ok(res.headers.get('content-security-policy').includes(`script-src 'sha256-${hash}'`));
   assert.ok(!res.headers.get('content-security-policy').includes("script-src 'unsafe-inline'"));

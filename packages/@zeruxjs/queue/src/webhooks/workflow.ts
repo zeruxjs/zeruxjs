@@ -41,7 +41,7 @@ export function createWebhookWorkflow(options:WebhookWorkflowOptions){
   // Signing configuration is checked before claim; each attempt resolves the active ring again.
   const headers=signWebhook({tenant:value.tenant,destination:value.destination,deliveryId:value.deliveryId,timestamp:Math.floor(time/1000),body:value.body},target.keys);
   if(closed)throw fail('CLOSED');value=await change(value,{state:'sending',attempts:value.attempts+1,lease:{token:randomUUID(),until:time+leaseMs}});
-  const controller=new AbortController();controllers.add(controller);if(closed)controller.abort();const timer=setTimeout(()=>controller.abort(),timeout);let state:WebhookState='uncertain',code='OUTCOME_UNKNOWN',status:number|undefined,delay=0;
+  const controller=new AbortController();controllers.add(controller);if(closed)controller.abort();const timer=setTimeout(()=>controller.abort(),timeout);let state:WebhookState,code='OUTCOME_UNKNOWN',status:number|undefined,delay=0;
   try{
    if(controller.signal.aborted)throw fail('NOT_SENT');const response=await transport.send({url:target.url,body:value.body,headers:{...headers,'x-zerux-webhook-schema':String(value.schemaVersion)},signal:controller.signal,timeoutMs:timeout});status=number(response.status,100,599);
    if(controller.signal.aborted){state='uncertain';}

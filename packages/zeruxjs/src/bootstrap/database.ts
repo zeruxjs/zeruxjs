@@ -130,8 +130,8 @@ const createDefaultDbModuleSource = (managerPackage: string) => {
 const createDefaultDbModuleTypes = (): string => {
     const lines = [
         "import type * as DatabaseModule from \"@zeruxjs/db\";",
-        "declare const db: typeof import(\"@zeruxjs/db\").default;",
-        "export default db;"
+        "declare const __zerux_default_db: typeof import(\"@zeruxjs/db\").default;",
+        "export default __zerux_default_db;"
     ];
 
     DB_EXPORT_KEYS.forEach((key) => {

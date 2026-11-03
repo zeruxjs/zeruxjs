@@ -5,7 +5,7 @@ import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {bootstrapApplication} from '../dist/bootstrap/runtime.js';
-import {registerFetchRoutes} from '../dist/fetch-route.js';
+import {registerFetchRoutes,sendFetchResponse} from '../dist/fetch-route.js';
 import {createFeedFetchHandler} from '../../@zeruxjs/feed/dist/fetch.js';
 import {createCrawlerRoutes} from '../../@zeruxjs/seo/dist/fetch.js';
 import {createSearchIndex} from '../../@zeruxjs/search/dist/index.js';
@@ -50,4 +50,27 @@ test('real ZeruxJS routes serve searchable docs, dynamic sitemap, feed and font 
   const upload=await request(port,'/upload',{method:'POST',body:Buffer.alloc(1024*1024+67)});assert.deepEqual(JSON.parse(upload.body),{bytes:1024*1024+67});
   assert.ok(runtime.getLoadStatus().statusFamilies['2xx']>=7);
  } finally{runtime.closeProtocols();await stop(server);await rm(dir,{recursive:true,force:true})}
+});
+
+test('Fetch destination adapter applies pressure and cancels its source on downstream close', {timeout:5000}, async()=>{
+  let pulls=0,cancelled=false,notifyCancel;
+  const cancellation=new Promise(resolve=>{notifyCancel=resolve;});
+  const bytes=new Uint8Array(65536);
+  const server=http.createServer((req,res)=>{
+    const source=new ReadableStream({
+      async pull(controller){await new Promise(setImmediate);if(cancelled)return;if(++pulls>128){controller.close();return;}controller.enqueue(bytes);},
+      cancel(){cancelled=true;notifyCancel();}
+    });
+    void sendFetchResponse(req,res,new Response(source)).catch(()=>res.destroy());
+  });
+  const port=await listen(server);let client,response;
+  try{
+    await new Promise((resolve,reject)=>{client=http.get(`http://127.0.0.1:${port}/`,res=>{response=res;res.pause();resolve();});client.on('error',reject);});
+    await new Promise(resolve=>setTimeout(resolve,40));assert.ok(pulls<128,'paused destination must stop source pulls');
+    response.destroy();
+    let timer;
+    try{await Promise.race([cancellation,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Source was not cancelled; pulls=' + pulls)),1000);})]);}
+    finally{clearTimeout(timer);}
+    assert.equal(cancelled,true);
+  }finally{client?.destroy();server.closeAllConnections();await stop(server);}
 });

@@ -1,11 +1,10 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {createVueBindings,createVueRef,fromVueRef} from '../dist/index.js';
+import { createVueBindings, createVueRef } from '../dist/index.js';
 function harness(){const callbacks=new Set();let scope=true;let watches=0;return{
  callbacks,leave(){scope=false;for(const stop of [...callbacks])stop();callbacks.clear()},
  runtime:{shallowRef(value){return{value}},getCurrentScope(){return scope},onScopeDispose(stop){callbacks.add(stop)},
   readonly(ref){return{get value(){return ref.value}}},
-  watch(read,notify,options){assert.equal(options.flush,'sync');let before=read();
-   const cb=()=>{const next=read();if(!Object.is(next,before)){before=next;notify(next)}};
+  watch(read,notify,options){assert.equal(options.flush,'sync');read();
    watches++;return()=>{watches--};}}
 }}
 test('Vue scoped store is readonly and updates synchronously, scope cleanup is idempotent',()=>{

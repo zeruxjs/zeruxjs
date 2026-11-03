@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { signal, ref, watch, effect, computed, batch, createEffectScope, onScopeDispose, useState, useEffect } from '../dist/index.js';
+import { signal, ref, watch, batch, createEffectScope, onScopeDispose, useState, useEffect } from '../dist/index.js';
 import { h, render, unmount, defineComponent, renderToString } from '../dist/dom/index.js';
 import { root } from './dom-fixture.mjs';
 const elements = node => node.childNodes.filter(child => child.nodeType === 1);

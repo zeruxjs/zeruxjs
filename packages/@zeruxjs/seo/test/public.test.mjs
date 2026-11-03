@@ -29,7 +29,7 @@ test('private/signed URLs, hostile Host/forwarded origin, and repeated cursors f
 });
 test('verified direct proxy peer can admit configured internal origin without trusting forwarded headers',async()=>{
  const app=createPublicCrawlerService({site:{...site,trustedProxy:{peers:['127.0.0.1'],internalOrigins:['http://internal.test']}},source:{load:async()=>({items:[row(1)]})}});
- try{const req=new Request('http://internal.test/docs/sitemap.xml',{headers:{'x-forwarded-host':'evil.test',forwarded:'host=evil.test;proto=http'}});assert.equal((await app.handler(req,{peerAddress:'192.0.2.1'})).status,421);const result=await app.handler(req,{peerAddress:'127.0.0.1'});assert.equal(result.status,200);const xml=await result.text();assert(!xml.includes('evil.test'));assert(xml.includes('https://example.test/'));}finally{await app.close();}
+ try{const req=new Request('http://internal.test/docs/sitemap.xml',{headers:{'x-forwarded-host':'evil.test',forwarded:'host=evil.test;proto=http'}});assert.equal((await app.handler(req,{peerAddress:'192.0.2.1'})).status,421);const result=await app.handler(req,{peerAddress:'127.0.0.1'});assert.equal(result.status,200);const xml=await result.text();assert(!xml.includes('evil.test'));const locations=[...xml.matchAll(/<loc>([^<]+)<\/loc>/gi)].map(match=>new URL(match[1]));assert(locations.length>0);assert(locations.every(url=>url.origin===site.origin));}finally{await app.close();}
 });
 test('deadline preserves native ownership; close drains, failures retry and iterator cleanup is bounded',async()=>{
  let finish,signal,calls=0;const app=createPublicCrawlerService({site,timeoutMs:10,source:{load:async input=>{signal=input.signal;calls++;return new Promise(r=>finish=r);}}});

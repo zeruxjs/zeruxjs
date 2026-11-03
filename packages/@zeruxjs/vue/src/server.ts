@@ -13,7 +13,7 @@ async function peers(){
   const renderer=await import(entry) as typeof import('@vue/server-renderer');
   if(typeof renderer.renderToString!=='function'||typeof runtime.createSSRApp!=='function')throw new VueAdapterError('VUE_CAPABILITY_UNAVAILABLE');
   return{runtime,renderer};
- }catch(cause){throw cause instanceof VueAdapterError?cause:new VueAdapterError('VUE_DEPENDENCY_UNAVAILABLE',cause)}
+ }catch(cause){throw cause instanceof VueAdapterError?cause:new VueAdapterError('VUE_DEPENDENCY_UNAVAILABLE',cause);}
 }
 /** Native async SSR using Vue's compiler-free server build. Every call creates a fresh application/context. */
 export async function renderVueToString(input:VueRenderView,options:VueServerOptions={}):Promise<string>{
@@ -31,8 +31,8 @@ export async function renderVueToString(input:VueRenderView,options:VueServerOpt
   if(ssrContext.teleports&&Object.keys(ssrContext.teleports).length)throw new VueAdapterError('SSR_TELEPORTS_UNSUPPORTED');
   if(lease.errors.length)throw new VueAdapterError('VUE_RENDER_FAILED',new AggregateError(lease.errors,'Vue SSR reported errors'));
   if(new TextEncoder().encode(result).length>max)throw new VueAdapterError('HTML_BYTE_LIMIT');
- }catch(cause){failure=lease.context.signal.aborted?new VueAdapterError('RENDER_ABORTED',cause):cause instanceof VueAdapterError?cause:new VueAdapterError('VUE_RENDER_FAILED',cause)}
- try{await lease.close()}catch(cleanup){failure=failure?new VueAdapterError('VUE_RENDER_FAILED',new AggregateError([failure,cleanup],'Vue SSR and cleanup failed')):cleanup}
+ }catch(cause){failure=lease.context.signal.aborted?new VueAdapterError('RENDER_ABORTED',cause):cause instanceof VueAdapterError?cause:new VueAdapterError('VUE_RENDER_FAILED',cause);}
+ try{await lease.close();}catch(cleanup){failure=failure?new VueAdapterError('VUE_RENDER_FAILED',new AggregateError([failure,cleanup],'Vue SSR and cleanup failed')):cleanup;}
  if(failure)throw failure;return result!;
 }
-export async function getVueServerCapabilities(){const{runtime}=await peers();return Object.freeze({version:runtime.version,ssr:true,hydration:true,streaming:false,templates:'precompiled-only'})}
+export async function getVueServerCapabilities(){const{runtime}=await peers();return Object.freeze({version:runtime.version,ssr:true,hydration:true,streaming:false,templates:'precompiled-only'});}

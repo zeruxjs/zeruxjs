@@ -14,7 +14,7 @@ export interface SmtpAcceptance {
 }
 function normalized(value:unknown):string|null{
   try{
-    const address=typeof value==='string'?value:typeof value==='object'&&value!==null&&'address' in value?(value as {address:unknown}).address:null;
+    const address=(typeof value==='string')?value:(((typeof value==='object')&&(value!==null))&&('address' in value))?(value as {address:unknown}).address:null;
     if(typeof address!=='string')return null;
     return addressString(validateEmailAddress(address)).toLowerCase();
   }catch{return null;}
@@ -24,7 +24,7 @@ export function classifySmtpAcceptance(
   intended:readonly EmailAddress[],
   result:{accepted?:unknown[];rejected?:unknown[]}
 ):SmtpAcceptance{
-  if(!Array.isArray(intended)||!intended.length||intended.length>1000)throw new RangeError('Invalid SMTP recipient count');
+  if((!Array.isArray(intended)||!intended.length)||(intended.length>1000))throw new RangeError('Invalid SMTP recipient count');
   const requested=new Set(intended.map(value=>addressString(validateEmailAddress(value)).toLowerCase()));
   const accepted=new Set<string>(),rejected=new Set<string>();
   let invalid=false;
@@ -34,16 +34,16 @@ export function classifySmtpAcceptance(
     if(items.length>1000)invalid=true;
     for(const item of items.slice(0,1000)){const key=normalized(item);
       if(!key||!requested.has(key)){invalid=true;continue;}
-      (kind==='accepted'?accepted:rejected).add(key);
+      ((kind==='accepted')?accepted:rejected).add(key);
     }
   }
   const conflict=[...accepted].some(key=>rejected.has(key));
-  const complete=!invalid&&!conflict&&[...requested].every(key=>accepted.has(key)||rejected.has(key));
+  const complete=(!invalid&&!conflict)&&[...requested].every(key=>accepted.has(key)||rejected.has(key));
   const warning:SmtpAcceptance['warning']=conflict?'conflicting-recipient':invalid?'unrecognized-recipient':
-    !accepted.size&&!rejected.size?'unreported-outcome':!complete?'unreported-recipients':undefined;
+    (!accepted.size&&!rejected.size)?'unreported-outcome':!complete?'unreported-recipients':undefined;
   // Provider lists may not be complete; never guess at acceptance of an unlisted recipient.
-  const status:SmtpAcceptanceStatus=!accepted.size&&!rejected.size?'unknown':
-    !complete?'unknown':accepted.size===requested.size?'accepted':accepted.size?'partial':'rejected';
+  const status:SmtpAcceptanceStatus=(!accepted.size&&!rejected.size)?'unknown':
+    !complete?'unknown':(accepted.size===requested.size)?'accepted':accepted.size?'partial':'rejected';
   return {status,accepted:[...accepted],rejected:[...rejected],complete,warning};
 }
 
@@ -56,16 +56,16 @@ export interface SmtpRecipientOutcome {
  recipient:string;status:'accepted'|'rejected'|'transient'|'permanent'|'uncertain';
  retryable:boolean;responseCode?:number;
 }
-const responseCode=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=400&&value<=599?value:undefined;
+const responseCode=(value:unknown)=>((((typeof value==='number')&&Number.isInteger(value))&&(value>=400))&&(value<=599))?value:undefined;
 /** Envelope lists on a fulfilled submission describe SMTP acceptance, never inbox delivery. */
 export function classifySmtpRecipients(intended:readonly EmailAddress[],result:{accepted?:unknown[];rejected?:unknown[];rejectedErrors?:unknown[]}):SmtpRecipientOutcome[]{
  const aggregate=classifySmtpAcceptance(intended,result),accepted=new Set(aggregate.accepted),rejected=new Set(aggregate.rejected);
  const errors=new Map<string,number>();if(Array.isArray(result.rejectedErrors))for(const raw of result.rejectedErrors.slice(0,1000)){const e=raw as {recipient?:unknown;responseCode?:unknown};const recipient=normalized(e?.recipient),code=responseCode(e?.responseCode);if(recipient&&code)errors.set(recipient,code);}
- return [...new Set(intended.map(value=>addressString(validateEmailAddress(value)).toLowerCase()))].map(recipient=>{if(accepted.has(recipient)&&!rejected.has(recipient))return {recipient,status:'accepted',retryable:false};if(rejected.has(recipient)&&!accepted.has(recipient)){const code=errors.get(recipient);return {recipient,status:code?code<500?'transient':'permanent':'rejected',retryable:code!==undefined&&code<500,...(code?{responseCode:code}:{})};}return {recipient,status:'uncertain',retryable:false};});
+ return [...new Set(intended.map(value=>addressString(validateEmailAddress(value)).toLowerCase()))].map(recipient=>{if(accepted.has(recipient)&&!rejected.has(recipient))return {recipient,status:'accepted',retryable:false};if(rejected.has(recipient)&&!accepted.has(recipient)){const code=errors.get(recipient);return {recipient,status:code?(code<500)?'transient':'permanent':'rejected',retryable:(code!==undefined)&&(code<500),...(code?{responseCode:code}:{})};}return {recipient,status:'uncertain',retryable:false};});
 }
 /** Only explicit negative SMTP replies or known pre-DATA connection phases permit retry. */
 export function isRetryableSmtpError(error:unknown):boolean {
- if(error instanceof EmailSubmissionError)return error.code!=='EMAIL_SMTP_UNCERTAIN'&&error.safeRetry;
+ if(error instanceof EmailSubmissionError)return (error.code!=='EMAIL_SMTP_UNCERTAIN')&&error.safeRetry;
  const e=error as {code?:unknown;command?:unknown;responseCode?:unknown};const code=responseCode(e?.responseCode);if(code!==undefined)return code<500;
  return ['CONN','CONNECT','EHLO','HELO','STARTTLS','AUTH','MAIL FROM','RCPT TO'].includes(String(e?.command??'').toUpperCase())&&['ECONNECTION','ETIMEDOUT','ESOCKET','ECONNRESET','EAI_AGAIN','ECONNREFUSED'].includes(String(e?.code??''));
 }
@@ -73,7 +73,7 @@ export class EmailSubmissionError extends Error {
  readonly outcomes!:readonly SmtpRecipientOutcome[];
  constructor(readonly code:string,intended:readonly EmailAddress[],cause:unknown,readonly safeRetry=false,readonly responseCode?:number){
   super(`Email submission failed (${code})`);this.name='EmailSubmissionError';Object.defineProperty(this,'cause',{value:cause});
-  const status=code==='EMAIL_SMTP_UNCERTAIN'?'uncertain':responseCode?(responseCode<500?'transient':'permanent'):safeRetry?'transient':'rejected';
+  const status=(code==='EMAIL_SMTP_UNCERTAIN')?'uncertain':responseCode?((responseCode<500)?'transient':'permanent'):safeRetry?'transient':'rejected';
   Object.defineProperty(this,'outcomes',{enumerable:false,writable:false,configurable:false,value:Object.freeze([...new Set(intended.map(v=>addressString(validateEmailAddress(v)).toLowerCase()))].map(recipient=>Object.freeze({recipient,status,retryable:safeRetry,...(responseCode?{responseCode}:{})})))});
  }
 }

@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {constants} from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -8,6 +9,22 @@ import {
   escapeHtmlAttribute,
 } from '@zeruxjs/security/encoding';
 import { readConfig } from './config.mjs';
+async function readOwnedOutput(file) {
+  const handle = await fs.open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  try {
+    const stat = await handle.stat();
+    if (!stat.isFile() || stat.size > 2097152) throw Error('Invalid prior output');
+    const buffer = Buffer.alloc(stat.size + 1);
+    let size = 0;
+    while (size < buffer.length) {
+      const result = await handle.read(buffer, size, buffer.length - size, null);
+      if (!result.bytesRead) break;
+      size += result.bytesRead;
+    }
+    if (size > stat.size) throw Error('Prior output changed during read');
+    return buffer.subarray(0, size);
+  } finally {await handle.close();}
+}
 const root = fileURLToPath(new URL('../', import.meta.url)),
   config = readConfig(new URL('../', import.meta.url)),
   out = path.join(root, 'dist');
@@ -228,7 +245,7 @@ try {
         throw Error('Unsafe existing output');
       exists = true;
       const old = JSON.parse(
-        await fs.readFile(path.join(out, 'build-manifest.json'), 'utf8'),
+        (await readOwnedOutput(path.join(out, 'build-manifest.json'))).toString('utf8'),
       );
       if (old.kind !== 'create-zyro-build-v1') throw Error('Unowned output');
       const expected = new Set(['build-manifest.json']);
@@ -239,13 +256,8 @@ try {
           file.file.split('/').some((p) => !p || p === '.' || p === '..')
         )
           throw Error('Invalid output manifest');
-        const candidate = path.join(out, file.file),
-          s = await fs.lstat(candidate);
-        if (
-          s.isSymbolicLink() ||
-          !s.isFile() ||
-          sha(await fs.readFile(candidate)) !== file.sha256
-        )
+        const candidate = path.join(out, file.file);
+        if (sha(await readOwnedOutput(candidate)) !== file.sha256)
           throw Error('Edited output; refusing replacement');
         expected.add(file.file);
       }

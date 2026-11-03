@@ -15,9 +15,9 @@ const listen = server => new Promise((resolve, reject) => {
   server.listen(0, '127.0.0.1', () => { server.off('error', reject); resolve(server.address().port); });
 });
 const close = server => new Promise(resolve => server.close(resolve));
-const get = (port, host, headers = {}, secure = false) => new Promise((resolve, reject) => {
+const get = (port, host, headers = {}, secure = false, ca) => new Promise((resolve, reject) => {
   const module = secure ? https : http;
-  const req = module.get({ hostname: '127.0.0.1', port, rejectUnauthorized: false, headers: { host, ...headers } }, res => {
+  const req = module.get({ hostname: '127.0.0.1', port, ...(secure ? {ca, servername: host} : {}), headers: { host, ...headers } }, res => {
     let body = '';
     res.on('data', chunk => body += chunk);
     res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
@@ -69,7 +69,7 @@ test('HTTPS proxy rejects plaintext by default and allows TLS forwarding', async
     try {
       const port = await listen(proxy);
       assert.equal((await get(port, 'custom.localhost')).status, 426);
-      assert.equal((await get(port, 'custom.localhost', {}, true)).body, 'secure');
+      assert.equal((await get(port, 'custom.localhost', {}, true, fs.readFileSync(path.join(dir, 'ca.pem')))).body, 'secure');
     } finally { await proxy.connectionTracker.drain({ timeoutMs: 1000 }); }
   } finally { await close(upstream).catch(() => {}); fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -88,4 +88,28 @@ test('hosts-file blocks refuse injection and unbalanced/duplicate markers', () =
   }
   assert.throws(() => buildBlock(['app.localhost', 'app.localhost']), /Duplicate/);
   assert.throws(() => removeBlock('# portless-start\n127.0.0.1 x.localhost\n'), /Malformed/);
+});
+
+test('TLS liveness probes verify the configured CA instead of accepting any local certificate', async () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'zhost-probe-'));
+  const other=fs.mkdtempSync(path.join(os.tmpdir(),'zhost-probe-other-'));
+  const previous=process.env.PORTLESS_STATE_DIR;
+  let server;
+  try {
+    const certificates=ensureCerts(dir,'localhost');
+    server=https.createServer({key:fs.readFileSync(certificates.keyPath),cert:fs.readFileSync(certificates.certPath)},(_req,res)=>{res.setHeader('X-Portless','1');res.end();});
+    const port=await listen(server);
+    process.env.PORTLESS_STATE_DIR=dir;
+    const {isProxyRunning}=await import('../dist/portless/cli-utils.js');
+    assert.equal(await isProxyRunning(port,true),true);
+    ensureCerts(other,'localhost');
+    fs.copyFileSync(path.join(other,'ca.pem'),path.join(dir,'ca.pem'));
+    assert.equal(await isProxyRunning(port,true),false);
+    fs.unlinkSync(path.join(dir,'ca.pem'));
+    assert.equal(await isProxyRunning(port,true),false);
+  } finally {
+    if(previous===undefined)delete process.env.PORTLESS_STATE_DIR;else process.env.PORTLESS_STATE_DIR=previous;
+    if(server)await close(server);
+    fs.rmSync(dir,{recursive:true,force:true});fs.rmSync(other,{recursive:true,force:true});
+  }
 });

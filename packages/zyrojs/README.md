@@ -248,3 +248,8 @@ The integration suite uses a deterministic DOM fixture in Node and an offline ta
 ## Future project generator
 
 [`create-zyro-app`](../create/create-zyro-app/README.md) generates standalone client, static, SSR and whole-root hydrated projects in JavaScript or TypeScript through zclivo's safe engine. Its README describes runtime prerequisites and qualification limits; source implementation does not imply publication.
+
+The protocol client keeps the native Fetch global receiver when capturing the
+default browser transport. Explicit injected transports remain borrowed and are
+not closed or retried automatically. The local ZeruxJS integration app exercises
+its RPC/MCP/Connect/tRPC calls in Chrome; this is not all-browser certification.

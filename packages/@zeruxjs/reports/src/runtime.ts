@@ -78,8 +78,8 @@ export function createReports(options:ReportsOptions){
   const main=async(req:Request)=>{
     if(!await authorized(req,'read'))return new Response('Not found',{status:404});
     let html:string;try{html=options.renderDashboard?options.renderDashboard({prefix}):reportDashboard(prefix);if(typeof html!=='string'||Buffer.byteLength(html)>524288)throw new TypeError('Invalid dashboard output');}catch{return error('Report UI unavailable',503);}
-    const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1]??'';
-    const style=html.match(/<style>([\s\S]*?)<\/style>/)?.[1]??'';
+    const script=html.match(/<script>([\s\S]*?)<\/script>/i)?.[1]??'';
+    const style=html.match(/<style>([\s\S]*?)<\/style>/i)?.[1]??'';
     return new Response(html,{headers:{...headers,'content-type':'text/html; charset=utf-8',
       'content-security-policy':`default-src 'none'; script-src ${sha(script)}; style-src ${sha(style)}; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'`}});
   };

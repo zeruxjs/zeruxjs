@@ -12,9 +12,16 @@ export function readPackageExportContracts(cwd:string,packages:readonly string[]
   if(typeof name!=='string'||!/^(?:@[a-z0-9._-]+\/)?[a-z0-9][a-z0-9._-]*$/i.test(name))throw new TypeError('lint: invalid package name');
   for(const directory of require.resolve.paths(name)??[]){
    const file=path.join(directory,name,'package.json');
-   let stat;try{stat=fs.statSync(file);}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')continue;throw error;}
-   if(!stat.isFile()||stat.size>1024*1024)throw new Error('lint: invalid installed package manifest');
-   const manifest=JSON.parse(fs.readFileSync(file,'utf8'));
+   let fd:number;
+   try{fd=fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK);}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')continue;throw error;}
+   let manifest;
+   try {
+    const stat=fs.fstatSync(fd);
+    if(!stat.isFile()||stat.size>1024*1024)throw new Error('lint: invalid installed package manifest');
+    const bytes=Buffer.alloc(stat.size+1),size=fs.readSync(fd,bytes,0,bytes.length,0);
+    if(size>stat.size)throw new Error('lint: installed manifest changed');
+    manifest=JSON.parse(bytes.subarray(0,size).toString('utf8'));
+   } finally {fs.closeSync(fd);}
    if(manifest.name!==name)throw new Error('lint: installed package identity mismatch');
    return Object.freeze({name,exports:manifest.exports});
   }

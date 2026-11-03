@@ -123,7 +123,7 @@ export function watchZuix(root=process.cwd(),initial:ZuixConfig={},onBuild?:(res
   void Promise.allSettled([ready,work,...handles.map(handle=>handle.closed)]).then(()=>finishClosed());
  }) as ZuixWatchHandle;
  const ready=Promise.resolve().then(async()=>{
-  if(closed)return;
+  if(controller.signal.aborted)return;
   const {watchDirectory}=await import('zlook');if(closed)return;
   try{
    for(const location of roots){

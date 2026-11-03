@@ -328,10 +328,24 @@ export async function findFreePort(
  * Makes an HTTP(S) request and verifies the X-Portless response header to
  * distinguish the portless proxy from unrelated services.
  *
- * When `tls` is true, uses HTTPS with certificate verification disabled
- * (the proxy may use a self-signed or locally-trusted CA cert).
+ * HTTPS verifies the configured local CA and hostname; missing/untrusted
+ * certificates fail the probe rather than disabling TLS verification.
  */
 export function isProxyRunning(port: number, tls = false): Promise<boolean> {
+  let secure: https.RequestOptions = {};
+  if (tls) {
+    try {
+      const stateDir = resolveStateDir(port), state = readCommittedProxyState(stateDir);
+      const fd = fs.openSync(path.join(stateDir, 'ca.pem'), fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK);
+      try {
+        const info = fs.fstatSync(fd);
+        if (!info.isFile() || info.size > 65536) return Promise.resolve(false);
+        const buffer=Buffer.alloc(info.size+1),size=fs.readSync(fd,buffer,0,buffer.length,0);
+        if(size>info.size)return Promise.resolve(false);
+        secure = {ca: buffer.subarray(0,size), servername: state?.tld ?? DEFAULT_TLD};
+      } finally {fs.closeSync(fd);}
+    } catch { return Promise.resolve(false); }
+  }
   return new Promise((resolve) => {
     const requestFn = tls ? https.request : http.request;
     const req = requestFn(
@@ -341,7 +355,7 @@ export function isProxyRunning(port: number, tls = false): Promise<boolean> {
         path: "/",
         method: "HEAD",
         timeout: SOCKET_TIMEOUT_MS,
-        ...(tls ? { rejectUnauthorized: false } : {}),
+        ...secure,
       },
       (res) => {
         res.resume();

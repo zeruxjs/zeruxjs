@@ -270,3 +270,15 @@ replacement and restart budgets remain authoritative. Drain accepts integer
 0–300000ms deadlines and closes remaining sockets after waiting; it does not prove
 rollback of an upstream operation. Focused loopback workloads test overload and
 cleanup, without claiming a production performance gain.
+
+## Private local state and event streams
+
+Development `startServer` consumers can set `dev.watchIgnoredPaths` to validated
+relative directories. `createDevelopmentWatchIgnore` snapshots the list before
+watch traversal, so one application’s private data does not trigger source reloads
+or change another subscriber’s configuration. Absolute/traversal paths reject.
+
+For authenticated events, provide `events: new SseHub({privateCache:true})` to
+`createProtocolGateway`. This emits `private, no-store, no-transform`; the legacy
+cache policy remains the default. Hosts still own finite SSE connection lifetimes,
+which are distinct from the gateway dispatch deadline.

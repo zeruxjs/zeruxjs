@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { SourceMapConsumer } from 'source-map-js';
-import { buildZuix, watchZuix, scanProject, buildZuixStylesheet } from 'zuixs/node';
+import { buildZuix, watchZuix, scanProject } from 'zuixs/node';
 import { createZuix, zuixVite } from 'zuixs';
 import { activeWatcherCount } from 'zlook';
 const temp=()=>{const root=fs.mkdtempSync(path.join(tmpdir(),'zuix-watch-'));fs.mkdirSync(path.join(root,'src'));return root;};

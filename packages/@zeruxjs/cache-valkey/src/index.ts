@@ -14,7 +14,7 @@ function tls(value:ValkeyConnectionOptions['tls']){
 }
 /** Lazy driver import; no client/socket exists until this explicitly configured factory is invoked. */
 export async function createCacheHelper(raw:ValkeyConnectionOptions={},injected?:ValkeyClientConstructors){
- keys(raw,[...helperKeys,...connectionKeys]);const helper=Object.fromEntries(helperKeys.filter(key=>Object.hasOwn(raw,key)).map(key=>[key,(raw as Record<string,unknown>)[key]]));const policy=helperPolicy(helper);
+ keys(raw,[...helperKeys,...connectionKeys]);const helper=Object.fromEntries(helperKeys.filter(key=>Object.hasOwn(raw,key)).map(key=>[key,(raw as Record<string,unknown>)[key]]));helperPolicy(helper);
  const connectTimeout=integer(raw.connectTimeoutMs??3000,1,120000),reconnect=integer(raw.maxReconnectAttempts??0,0,3);
  if(raw.client){if(connectionKeys.some(key=>!['client','connectTimeoutMs','maxReconnectAttempts'].includes(key)&&Object.hasOwn(raw,key)))throw fail('VALKEY_CONFLICTING_CONNECTION');return createValkeyCacheHelper(raw.client,helper);}
  if(raw.ownClient===false)throw fail('VALKEY_CONFLICTING_OWNERSHIP');

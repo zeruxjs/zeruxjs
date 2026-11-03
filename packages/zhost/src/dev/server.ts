@@ -1,4 +1,5 @@
 import { createLiveRequestHandler } from "./live-handler.js";
+import { createDevelopmentWatchIgnore } from './watch-policy.js';
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -239,6 +240,7 @@ const removeSerDetails = (file: string, type: string) => {
 /* ---------------- MAIN ---------------- */
 
 export const startServer = async (details: any) => {
+    const ignoredDevelopmentPath = createDevelopmentWatchIgnore(details.dev?.watchIgnoredPaths);
     if (!details?.app?.func) {
         throw new Error("App func required");
     }
@@ -470,7 +472,7 @@ export const startServer = async (details: any) => {
                 });
             }
             }).catch(error => console.error('[Watcher] Reload failed:', error));
-        }, { onError: (error: Error) => console.error('[Watcher] Failed:', error) });
+        }, { ignored: ignoredDevelopmentPath, onError: (error: Error) => console.error('[Watcher] Failed:', error) });
     }
 
     /* ---------------- CLEANUP ---------------- */

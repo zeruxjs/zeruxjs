@@ -9,7 +9,7 @@ test('strict default policy, native hashes and response-owned nonces', () => {
     const policy = createSecurityPolicy({ https: true, resources: { 'script-src': ["'self'", hash] } });
     const a = policy.createResponse(), b = policy.createResponse();
     assert.notEqual(a.nonce, b.nonce); assert.doesNotThrow(() => assertSecurityNonce(a.nonce));
-    assert.match(a.headers['content-security-policy'], new RegExp(`nonce-${a.nonce.replace(/[+]/g, '\\+')}`));
+    assert.ok(a.headers['content-security-policy'].includes(`nonce-${a.nonce}`));
     assert.ok(a.headers['content-security-policy'].includes(`'sha256-${hash.value}'`));
     assert.equal(a.headers['cross-origin-opener-policy'], 'same-origin');
     assert.equal(a.headers['cross-origin-embedder-policy'], 'require-corp');

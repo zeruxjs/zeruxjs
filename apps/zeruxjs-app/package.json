@@ -1,16 +1,45 @@
 {
   "name": "zeruxjs-app",
   "version": "1.0.0",
-  "description": "ZeruxJS Sample Application",
+  "description": "Local ZeruxJS and ZyroJS integration workspace",
   "author": "Shubham Kumar Bansal",
   "type": "module",
   "main": "index.js",
   "dependencies": {
+    "@zeruxjs/accessibility": "0.0.4",
+    "@zeruxjs/analytics": "0.0.4",
+    "@zeruxjs/asset-manager": "0.0.4",
+    "@zeruxjs/auth": "0.0.4",
+    "@zeruxjs/cache": "0.0.4",
     "@zeruxjs/db": "0.0.4",
+    "@zeruxjs/db-sqlite": "0.0.4",
+    "@zeruxjs/email": "0.0.4",
+    "@zeruxjs/feed": "0.0.4",
+    "@zeruxjs/files": "0.0.4",
+    "@zeruxjs/font": "0.0.4",
+    "@zeruxjs/hooks": "0.0.4",
+    "@zeruxjs/media": "0.0.4",
+    "@zeruxjs/performance": "0.0.4",
+    "@zeruxjs/react": "0.0.4",
+    "@zeruxjs/reports": "0.0.4",
+    "@zeruxjs/search": "0.0.4",
+    "@zeruxjs/security": "0.0.4",
+    "@zeruxjs/seo": "0.0.4",
+    "@zeruxjs/share": "0.0.4",
+    "@zeruxjs/tags": "0.0.4",
     "@zeruxjs/typescript": "0.0.4",
+    "@zeruxjs/validator": "0.0.4",
+    "@zeruxjs/vue": "0.0.4",
+    "@zeruxjs/zyro": "0.0.4",
     "sample-module": "0.0.1",
     "sample-os": "0.0.1",
-    "zeruxjs": "0.0.4"
+    "zclivo": "0.0.4",
+    "zeruxjs": "0.0.4",
+    "zhost": "0.0.4",
+    "zlocale": "0.0.4",
+    "ztrial": "0.0.4",
+    "zuixs": "0.0.4",
+    "zyrojs": "0.0.4"
   },
   "private": true,
   "scripts": {
@@ -21,7 +50,17 @@
     "ds:start": "SESSION=$(node -p \"require('./package.json').name.replace(/[@/]/g,'-')\") && tmux has-session -t \"$SESSION\" 2>/dev/null || tmux new-session -d -s \"$SESSION\" \"npm run start\"",
     "de:start": "SESSION=$(node -p \"require('./package.json').name.replace(/[@/]/g,'-')\") && tmux kill-session -t \"$SESSION\" 2>/dev/null || true",
     "ds:dev": "SESSION=$(node -p \"require('./package.json').name.replace(/[@/]/g,'-')\") && tmux has-session -t \"$SESSION\" 2>/dev/null || tmux new-session -d -s \"$SESSION\" \"npm run dev\"",
-    "de:dev": "SESSION=$(node -p \"require('./package.json').name.replace(/[@/]/g,'-')\") && tmux kill-session -t \"$SESSION\" 2>/dev/null || true"
+    "de:dev": "SESSION=$(node -p \"require('./package.json').name.replace(/[@/]/g,'-')\") && tmux kill-session -t \"$SESSION\" 2>/dev/null || true",
+    "check:workspace": "tsc -p tsconfig.workspace.json",
+    "test:workspace": "node --test test/workspace.test.mjs test/workspace-tools.test.mjs",
+    "workspace:init": "node --env-file-if-exists=.env.local scripts/workspace-init.mjs",
+    "build:assets": "node scripts/workspace-assets.mjs",
+    "prebuild": "npm run build:assets",
+    "predev": "npm run build:assets",
+    "check:browser": "node scripts/workspace-browser-check.mjs",
+    "workspace:configure": "node scripts/workspace-configure.mjs",
+    "watch:assets": "node scripts/workspace-watch.mjs",
+    "check": "tsc -p tsconfig.json"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -35,5 +74,12 @@
   "types": "./dist/index.d.ts",
   "keywords": [
     "ZeruxJS Sample Application"
-  ]
+  ],
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "zlook": "0.0.4"
+  },
+  "engines": {
+    "node": ">=24.15.0"
+  }
 }
