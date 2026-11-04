@@ -60,6 +60,16 @@ host; workspace session checks do not retroactively protect every old example.
 The obsolete unused root `apiKeys` config field was removed because the framework
 now rejects unregistered configuration keys.
 
+The runtime examples explicitly register `app/middleware`, `app/controllers` and
+`app/composables` in `structure`; the framework defaults look in root directories.
+`/api/echo` includes a native POST form, `/plugin/workers` runs a real thread-worker
+calculation, and `/index.html` mounts the standalone counter from `client/counter.ts`.
+The counter is bundled from the installed ZyroJS package during `build:assets`,
+uses local system fonts and disposes its root on page exit. The optional MySQL page
+shows setup instructions while disabled; there is no `db:init` command. Its table
+is created on the first enabled API request. Build `@zeruxjs/db-mysql` and its
+dependencies before enabling that example.
+
 ## Implemented local workflows
 
 | Page | Actual behavior and package owners |
@@ -183,6 +193,12 @@ npm run build
 # Optional installed Chrome; owned temporary app/profile/database only:
 npm run check:browser
 ```
+
+`check:browser` first builds the app, then copies its production output into an
+owned temporary fixture and mounts the real framework routes, plugins, middleware
+and workers. It checks the static counter, local page/API availability, login,
+protocol calls, reports and the browser lab. External MySQL is always disabled in
+this synthetic fixture. It does not start or restart the operator's application.
 
 The full app check covers legacy and new TypeScript sources without generated
 virtual database declarations. The optional MySQL demo resolves its connection

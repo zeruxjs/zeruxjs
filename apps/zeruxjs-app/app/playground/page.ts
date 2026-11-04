@@ -1,3 +1,5 @@
+import { escapeHtmlText } from '@zeruxjs/security/encoding';
+
 export default ({ state, services, runtime, env, pathname }: any) => {
   const requestInfo = {
     pathname,
@@ -33,7 +35,7 @@ export default ({ state, services, runtime, env, pathname }: any) => {
         </section>
         <section class="panel">
           <h2>Runtime Request State</h2>
-          <pre>${JSON.stringify(requestInfo, null, 2)}</pre>
+          <pre>${escapeHtmlText(JSON.stringify(requestInfo, null, 2))}</pre>
         </section>
         <section class="panel">
           <h2>Next checks</h2>

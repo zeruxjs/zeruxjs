@@ -3,40 +3,45 @@ import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { randomBytes } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
+import { cp, mkdtemp, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { hashPassword } from '@zeruxjs/auth';
+import { createApplicationLifecycle, runWorkers } from 'zeruxjs';
+import config from '../zerux.config.ts';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 await mkdir(join(root, '.zerux'), { recursive: true });
 const compiled = await mkdtemp(join(root, '.zerux/workspace-chrome-'));
-const directory = await mkdtemp(join(tmpdir(), 'zerux-browser-data-'));
+const fixtureRoot = join(compiled, 'fixture');
+const directory = join(fixtureRoot, '.workspace');
 const profile = await mkdtemp(join(tmpdir(), 'zerux-browser-profile-'));
-let app, browser, server;
+let app, browser, server, workers;
 try {
+  await cp(join(root, '.zerux/build'), fixtureRoot, { recursive: true });
+  await cp(join(root, 'workers'), join(fixtureRoot, 'workers'), { recursive: true });
   const outfile = join(compiled, 'app.mjs');
   await build({ entryPoints: [join(root, 'lib/workspace/application.ts')], outfile, bundle: true, packages: 'external', platform: 'node', format: 'esm', logLevel: 'silent' });
   const { createWorkspace } = await import(pathToFileURL(outfile).href);
-  const routes = new Map(), requestSummary = [];
-  const assets = new Map([['/workspace-client.js', 'text/javascript'], ['/workspace.css', 'text/css'], ['/workspace-utilities.css', 'text/css'], ['/workspace-mark.svg', 'image/svg+xml']]);
+  const requestSummary = [];
   server = createServer(async (req, res) => {
     try {
       const pathname = new URL(req.url, 'http://localhost').pathname;
-      if (assets.has(pathname)) { const data = await readFile(join(root, 'public', pathname.slice(1))); res.writeHead(200, { 'content-type': assets.get(pathname) }); res.end(data); return; }
-      if (pathname === '/favicon.ico') { res.writeHead(204); res.end(); return; }
-      const handler = routes.get(pathname);
-      if (!handler) { res.writeHead(404); res.end(); return; }
       res.once('finish', () => requestSummary.push({ method: req.method, pathname, status: res.statusCode, origin: req.headers.origin ?? null }));
-      await handler({ req, res, url: new URL(req.url, origin), method: req.method });
+      await app.handle(req,res);
     } catch { if (!res.headersSent) res.writeHead(500); res.end('Synthetic fixture failed'); }
   });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   const origin = `http://localhost:${server.address().port}`;
-  app = await createWorkspace({ directory, origin, tenant: 'synthetic', site: 'browser', username: 'operator', passwordHash: hashPassword('synthetic-browser-only-password'), key: randomBytes(32), migrate: true });
-  app.install({ addRoute(route) { routes.set(route.pattern, route.handler); } });
+  const passwordHash = hashPassword('synthetic-browser-only-password'), key = randomBytes(32);
+  const initial = await createWorkspace({directory,origin,tenant:'synthetic',site:'browser',username:'operator',passwordHash,key,migrate:true});await initial.close();
+  Object.assign(process.env,{WORKSPACE_ENABLED:'true',WORKSPACE_ORIGIN:origin,WORKSPACE_TENANT:'synthetic',WORKSPACE_SITE:'browser',WORKSPACE_USERNAME:'operator',WORKSPACE_PASSWORD_HASH:passwordHash,WORKSPACE_KEY:key.toString('base64url'),ENABLE_MYSQL_DEMO:'false'});
+  // The fixture always excludes the operator's optional external database.
+  const { db: ignoredDatabase, ...localConfig } = config;
+  app = await createApplicationLifecycle({ rootDir: fixtureRoot, mode: 'start', config: localConfig });
+  workers = await runWorkers(app.runtime());
   browser = spawn(process.env.CHROME_BIN || '/usr/bin/google-chrome', ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-background-networking', '--disable-component-update', '--disable-sync', '--no-first-run', '--no-default-browser-check', '--remote-debugging-pipe', '--user-data-dir=' + profile], { stdio: ['ignore', 'ignore', 'pipe', 'pipe', 'pipe'] });
   let id = 0, buffer = Buffer.alloc(0); const pending = new Map(), listeners = new Set();
   browser.stderr.on('data', () => {});
@@ -73,9 +78,21 @@ try {
   const waitFor = async expression => { const until = Date.now() + 10000; while (Date.now() < until) { if (await evaluate(expression)) return; await new Promise(resolve => setTimeout(resolve, 40)); } throw Error('Browser condition failed: ' + expression + ' ' + JSON.stringify({ location: await evaluate('location.pathname'), text: await evaluate('document.body.textContent.slice(0,300)'), requests: requestSummary.slice(-8), errors })); };
   const navigate = async path => { await call('Page.navigate', { url: origin + path }); await waitFor(`location.pathname === ${JSON.stringify(path)} && document.readyState === 'complete'`); };
   const enter = async () => { await call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', text: '\r', unmodifiedText: '\r', windowsVirtualKeyCode: 13 }); await call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }); };
+  await navigate('/index.html');
+  await waitFor("document.querySelector('.count-display')?.textContent === '0'");
+  await evaluate("document.querySelector('[aria-label=Increase]').focus()");await enter();
+  assert.equal(await evaluate("document.querySelector('.count-display').textContent"),'1');
+  for (const width of [1440,390]) {await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<500});assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth + 2'),true);}
+  await navigate('/api/echo');
+  assert.equal(await evaluate(`fetch('/api/echo?debug=1', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'message=browser-check' }).then(r => r.json()).then(result => result.body.message)`), 'browser-check');
+  assert.equal(await evaluate(`fetch('/plugin/workers').then(r => r.json()).then(result => result.mathResult.squared)`), 144);
+  assert.equal(await evaluate(`fetch('/playground').then(r => r.text()).then(text => text.includes('request-context') && !text.includes('missing composable'))`), true);
   await navigate('/workspace/login');
   await evaluate(`document.querySelector('[name=username]').value='operator'; document.querySelector('[name=password]').value='synthetic-browser-only-password'; document.querySelector('button[type=submit]').focus();`); await enter();
   await waitFor("location.pathname === '/workspace/notes' && document.querySelector('[name=title]')");
+  for (const path of ['/','/playground','/blog/hello-world','/api/health','/api/echo','/db-demo','/plugin/runtime','/plugin/workers','/workspace/files','/workspace/assets','/workspace/share','/workspace/email','/workspace/experiments','/workspace/tags','/workspace/performance','/workspace/diagnostics','/workspace/public','/workspace/search','/workspace/feed.xml','/workspace/feed.json','/workspace/sitemap.xml']) {
+    assert.equal(await evaluate(`fetch(${JSON.stringify(path)}).then(r=>r.status)`),200,path);
+  }
   await navigate('/workspace/reports');
   await evaluate("document.querySelector('[name=consent]').value='granted';document.querySelector('button[type=submit]').focus()"); await enter();
   await waitFor("location.search.includes('outcome=persisted') && document.querySelector('[data-report-chart]')");
@@ -110,11 +127,11 @@ try {
   await waitFor("document.querySelectorAll('form[action=\"/workspace/save\"]').length === 2");
   assert.equal(await evaluate("Array.from(document.querySelectorAll('[name=title]')).some(input=>input.value==='Keyboard no-JavaScript note')"), true);
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ browser: version.product, checked: ['keyboard login and reactive counter', 'consented analytics and accessible report view', 'browser JSON-RPC/MCP/Connect/tRPC calls', 'standalone adapter store updates', 'RTL locale', 'reduced motion', 'PCM/WAV keyboard playback', '1440/390 layout', 'pagehide cleanup', 'JavaScript-disabled native POST'] }));
+  console.log(JSON.stringify({ browser: version.product, checked: ['production framework route discovery and public assets', 'standalone counter and responsive layout', 'local page and worker endpoints', 'keyboard login and reactive counter', 'consented analytics and accessible report view', 'browser JSON-RPC/MCP/Connect/tRPC calls', 'standalone adapter store updates', 'RTL locale', 'reduced motion', 'PCM/WAV keyboard playback', '1440/390 layout', 'pagehide cleanup', 'JavaScript-disabled native POST'] }));
   await send('Browser.close');
 } finally {
   if (browser && browser.exitCode === null && browser.signalCode === null) { browser.kill('SIGTERM'); await Promise.race([once(browser, 'exit').catch(() => {}), new Promise(resolve => setTimeout(resolve, 1000))]); if (browser.exitCode === null && browser.signalCode === null) { const ended = once(browser, 'exit').catch(() => {}); browser.kill('SIGKILL'); await ended; } }
-  await app?.close();
+  await workers?.stop();await app?.close();config.lifecycleHooks?.dispose();
   if (server) { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
   await Promise.all([rm(compiled, { recursive: true, force: true }), rm(directory, { recursive: true, force: true }), rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })]);
 }

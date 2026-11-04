@@ -3,6 +3,11 @@ import { createServerLifecycleHooks } from '@zeruxjs/hooks/lifecycle'
 
 const zeruxConfig: ZeruxConfig = {
     "type": "fix",
+    structure: {
+        middleware: ["app/middleware"],
+        controllers: ["app/controllers"],
+        composables: ["app/composables"]
+    },
     server: { portless: process.env.ENABLE_PORTLESS_PROXY === "true", watchIgnoredPaths: [".workspace"] },
     lifecycleHooks: createServerLifecycleHooks(),
     "connectorManager": "@zeruxjs/db",

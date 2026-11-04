@@ -1,6 +1,8 @@
+import { escapeHtmlText } from '@zeruxjs/security/encoding';
+
 export default ({ params, services, state }: any) => {
   const formatSlug = services.composables.formatSlug;
-  const title = typeof formatSlug === "function" ? formatSlug(params.slug) : params.slug;
+  const title = escapeHtmlText(typeof formatSlug === "function" ? formatSlug(params.slug) : params.slug);
 
   return `<!DOCTYPE html>
   <html lang="en">
@@ -22,8 +24,8 @@ export default ({ params, services, state }: any) => {
         <div class="eyebrow">Dynamic Route</div>
         <h1>${title}</h1>
         <p>
-          The slug <code>${params.slug}</code> came from the route matcher. Middleware also attached
-          request state, so the request id for this page is <code>${state.requestId}</code>.
+          The slug <code>${escapeHtmlText(params.slug)}</code> came from the route matcher. Middleware also attached
+          request state, so the request id for this page is <code>${escapeHtmlText(state.requestId ?? '')}</code>.
         </p>
       </article>
     </body>

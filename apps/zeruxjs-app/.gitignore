@@ -6,6 +6,7 @@ dist/
 nohup.out
 
 /public/workspace-client.js
+/public/counter-client.js
 /public/workspace-utilities.css
 /public/.workspace-*
 

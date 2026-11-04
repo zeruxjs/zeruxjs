@@ -15,6 +15,7 @@ This section is a maintained orientation map, not a claim that every capability 
 - Zenix now has a minimal SQLite domain core in `@zenixjs/core/cms`; `zenixjs/application` supplies an initial opt-in SSR CMS while `create-zerux-js` generates validated SSR projects; `create-zyro-app` generates standalone client/static/SSR/hydrated projects; `create-zenix-js` generates a JavaScript SQLite CMS scaffold requiring host auth/CSRF policies before startup. `zclivo` also retains its separate minimal starter.
 - VS Code extension development is on hold. Do not expand extension scope unless requested.
 - Development changes do not authorize publishing, version bumps, deployments or restarting user-managed applications.
+- `apps/zeruxjs-app` explicitly maps its nested middleware/controllers/composables. Its `check:browser` command builds and runs a copied production fixture with synthetic SQLite state and workers; it never uses the operator's workspace or optional MySQL connection. See the [app README](apps/zeruxjs-app/README.md).
 
 ### Runtime and package relationships
 

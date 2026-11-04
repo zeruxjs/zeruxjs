@@ -31,8 +31,10 @@
     "@zeruxjs/validator": "0.0.4",
     "@zeruxjs/vue": "0.0.4",
     "@zeruxjs/zyro": "0.0.4",
+    "sample-child": "0.0.1",
     "sample-module": "0.0.1",
     "sample-os": "0.0.1",
+    "sample-parent": "0.0.1",
     "zclivo": "0.0.4",
     "zeruxjs": "0.0.4",
     "zhost": "0.0.4",
@@ -58,6 +60,7 @@
     "prebuild": "npm run build:assets",
     "predev": "npm run build:assets",
     "check:browser": "node scripts/workspace-browser-check.mjs",
+    "precheck:browser": "npm run build",
     "workspace:configure": "node scripts/workspace-configure.mjs",
     "watch:assets": "node scripts/workspace-watch.mjs",
     "check": "tsc -p tsconfig.json"
@@ -78,6 +81,9 @@
   "devDependencies": {
     "esbuild": "0.28.2",
     "zlook": "0.0.4"
+  },
+  "optionalDependencies": {
+    "@zeruxjs/db-mysql": "0.0.4"
   },
   "engines": {
     "node": ">=24.15.0"
