@@ -7,6 +7,7 @@ export interface DatabaseConnection {
 }
 
 export interface DatabaseConfig {
+    execution?: import('@zeruxjs/db').DatabaseExecutionPolicy;
     default?: string;
     connections?: DatabaseConnection[];
     connection?: DatabaseConnection[];
@@ -25,8 +26,12 @@ export interface ZeruxStructureConfig {
 export interface ZeruxServerConfig {
     port?: number;
     devPort?: number;
+    /** Set false for direct loopback HTTP without managing the shared portless proxy. */
+    portless?: boolean;
     allowedDomains?: string | string[];
     allowedDevDomain?: string;
+    /** Up to 64 project-relative directories excluded from development source scans. */
+    watchIgnoredPaths?: string[];
 }
 
 export interface ZeruxDevtoolsModuleConfig {
@@ -66,6 +71,12 @@ export interface AuthConfig {
 }
 
 export interface ZeruxConfig {
+    lifecycleHooks?: import('@zeruxjs/hooks').ServerLifecycleHooks;
+    observability?: import('./observability.js').ObservabilityOptions;
+    /** Explicit trusted service declarations; never public manifest data. */
+    serviceDefinitions?: readonly import('./bootstrap/service-definitions.js').ServiceDefinition[];
+    services?: Record<string, import('./bootstrap/service-definitions.js').CustomServiceConfig>;
+    publicSettings?: Record<string, unknown>;
     /** Named storage connections; initialized before email service. */
     files?: import('./bootstrap/services.js').FilesStartupConfig;
     /** Named SMTP providers. Never serialized into runtime manifests. */
@@ -76,8 +87,10 @@ export interface ZeruxConfig {
     tags?: import('./bootstrap/services.js').TagsStartupConfig;
     /** Authenticated internal analytics report studio. */
     reports?: import('./bootstrap/services.js').ReportsStartupConfig;
-    /** BullMQ queues and optional workers. Credentials remain server-side. */
+    /** Legacy BullMQ or explicit backend selection. Credentials remain server-side. */
     queue?: import('./bootstrap/services.js').QueueStartupConfig;
+    /** Explicit private search registration; no endpoint is mounted automatically. */
+    search?: import('./bootstrap/services.js').SearchStartupConfig;
     protocols?: import("./protocols.js").ZeruxProtocolOptions;
     type?: "fix" | "dynamic" | "function";
     entryPoint?: string;
@@ -98,6 +111,7 @@ export interface ZeruxConfig {
         maxPayload?: number;
     };
     cache?: {
+        policy?: import("@zeruxjs/cache").CachePolicy;
         connector?: string;
         options?: Record<string, unknown>;
         prefix?: string;
@@ -150,9 +164,9 @@ export { createFetchRoute, registerFetchRoutes, sendFetchResponse } from "./fetc
 export type { FetchRouteHandler, FetchRouteRegistration } from "./fetch-route.js";
 
 export { createServiceScope, initializeRuntimeServices } from "./bootstrap/services.js";
-export type { RuntimeServiceScope, ServiceName, ServiceStatus } from "./bootstrap/services.js";
+export type { RuntimeServiceScope, ServiceName, ServiceStatus, SearchStartupConfig } from "./bootstrap/services.js";
 
-export { buildProjectSources, resolveProductionStructure } from "./commands/project-builder.js";
+export { buildProjectSources, resolveProductionStructure, ModuleBoundaryError } from "./commands/project-builder.js";
 export type { ProjectBuildOptions, ProductionBuildManifest } from "./commands/project-builder.js";
 
 export { redactManifestConfig } from "./bootstrap/manifest-config.js";
@@ -162,3 +176,20 @@ export { createRequestLifecycle } from "./bootstrap/request-lifecycle.js";
 /** Section 60: framework-wide, safe, application-configurable {{variable}} rendering. */
 export {createVariableRegistry,variables,registerVariable,renderVariables} from './variables.js';
 export type {VariableContext,VariableResolver,VariableEscape,VariableRenderOptions,VariableRegistry} from './variables.js';
+
+export { defineService } from './bootstrap/service-definitions.js';
+export type { ServiceDefinition, ServiceConfigSchema, ServiceStartContext, ServiceInstance, CustomServiceConfig, RuntimeServiceName } from './bootstrap/service-definitions.js';
+export { resolveApplicationConfig, prepareConfiguration, assertConfigReloadable, ConfigurationError, RestartRequiredError } from './bootstrap/config-validation.js';
+export type { ConfigLayers } from './bootstrap/config-validation.js';
+
+export { createApplicationLifecycle } from './bootstrap/application-lifecycle.js';
+export { loadConfig } from './bootstrap/config.js';
+
+export { createRequestObserver, getRequestCorrelation, parseTraceParent, createHealthHandler } from './observability.js';
+export type { ObservabilityOptions, TracingAdapter, RequestCorrelation, RequestSpan, HealthSnapshot } from './observability.js';
+export { ApplicationError, APPLICATION_ERROR_CODES, normalizeApiError } from './exceptions/api-error.js';
+export type { ErrorEnvelope } from './exceptions/api-error.js';
+
+export * from './modules.js';
+export * from './service-endpoints.js';
+export * from './renderers.js';

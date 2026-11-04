@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   ArrayPathItem,
   BaseIssue,
@@ -121,7 +122,7 @@ export function tupleWithRest(
         // Parse schema of each tuple item
         for (let key = 0; key < this.items.length; key++) {
           const value = input[key];
-          const itemDataset = this.items[key]['~run']({ value }, config);
+          const itemDataset = _runSchema(this.items[key], { value }, config);
 
           // If there are issues, capture them
           if (itemDataset.issues) {
@@ -171,7 +172,7 @@ export function tupleWithRest(
         if (!dataset.issues || !config.abortEarly) {
           for (let key = this.items.length; key < input.length; key++) {
             const value = input[key];
-            const itemDataset = this.rest['~run']({ value }, config);
+            const itemDataset = _runSchema(this.rest, { value }, config);
 
             // If there are issues, capture them
             if (itemDataset.issues) {

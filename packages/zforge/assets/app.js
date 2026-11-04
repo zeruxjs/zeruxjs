@@ -74,13 +74,16 @@ const applyTheme = (mode) => {
 
 const getSavedTheme = () => localStorage.getItem(themeStorageKey) || "system";
 
+const themeParentOrigins = new Set([window.location.origin, ...(config.themeParentOrigins || []).filter(value => {
+  try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) && url.origin === value; } catch { return false; }
+})]);
 const broadcastThemeToParent = (mode) => {
   if (window.parent === window) return;
-  window.parent.postMessage({
+  for (const origin of themeParentOrigins) window.parent.postMessage({
     type: "zdev:theme-sync",
     mode,
     effectiveTheme: mode === "system" ? getSystemTheme() : mode
-  }, "*");
+  }, origin);
 };
 
 const setupThemeToggle = () => {
@@ -109,7 +112,7 @@ const setupThemeToggle = () => {
     }
   });
   window.addEventListener("message", (event) => {
-    if (!event.data || event.data.type !== "zdev:theme-sync") return;
+    if (event.source !== window.parent || !themeParentOrigins.has(event.origin) || !event.data || event.data.type !== "zdev:theme-sync") return;
     const nextMode = event.data.mode;
     const nextEffectiveTheme = event.data.effectiveTheme;
     if (nextMode === "system" || nextMode === "dark" || nextMode === "light") {

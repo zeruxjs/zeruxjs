@@ -27,7 +27,10 @@ export class ProtocolClient {
     const base = config.baseUrl ?? (typeof location !== 'undefined' ? location.origin : 'http://localhost');
     if (!/^https?:\/\//i.test(base)) throw new TypeError('HTTP or HTTPS baseUrl required');
     this.base = new URL(base).toString();
-    this.transport = config.fetch ?? fetch;
+    // Calling a captured native Window.fetch as `this.transport()` supplies the
+    // client as its receiver and fails browser Web IDL brand checks. Keep the
+    // native global receiver; explicitly injected transports remain borrowed.
+    this.transport = config.fetch ?? globalThis.fetch.bind(globalThis);
     this.config = config;
     if (config.timeoutMs !== undefined && (!Number.isSafeInteger(config.timeoutMs) || config.timeoutMs < 1)) throw new RangeError('Invalid timeout');
     if (config.maxResponseBytes !== undefined && (!Number.isSafeInteger(config.maxResponseBytes) || config.maxResponseBytes < 1)) throw new RangeError('Invalid response limit');

@@ -7,7 +7,6 @@ import { discoverWorkspaces } from './workspace-graph.mjs';
 const declaredFields = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies', 'peerDependenciesMeta', 'bin', 'engines'];
 
 function readJson(file) { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-function normalize(obj) { return JSON.stringify(obj ?? {}); }
 function copyDeclared(target, manifest) {
   for (const key of declaredFields) {
     const value = manifest[key];

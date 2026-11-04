@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { DecipherGCM } from 'node:crypto';
 import { constants } from 'node:fs';
-import { mkdir, lstat, realpath, open, link, rename, unlink, readdir, readFile } from 'node:fs/promises';
+import { mkdir, lstat, realpath, open, link, rename, unlink, readdir } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import type { FileAddress, FileInfo, FileSource, ListFileOptions, FileListing, PutFileOptions, ReadFileOptions, StorageDriver } from '../types.js';
 import { chunks, ensureNotExpired, validateAddress, validateBucket, validateKey, validatePut, validateRange } from '../validation.js';
@@ -49,6 +49,7 @@ export function createLocalStorage(options:LocalStorageOptions):StorageDriver {
   }
   const driver:StorageDriver={
     kind:'local-s3-lite',
+    capabilities:Object.freeze({range:!key,multipart:false,resumableMultipart:true,multipartCreateOnly:true,signedUrls:false,createOnlyWrite:true,createOnlyStream:true,createOnlyCopy:false,encryption:Object.freeze(key?['AES-256-GCM']:[])}),
     async put(address:FileAddress,source:FileSource,options:PutFileOptions={}){
       validatePut(options);const {dest,sidecar}=paths(address);await secureDir(dirname(dest),true);await secureDir(dirname(sidecar),true);
       if(options.ifNoneMatch!==false && await metadataOf(address))throw Object.assign(new Error('File exists'),{code:'FILE_EXISTS'});

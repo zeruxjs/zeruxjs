@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as http from 'node:http';
-import { createProtocolClient, ProtocolClientError, createQueryCache, readEventStream } from '../dist/network/index.js';
+import { createProtocolClient, createQueryCache, readEventStream } from '../dist/network/index.js';
 import { connectJsonStream } from '../dist/network/connect-stream.js';
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
 const stop = server => new Promise(resolve => server.close(resolve));

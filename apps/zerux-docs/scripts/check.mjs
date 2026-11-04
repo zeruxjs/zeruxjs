@@ -33,6 +33,24 @@ export async function check(directory = path.join(root, "dist")) {
       !content.includes("<article")
     )
       throw new Error(`Incomplete static HTML: ${name}`);
+    if (
+      [...content.matchAll(/<h1(?:\s[^>]*)?>/g)].length !== 1 ||
+      !content.includes("<main")
+    )
+      throw new Error(`Invalid main heading/landmark: ${name}`);
+    if (!name.endsWith("/offline.html")) {
+      if (
+        !content.includes('name="description"') ||
+        !content.includes('name="viewport"')
+      )
+        throw new Error(`Missing metadata: ${name}`);
+      const structured =
+        /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(
+          content,
+        );
+      if (!structured || !JSON.parse(structured[1]).name)
+        throw new Error(`Invalid structured data: ${name}`);
+    }
     const found = [...content.matchAll(/\bid="([^"]+)"/g)].map(
       (match) => match[1],
     );
@@ -81,6 +99,16 @@ export async function check(directory = path.join(root, "dist")) {
     )
       throw new Error(`Missing Markdown alternatives: ${page}`);
   }
+  const appManifest = JSON.parse(files.get(sitePath("/manifest.webmanifest")));
+  if (
+    appManifest.scope !== "./" ||
+    appManifest.start_url !== "./" ||
+    !files.has(sitePath("/sw.js"))
+  )
+    throw new Error("Offline support must stay within the docs mount");
+  for (const icon of appManifest.icons ?? [])
+    if (!files.has(sitePath("/" + icon.src)))
+      throw new Error(`Missing PWA icon: ${icon.src}`);
   const search = JSON.parse(files.get(sitePath("/assets/search.json")));
   if (
     search.schema !== 2 ||

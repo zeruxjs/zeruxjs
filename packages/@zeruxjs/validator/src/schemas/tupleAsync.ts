@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   ArrayPathItem,
   BaseIssue,
@@ -111,7 +112,7 @@ export function tupleAsync(
         const itemDatasets = await Promise.all(
           this.items.map(async (item, key) => {
             const value = input[key];
-            return [key, value, await item['~run']({ value }, config)] as const;
+            return [key, value, await _runSchema(item, { value }, config)] as const;
           })
         );
 

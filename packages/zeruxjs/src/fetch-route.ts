@@ -21,16 +21,17 @@ export async function sendFetchResponse(req: IncomingMessage, res: ServerRespons
   }
   const controller = new AbortController();
   const abort = () => controller.abort();
-  // IncomingMessage close may also fire when the complete request body was received;
-  // ServerResponse close is the connection-loss signal during outbound streaming.
-  res.once('close', abort);
+  // pipeline owns destination close/cancellation. A second close observer is
+  // redundant and exceeds response listener budgets when tracing and lifecycle
+  // ownership are enabled together. Incoming upload abort remains independent.
   req.once('aborted', abort);
   try {
     await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream),res,{signal:controller.signal});
   } catch (error) {
-    if (!controller.signal.aborted) throw error;
+    const disconnected = res.destroyed && error instanceof Error && 'code' in error &&
+      ['ERR_STREAM_PREMATURE_CLOSE', 'ECONNRESET', 'EPIPE'].includes(String(error.code));
+    if (!controller.signal.aborted && !disconnected) throw error;
   } finally {
-    res.off('close', abort);
     req.off('aborted', abort);
   }
 }

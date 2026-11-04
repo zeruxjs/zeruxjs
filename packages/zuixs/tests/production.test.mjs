@@ -4,10 +4,10 @@ import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync,symlinkSync,exis
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
-import {pathToFileURL} from 'node:url';
+import 'node:url';
 import {createZuix,generateCSS,extractClasses,renderZuixStyle,zuixVite} from '../dist/index.js';
 import {buildZuix,watchZuix,scanProjectFiles} from '../dist/node.js';
-import {resolveTheme} from '../dist/theme.js';
+import '../dist/theme.js';
 const tmp=()=>mkdtempSync(path.join(tmpdir(),'zuix-test-'));
 const cleanup=root=>rmSync(root,{recursive:true,force:true});
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));

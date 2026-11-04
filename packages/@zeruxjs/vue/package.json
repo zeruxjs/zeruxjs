@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/vue",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Reactive ref compatibility, derived refs and Vue state adapters.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -32,7 +32,52 @@
     "access": "public"
   },
   "devDependencies": {
+    "@types/node": "^25.4.0",
+    "@vue/runtime-dom": "3.5.44",
+    "@vue/server-renderer": "3.5.44",
+    "@zeruxjs/security": "0.0.4",
+    "jsdom": "30.1.3",
     "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "vue": "3.5.44"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js",
+      "require": "./dist/browser.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js",
+      "require": "./dist/server.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json",
+    "./rendering": {
+      "types": "./dist/rendering.d.ts",
+      "import": "./dist/rendering.js",
+      "require": "./dist/rendering.js"
+    }
+  },
+  "peerDependencies": {
+    "@vue/runtime-dom": "~3.5.44",
+    "@vue/server-renderer": "~3.5.44",
+    "vue": "~3.5.44"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    },
+    "@vue/runtime-dom": {
+      "optional": true
+    },
+    "@vue/server-renderer": {
+      "optional": true
+    }
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/db-sql-core",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Internal SQL compiler and executor helpers for ZeruxJS database connectors.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -20,7 +20,7 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@zeruxjs/db": "0.0.3"
+    "@zeruxjs/db": "0.0.4"
   },
   "files": [
     "dist/",
@@ -32,7 +32,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
   }
 }

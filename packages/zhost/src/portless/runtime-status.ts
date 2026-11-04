@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Read-only runtime observability: private, atomic status snapshots per wrapper.
  * This is diagnostic state only. Never use it to authorize process signaling. */
 import * as fs from 'node:fs';
@@ -102,9 +103,9 @@ export function listRuntimeStatus(stateDir: string, hostname?: string): Inspecte
     for (const file of files) {
         const filename = path.join(dir, file);
         try {
-            const stats = fs.lstatSync(filename);
+            const {stat: stats, bytes} = readStateFile(filename, MAX_BYTES);
             if (!stats.isFile() || stats.isSymbolicLink() || stats.size > MAX_BYTES) continue;
-            const record = parseRecord(fs.readFileSync(filename, 'utf8'));
+            const record = parseRecord(bytes.toString('utf8'));
             if (!record || (hostname && record.hostname !== hostname)) continue;
             result.push({ ...record, alive: record.status.phase !== 'stopped' &&
                 record.ownerIdentity !== null && processIdentity(record.ownerPid) === record.ownerIdentity });

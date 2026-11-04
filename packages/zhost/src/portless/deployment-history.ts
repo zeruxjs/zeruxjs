@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Bounded, private deployment audit trail. History is diagnostic state; it is
  * never used to authorize process termination or route ownership. */
 import * as fs from 'node:fs';
@@ -46,10 +47,10 @@ function filename(stateDir: string, hostname: string): string {
 }
 function safeRead(file: string): DeploymentRecord | null {
   try {
-    const st = fs.lstatSync(file);
+    const {stat: st, bytes} = readStateFile(file, MAX_FILE_BYTES);
     if (!st.isFile() || st.isSymbolicLink() || (st.mode & 0o077) || st.size > MAX_FILE_BYTES ||
       (typeof process.getuid === 'function' && st.uid !== process.getuid())) throw new Error('Unsafe deployment history file');
-    const value: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const value: unknown = JSON.parse(bytes.toString('utf8'));
     if (typeof value !== 'object' || value === null) throw new Error('Invalid deployment history');
     const record = value as DeploymentRecord;
     if (record.version !== 1 || typeof record.hostname !== 'string' || !Array.isArray(record.history) ||

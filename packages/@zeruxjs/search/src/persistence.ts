@@ -5,8 +5,9 @@ import { randomBytes } from 'node:crypto';
 import type { SearchDocument } from './types.js';
 import { SearchIndex } from './search-index.js';
 
-export interface SearchPersistenceOptions { maxBytes?: number }
+export interface SearchPersistenceOptions { maxBytes?: number; /** Saving only; loads validate either version against the target index. */ snapshotVersion?:1|2 }
 function maxBytes(options?: SearchPersistenceOptions): number {
+  if(options?.snapshotVersion!==undefined&&options.snapshotVersion!==1&&options.snapshotVersion!==2)throw new TypeError('Unsupported snapshot version');
   const value = options?.maxBytes ?? 16 * 1024 * 1024;
   if (!Number.isSafeInteger(value) || value < 256 || value > 256 * 1024 * 1024) throw new RangeError('Invalid snapshot byte limit');
   return value;
@@ -23,7 +24,7 @@ async function rejectSymlink(file:string):Promise<void> {
 }
 /** Atomic, size-bounded single-process snapshot persistence; keep the directory private. */
 export async function saveSearchSnapshot<T extends SearchDocument>(filename:string,index:SearchIndex<T>,options?:SearchPersistenceOptions):Promise<void> {
-  const file=await validatedPath(filename), bytes=Buffer.from(JSON.stringify(index.snapshot()));
+  const file=await validatedPath(filename), bytes=Buffer.from(JSON.stringify(options?.snapshotVersion===2?index.snapshot({version:2}):index.snapshot()));
   if(bytes.length>maxBytes(options))throw new RangeError('Search snapshot too large');
   await rejectSymlink(file);
   const temporary=`${file}.${randomBytes(8).toString('hex')}.tmp`;

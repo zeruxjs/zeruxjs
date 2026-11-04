@@ -1,3 +1,7 @@
+import { ownsTransaction, transactionError, negotiateTransaction, runPinnedTransaction } from './transactions.js';
+import type { PinnedTransactionAdapter, TransactionDatabase, TransactionOptions } from './transactions.js';
+import { capabilities, executionPolicy, queryOptions, checkCapabilities, executionError } from './execution.js';
+import type { DatabaseCapabilities, DatabaseExecutionPolicy, DatabaseQueryOptions, DatabaseQueryMetric } from './types.js';
 import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -27,6 +31,7 @@ import type {
 } from "./types.js";
 import {
     createDatabaseError,
+    assertJsonSerializable,
     extractConnectorFactory,
     isPromiseLike,
     mapMaybePromise,
@@ -39,6 +44,7 @@ import {
 interface ConnectionState {
     config: NormalizedConnectionConfig;
     connector: DatabaseConnector;
+    capabilities:Readonly<DatabaseCapabilities>;
 }
 
 /**
@@ -70,12 +76,16 @@ class DatabaseManagerImpl implements DatabaseManager {
 
     readonly #connections: Map<string, ConnectionState>;
     #closed = false;
+    #policy:ReturnType<typeof executionPolicy>;
+    #pending=new Set<{controller:AbortController;settled:Promise<void>}>();
     #closing?: Promise<void>;
 
     constructor(
         defaultConnectionSlug: string,
-        connections: Map<string, ConnectionState>
+        connections: Map<string, ConnectionState>,
+        policy:DatabaseExecutionPolicy={}
     ) {
+        this.#policy=executionPolicy(policy);
         this.defaultConnectionSlug = defaultConnectionSlug;
         this.connectionSlugs = [...connections.keys()];
         this.#connections = connections;
@@ -92,25 +102,28 @@ class DatabaseManagerImpl implements DatabaseManager {
         const state = this.#getConnectionState(slug);
 
         return {
+            transaction:(run,options)=>this.transaction(run,options,slug),
+            transactionCapabilities:()=>this.transactionCapabilities(slug),
+            capabilities:()=>state.capabilities,
             slug: state.config.slug,
             name: state.config.name,
             connector: state.config.connector,
             options: redactConnectionOptions(state.config.options),
-            query: (operation) => this.query(this.#assignConnection(operation, slug)),
-            createDb: (operation) => this.createDb({ ...operation, op: "createDb", connection: slug }),
-            dropDb: (operation) => this.dropDb({ ...operation, op: "dropDb", connection: slug }),
-            switchDB: (operation) => this.switchDB({ ...operation, op: "switchDB", connection: slug }),
-            createTable: (operation) => this.createTable({ ...operation, op: "createTable", connection: slug }),
-            dropTable: (operation) => this.dropTable({ ...operation, op: "dropTable", connection: slug }),
-            alterTable: (operation) => this.alterTable({ ...operation, op: "alterTable", connection: slug }),
-            turcunateTable: (operation) => this.turcunateTable({ ...operation, op: "turcunateTable", connection: slug }),
-            createIndex: (operation) => this.createIndex({ ...operation, op: "createIndex", connection: slug }),
-            dropIndex: (operation) => this.dropIndex({ ...operation, op: "dropIndex", connection: slug }),
-            insert: (operation) => this.insert({ ...operation, op: "insert", connection: slug }),
-            select: (operation) => this.select({ ...operation, op: "select", connection: slug }),
-            update: (operation) => this.update({ ...operation, op: "update", connection: slug }),
-            delete: (operation) => this.delete({ ...operation, op: "delete", connection: slug }),
-            native: () => state.connector.getNativeConnection?.() ?? state.connector
+            query: (operation, options) => this.query(this.#assignConnection(operation, slug),options),
+            createDb: (operation, options) => this.createDb({ ...operation, op: "createDb", connection: slug },options),
+            dropDb: (operation, options) => this.dropDb({ ...operation, op: "dropDb", connection: slug },options),
+            switchDB: (operation, options) => this.switchDB({ ...operation, op: "switchDB", connection: slug },options),
+            createTable: (operation, options) => this.createTable({ ...operation, op: "createTable", connection: slug },options),
+            dropTable: (operation, options) => this.dropTable({ ...operation, op: "dropTable", connection: slug },options),
+            alterTable: (operation, options) => this.alterTable({ ...operation, op: "alterTable", connection: slug },options),
+            turcunateTable: (operation, options) => this.turcunateTable({ ...operation, op: "turcunateTable", connection: slug },options),
+            createIndex: (operation, options) => this.createIndex({ ...operation, op: "createIndex", connection: slug },options),
+            dropIndex: (operation, options) => this.dropIndex({ ...operation, op: "dropIndex", connection: slug },options),
+            insert: (operation, options) => this.insert({ ...operation, op: "insert", connection: slug },options),
+            select: (operation, options) => this.select({ ...operation, op: "select", connection: slug },options),
+            update: (operation, options) => this.update({ ...operation, op: "update", connection: slug },options),
+            delete: (operation, options) => this.delete({ ...operation, op: "delete", connection: slug },options),
+            native: () => {if(ownsTransaction(this))throw transactionError('TRANSACTION_SCOPE_REQUIRED');const current=this.#getConnectionState(slug);return current.connector.getNativeConnection?.()??current.connector;}
         };
     }
 
@@ -135,16 +148,46 @@ class DatabaseManagerImpl implements DatabaseManager {
      * @returns Native connector instance.
      */
     dbAccess(slug: string): DatabaseConnector {
+        if(ownsTransaction(this))throw transactionError('TRANSACTION_SCOPE_REQUIRED');
         return this.#getConnectionState(slug).connector;
     }
 
-    query(operation: QueryOperation | QueryOperation[]): MaybePromise<DatabaseResult | DatabaseResult[]> {
+    transactionCapabilities(slug=this.defaultConnectionSlug){
+        const state=this.#getConnectionState(slug);if(state.capabilities.transactions!=='supported'||!state.connector.transactionAdapter)return undefined;
+        negotiateTransaction(state.connector.transactionAdapter);const caps=state.connector.transactionAdapter.capabilities;
+        return Object.freeze({...caps,isolationLevels:Object.freeze([...caps.isolationLevels])});
+    }
+
+    async transaction<T>(run:(db:TransactionDatabase)=>MaybePromise<T>,options:TransactionOptions={},slug=this.defaultConnectionSlug):Promise<T>{
+        if(ownsTransaction(this))throw transactionError('NESTED_TRANSACTION_UNSUPPORTED');
+        const state=this.#getConnectionState(slug),adapter=state.connector.transactionAdapter;
+        if(state.capabilities.transactions!=='supported')throw transactionError('UNSUPPORTED_TRANSACTION');
+        negotiateTransaction(adapter,options);
+        if(this.#pending.size>=this.#policy.maxPending)throw executionError('QUERY_LIMIT');
+        const controller=new AbortController();let settle!:()=>void;
+        const pending={controller,settled:new Promise<void>(resolve=>settle=resolve)};this.#pending.add(pending);
+        try{return await runPinnedTransaction(this,adapter!,{connection:state.config},run,execute=>{
+            const pinned=new DatabaseManagerImpl(slug,new Map([[slug,{...state,connector:{kind:state.connector.kind,options:state.config.options,execute}}]]),this.#policy);
+            return pinned.getConnectionFacade(slug);
+        },{...options,signal:AbortSignal.any([controller.signal,...(options.signal?[options.signal]:[])])});}
+        finally{this.#pending.delete(pending);settle();}
+    }
+
+    capabilities(slug=this.defaultConnectionSlug){return this.#getConnectionState(slug).capabilities;}
+
+    query(operation: QueryOperation | QueryOperation[], options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult | DatabaseResult[]> {
+        options=queryOptions(options);
+        if(this.#closed)throw createDatabaseError({code:'MANAGER_CLOSED',message:'Database manager has been disconnected'});
         if (Array.isArray(operation)) {
+            if(operation.length>this.#policy.maxBatch)throw executionError('BATCH_LIMIT');
+            assertJsonSerializable(operation,'Database batch');
             const normalized = operation.map((entry) => validateOperation(entry));
+            normalized.forEach(entry=>{if(entry.op==='insert'&&Array.isArray(entry.values)&&entry.values.length>this.#policy.maxBatch)throw executionError('BATCH_LIMIT');const state=this.#getConnectionState(entry.connection??this.defaultConnectionSlug);checkCapabilities(entry,state.capabilities,options);});
             const requiresSequential = normalized.some((entry) => entry.dependsOn !== undefined);
 
             if (!requiresSequential) {
-                const parallelResult = normalized.map((entry) => this.#dispatch(entry));
+                if(normalized.length+this.#pending.size>this.#policy.maxPending)throw executionError('QUERY_LIMIT');
+                const parallelResult = normalized.map((entry) => this.#dispatch(entry,options));
                 return parallelResult.some(isPromiseLike)
                     ? Promise.all(parallelResult as Promise<DatabaseResult>[])
                     : parallelResult as DatabaseResult[];
@@ -174,7 +217,7 @@ class DatabaseManagerImpl implements DatabaseManager {
                             (collected[dependencies[0]] as unknown as Record<string, unknown> | undefined)?.[resolved.use];
                     }
 
-                    return mapMaybePromise(this.#dispatch(resolved), (result) => {
+                    return mapMaybePromise(this.#dispatch(resolved,options), (result) => {
                         collected.push(result);
                         return collected;
                     });
@@ -184,59 +227,59 @@ class DatabaseManagerImpl implements DatabaseManager {
             return current;
         }
 
-        return this.#dispatch(validateOperation(operation));
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    createDb(operation: CreateDbOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    createDb(operation: CreateDbOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    dropDb(operation: DropDbOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    dropDb(operation: DropDbOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    switchDB(operation: SwitchDbOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    switchDB(operation: SwitchDbOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    createTable(operation: CreateTableOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    createTable(operation: CreateTableOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    dropTable(operation: DropTableOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    dropTable(operation: DropTableOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    alterTable(operation: AlterTableOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    alterTable(operation: AlterTableOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    turcunateTable(operation: TruncateTableOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    turcunateTable(operation: TruncateTableOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    createIndex(operation: CreateIndexOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    createIndex(operation: CreateIndexOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    dropIndex(operation: DropIndexOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    dropIndex(operation: DropIndexOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    insert(operation: InsertOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    insert(operation: InsertOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    select(operation: SelectOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    select(operation: SelectOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    update(operation: UpdateOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    update(operation: UpdateOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
-    delete(operation: DeleteOperation): MaybePromise<DatabaseResult> {
-        return this.#dispatch(validateOperation(operation));
+    delete(operation: DeleteOperation, options:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        return this.#dispatch(validateOperation(operation),options);
     }
 
     #getConnectionState(slug: string): ConnectionState {
@@ -267,34 +310,65 @@ class DatabaseManagerImpl implements DatabaseManager {
     }
 
     async disconnect(): Promise<void> {
+        if(ownsTransaction(this))throw transactionError('TRANSACTION_SCOPE_REQUIRED');
         if (this.#closing) return this.#closing;
         this.#closed = true;
-        this.#closing = (async () => {
+        this.#closing = Promise.resolve().then(async () => {
+            for(const pending of this.#pending)pending.controller.abort();
+            let timer:ReturnType<typeof setTimeout>|undefined;
+            try { await Promise.race([Promise.all([...this.#pending].map(p=>p.settled)),new Promise<void>(resolve=>{timer=setTimeout(resolve,this.#policy.shutdownGraceMs);})]); }
+            finally {if(timer)clearTimeout(timer);}
             const failures: unknown[] = [];
             for (const { connector } of [...this.#connections.values()].reverse()) {
                 try { await connector.disconnect?.(); } catch (error) { failures.push(error); }
             }
             if (failures.length) throw new AggregateError(failures, "One or more database connectors failed to disconnect");
-        })();
+        });
         return this.#closing;
     }
 
-    #dispatch(operation: QueryOperation): MaybePromise<DatabaseResult> {
-        const slug = operation.connection ?? this.defaultConnectionSlug;
-        const state = this.#getConnectionState(slug);
-
-        return mapMaybePromise(
-            state.connector.execute(operation, {
-                connection: state.config
-            }),
-            (result) => ({
-                ...result,
-                connection: result.connection || state.config.slug,
-                connector: result.connector || state.config.connector,
-                operation: result.operation || operation.op
-            })
-        );
+    #dispatch(operation: QueryOperation, rawOptions:DatabaseQueryOptions={}): MaybePromise<DatabaseResult> {
+        if(ownsTransaction(this))throw transactionError('TRANSACTION_SCOPE_REQUIRED');
+        const options=queryOptions(rawOptions);
+        const state=this.#getConnectionState(operation.connection??this.defaultConnectionSlug);
+        checkCapabilities(operation,state.capabilities,options);
+        if(operation.op==='insert'&&Array.isArray(operation.values)&&operation.values.length>this.#policy.maxBatch)throw executionError('BATCH_LIMIT');
+        if(options.signal?.aborted)throw executionError('QUERY_CANCELLED');
+        if(options.deadline!==undefined&&options.deadline<=Date.now())throw executionError('QUERY_DEADLINE');
+        if(this.#pending.size>=this.#policy.maxPending)throw executionError('QUERY_LIMIT');
+        const controller=new AbortController();
+        let settle!:()=>void;
+        const pending={controller,settled:new Promise<void>(resolve=>{settle=resolve;})};
+        this.#pending.add(pending);
+        const start=performance.now();let reported=false;
+        const metric=(outcome:DatabaseQueryMetric['outcome'],result?:DatabaseResult)=>{
+            if(reported)return;reported=true;
+            const table='table'in operation&&typeof operation.table==='string'&&/^[a-zA-Z_][a-zA-Z0-9_]{0,127}$/.test(operation.table)?operation.table:undefined;
+            const count=result?.affectedCount??result?.rowCount;
+            const event=Object.freeze({operation:operation.op,...(table?{table}:{}),durationMs:Math.max(0,performance.now()-start),...(typeof count==='number'&&Number.isSafeInteger(count)&&count>=0?{count}:{}),outcome});
+            try{Promise.resolve(this.#policy.onMetric?.(event)).catch(()=>{});}catch{/* Diagnostics never change query results. */}
+        };
+        let timer:ReturnType<typeof setTimeout>|undefined;
+        let abort!:()=>void;let timedOut=false;
+        const cleanup=()=>{this.#pending.delete(pending);settle();};
+        const callerCleanup=()=>{if(timer)clearTimeout(timer);options.signal?.removeEventListener('abort',externalAbort);if(abort)controller.signal.removeEventListener('abort',abort);};
+        const externalAbort=()=>controller.abort();
+        options.signal?.addEventListener('abort',externalAbort,{once:true});
+        if(options.deadline!==undefined)timer=setTimeout(()=>{timedOut=true;controller.abort();},Math.min(2147483647,Math.max(0,options.deadline-Date.now())));
+        const normalize=(result:DatabaseResult)=>{
+            if(!result||typeof result.ok!=='boolean')throw createDatabaseError({code:'INVALID_RESULT',message:'Invalid database result'});
+            for(const count of [result.affectedCount,result.matchedCount,result.changedCount,result.rowCount])if(count!==undefined&&(!Number.isSafeInteger(count)||count<0))throw createDatabaseError({code:'INVALID_RESULT',message:'Invalid database result count'});
+            return {...result,counts:result.counts??{affected:'unknown' as const,matched:'unknown' as const,changed:'unknown' as const},connection:result.connection||state.config.slug,connector:result.connector||state.config.connector,operation:result.operation||operation.op};
+        };
+        let execution:MaybePromise<DatabaseResult>;
+        try { execution=state.connector.execute(operation,{connection:state.config,signal:controller.signal,deadline:options.deadline}); }
+        catch(error){cleanup();callerCleanup();metric('failure');throw error;}
+        if(!isPromiseLike(execution)){cleanup();callerCleanup();if(controller.signal.aborted||options.deadline!==undefined&&options.deadline<=Date.now()){metric(options.deadline!==undefined&&options.deadline<=Date.now()?'deadline':'cancelled');throw executionError(options.deadline!==undefined&&options.deadline<=Date.now()?'QUERY_DEADLINE':'QUERY_CANCELLED');}let result:DatabaseResult;try{result=normalize(execution);}catch(error){metric('failure');throw error;}metric(result.ok?'success':'failure',result);return result;}
+        const result=Promise.resolve(execution).then(value=>{cleanup();return normalize(value);},error=>{cleanup();throw error;});
+        const cancelled=new Promise<never>((_,reject)=>{abort=()=>reject(executionError(timedOut?'QUERY_DEADLINE':'QUERY_CANCELLED'));controller.signal.addEventListener('abort',abort,{once:true});if(controller.signal.aborted)abort();});
+        return Promise.race([result,cancelled]).then(value=>{metric(value.ok?'success':'failure',value);return value;},error=>{metric(controller.signal.aborted?(timedOut?'deadline':'cancelled'):'failure');throw error;}).finally(callerCleanup);
     }
+
 }
 
 let activeManager: DatabaseManager | null = null;
@@ -309,6 +383,7 @@ let activeManager: DatabaseManager | null = null;
 export const createDatabaseManager = async (
     config: DatabaseManagerConfig
 ): Promise<DatabaseManager> => {
+    executionPolicy(config?.execution);
     const normalized = normalizeManagerConfig(config);
     const states = new Map<string, ConnectionState>();
 
@@ -317,11 +392,12 @@ export const createDatabaseManager = async (
             const imported = await importConnectorPackage(connection.connector);
             const factory = extractConnectorFactory(imported as Record<string, unknown>);
             const connector = await factory(connection.options, connection);
-            try { await connector.connect?.(); }
+            let reportedCapabilities:Readonly<DatabaseCapabilities>;
+            try { reportedCapabilities=capabilities(connector.capabilities);await connector.connect?.(); }
             catch (error) { try { await connector.disconnect?.(); } catch { /* preserve connect error */ } throw error; }
-            states.set(connection.slug, { config: connection, connector });
+            states.set(connection.slug, { config: connection, connector, capabilities:reportedCapabilities! });
         }
-        return new DatabaseManagerImpl(normalized.defaultSlug, states);
+        return new DatabaseManagerImpl(normalized.defaultSlug, states,config.execution);
     } catch (error) {
         for (const { connector } of [...states.values()].reverse()) {
             try { await connector.disconnect?.(); } catch { /* preserve initial error */ }
@@ -371,3 +447,13 @@ export const configureDatabaseManager = async (
     setActiveDatabaseManager(manager);
     return manager;
 };
+
+/** Build an explicit transaction runner around an adapter; no driver is loaded or resource acquired here. */
+export function createPinnedTransaction(adapter:PinnedTransactionAdapter,connection:NormalizedConnectionConfig,policy:DatabaseExecutionPolicy={}):import('./transactions.js').DatabaseTransaction {
+    negotiateTransaction(adapter);executionPolicy(policy);
+    const normalized=normalizeManagerConfig({connections:[connection]}).connections[0];
+    connection=normalized;
+    const connector:DatabaseConnector={kind:'pinned',options:connection.options,capabilities:{transactions:'supported'},transactionAdapter:adapter,execute(){throw transactionError('TRANSACTION_SCOPE_REQUIRED');}};
+    const manager=new DatabaseManagerImpl(connection.slug,new Map([[connection.slug,{config:connection,connector,capabilities:capabilities(connector.capabilities)}]]),policy);
+    return (run,options)=>manager.transaction(run,options);
+}

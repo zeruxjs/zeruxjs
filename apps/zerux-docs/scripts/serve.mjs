@@ -1,3 +1,5 @@
+import fileIO from '../../../scripts/file-io.cjs';
+const {readRegularFile}=fileIO;
 import http from "node:http";
 import { site, sitePath } from "../src/site.config.mjs";
 import { watch } from "node:fs";
@@ -44,6 +46,8 @@ const host = process.env.HOST || "127.0.0.1";
 if (!Number.isInteger(port) || port < 0 || port > 65535)
   throw new Error("Invalid PORT");
 const types = {
+  ".webmanifest": "application/manifest+json",
+  ".png": "image/png",
   ".md": "text/markdown; charset=utf-8",
   ".svg": "image/svg+xml",
   ".xml": "application/xml; charset=utf-8",
@@ -93,7 +97,7 @@ async function handle(request, response) {
       }
       filename = path.join(filename, "index.html");
     }
-    const data = await fs.readFile(filename);
+    const data = await readRegularFile(filename);
     response.writeHead(200, {
       "Content-Type":
         types[path.extname(filename)] || "application/octet-stream",

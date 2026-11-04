@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Durable, private fleet checkpoint. Persist retry timestamps *before* a
  * replacement attempt to prevent a supervisor restart resetting rate limits. */
 import * as fs from 'node:fs';
@@ -47,10 +48,10 @@ function validateSnapshot(value: unknown, hostname: string): value is FleetCheck
 export function readFleetCheckpoint(stateDir: string, hostname: string): FleetCheckpoint | null {
   try {
     const file = fleetStatePath(stateDir, hostname);
-    const st = fs.lstatSync(file);
+    const {stat: st, bytes} = readStateFile(file, MAX_BYTES);
     if (!st.isFile() || st.isSymbolicLink() || st.size > MAX_BYTES || (st.mode & 0o077) !== 0 ||
         (typeof process.getuid === 'function' && st.uid !== process.getuid())) throw new Error('Unsafe fleet checkpoint');
-    const value: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const value: unknown = JSON.parse(bytes.toString('utf8'));
     if (!validateSnapshot(value, hostname)) throw new Error('Invalid fleet checkpoint');
     return value;
   } catch (error) {
@@ -68,7 +69,7 @@ function writeCheckpoint(file: string, record: FleetCheckpoint): void {
     try { if (fs.lstatSync(file).isSymbolicLink()) throw new Error('Unsafe fleet checkpoint symlink'); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     fs.renameSync(temporary, file);
-    try { const fd = fs.openSync(path.dirname(file), 'r'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } catch { /* unsupported filesystems */ }
+    try { const fd = fs.openSync(path.dirname(file), 'r', 0o600); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } } catch { /* unsupported filesystems */ }
   // eslint-disable-next-line no-unsafe-finally -- Cleanup failures intentionally propagate so private temporary-file cleanup failures are visible.
   } finally { try { fs.unlinkSync(temporary); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; } }
 }

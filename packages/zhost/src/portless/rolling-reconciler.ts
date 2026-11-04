@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Find interrupted rolling controllers in this OS user's private control dir.
  * Reconciliation is serialized with normal rolling startup and refuses to touch
  * live/unverifiable owners; one corrupt record does not hide other orphans. */
@@ -37,12 +38,12 @@ function inspectRecords(stateDir: string, maxRecords: number): ReconciliationIte
   for (const filename of files) {
     const file = path.join(directory, filename);
     try {
-      const stat = fs.lstatSync(file);
+      const {stat: stat, bytes} = readStateFile(file, MAX_RECORD_SIZE);
       if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_RECORD_SIZE || (stat.mode & 0o077) !== 0 ||
           (typeof process.getuid === 'function' && stat.uid !== process.getuid())) {
         throw new Error('Unsafe generation registry file');
       }
-      const contents: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const contents: unknown = JSON.parse(bytes.toString('utf8'));
       const hostname = (contents as { hostname?: unknown })?.hostname;
       if (typeof hostname !== 'string') throw new Error('Missing generation hostname');
       validateControlName(hostname);

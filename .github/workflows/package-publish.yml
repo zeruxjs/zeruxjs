@@ -24,13 +24,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  plan:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    permissions:
-      contents: read
-      id-token: write
+    timeout-minutes: 15
+    outputs:
+      has_releases: ${{ steps.plan.outputs.has_releases }}
+      artifact_id: ${{ steps.plan_artifact.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,38 +39,107 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Use npm with trusted publishing support
-        run: npm install --global npm@11
       - name: Compare every package version with npm and plan retries
         id: plan
         run: node scripts/publish-packages.mjs --plan
+      - uses: actions/upload-artifact@v4
+        id: plan_artifact
+        if: always()
+        with:
+          name: npm-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .npm-release/
+          include-hidden-files: true
+          if-no-files-found: error
+
+  source:
+    needs: plan
+    if: needs.plan.outputs.has_releases == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Check source and version contracts
-        if: steps.plan.outputs.has_releases == 'true'
         run: npm run verify:source
+
+  prepare:
+    outputs:
+      artifact_id: ${{ steps.prepared_artifact.outputs.artifact-id }}
+    needs: plan
+    if: needs.plan.outputs.has_releases == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Use release npm version
+        run: npm install --global npm@11
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.plan.outputs.artifact_id }}
+          merge-multiple: true
+          path: .npm-release/
       - name: Install locked dependencies
-        if: steps.plan.outputs.has_releases == 'true'
         run: npm ci --no-audit --no-fund
       - name: Require zero production audit findings
-        if: steps.plan.outputs.has_releases == 'true'
         run: npm audit --omit=dev --audit-level=low
       - name: Require complete license evidence
-        if: steps.plan.outputs.has_releases == 'true'
         run: npm run license:installed
       - name: Build workspaces in parallel
-        if: steps.plan.outputs.has_releases == 'true'
         run: npm run build:workspaces -- --concurrency auto
       - name: Pack selected releases and record archive integrity
-        if: steps.plan.outputs.has_releases == 'true'
         run: node scripts/publish-packages.mjs --pack
+      - uses: actions/upload-artifact@v4
+        id: prepared_artifact
+        if: always()
+        with:
+          name: npm-prepared-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .npm-release/
+          include-hidden-files: true
+          if-no-files-found: error
+          # npm tarballs are already compressed.
+          compression-level: 0
+
+  publish:
+    # Both independent gates must pass; dry runs still execute all preparation checks.
+    needs: [source, prepare]
+    if: inputs.dry_run != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Use npm with trusted publishing support
+        run: npm install --global npm@11
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact_id }}
+          merge-multiple: true
+          path: .npm-release/
       - name: Publish exact verified archives through npm trusted publishing
-        if: steps.plan.outputs.has_releases == 'true' && inputs.dry_run != true
         run: node scripts/publish-packages.mjs --publish
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: npm-release-${{ github.sha }}
+          name: npm-release-${{ github.sha }}-${{ github.run_attempt }}
           path: .npm-release/
           include-hidden-files: true
-          if-no-files-found: warn
+          if-no-files-found: error
+          compression-level: 0

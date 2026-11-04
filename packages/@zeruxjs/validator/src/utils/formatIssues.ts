@@ -6,7 +6,7 @@ export interface FormattedIssueTree {
 }
 
 function createNode(): { _errors: string[];[key: string]: FormattedIssueTree | string[] } {
-  return { _errors: [] };
+  return Object.assign(Object.create(null), { _errors: [] });
 }
 
 /**
@@ -31,13 +31,13 @@ export function formatIssues(
             ? `${item.key}`
             : null;
 
-        if (!key) {
+        if (!key || key === '_errors') {
           cursor._errors.push(issue.message);
           cursor = root;
           break;
         }
 
-        if (!(key in cursor)) {
+        if (!Object.hasOwn(cursor, key)) {
           cursor[key] = createNode();
         }
 

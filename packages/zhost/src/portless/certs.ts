@@ -162,6 +162,15 @@ function generateCA(stateDir: string): { certPath: string; keyPath: string } {
   return { certPath, keyPath };
 }
 
+function writeCertificateConfig(file:string,text:string):void {
+  const fd=fs.openSync(file,fs.constants.O_WRONLY|fs.constants.O_CREAT|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK,0o600);
+  try{const stat=fs.fstatSync(fd);if(!stat.isFile()||stat.nlink!==1)throw new Error('Unsafe certificate configuration');fs.fchmodSync(fd,0o600);fs.writeFileSync(fd,text);fs.ftruncateSync(fd,Buffer.byteLength(text));}finally{fs.closeSync(fd);}
+}
+async function writeCertificateConfigAsync(file:string,text:string):Promise<void>{
+  const handle=await fs.promises.open(file,fs.constants.O_WRONLY|fs.constants.O_CREAT|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK,0o600);
+  try{const stat=await handle.stat();if(!stat.isFile()||stat.nlink!==1)throw new Error('Unsafe certificate configuration');await handle.chmod(0o600);await handle.writeFile(text);await handle.truncate(Buffer.byteLength(text));}finally{await handle.close();}
+}
+
 // ---------------------------------------------------------------------------
 // Server certificate generation
 // ---------------------------------------------------------------------------
@@ -186,7 +195,7 @@ function generateServerCert(stateDir: string, tld = 'localhost'): { certPath: st
   openssl(["req", "-new", "-key", serverKeyPath, "-out", csrPath, "-subj", `/CN=${tld}`]);
 
   // Write extension config for SANs
-  fs.writeFileSync(
+  writeCertificateConfig(
     extPath,
     [
       "authorityKeyIdentifier=keyid,issuer",
@@ -529,7 +538,7 @@ async function generateHostCertAsync(
   // Scope every dynamically issued certificate to exactly one hostname.
   const sans = [`DNS:${hostname}`];
 
-  await fs.promises.writeFile(
+  await writeCertificateConfigAsync(
     extPath,
     [
       "authorityKeyIdentifier=keyid,issuer",

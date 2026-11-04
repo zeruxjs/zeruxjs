@@ -1,3 +1,4 @@
+import {validateBrandRules} from './brand-rules.js';
 import type { Asset, AssetVariant } from './types.js';
 function safeObject(value: unknown, label: string, max: number, maxValue = 10000): Record<string,string> {
  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length > max) throw new TypeError(`Invalid ${label}`);
@@ -44,5 +45,6 @@ export function validateAsset(input: Asset): Asset {
    }
    result.variants = variants;
  }
+ if(input.brand!==undefined)result.brand=validateBrandRules(input.brand,result.variants);
  return result;
 }

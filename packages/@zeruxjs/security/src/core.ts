@@ -1,3 +1,4 @@
+import { escapeHtmlText } from './encoding.js';
 import crypto from "node:crypto";
 import path from "node:path";
 
@@ -8,29 +9,24 @@ export const createNonce = (size = 16) => {
     return crypto.randomBytes(size).toString("base64");
 };
 
-export const escapeHtml = (value: unknown) =>
-    String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+/** Legacy HTML text/quoted ordinary-attribute encoder; not a generic sanitizer. */
+export const escapeHtml = escapeHtmlText;
+export { serializeJsonForScript } from './encoding.js';
 
-export const serializeJsonForScript = (value: unknown) =>
-    JSON.stringify(value ?? {})
-        .replace(/</g, "\\u003c")
-        .replace(/>/g, "\\u003e")
-        .replace(/&/g, "\\u0026")
-        .replace(/\u2028/g, "\\u2028")
-        .replace(/\u2029/g, "\\u2029");
-
+const trimDashes = (value: string) => {
+    let start = 0, end = value.length;
+    while (start < end && value[start] === '-') start++;
+    while (end > start && value[end - 1] === '-') end--;
+    return value.slice(start, end);
+};
 export const sanitizeIdentifier = (value: unknown, fallback = "item") => {
-    const normalized = String(value ?? "")
+    const normalized = trimDashes(String(value ?? "")
         .trim()
         .replace(/[^a-zA-Z0-9_-]+/g, "-")
         .replace(/-{2,}/g, "-")
-        .replace(/^-+|-+$/g, "");
-    return normalized || fallback;
+        );
+    const safeFallback = trimDashes(String(fallback ?? 'item').replace(/[^a-zA-Z0-9_-]+/g, '-'));
+    return normalized || safeFallback || 'item';
 };
 
 export const sanitizeRelativeAssetPath = (value: unknown) => {
@@ -50,7 +46,10 @@ export const buildContentSecurityPolicy = (
     nonce: string,
     options?: { frameAncestors?: string[] }
 ) => {
-    if (!/^[A-Za-z0-9+/_=-]{16,256}$/.test(nonce)) throw new Error("Invalid CSP nonce");
+    if (typeof nonce !== 'string' || !/^[A-Za-z0-9+/_=-]{16,256}$/.test(nonce)) throw new Error("Invalid CSP nonce");
+    if (options !== undefined && (!options || typeof options !== 'object' || Array.isArray(options))) throw new TypeError('Invalid CSP options');
+    if (options?.frameAncestors !== undefined && (!Array.isArray(options.frameAncestors) || options.frameAncestors.length > 64 || options.frameAncestors.some(item => typeof item !== 'string' || item.length > 256))) throw new TypeError('Invalid frame-ancestors sources');
+    if (options?.frameAncestors?.includes("'none'") && options.frameAncestors.length > 1) throw new TypeError('Invalid frame-ancestors sources');
     const frameAncestors = options?.frameAncestors?.length
         ? options.frameAncestors.join(" ")
         : "'self'";

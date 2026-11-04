@@ -20,7 +20,7 @@ test('Mongo connector inserts and rejects selector injection',async()=>{
  assert.equal(calls.filter(x=>x[0]==='insertOne').length,1);
 });
 test('Mongo protects destructive writes and validates fields',async()=>{
- const {db,calls}=mockDatabase(), connector=await mongo.createConnector({db},context.connection);
+ const {db}=mockDatabase(), connector=await mongo.createConnector({db},context.connection);
  await assert.rejects(connector.execute({op:'delete',table:'users'},context), /requires a where/);
  await assert.rejects(connector.execute({op:'update',table:'users',values:{name:'x'}},context), /requires a where/);
  await assert.rejects(connector.execute({op:'delete',table:'$users',where:{field:'a',operator:'eq',value:'b'}},context), /Unsafe MongoDB field/);
@@ -76,4 +76,10 @@ test('Mongo rejects unsupported schema mutations and malformed operators',async(
  assert.throws(()=>mongo.buildWhere({field:'name',operator:'$where',value:'evil'}),/Unsupported Mongo comparison/);
  const ix=await mongo.createConnector({db:{collection:()=>({createIndex:async()=> 'ix'})}},context.connection);
  await assert.rejects(ix.execute({op:'createIndex',table:'items',name:'ix',columns:[{kind:'function',name:'NOW'}]},context),/plain named columns/);
+});
+test('Mongo reports matched versus changed counts without widening returning support',async()=>{
+ const connector=await mongo.createConnector({executor:()=>({acknowledged:true,matchedCount:1,modifiedCount:0})},context.connection);
+ assert.equal(connector.capabilities.returning,'unsupported');assert.equal(connector.capabilities.transactions,'unsupported');
+ assert.throws(()=>connector.execute({op:'update',table:'users',values:{name:'Ada'},returning:['name']},context),/returning/);
+ const result=await connector.execute({op:'update',table:'users',values:{name:'Ada'},where:{field:'id',operator:'eq',value:'one'}},context);assert.equal(result.affectedCount,0);assert.equal(result.matchedCount,1);assert.equal(result.changedCount,0);assert.equal(result.counts.affectedMeaning,'changed');
 });

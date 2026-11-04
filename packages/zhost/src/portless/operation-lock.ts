@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Cross-process serialization of proxy startup and restart operations.
  * A lock is never stolen from a live or unverifiable owner.
  */
@@ -25,9 +26,7 @@ function removeStaleLock(filename: string): boolean {
   let raw: string;
   let before: fs.Stats;
   try {
-    before = fs.lstatSync(filename);
-    if (!before.isFile() || before.isSymbolicLink()) throw new Error('Unsafe proxy operation lock type');
-    raw = fs.readFileSync(filename, 'utf8');
+    const opened=readStateFile(filename,4096);before=opened.stat;raw=opened.bytes.toString('utf8');
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true;
     throw error;
@@ -42,8 +41,8 @@ function removeStaleLock(filename: string): boolean {
     if (processIdentity(marker.pid) === null) return false;
   }
   try {
-    const after = fs.lstatSync(filename);
-    if (before.dev !== after.dev || before.ino !== after.ino || fs.readFileSync(filename, 'utf8') !== raw) return false;
+    const opened=readStateFile(filename,4096),after=opened.stat;
+    if (before.dev !== after.dev || before.ino !== after.ino || opened.bytes.toString('utf8') !== raw) return false;
     fs.unlinkSync(filename);
     return true;
   } catch (error) {
@@ -69,7 +68,7 @@ export async function acquireOperationLock(stateDir: string, options: OperationL
       return { filename, release() {
         if (released) return;
         released = true;
-        try { if (fs.readFileSync(filename, 'utf8') === raw) fs.unlinkSync(filename); }
+        try { if (readStateFile(filename,4096).bytes.toString('utf8') === raw) fs.unlinkSync(filename); }
         catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
       }};
     } catch (error) {

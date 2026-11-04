@@ -27,19 +27,55 @@ const risks:Record<InboundSafetyFlag,number>={
   missing_sender:15,header_control_characters:15,body_truncated:5,attachment_content_omitted:5,
   external_spam:45,external_phishing:75,external_malware:100,external_review:20,attachment_scanner_blocked:95,attachment_scanner_suspicious:50
 };
+/** A bounded lexical heuristic, not an HTML sanitizer/parser or a security verdict. */
+function inspectMarkup(raw:string,flags:Set<InboundSafetyFlag>):void {
+  const html=raw.slice(0,1024*1024);if(html.length!==raw.length)flags.add('body_truncated');
+  if(/data\s*:\s*text\/html/i.test(html))flags.add('active_html');
+  const active=new Set(['script','iframe','object','embed','form','svg','base','meta','link']);
+  let index=0,anchor:{href:string;text:string}|undefined;
+  const compare=()=>{
+    if(!anchor)return;
+    try{
+      const actual=new URL(anchor.href).hostname.toLowerCase();
+      for(const word of anchor.text.split(/\s+/)){
+        if(word.length>2048)continue;
+        let start=0,end=word.length;while(start<end&&!/[a-z0-9]/i.test(word[start]))start++;while(end>start&&!/[a-z0-9]/i.test(word[end-1]))end--;
+        const value=word.slice(start,end);if(!value.includes('.'))continue;
+        try{const shown=new URL(/^https?:\/\//i.test(value)?value:'https://'+value).hostname.toLowerCase();
+          if(!/^[a-z0-9.-]+$/.test(shown))continue;
+          if(actual!==shown&&!actual.endsWith('.'+shown))flags.add('suspicious_link');break;
+        }catch{ /* Not an apparent URL in the display text. */ }
+      }
+    }catch{flags.add('unsafe_url');}
+  };
+  while(index<html.length){
+    const open=html.indexOf('<',index);
+    if(open<0){if(anchor)anchor.text+=(html.slice(index, index+8192-anchor.text.length));break;}
+    if(anchor&&anchor.text.length<8192)anchor.text+=html.slice(index,Math.min(open,index+8192-anchor.text.length));
+    const close=html.indexOf('>',open+1);if(close<0)break;
+    const tag=html.slice(html.lastIndexOf('<',close-1)+1,close);index=close+1;
+    if(tag.length>8192){flags.add('body_truncated');continue;}
+    const name=/^\s*(\/?)([a-z][a-z0-9]*)\b/i.exec(tag);if(!name)continue;
+    const element=name[2].toLowerCase();
+    if(name[1]){if(element==='a'){compare();anchor=undefined;}continue;}
+    if(active.has(element))flags.add('active_html');
+    const attrs=/([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/y;
+    let cursor=name[0].length,href:string|undefined;
+    while(cursor<tag.length){if(/\s/.test(tag[cursor])){cursor++;continue;}attrs.lastIndex=cursor;const attr=attrs.exec(tag);if(!attr){cursor++;continue;}cursor=attrs.lastIndex;
+      const key=attr[1].toLowerCase(),value=(attr[2]??attr[3]??attr[4]??'').trim();
+      if(key.startsWith('on')&&key.length>2)flags.add('active_html');
+      if(['href','src'].includes(key)&&/^(?:javascript|data|vbscript|file):/i.test(value))flags.add('unsafe_url');
+      if(['img','video','audio'].includes(element)&&['src','poster'].includes(key)&&/^https?:/i.test(value))flags.add('remote_content');
+      if(element==='a'&&key==='href'&&/^https?:\/\//i.test(value))href=value;
+    }
+    if(element==='a'&&href){compare();anchor={href,text:''};}
+  }
+  compare();
+}
 /** Pure offline signals only. Integrate an actual antivirus and trusted auth-results verifier separately. */
 export function inspectInboundSafety(input:InboundSafetyInput):InboundSafety {
   const flags=new Set<InboundSafetyFlag>();
-  const html=input.html??'';
-  if(/<\s*(script|iframe|object|embed|form|svg|base|meta|link)\b|\bon\w+\s*=|data\s*:\s*text\/html/i.test(html))flags.add('active_html');
-  if(/(?:href|src)\s*=\s*['"\s]*(?:javascript:|data:|vbscript:|file:)/i.test(html))flags.add('unsafe_url');
-  if(/<\s*(img|video|audio)\b[^>]*\b(?:src|poster)\s*=\s*['"]?https?:/i.test(html))flags.add('remote_content');
-  for(const match of html.matchAll(/<a\s+[^>]*href\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
-    const text=match[2].replace(/<[^>]*>/g,'').trim();
-    const shown=text.match(/(?:https?:\/\/)?([a-z0-9.-]+\.[a-z]{2,})\b/i);
-    if(shown){try{const actual=new URL(match[1]).hostname.toLowerCase();const claimed=shown[1].toLowerCase();
-      if(actual!==claimed&&!actual.endsWith('.'+claimed))flags.add('suspicious_link');}catch{flags.add('unsafe_url');}}
-  }
+  inspectMarkup(input.html??'',flags);
   if(!(input.from??[]).length)flags.add('missing_sender');
   if(/[\r\n\0]/.test(input.subject??'')||(input.from??[]).some(s=>/[\r\n\0]/.test(s)))flags.add('header_control_characters');
   if(/(?:urgent.{0,30}verify|verify.{0,30}password|claim.{0,20}prize|wire transfer.{0,20}urgent)/i.test(`${input.subject??''} ${input.text?.slice(0,2000)??''}`))flags.add('possible_spam');

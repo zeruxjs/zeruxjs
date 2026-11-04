@@ -38,8 +38,8 @@ await executeWorkspacePlan({ordered:[...builds.keys()],dependencies:new Map([...
  {run:compile,onEvent:event=>console.log(`[frontend] ${event.type}: ${event.name}`)});
 run(process.execPath,['--test',
  ...['react','vue','zyro'].flatMap(pkg=>['advanced','integration'].map(test=>`packages/@zeruxjs/${pkg}/test/${test}.test.mjs`)),
- 'packages/@zeruxjs/react/test/section78-ssr-lifecycle.test.mjs',
- 'packages/@zeruxjs/vue/test/section78-vue-scope.test.mjs',
- 'packages/@zeruxjs/zyro/test/section78-scope.test.mjs',
+ 'packages/@zeruxjs/react/test/ssr-lifecycle.test.mjs',
+ 'packages/@zeruxjs/vue/test/vue-scope.test.mjs',
+ 'packages/@zeruxjs/zyro/test/subscription-scope.test.mjs',
  'packages/zeruxjs/test/accessibility.test.mjs',
  'tests/browser/harness.test.mjs','tests/browser/section78.test.mjs']);

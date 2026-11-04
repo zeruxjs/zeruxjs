@@ -1,3 +1,4 @@
+import { syncCallback } from '../utils/_run.js';
 import type {
   BaseSchema,
   ErrorMessage,
@@ -81,7 +82,7 @@ export function custom<TInput>(
       return _getStandardProps(this);
     },
     '~run'(dataset, config) {
-      if (this.check(dataset.value)) {
+      if (syncCallback(this.check, dataset.value)) {
         // @ts-expect-error
         dataset.typed = true;
       } else {

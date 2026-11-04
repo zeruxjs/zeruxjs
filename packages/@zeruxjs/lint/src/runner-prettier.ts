@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises';
+import {readLintSource,writeLintSource,LintSourceLimitError} from './file-content.js';
 import path from 'node:path';
 import { discoverLintFiles } from './files.js';
 import type { LintOptions, LintResult } from './types.js';
@@ -17,9 +17,7 @@ export async function runPrettier(options: LintOptions = {}): Promise<LintResult
   for (const filename of files) {
     const info = await prettier.getFileInfo(filename, { ignorePath: path.join(cwd, '.prettierignore'), resolveConfig: true });
     if (info.ignored || !info.inferredParser) continue;
-    const stat = await fs.stat(filename);
-    if (stat.size > 5 * 1024 * 1024) { messages.push(`Skipped oversized file: ${path.relative(cwd, filename)}`); continue; }
-    const content = await fs.readFile(filename, 'utf8');
+    let content:string;try{content=await readLintSource(filename);}catch(error){if(error instanceof LintSourceLimitError){messages.push(`Skipped oversized file: ${path.relative(cwd,filename)}`);continue;}throw error;}
     const config = (await prettier.resolveConfig(filename)) ?? {};
     let formatted: string;
     try { formatted = await prettier.format(content, { ...config, filepath: filename }); }
@@ -27,7 +25,7 @@ export async function runPrettier(options: LintOptions = {}): Promise<LintResult
     scanned++;
     if (formatted !== content) {
       changed++;
-      if (options.fix) await fs.writeFile(filename, formatted, 'utf8');
+      if (options.fix) await writeLintSource(filename, content, formatted);
       else messages.push(`Needs formatting: ${path.relative(cwd, filename)}`);
     }
   }

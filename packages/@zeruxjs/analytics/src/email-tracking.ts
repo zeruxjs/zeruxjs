@@ -36,8 +36,8 @@ export interface EmailTrackingOptions {
 }
 export interface TrackedEmailMessage {tracking?:{enabled?:boolean;opens?:boolean;clicks?:boolean;downloads?:boolean;downloadLinks?:readonly string[];campaign?:string}}
 const PIXEL=Uint8Array.from(Buffer.from('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=','base64'));
-function escapeAttr(value:string){return value.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
-function decodeHref(value:string){return value.replace(/&amp;/gi,'&').replace(/&#38;/g,'&');}
+function escapeAttr(value:string){return value.replace(/[&"<]/g,char=>({'&':'&amp;','"':'&quot;','<':'&lt;'}[char]!));}
+function decodeHref(value:string){return value.replace(/&(?:amp|#38);/gi,'&');}
 /** Signed, expiring server-side email tracking; no tracking JavaScript, no PII in URL payloads. */
 export function createEmailTrackingService(config:EmailTrackingOptions){
   const base=new URL(config.baseUrl);

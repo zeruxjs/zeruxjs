@@ -29,6 +29,6 @@ export function createOAuthAuthorization(options: OAuthAuthorizationOptions) {
 }
 /** The received callback state must exactly equal the state tied to the initiating session. */
 export function verifyOAuthState(expected: string, received: string): boolean {
-    if (typeof expected !== "string" || typeof received !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(expected)) return false;
+    if (typeof expected !== "string" || typeof received !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(expected) || !/^[A-Za-z0-9_-]{43}$/.test(received)) return false;
     return expected.length === received.length && timingSafeEqual(Buffer.from(expected), Buffer.from(received));
 }

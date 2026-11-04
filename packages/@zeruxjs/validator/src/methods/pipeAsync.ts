@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -3108,8 +3109,7 @@ export function pipeAsync<
             !dataset.issues ||
             (!config.abortEarly && !config.abortPipeEarly)
           ) {
-            // @ts-expect-error
-            dataset = await item['~run'](dataset, config);
+            dataset = await _runSchema(item, dataset, config);
           }
         }
       }

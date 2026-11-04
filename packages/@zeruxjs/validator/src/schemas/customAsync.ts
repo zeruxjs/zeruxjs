@@ -1,3 +1,4 @@
+import type { ValidationContext } from '../types/runtime.js';
 import type {
   BaseSchemaAsync,
   ErrorMessage,
@@ -11,7 +12,7 @@ import type { CustomIssue } from './types/custom.js';
 /**
  * Check async type.
  */
-type CheckAsync = (input: unknown) => MaybePromise<boolean>;
+type CheckAsync = (input: unknown, context: ValidationContext) => MaybePromise<boolean>;
 
 /**
  * Custom schema async interface.
@@ -85,7 +86,7 @@ export function customAsync<TInput>(
       return _getStandardProps(this);
     },
     async '~run'(dataset, config) {
-      if (await this.check(dataset.value)) {
+      if (await this.check(dataset.value, { signal: config.signal })) {
         // @ts-expect-error
         dataset.typed = true;
       } else {

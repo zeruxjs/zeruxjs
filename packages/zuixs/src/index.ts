@@ -5,6 +5,7 @@ export { utilityFor } from "./utilities.js";
 export { injectZuix, renderZuixStyle, zuixVite } from "./adapters.js";
 export type {
   ZuixConfig,
+  ZuixBuildManifest,
   ZuixRecipe,
   ZuixTheme,
   ZuixPlugin,

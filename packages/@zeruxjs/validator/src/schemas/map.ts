@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -115,7 +116,7 @@ export function map(
         // Parse schema of each map entry
         for (const [inputKey, inputValue] of input) {
           // Get dataset of key schema
-          const keyDataset = this.key['~run']({ value: inputKey }, config);
+          const keyDataset = _runSchema(this.key, { value: inputKey }, config);
 
           // If there are issues, capture them
           if (keyDataset.issues) {
@@ -152,7 +153,7 @@ export function map(
           }
 
           // Get dataset of value schema
-          const valueDataset = this.value['~run'](
+          const valueDataset = _runSchema(this.value,
             { value: inputValue },
             config
           );

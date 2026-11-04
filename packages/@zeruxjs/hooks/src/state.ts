@@ -3,7 +3,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 type Cleanup = () => void;
 type Slot = { kind: string; value?: unknown; deps?: readonly unknown[]; cleanup?: Cleanup };
 type Instance = { slots: Slot[]; mounted: boolean; expectedCount?: number; rendering?: boolean };
-type Scope = { instances: Map<object, Instance> };
+type Scope = { instances: Map<object, Instance>; closed?: boolean };
 type Render = { instance: Instance; cursor: number; pending: Array<() => void> };
 
 const scopes = new AsyncLocalStorage<Scope>();
@@ -13,8 +13,26 @@ export function runWithState<T>(callback: () => T): T {
   return scopes.run({ instances: new Map() }, callback);
 }
 
+/** Explicit request owner; disposal invalidates every render and releases all effect cleanups once. */
+export function createServerStateScope() {
+  const scope: Scope = { instances: new Map() }; let closed = false;
+  return {
+    run<T>(callback: () => T): T { if (closed) throw new Error('[zerux] Request hooks disposed'); return scopes.run(scope, callback); },
+    dispose() {
+      if (closed) return; closed = true; scope.closed = true; const errors: unknown[] = [];
+      for (const instance of scope.instances.values()) {
+        instance.mounted = false;
+        for (const slot of instance.slots) { const cleanup = slot.cleanup; slot.cleanup = undefined; try { cleanup?.(); } catch (error) { errors.push(error); } }
+        instance.slots.length = 0;
+      }
+      scope.instances.clear(); if (errors.length) throw new AggregateError(errors, '[zerux] Request hook cleanup failed');
+    }
+  };
+}
+
 function active(): Render {
   const render = renders.getStore();
+  if (render && !render.instance.mounted) throw new Error('[zerux] Request hooks disposed');
   if (!render) throw new Error('[zerux] Hooks must be called inside runHooks');
   return render;
 }
@@ -36,6 +54,7 @@ function slot(kind: string, initialize: () => Slot): Slot {
 export function runHooks<T>(callback: () => T, key: object = callback): T {
   const scope = scopes.getStore();
   if (!scope) throw new Error('[zerux] runHooks must be inside runWithState');
+  if (scope.closed) throw new Error('[zerux] Request hooks disposed');
   let instance = scope.instances.get(key);
   if (!instance) {
     instance = { slots: [], mounted: true };
@@ -104,7 +123,7 @@ export function useEffect(effect: () => void | Cleanup, deps?: readonly unknown[
   const entry = slot('effect', () => ({ kind: 'effect' }));
   if (deps && !differs(entry.deps, deps)) return;
   render.pending.push(() => {
-    entry.cleanup?.();
+    const cleanup = entry.cleanup; entry.cleanup = undefined; cleanup?.();
     const result = effect();
     entry.cleanup = typeof result === 'function' ? result : undefined;
     entry.deps = deps ? [...deps] : undefined;
@@ -112,10 +131,12 @@ export function useEffect(effect: () => void | Cleanup, deps?: readonly unknown[
 }
 
 export function disposeHooks(key: object): boolean {
-  const instance = scopes.getStore()?.instances.get(key);
+  const scope = scopes.getStore(), instance = scope?.instances.get(key);
   if (!instance) return false;
-  for (const entry of instance.slots) entry.cleanup?.();
-  instance.mounted = false;
-  scopes.getStore()!.instances.delete(key);
+  instance.mounted = false; scope!.instances.delete(key); const errors: unknown[] = [];
+  for (const entry of instance.slots) { const cleanup = entry.cleanup; entry.cleanup = undefined; try { cleanup?.(); } catch (error) { errors.push(error); } }
+  instance.slots.length = 0;
+  if (errors.length === 1) throw errors[0];
+  if (errors.length) throw new AggregateError(errors, '[zerux] Hook cleanup failed');
   return true;
 }

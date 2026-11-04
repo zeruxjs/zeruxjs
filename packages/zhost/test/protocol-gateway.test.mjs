@@ -195,3 +195,19 @@ test('TLS ALPN HTTP/2 carries gRPC frames to an h2c upstream', { timeout: 8000 }
   assert.equal(server.capabilities.http2, true);
   assert.equal(server.capabilities.grpcHttp2, true);
 });
+
+test('authenticated SSE cache policy is opt-in, validated and cleans client ownership', async () => {
+  assert.throws(() => new SseHub({ privateCache: 'yes' }), /cache policy/);
+  for (const privateCache of [false, true]) {
+    const hub = new SseHub({ privateCache, maxClients: 1, historySize: 1 });
+    const server = http.createServer((_req, res) => hub.subscribe(res));
+    const port = await listen(server);
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/events`);
+      assert.equal(response.headers.get('cache-control'), privateCache ? 'private, no-store, no-transform' : 'no-cache, no-transform');
+      assert.equal(hub.clientCount, 1);
+      await response.body.cancel();
+    } finally { hub.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+    assert.equal(hub.clientCount, 0);
+  }
+});

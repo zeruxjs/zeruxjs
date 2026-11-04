@@ -3,20 +3,19 @@ import path from "node:path";
 import { URL } from "node:url";
 import { readLimitedBody, localDevHost } from "./request.js";
 
-import { buildContentSecurityPolicy } from "@zeruxjs/security";
+import { createDevtoolsDocumentPolicy } from "./framing.js";
 
-import { createDocumentSecurity } from "./components/document.js";
 import { readModuleAsset, readModulePublicAsset, resolveModuleApiRequest, resolveModuleSocketRequest } from "./module-loader.js";
-import { readDevAsset, renderApplicationPage, renderHomePage, resolveCustomApiHandler, loadApplicationSections } from "./render.js";
+import { readDevAsset, renderApplicationPage, renderHomePage, resolveCustomApiHandler } from "./render.js";
 import { appendSnapshotEvent, normalizeSnapshot } from "./state.js";
 import { getRegistryApp, readRegistry, readSharedDevRouteName, registerSharedDevApp, unregisterSharedDevApp, isPortFree, findPort, writeRegistry } from "./registry.js";
-import type { SharedDevEvent, SharedDevServerHandle, SharedDevRegistration } from "./types.js";
+import type { SharedDevEvent, SharedDevServerHandle } from "./types.js";
 
 let sharedServerHandle: SharedDevServerHandle | null = null;
 let sharedDevEventBroadcaster: ((appName: string, event: SharedDevEvent) => void) | null = null;
 
 const sendJson = (res: ServerResponse, body: unknown, statusCode = 200) => {
-    res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
+    res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8", "Cache-Control":"private, no-store" });
     res.end(JSON.stringify(body));
 };
 
@@ -35,19 +34,6 @@ const sendBuffer = (res: ServerResponse, body: Buffer, contentType: string, stat
     res.end(body);
 };
 
-const normalizeAncestorOrigin = (value?: string | null) => {
-    if (!value) return null;
-    try {
-        const origin = new URL(value).origin;
-        if (origin.startsWith("http://") || origin.startsWith("https://")) {
-            return origin;
-        }
-    } catch {
-        return null;
-    }
-    return null;
-};
-
 const isLocalHost = localDevHost;
 
 const matchWildcard = (pattern: string, host: string) => {
@@ -61,68 +47,6 @@ const matchWildcard = (pattern: string, host: string) => {
     }
     return false;
 };
-
-const getFrameAncestors = (req?: IncomingMessage, registration?: SharedDevRegistration | null) => {
-    const referer = req?.headers.referer || req?.headers.origin;
-
-    if (!referer) {
-        return ["'self'"];
-    }
-
-    const refererOrigin = normalizeAncestorOrigin(String(referer));
-    if (!refererOrigin) {
-        return ["'self'"];
-    }
-
-    try {
-        const hostname = new URL(refererOrigin).hostname;
-
-        // Check if referer is a local IP or localhost
-        const isLocalIP =
-            hostname === 'localhost' ||
-            hostname === '127.0.0.1' ||
-            hostname === '[::1]' ||
-            hostname === '::1' ||
-            hostname.startsWith('192.168.') ||
-            hostname.startsWith('10.') ||
-            hostname.match(/^172\.(1[6-9]|2[0-9]|3[01])\./); // 172.16.0.0 - 172.31.255.255
-
-        // Check if referer is *.localhost
-        const isLocalhost = hostname.endsWith('.localhost');
-
-        // Check if referer matches allowedDomains
-        const allowedDomains = registration?.allowedDomains
-            ? (Array.isArray(registration.allowedDomains)
-                ? registration.allowedDomains
-                : [registration.allowedDomains])
-            : [];
-
-        const isAllowedDomain = allowedDomains.some(domain =>
-            domain && matchWildcard(domain, hostname)
-        );
-
-        const isAllowedDevDomain = registration?.allowedDevDomain
-            ? (hostname === registration.allowedDevDomain ||
-                hostname.endsWith(`.${registration.allowedDevDomain}`))
-            : false;
-
-        // Return referer + self if it matches any allowed pattern
-        if (isLocalIP || isLocalhost || isAllowedDomain || isAllowedDevDomain) {
-            return ["'self'", refererOrigin];
-        }
-
-    } catch (err) {
-        // Invalid URL, fall through to default
-    }
-
-    // Otherwise, only self
-    return ["'self'"];
-};
-
-const buildFrameAwarePolicy = (nonce: string, req?: IncomingMessage, registration?: SharedDevRegistration | null) => buildContentSecurityPolicy(nonce).replace(
-    "frame-ancestors 'self'",
-    `frame-ancestors ${getFrameAncestors(req, registration).join(" ")}`
-);
 
 const readRequestBody = readLimitedBody;
 
@@ -184,7 +108,7 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
             }
 
             if (!allowed) {
-                console.error(`[Dev] Blocked unallowed host access to devtools: ${host} (App: ${app.appName})`);
+                console.error(`[Dev] Blocked unallowed host access to devtools: ${JSON.stringify(host)} (App: ${JSON.stringify(app.appName)})`);
                 sendJson(res, { error: "Unallowed Host", message: `Host ${host} is not allowed to access devtools for ${app.appName}.` }, 403);
                 return;
             }
@@ -220,7 +144,7 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
 
     const globalAssetMatch = pathname.match(/^\/__([^/]+)\/assets\/(style\.css|app\.js)$/);
     if (globalAssetMatch) {
-        const [, serviceName, assetName] = globalAssetMatch;
+        const [, , assetName] = globalAssetMatch;
         const asset = readDevAsset(assetName);
         if (!asset) {
             sendJson(res, { message: "Asset not found" }, 404);
@@ -244,16 +168,14 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
                 }
             }
             if (!hostAllowed) {
-                console.error(`[Dev] Blocked unallowed host access to root dashboard: ${host}`);
+                console.error(`[Dev] Blocked unallowed host access to root dashboard: ${JSON.stringify(host)}`);
                 sendJson(res, { error: "Unallowed Host", message: `Host ${host} is not allowed to access the devtools dashboard.` }, 403);
                 return;
             }
         }
-        const security = createDocumentSecurity();
+        const security = createDevtoolsDocumentPolicy({ mode: process.env.NODE_ENV === 'production' ? 'production' : 'development' });
         const page = await renderHomePage(readRegistry().apps);
-        sendHtml(res, page(security.nonce), 200, {
-            "Content-Security-Policy": buildFrameAwarePolicy(security.nonce, req, null)
-        });
+        sendHtml(res, page(security.nonce), 200, security.headers);
         return;
     }
 
@@ -420,12 +342,10 @@ const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
 
     const isAsset = remainingPath.startsWith(`/__${app.serviceName}/`);
     if (!isAsset && req.method === "GET") {
-        const security = createDocumentSecurity();
+        const security = createDevtoolsDocumentPolicy({ mode: process.env.NODE_ENV === 'production' ? 'production' : 'development', frameAncestors: app.devtools.frameAncestors });
         const sectionId = remainingPath.replace(/^\//, "") || null;
         const page = await renderApplicationPage(app, snapshot, identifier, sectionId);
-        sendHtml(res, page(security.nonce), 200, {
-            "Content-Security-Policy": buildFrameAwarePolicy(security.nonce, req, app)
-        });
+        sendHtml(res, page(security.nonce), 200, security.headers);
         return;
     }
 

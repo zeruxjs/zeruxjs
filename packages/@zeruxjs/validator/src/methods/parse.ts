@@ -1,4 +1,4 @@
-import { getGlobalConfig } from '../storages/index.js';
+import { executeSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -24,7 +24,7 @@ export function parse<
   input: unknown,
   config?: Config<InferIssue<TSchema>>
 ): InferOutput<TSchema> {
-  const dataset = schema['~run']({ value: input }, getGlobalConfig(config));
+  const dataset = executeSchema(schema, input, config);
   if (dataset.issues) {
     throw new ValidationError(dataset.issues);
   }

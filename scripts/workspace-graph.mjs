@@ -53,6 +53,25 @@ export function discoverWorkspaces(root, { release = true } = {}) {
 
 export function planWorkspaces(entries, { scopes = [], includeDependents = false, requireBuild = true } = {}) {
   const names = [...entries.keys()].sort();
+  const bootstraps = new Map();
+  for (const name of names) {
+    const metadata = entries.get(name).pkg.workspaceBuild;
+    if (metadata === undefined) continue;
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata) ||
+        Object.keys(metadata).some(key => !['bootstrapScript', 'finalizeDependencies'].includes(key)) ||
+        typeof metadata.bootstrapScript !== 'string' || !/^build:[a-z0-9-]+$/.test(metadata.bootstrapScript) ||
+        typeof entries.get(name).pkg.scripts?.[metadata.bootstrapScript] !== 'string' ||
+        typeof entries.get(name).pkg.scripts?.build !== 'string' ||
+        !Array.isArray(metadata.finalizeDependencies) || !metadata.finalizeDependencies.length ||
+        metadata.finalizeDependencies.length > 32 || new Set(metadata.finalizeDependencies).size !== metadata.finalizeDependencies.length ||
+        metadata.finalizeDependencies.some(dep => typeof dep !== 'string' || dep === name || !entries.has(dep) || !entries.get(dep).pkg.scripts?.build))
+      throw new Error(`Invalid workspace build bootstrap: ${name}`);
+    bootstraps.set(name, {script: metadata.bootstrapScript, dependencies: [...metadata.finalizeDependencies]});
+  }
+  for (const [name, metadata] of bootstraps) {
+    if (metadata.dependencies.some(dep => bootstraps.has(dep)))
+      throw new Error(`Nested workspace build finalization is unsupported: ${name}`);
+  }
   const dependencies = new Map();
   const dependents = new Map(names.map(name => [name, new Set()]));
   for (const name of names) {
@@ -92,9 +111,23 @@ export function planWorkspaces(entries, { scopes = [], includeDependents = false
       }
     }
   }
+  // Only explicitly declared source-build finalizers add peer packages to a scoped plan.
+  // Core declarations break the source-only dependency cycle; the normal strict build
+  // must run again after these peers finish, before the plan may report success.
+  let grew;
+  do {
+    const before = selected.size;
+    for (const [name, metadata] of bootstraps) if (selected.has(name)) metadata.dependencies.forEach(addWithDeps);
+    grew = selected.size !== before;
+  } while (grew);
   const ordered = order.filter(name => selected.has(name) && (!requireBuild || entries.get(name).pkg.scripts?.build));
   // Packages without build scripts should not hold up their dependents.
-  return { ordered, dependencies: new Map(ordered.map(name => [name, dependencies.get(name).filter(dep => ordered.includes(dep))])) };
+  return {
+    ordered,
+    dependencies: new Map(ordered.map(name => [name, dependencies.get(name).filter(dep => ordered.includes(dep))])),
+    bootstrapScripts: new Map(ordered.filter(name => bootstraps.has(name)).map(name => [name, bootstraps.get(name).script])),
+    finalize: ordered.filter(name => bootstraps.has(name))
+  };
 }
 
 export async function executeWorkspacePlan(plan, { concurrency = DEFAULT_BUILD_CONCURRENCY, run, onEvent = () => {} } = {}) {

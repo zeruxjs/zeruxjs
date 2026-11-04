@@ -1,5 +1,4 @@
 const { readState } = require('./helper');
-const path = require('path');
 
 const state = readState();
 
@@ -44,7 +43,7 @@ if (state && state.processes && state.processes.length > 0) {
             const port = typeof portInfo === 'object' ? portInfo.port : portInfo;
             const protocol = typeof portInfo === 'object' ? portInfo.protocol : 'http';
             
-            let rowType = 'App';
+            let rowType;
             let mappedRun = `${protocol}://localhost:${port}`;
 
             if (index === 0) {

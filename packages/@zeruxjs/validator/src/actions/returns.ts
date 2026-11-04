@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -61,7 +62,7 @@ export function returns(
     '~run'(dataset, config) {
       const func = dataset.value;
       dataset.value = (...args_) => {
-        const returnsDataset = this.schema['~run'](
+        const returnsDataset = _runSchema(this.schema,
           { value: func(...args_) },
           config
         );

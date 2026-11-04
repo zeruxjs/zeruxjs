@@ -5,7 +5,7 @@ import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as readline from "node:readline";
-import { execSync, spawn } from "node:child_process";
+import { execSync } from "node:child_process";
 import { PORTLESS_HEADER } from "./proxy.js";
 import { readCommittedProxyState, PendingStartupTransactionError } from "./committed-state.js";
 import { recoverInterruptedStartup } from "./startup-state.js";
@@ -328,10 +328,26 @@ export async function findFreePort(
  * Makes an HTTP(S) request and verifies the X-Portless response header to
  * distinguish the portless proxy from unrelated services.
  *
- * When `tls` is true, uses HTTPS with certificate verification disabled
- * (the proxy may use a self-signed or locally-trusted CA cert).
+ * HTTPS verifies the configured local CA and hostname; missing/untrusted
+ * certificates fail the probe rather than disabling TLS verification.
  */
 export function isProxyRunning(port: number, tls = false): Promise<boolean> {
+  let secure: https.RequestOptions = {};
+  if (tls) {
+    try {
+      // Public CA material configures local verification; it is not request payload.
+      // The network destination stays fixed to loopback, independent of file data.
+      const stateDir = resolveStateDir(port), state = readCommittedProxyState(stateDir);
+      const fd = fs.openSync(path.join(stateDir, 'ca.pem'), fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK, 0o600);
+      try {
+        const info = fs.fstatSync(fd);
+        if (!info.isFile() || info.size > 65536) return Promise.resolve(false);
+        const buffer=Buffer.alloc(info.size+1),size=fs.readSync(fd,buffer,0,buffer.length,0);
+        if(size>info.size)return Promise.resolve(false);
+        secure = {ca: buffer.subarray(0,size), servername: state?.tld ?? DEFAULT_TLD};
+      } finally {fs.closeSync(fd);}
+    } catch { return Promise.resolve(false); }
+  }
   return new Promise((resolve) => {
     const requestFn = tls ? https.request : http.request;
     const req = requestFn(
@@ -341,7 +357,7 @@ export function isProxyRunning(port: number, tls = false): Promise<boolean> {
         path: "/",
         method: "HEAD",
         timeout: SOCKET_TIMEOUT_MS,
-        ...(tls ? { rejectUnauthorized: false } : {}),
+        ...secure,
       },
       (res) => {
         res.resume();

@@ -1,3 +1,4 @@
+import { syncCallback } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseTransformation,
@@ -39,7 +40,7 @@ export function rawTransform<TInput, TOutput>(
     async: false,
     '~run'(dataset, config) {
       // Execute action and get its output
-      const output = action({
+      const output = syncCallback(action, {
         dataset,
         config,
         addIssue: (info) =>

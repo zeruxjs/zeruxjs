@@ -20,12 +20,15 @@ export const ensureParentDirectory = (filePath: string) => {
 
 /** Optional missing files are allowed; corrupt, oversized or linked files fail closed. */
 export const readJsonFile = <T>(filePath: string, fallback: T): T => {
-  const st = unsafeFile(filePath);
-  if (!st) return fallback;
-  if (st.size > MAX_STATE_BYTES) throw new Error('Devtools state file exceeds 4 MiB');
-  const fd = fs.openSync(filePath, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+  let fd: number;
+  try { fd = fs.openSync(filePath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK, 0o600); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return fallback; if ((error as NodeJS.ErrnoException).code === 'ELOOP') throw new Error('Unsafe devtools state file', {cause:error}); throw error; }
   try {
-    const content = fs.readFileSync(fd, { encoding: 'utf8' });
+    const st = fs.fstatSync(fd);
+    if (!st.isFile() || st.size > MAX_STATE_BYTES) throw new Error('Invalid devtools state file');
+    const bytes = Buffer.alloc(st.size + 1), size = fs.readSync(fd, bytes, 0, bytes.length, 0);
+    if (size > st.size) throw new Error('Devtools state changed during read');
+    const content = bytes.subarray(0, size).toString('utf8');
     if (Buffer.byteLength(content) > MAX_STATE_BYTES) throw new Error('Devtools state file exceeds 4 MiB');
     return JSON.parse(content) as T;
   } finally { fs.closeSync(fd); }

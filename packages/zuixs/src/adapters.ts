@@ -32,16 +32,17 @@ export function zuixVite(config: ZuixConfig = {}) {
       for (const value of values) tokens.add(value);
     return createZuix(config).generate(tokens).css;
   };
+  const styleModules = () => [...new Set([...cssEntries,resolved])].flatMap(id=>{
+    const module=server?.moduleGraph.getModuleById(id);return module?[module]:[];
+  });
   const invalidate = () => {
-    for (const id of cssEntries) {
-      const entry = server?.moduleGraph.getModuleById(id);
-      if (entry) server?.moduleGraph.invalidateModule(entry);
+    const updates: {type:'js-update';path:string;acceptedPath:string;timestamp:number}[]=[];
+    for(const module of styleModules()){
+      server?.moduleGraph.invalidateModule(module);
+      const url=(module as {url?:unknown}).url;
+      if(typeof url==='string'&&url.length<=2048&&!/[\r\n]/.test(url))updates.push({type:'js-update',path:url,acceptedPath:url,timestamp:Date.now()});
     }
-    const mod = server?.moduleGraph.getModuleById(resolved);
-    if (mod) {
-      server?.moduleGraph.invalidateModule(mod);
-      server?.ws.send({ type: "full-reload" });
-    } else server?.ws.send({ type: "full-reload" });
+    if(updates.length)server?.ws.send({type:'update',updates});
   };
   const refresh = async () => {
     const { scanProjectFiles } = await import("./node.js");
@@ -68,7 +69,7 @@ export function zuixVite(config: ZuixConfig = {}) {
     },
     transform(code: string, id: string) {
       if (
-        /\.css(?:\?.*)?$/.test(id) &&
+        id.split('?',1)[0].endsWith('.css') &&
         /@import\s+([\"'])zuixs\1\s*;/.test(code)
       ) {
         cssEntries.add(id);
@@ -79,11 +80,11 @@ export function zuixVite(config: ZuixConfig = {}) {
           for (const value of values) tokens.add(value);
         return { code: compileStylesheet(code, tokens, config).css, map: null };
       }
-      if (!/\.(?:tsx?|jsx?|vue|svelte|astro|html)(?:\?.*)?$/.test(id))
+      if (!/\.(?:tsx?|jsx?|vue|svelte|astro|html)$/.test(id.split('?',1)[0]))
         return null;
       const file = relative(id);
       if (!file) return null;
-      const next = new Set(extractClasses(code));
+      const next = new Set(extractClasses(code, { limits: config.limits }));
       const old = modules.get(file);
       if (
         !old ||
@@ -106,9 +107,12 @@ export function zuixVite(config: ZuixConfig = {}) {
         return refresh();
       }
     },
-    handleHotUpdate(ctx: { file: string }) {
-      const file = relative(ctx.file);
-      if (file && modules.has(file)) invalidate();
+    async handleHotUpdate(ctx: { file: string; read?:()=>Promise<string>; modules?:unknown[] }) {
+      const file=relative(ctx.file);if(!file)return;
+      if(ctx.read&&/\.(?:tsx?|jsx?|vue|svelte|astro|html)$/.test(file))modules.set(file,new Set(extractClasses(await ctx.read(),{limits:config.limits})));
+      invalidate();
+      // Include the source's own affected modules and only Zuixs stylesheet modules.
+      return [...new Set([...(ctx.modules??[]),...styleModules()])];
     },
     closeBundle() {
       cssEntries.clear();

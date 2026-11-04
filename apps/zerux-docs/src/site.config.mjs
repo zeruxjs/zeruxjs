@@ -25,3 +25,9 @@ export function mountHtml(html) {
       rootLink ? _match : `${attribute}="${sitePath(url)}"`,
   );
 }
+
+/** Canonical public URL for this version preview. @param {string} pathname Mounted local route. @returns {string|null} Public canonical URL. Reads public site configuration only. */
+export function canonicalUrl(pathname) {
+  if (!site.origin) return null;
+  return new URL((site.deploymentPath || "") + pathname, site.origin).href;
+}

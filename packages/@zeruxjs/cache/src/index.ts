@@ -1,4 +1,6 @@
 import type {
+    CacheRememberOptions,
+    CacheProducerContext,
     CacheManager,
     CacheManagerConfig,
     CacheSetOptions,
@@ -20,6 +22,7 @@ import { createCacheError } from "./utils.js";
  * Global Variables: active cache manager
  */
 export const cache: CacheManager = {
+    get capabilities(){return getActiveCacheManager().capabilities;},
     get helper() {
         return getActiveCacheManager().helper;
     },
@@ -65,7 +68,7 @@ export const cache: CacheManager = {
     close(): MaybePromise<void> {
         return getActiveCacheManager().close();
     },
-    remember(key: string, producer: () => MaybePromise<CacheValue>, options?: CacheSetOptions) {
+    remember(key: string, producer: (context:CacheProducerContext) => MaybePromise<CacheValue>, options?: CacheRememberOptions) {
         return getActiveCacheManager().remember(key, producer, options);
     },
     native(): unknown {
@@ -86,7 +89,7 @@ export const deleteMany = (keys: string[]) => getActiveCacheManager().deleteMany
 export const increment = (key: string, amount?: number) => getActiveCacheManager().increment(key, amount);
 export const decrement = (key: string, amount?: number) => getActiveCacheManager().decrement(key, amount);
 export const touch = (key: string, ttlSeconds: number) => getActiveCacheManager().touch(key, ttlSeconds);
-export const remember = (key: string, producer: () => MaybePromise<CacheValue>, options?: CacheSetOptions) =>
+export const remember = (key: string, producer: (context:CacheProducerContext) => MaybePromise<CacheValue>, options?: CacheRememberOptions) =>
     getActiveCacheManager().remember(key, producer, options);
 export const native = () => getActiveCacheManager().native();
 
@@ -100,6 +103,11 @@ export {
     setActiveCacheManager
 };
 export type {
+    CacheCapabilities,
+    CacheCapability,
+    CachePolicy,
+    CacheRememberOptions,
+    CacheProducerContext,
     CacheErrorShape,
     CacheHelper,
     CacheHelperFactory,

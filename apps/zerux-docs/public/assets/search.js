@@ -58,12 +58,34 @@ async function engine() {
 /** Query the local package search engine. @param {string} query Bounded user query. @param {string} version Documentation version. @returns {Promise<object[]>} Ranked public topics. No telemetry. */
 export async function searchDocs(query, version) {
   const index = await engine();
-  return index
-    .search(query.slice(0, 120), {
-      limit: 12,
-      prefix: true,
-      mode: "all",
-      filter: (document) => document.version === version,
-    })
-    .map((result) => result.document);
+  const words = query
+    .slice(0, 120)
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(
+      (word) =>
+        ![
+          "how",
+          "do",
+          "i",
+          "the",
+          "a",
+          "an",
+          "is",
+          "my",
+          "to",
+          "for",
+          "can",
+        ].includes(word),
+    );
+  const normalized = words.join(" ") || query.slice(0, 120);
+  const options = {
+    limit: 12,
+    prefix: true,
+    filter: (document) => document.version === version,
+  };
+  const exact = index.search(normalized, { ...options, mode: "all" });
+  return (
+    exact.length ? exact : index.search(normalized, { ...options, mode: "any" })
+  ).map((result) => result.document);
 }

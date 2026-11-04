@@ -1,4 +1,4 @@
-import type { DatabaseFacade, DatabaseResult, DeleteOperation, InsertOperation, JsonPrimitive, MaybePromise, QueryOperation, SelectOperation, UpdateOperation, WhereClause } from "./types.js";
+import type { DatabaseFacade, DatabaseResult, DatabaseQueryOptions, DeleteOperation, InsertOperation, JsonPrimitive, MaybePromise, QueryOperation, SelectOperation, UpdateOperation, WhereClause } from "./types.js";
 import { assertJsonSerializable, createDatabaseError } from "./utils.js";
 
 /**
@@ -8,10 +8,10 @@ import { assertJsonSerializable, createDatabaseError } from "./utils.js";
  */
 export interface TenantDatabase {
     readonly tenantId: string | number;
-    select(operation: Omit<SelectOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    insert(operation: Omit<InsertOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    update(operation: Omit<UpdateOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
-    delete(operation: Omit<DeleteOperation, "op" | "connection">): MaybePromise<DatabaseResult>;
+    select(operation: Omit<SelectOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    insert(operation: Omit<InsertOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    update(operation: Omit<UpdateOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
+    delete(operation: Omit<DeleteOperation, "op" | "connection">, options?:DatabaseQueryOptions): MaybePromise<DatabaseResult>;
 }
 
 export interface TenantDatabaseOptions {
@@ -73,9 +73,9 @@ export function createTenantDatabaseFacade(base: Pick<DatabaseFacade, "select" |
     };
     return Object.freeze({
         tenantId,
-        select: (operation: Omit<SelectOperation, "op" | "connection">) => base.select(prepare({ ...operation, op: "select" })),
-        insert: (operation: Omit<InsertOperation, "op" | "connection">) => base.insert(prepare({ ...operation, op: "insert" })),
-        update: (operation: Omit<UpdateOperation, "op" | "connection">) => base.update(prepare({ ...operation, op: "update" })),
-        delete: (operation: Omit<DeleteOperation, "op" | "connection">) => base.delete(prepare({ ...operation, op: "delete" }))
+        select: (operation: Omit<SelectOperation, "op" | "connection">, queryOptions?:DatabaseQueryOptions) => base.select(prepare({ ...operation, op: "select" }),queryOptions),
+        insert: (operation: Omit<InsertOperation, "op" | "connection">, queryOptions?:DatabaseQueryOptions) => base.insert(prepare({ ...operation, op: "insert" }),queryOptions),
+        update: (operation: Omit<UpdateOperation, "op" | "connection">, queryOptions?:DatabaseQueryOptions) => base.update(prepare({ ...operation, op: "update" }),queryOptions),
+        delete: (operation: Omit<DeleteOperation, "op" | "connection">, queryOptions?:DatabaseQueryOptions) => base.delete(prepare({ ...operation, op: "delete" }),queryOptions)
     });
 }

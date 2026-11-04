@@ -16,3 +16,12 @@ export { waitFor } from './utils/wait.js';
 export { fn, spyOn, restoreAllMocks } from './adapters/vitest/mock.js';
 export { defineConfig, validateConfig } from './config/index.js';
 export type * from './types/index.js';
+
+export * from './http/index.js';
+
+export { EnvironmentUnavailableError, IntentionalSkipError, skipTest, normalizeResults } from './results.js';
+export { normalizeV8Coverage, mergeCoverage, summarizeCoverage } from './coverage.js';
+export type { CoverageRecord, CoverageRange, V8SourceCoverage } from './coverage.js';
+
+export * from './reports/index.js';
+export type { NormalizedResultRecord } from './results.js';

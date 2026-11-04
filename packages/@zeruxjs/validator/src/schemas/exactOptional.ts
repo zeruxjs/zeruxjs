@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -88,7 +89,7 @@ export function exactOptional(
       return _getStandardProps(this);
     },
     '~run'(dataset, config) {
-      return this.wrapped['~run'](dataset, config);
+      return _runSchema(this.wrapped, dataset, config);
     },
   };
 }

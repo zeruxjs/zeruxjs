@@ -2,7 +2,7 @@ import type {AnalyticsManager,AnalyticsRow,AnalyticsSummaryQuery,AnalyticsAggreg
 export type ChartKind='bar'|'horizontal-bar'|'line'|'area'|'pie'|'doughnut'|'scatter'|'stacked-bar'|'table'|'kpi';
 export type Metric='count'|'sum'|'average'|'min'|'max'|'distinct';
 export interface ChartDefinition {id:string;title:string;type:ChartKind;groupBy:'event'|'day'|'source'|'site'|'pathname'|`property:${string}`;metric:Metric;valueField?:string;eventName?:string;source?:string;site?:string;since?:number;until?:number;limit?:number}
-export interface ReportPage {id:string;name:string;charts:ChartDefinition[]}
+export interface ReportPage {id:string;name:string;charts:ChartDefinition[];layout?:import('./layout.js').ReportLayoutV1}
 export interface ReportDefinition {id:string;name:string;description?:string;pages:ReportPage[]}
 export interface ReportsDocument {version:number;reports:ReportDefinition[]}
 export interface ReportsStore {load():Promise<ReportsDocument>;save(document:ReportsDocument,expectedVersion:number):Promise<boolean>}
@@ -33,5 +33,7 @@ export interface ReportsOptions {
   resolveScope?:(request:Request)=>Promise<ReportTenantScope>|ReportTenantScope;
   /** Opt-in marketing reporting; all callbacks must enforce their own campaign tenant boundary. */
   campaigns?:CampaignReportsSource;
+  /** Trusted host rendering code, separate from saved definitions; authorization still runs first. */
+  renderDashboard?:(context:{prefix:string})=>string;
 }
 export interface ChartData {id:string;title:string;type:ChartKind;labels:string[];values:number[];total:number;sampledRows:number;truncated:boolean;/** Native DB counts are exact; limited source rows are explicitly sampled. */queryMode?:'database'|'sampled'|'materialized';/** Materialized numeric totals cover only successfully indexed numeric facts. */ numericCoverage?:'indexed-only';matchedFacts?:number;/** Scope and interpretation, not an assertion of exactness. */coverage?:string}

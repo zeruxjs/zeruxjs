@@ -3,12 +3,14 @@
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { npmCommand } from './npm-command.mjs';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const project = join(root, 'packages/zyrojs');
 const npm = 'npm';
+const require = createRequire(import.meta.url);
 function run(bin, args, cwd = root, capture = false) {
   const invocation=bin===npm?npmCommand(args):{command:bin,args};
   const result = spawnSync(invocation.command, invocation.args, { cwd, encoding: 'utf8', stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit' });
@@ -16,12 +18,14 @@ function run(bin, args, cwd = root, capture = false) {
   if (result.status !== 0) throw new Error(`${bin} ${args.join(' ')} exited ${result.status}`);
   return result.stdout ?? '';
 }
+if (!process.argv.includes('--consumer-only')) {
 run(process.execPath,['scripts/build-workspaces.mjs','--scope','zyrojs','--scope','@zeruxjs/zyro','--verify']);
 run(process.execPath, ['--test', ...readdirSync(join(project, 'test')).filter(name => name.endsWith('.test.mjs')).map(name => `packages/zyrojs/test/${name}`)]);
 run(process.execPath, ['--test',
   'packages/@zeruxjs/zyro/test/advanced.test.mjs',
   'packages/@zeruxjs/zyro/test/integration.test.mjs',
-  'packages/@zeruxjs/zyro/test/section78-scope.test.mjs']);
+  'packages/@zeruxjs/zyro/test/subscription-scope.test.mjs']);
+}
 const temp = mkdtempSync(join(tmpdir(), 'zyrojs-release-'));
 try {
   const report = JSON.parse(run(npm, ['pack', '--ignore-scripts', '--json', '--pack-destination', temp], project, true));
@@ -33,7 +37,12 @@ try {
   }
   const consumer = join(temp, 'consumer'); mkdirSync(consumer);
   writeFileSync(join(consumer, 'package.json'), '{"type":"module","private":true}\n');
-  run(npm, ['install', '--offline', '--ignore-scripts', '--no-audit', '--no-fund', '--no-package-lock', join(temp, pack[0].filename)], consumer);
+  const dependencies = [];
+  for (const directory of [resolve(dirname(fileURLToPath(import.meta.resolve('@zeruxjs/security/encoding'))), '..'), dirname(require.resolve('jose/package.json'))]) {
+    const packed = JSON.parse(run(npm, ['pack', '--ignore-scripts', '--json', '--pack-destination', temp], directory, true));
+    dependencies.push(join(temp, (Array.isArray(packed) ? packed : Object.values(packed))[0].filename));
+  }
+  run(npm, ['install', '--offline', '--ignore-scripts', '--no-audit', '--no-fund', '--no-package-lock', join(temp, pack[0].filename), ...dependencies], consumer);
   const check = `import assert from 'node:assert/strict';
 import {signal,effect,h,renderToString} from 'zyrojs';
 import {renderToString as domSsr} from 'zyrojs/dom';

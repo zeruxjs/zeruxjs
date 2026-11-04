@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -115,7 +116,7 @@ export function union(
 
       // Parse schema of each option and collect datasets
       for (const schema of this.options) {
-        const optionDataset = schema['~run']({ value: dataset.value }, config);
+        const optionDataset = _runSchema(schema, { value: dataset.value }, config);
 
         // If typed, add it to valid or typed datasets
         if (optionDataset.typed) {

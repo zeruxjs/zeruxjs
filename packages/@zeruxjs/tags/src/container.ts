@@ -1,3 +1,4 @@
+import {inertTagJson} from './providers.js';
 import type {TagContainer,TagContainerStore,Scalar,TagGovernance} from './types.js';
 const ident=/^[A-Za-z][A-Za-z0-9_.:-]{0,95}$/;
 const valid=(name:unknown)=>typeof name==='string'&&ident.test(name);
@@ -5,16 +6,23 @@ const valid=(name:unknown)=>typeof name==='string'&&ident.test(name);
 const label=(s:unknown)=>typeof s==='string'&&s.length>=1&&s.length<=128&&!/[\x00-\x1f]/.test(s);
 const scalar=(v:unknown):v is Scalar=>v===null||typeof v==='boolean'||(typeof v==='string'&&v.length<=1024)||(typeof v==='number'&&Number.isFinite(v));
 export function validateContainer(data:unknown):TagContainer {
+  inertTagJson(data);
   if(!data||typeof data!=='object'||Array.isArray(data))throw new TypeError('Invalid tag container');
-  const c=data as TagContainer;
+  const keys=(v:object,allowed:string[])=>{if(!v||Object.keys(v).some(k=>!allowed.includes(k)))throw new TypeError('Unknown tag schema field');};
+  const c=data as TagContainer;keys(c,['id','version','name','triggers','tags','variables','governance']);
   if(!valid(c.id)||!Number.isSafeInteger(c.version)||c.version<1||typeof c.name!=='string'||c.name.length>128)throw new TypeError('Invalid container identity');
   if(!Array.isArray(c.triggers)||!Array.isArray(c.tags)||!Array.isArray(c.variables)||c.triggers.length>200||c.tags.length>200||c.variables.length>200)throw new TypeError('Invalid container limits');
   const ids=new Set<string>();
   const register=(id:unknown)=>{if(!valid(id)||ids.has(id as string))throw new TypeError('Invalid or duplicate tag ID');ids.add(id as string);};
-  for(const t of c.triggers){register(t.id);if(!label(t.name)||!['event','all','pageview','click','form','history'].includes(t.type)||t.enabled!==undefined&&typeof t.enabled!=='boolean'||t.type==='event'&&!valid(t.event))throw new TypeError('Invalid trigger');
-    if(t.conditions!==undefined){if(!Array.isArray(t.conditions)||t.conditions.length>20)throw new TypeError('Too many trigger conditions');for(const cond of t.conditions)if(!valid(cond.field)||!['eq','neq','contains','exists','gte','lte'].includes(cond.operator)||cond.value!==undefined&&!scalar(cond.value))throw new TypeError('Invalid trigger condition');}}
-  for(const v of c.variables){register(v.id);if(!label(v.name)||!['constant','event','dataLayer','context'].includes(v.type)||v.key!==undefined&&!valid(v.key)||v.value!==undefined&&!scalar(v.value))throw new TypeError('Invalid variable');}
-  for(const t of c.tags){register(t.id);if(!label(t.name)||!['analytics','ga4','webhook'].includes(t.type)||!Array.isArray(t.triggerIds)||!t.triggerIds.length||t.triggerIds.length>40||t.enabled!==undefined&&typeof t.enabled!=='boolean'||t.triggerIds.some(id=>!c.triggers.some(trigger=>trigger.id===id)))throw new TypeError('Invalid tag');
+  for(const t of c.triggers){keys(t,['id','name','type','event','conditions','enabled','schemaVersion','composition']);register(t.id);if(!label(t.name)||!['event','all','pageview','click','form','history','group'].includes(t.type)||t.enabled!==undefined&&typeof t.enabled!=='boolean'||t.type==='event'&&!valid(t.event))throw new TypeError('Invalid trigger');
+    if(t.conditions!==undefined){if(!Array.isArray(t.conditions)||t.conditions.length>20)throw new TypeError('Too many trigger conditions');for(const cond of t.conditions)if(!cond||Object.keys(cond).some(k=>!['field','operator','value'].includes(k))||!valid(cond.field)||!['eq','neq','contains','exists','gte','lte'].includes(cond.operator)||cond.value!==undefined&&!scalar(cond.value))throw new TypeError('Invalid trigger condition');}}
+  let checks=0;const visiting=new Set<string>();
+  function checkTrigger(id:string,depth=0){if(++checks>5000||depth>8||visiting.has(id))throw new TypeError('Cyclic or too-deep trigger group');const trigger=c.triggers.find(t=>t.id===id);if(!trigger)throw new TypeError('Unknown group trigger');if(trigger.schemaVersion!==undefined&&trigger.schemaVersion!==1)throw new TypeError('Unsupported trigger schema');if(trigger.type==='group'){const group=trigger.composition;if(!group||Object.keys(group).some(k=>!['mode','triggerIds'].includes(k))||!['all','any','not'].includes(group.mode)||!Array.isArray(group.triggerIds)||!group.triggerIds.length||group.triggerIds.length>20||new Set(group.triggerIds).size!==group.triggerIds.length||group.mode==='not'&&group.triggerIds.length!==1)throw new TypeError('Invalid trigger group');visiting.add(id);for(const ref of group.triggerIds)checkTrigger(ref,depth+1);visiting.delete(id);}else if(trigger.composition!==undefined)throw new TypeError('Composition requires group trigger');}
+  for(const trigger of c.triggers)checkTrigger(trigger.id);
+  for(const v of c.variables){keys(v,['id','name','type','key','value','schemaVersion']);register(v.id);if(v.schemaVersion!==undefined&&v.schemaVersion!==1)throw new TypeError('Unsupported variable schema');if(!label(v.name)||!['constant','event','dataLayer','context'].includes(v.type)||v.key!==undefined&&!valid(v.key)||v.value!==undefined&&!scalar(v.value))throw new TypeError('Invalid variable');}
+  for(const t of c.tags){keys(t,['id','name','type','triggerIds','enabled','eventName','measurementId','credentialRef','destinationRef','clientIdVariable','parameters','providerRef','providerVersion','publicConfig']);register(t.id);if(!label(t.name)||!['analytics','ga4','webhook','provider'].includes(t.type)||!Array.isArray(t.triggerIds)||!t.triggerIds.length||t.triggerIds.length>40||t.enabled!==undefined&&typeof t.enabled!=='boolean'||t.triggerIds.some(id=>!c.triggers.some(trigger=>trigger.id===id)))throw new TypeError('Invalid tag');
+    if(t.type==='provider'&&(!valid(t.providerRef)||!Number.isSafeInteger(t.providerVersion)||t.providerVersion!<1||t.providerVersion!>10000||t.publicConfig!==undefined&&(!t.publicConfig||Array.isArray(t.publicConfig)||Object.keys(t.publicConfig).length>25||Object.entries(t.publicConfig).some(([k,v])=>!valid(k)||/(secret|token|password|authorization|cookie|credential|privatekey)/i.test(k)||!scalar(v)))))throw new TypeError('Invalid provider reference');
+    if(t.type!=='provider'&&(t.providerRef!==undefined||t.providerVersion!==undefined||t.publicConfig!==undefined))throw new TypeError('Provider options require provider tag');
     if(t.eventName!==undefined&&!valid(t.eventName))throw new TypeError('Invalid destination event');
     if(t.type==='ga4'&&(!t.measurementId||!/^G-[A-Z0-9]{5,20}$/.test(t.measurementId)||!valid(t.credentialRef)))throw new TypeError('Invalid GA4 tag');
     if(t.type==='webhook'&&!valid(t.destinationRef))throw new TypeError('Invalid destination reference');
@@ -27,8 +35,8 @@ export function validateContainer(data:unknown):TagContainer {
       }
     }}
   }
-  // Strip unrecognized object keys and prototypes, preventing accidental disclosure of secrets.
-  const base=JSON.parse(JSON.stringify({id:c.id,version:c.version,name:c.name,triggers:c.triggers.map(({id,name,type,event,conditions,enabled})=>({id,name,type,event,conditions,enabled})),variables:c.variables.map(({id,name,type,key,value})=>({id,name,type,key,value})),tags:c.tags.map(({id,name,type,triggerIds,enabled,eventName,measurementId,credentialRef,destinationRef,clientIdVariable,parameters})=>({id,name,type,triggerIds,enabled,eventName,measurementId,credentialRef,destinationRef,clientIdVariable,parameters}))})) as TagContainer;
+  // Rebuild only declared public fields; executable/server configuration never belongs here.
+  const base=JSON.parse(JSON.stringify({id:c.id,version:c.version,name:c.name,triggers:c.triggers.map(({id,name,type,event,conditions,enabled,schemaVersion,composition})=>({id,name,type,event,conditions,enabled,schemaVersion,composition})),variables:c.variables.map(({id,name,type,key,value,schemaVersion})=>({id,name,type,key,value,schemaVersion})),tags:c.tags.map(({id,name,type,triggerIds,enabled,eventName,measurementId,credentialRef,destinationRef,clientIdVariable,parameters,providerRef,providerVersion,publicConfig})=>({id,name,type,triggerIds,enabled,eventName,measurementId,credentialRef,destinationRef,clientIdVariable,parameters,providerRef,providerVersion,publicConfig}))})) as TagContainer;
   if(c.governance!==undefined){
     const g=c.governance as TagGovernance;
     if(!g||typeof g!=='object'||Array.isArray(g)||!Number.isSafeInteger(g.release)||g.release<1||!Array.isArray(g.history)||g.history.length<1||g.history.length>12)throw new TypeError('Invalid release metadata');

@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -58,7 +59,7 @@ export function fallback<
       return _getStandardProps(this);
     },
     '~run'(dataset, config) {
-      const outputDataset = schema['~run'](dataset, config);
+      const outputDataset = _runSchema(schema, dataset, config);
       return outputDataset.issues
         ? { typed: true, value: getFallback(this, outputDataset, config) }
         : outputDataset;

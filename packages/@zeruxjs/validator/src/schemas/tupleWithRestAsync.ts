@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   ArrayPathItem,
   BaseIssue,
@@ -141,7 +142,7 @@ export function tupleWithRestAsync(
               return [
                 key,
                 value,
-                await item['~run']({ value }, config),
+                await _runSchema(item, { value }, config),
               ] as const;
             })
           ),
@@ -152,7 +153,7 @@ export function tupleWithRestAsync(
               return [
                 key + this.items.length,
                 value,
-                await this.rest['~run']({ value }, config),
+                await _runSchema(this.rest, { value }, config),
               ] as const;
             })
           ),

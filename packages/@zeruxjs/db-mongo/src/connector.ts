@@ -2,7 +2,8 @@ import { assertSafeDocument, assertSafeField, buildWhere, buildProjection, build
 import type {
     ComparisonOperator,
     DatabaseConnector,
-    DatabaseConnectorFactory,
+    DatabaseTransaction,
+    NormalizedConnectionConfig,
     DatabaseExecutionContext,
     DatabaseResult,
     DeleteOperation,
@@ -14,9 +15,16 @@ import type {
     WhereClause,
     WherePredicate
 } from "@zeruxjs/db";
-import { createDatabaseError } from "@zeruxjs/db";
+import { createPinnedTransaction, createDatabaseError } from "@zeruxjs/db";
 
+import { verifyTransactionDeployment, transactionAdapter, sessionDatabase } from './session.js';
+export interface MongoSessionLike {
+    startTransaction(options?:Record<string,unknown>):void|Promise<void>;
+    commitTransaction():Promise<void>;abortTransaction():Promise<void>;endSession():Promise<void>;
+}
+export interface MongoClientLike {db(name?:string):MongoDbLike;startSession?():MongoSessionLike;connect?():Promise<unknown>;close?():Promise<unknown>}
 export type MongoDbLike = {
+    command?(command:Record<string,unknown>,options?:Record<string,unknown>):Promise<Record<string,unknown>>;
     collection(name: string): MongoCollectionLike;
     createCollection?(name: string): Promise<unknown>;
     dropDatabase?(): Promise<boolean>;
@@ -35,7 +43,7 @@ export type MongoCollectionLike = {
     aggregate?(pipeline: unknown[]): {
         toArray(): Promise<unknown[]>;
     };
-    updateMany?(query: Record<string, unknown>, update: Record<string, unknown>): Promise<{ modifiedCount: number; }>;
+    updateMany?(query: Record<string, unknown>, update: Record<string, unknown>): Promise<{ modifiedCount: number; matchedCount?:number; }>;
     deleteMany?(query: Record<string, unknown>): Promise<{ deletedCount: number; }>;
     createIndex?(keys: Record<string, 1 | -1>, options?: Record<string, unknown>): Promise<string>;
     dropIndex?(name: string): Promise<unknown>;
@@ -44,9 +52,12 @@ export type MongoCollectionLike = {
 
 export interface MongoConnectorOptions extends Record<string, unknown> {
     db?: MongoDbLike;
-    client?: {
-        db(name?: string): MongoDbLike;
-    };
+    client?: MongoClientLike;
+    transactions?:boolean;
+    maxCommitAttempts?:number;
+    maxCommitTimeMS?:number;
+    maxSessions?:number;
+    probeTimeoutMS?:number;
     database?: string;
     uri?: string;
     url?: string;
@@ -64,7 +75,8 @@ const normalizeResult = (
     native: unknown,
     pipeline?: unknown[]
 ): DatabaseResult => {
-    const objectResult = native && typeof native === "object" ? native as Record<string, unknown> : {};
+    const objectResult = (native && (typeof native === "object")) ? native as Record<string, unknown> : {};
+    for(const key of ['matchedCount','modifiedCount','deletedCount'])if((objectResult[key]!==undefined)&&(!Number.isSafeInteger(objectResult[key])||(Number(objectResult[key])<0)))throw createDatabaseError({code:'INVALID_MONGO_COUNT',message:'Invalid Mongo result count'});
     const rows = Array.isArray(native)
         ? native
         : Array.isArray(objectResult.rows)
@@ -78,14 +90,17 @@ const normalizeResult = (
         operation: operation.op,
         rows,
         rowCount: rows?.length,
-        affectedCount: typeof objectResult.modifiedCount === "number"
+        matchedCount: (typeof objectResult.matchedCount==='number')?objectResult.matchedCount:undefined,
+        changedCount: (typeof objectResult.modifiedCount==='number')?objectResult.modifiedCount:undefined,
+        counts: {affected:((typeof objectResult.modifiedCount==='number')||(typeof objectResult.deletedCount==='number'))?'exact':'unknown',matched:(typeof objectResult.matchedCount==='number')?'exact':'unknown',changed:(typeof objectResult.modifiedCount==='number')?'exact':'unknown',affectedMeaning:'changed'},
+        affectedCount: (typeof objectResult.modifiedCount === "number")
             ? objectResult.modifiedCount
-            : typeof objectResult.deletedCount === "number"
+            : (typeof objectResult.deletedCount === "number")
                 ? objectResult.deletedCount
                 : undefined,
-        insertedIds: objectResult.insertedId !== undefined
+        insertedIds: (objectResult.insertedId !== undefined)
             ? [String(objectResult.insertedId)]
-            : objectResult.insertedIds && typeof objectResult.insertedIds === "object"
+            : (objectResult.insertedIds && (typeof objectResult.insertedIds === "object"))
                 ? Object.values(objectResult.insertedIds as Record<string, unknown>).map((value) => String(value))
                 : undefined,
         native,
@@ -108,23 +123,48 @@ const getDatabase = (options: MongoConnectorOptions, databaseName?: string): Mon
     });
 };
 
+/** Validate direct compiler calls as well as facade-normalized operations before any native mutation. */
+function validateOperation(options:MongoConnectorOptions,operation:QueryOperation){
+    if((!operation||(typeof operation!=='object'))||!['createDb','dropDb','switchDB','createTable','dropTable','alterTable','turcunateTable','createIndex','dropIndex','insert','select','update','delete'].includes(operation.op))throw createDatabaseError({code:'INVALID_QUERY',message:'Invalid Mongo operation'});
+    if(('returning'in operation)&&operation.returning?.length)throw createDatabaseError({code:'UNSUPPORTED_RETURNING',message:'Mongo structured operations do not support returning'});
+    if(!['createDb','dropDb','switchDB'].includes(operation.op))assertSafeField((operation as {table:string}).table);
+    if(['createDb','dropDb','switchDB'].includes(operation.op))assertSafeField((operation as {name:string}).name);
+    if(('where'in operation)&&(operation.where!==undefined))buildWhere(operation.where);
+    if((operation.op==='update')||(operation.op==='delete'))if(!operation.where&&!options.allowUnfilteredWrites)throw createDatabaseError({code:'UNFILTERED_WRITE',message:'Mongo write requires a where clause (or explicit allowUnfilteredWrites)'});
+    if((operation.op==='insert')||(operation.op==='update')){
+        const values=operation.values;
+        if(((!values||(typeof values!=='object'))||((operation.op==='update')&&Array.isArray(values)))||(Array.isArray(values)&&((!values.length||(values.length>10000))||values.some(v=>(!v||(typeof v!=='object'))||Array.isArray(v)))))throw createDatabaseError({code:'INVALID_QUERY',message:'Invalid Mongo write document'});
+        assertSafeDocument(values);
+    }
+    if(operation.op==='select'){
+        if(operation.orderBy!==undefined){if(!Array.isArray(operation.orderBy))throw createDatabaseError({code:'INVALID_QUERY',message:'Invalid Mongo sort'});buildSort(operation);}
+        if(operation.groupBy!==undefined){if(!Array.isArray(operation.groupBy))throw createDatabaseError({code:'INVALID_QUERY',message:'Invalid Mongo grouping'});for(const entry of operation.groupBy)if(typeof entry==='string')assertSafeField(entry);else toMongoValue(entry,true);}
+        if(operation.having)buildWhere(operation.having);
+        for(const join of operation.joins??[]){assertSafeField(join.table);if(join.as!==undefined)assertSafeField(join.as);buildWhere(join.on);}
+        for(const union of [...operation.union??[],...operation.unionAll??[]]){assertSafeField(union.table);if(union.where)buildWhere(union.where);}
+    }
+    const indexes=(operation.op==='createTable')?(operation.indexes??[]):(operation.op==='createIndex')?[operation]:[];
+    for(const index of indexes){if(index.name!==undefined)assertSafeField(index.name);if(((!Array.isArray(index.columns)||!index.columns.length)||(index.columns.length>64))||index.columns.some(c=>typeof c!=='string'))throw createDatabaseError({code:'INVALID_INDEX',message:'Mongo indexes require plain named columns'});for(const column of index.columns)assertSafeField(column as string);if((index.unique!==undefined)&&(typeof index.unique!=='boolean'))throw createDatabaseError({code:'INVALID_INDEX',message:'Invalid Mongo index policy'});}
+}
+
 const executeWithDb = async (
     options: MongoConnectorOptions,
     operation: QueryOperation,
     context: DatabaseExecutionContext
 ): Promise<DatabaseResult> => {
-    const databaseName = typeof options.database === "string" ? options.database : undefined;
-    if ("table" in operation && typeof operation.table === "string") assertSafeField(operation.table);
-    if ("name" in operation && typeof operation.name === "string" && ["createDb", "dropDb", "switchDB", "dropIndex"].includes(operation.op)) assertSafeField(operation.name);
+    validateOperation(options,operation);
+    const databaseName = (typeof options.database === "string") ? options.database : undefined;
+    if (("table" in operation) && (typeof operation.table === "string")) assertSafeField(operation.table);
+    if ((("name" in operation) && (typeof operation.name === "string")) && ["createDb", "dropDb", "switchDB", "dropIndex"].includes(operation.op)) assertSafeField(operation.name);
 
-    if ((operation.op === "createDb" || operation.op === "dropDb") && (options.locked || options.lockDatabase)) {
+    if (((operation.op === "createDb") || (operation.op === "dropDb")) && (options.locked || options.lockDatabase)) {
         throw createDatabaseError({
             code: "DATABASE_LOCKED",
             message: `Operation "${operation.op}" is locked for connection "${context.connection.slug}"`
         });
     }
 
-    if (operation.op === "switchDB" && (options.fixedDatabase || options.database)) {
+    if ((operation.op === "switchDB") && (options.fixedDatabase || options.database)) {
         throw createDatabaseError({
             code: "DATABASE_FIXED",
             message: `Connection "${context.connection.slug}" uses a fixed database and cannot be switched`
@@ -150,7 +190,7 @@ const executeWithDb = async (
             try { await db.createCollection(operation.table); }
             catch (error) {
                 const e=error as {code?:number;codeName?:string};
-                if(!operation.ifNotExists || (e.code!==48 && e.codeName!=='NamespaceExists')) throw error;
+                if(!operation.ifNotExists || ((e.code!==48) && (e.codeName!=='NamespaceExists'))) throw error;
             }
             const collection = db.collection(operation.table);
             for (const index of operation.indexes ?? []) {
@@ -235,27 +275,27 @@ const executeSelect = async (
     context: DatabaseExecutionContext
 ): Promise<DatabaseResult> => {
     const collection = getDatabase(options, options.database).collection(operation.table);
-    const requestedLimit = operation.limit ?? operation.top ?? (typeof operation.fetch === "number" ? operation.fetch : operation.fetch?.count);
-    if (requestedLimit !== undefined && (!Number.isSafeInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > 100000)) throw createDatabaseError({ code: "INVALID_QUERY", message: "Mongo limit must be between 1 and 100000" });
-    if (operation.offset !== undefined && (!Number.isSafeInteger(operation.offset) || operation.offset < 0 || operation.offset > 1_000_000)) throw createDatabaseError({ code: "INVALID_QUERY", message: "Invalid Mongo offset" });
+    const requestedLimit = (operation.limit ?? operation.top) ?? ((typeof operation.fetch === "number") ? operation.fetch : operation.fetch?.count);
+    if ((requestedLimit !== undefined) && ((!Number.isSafeInteger(requestedLimit) || (requestedLimit < 1)) || (requestedLimit > 100000))) throw createDatabaseError({ code: "INVALID_QUERY", message: "Mongo limit must be between 1 and 100000" });
+    if ((operation.offset !== undefined) && ((!Number.isSafeInteger(operation.offset) || (operation.offset < 0)) || (operation.offset > 1_000_000))) throw createDatabaseError({ code: "INVALID_QUERY", message: "Invalid Mongo offset" });
     // Portable analytics COUNT queries: convert the DB facade's small, validated
     // COUNT(id)/GROUP BY DSL subset to Mongo aggregation. Ordinary Mongo selects
     // continue through their previous paths unchanged.
     const cols=operation.columns;
     const countCol=cols?.[cols.length-1];
-    const countExpr=countCol&&typeof countCol==='object'&&'expr' in countCol?countCol.expr:undefined;
-    const countArg=countExpr&&typeof countExpr==='object'&&'args' in countExpr&&Array.isArray(countExpr.args)?countExpr.args[0]:undefined;
-    const isCount=typeof countExpr==='object'&&countExpr!==null&&'kind' in countExpr&&countExpr.kind==='function'&&countExpr.name==='COUNT'&&
-      countExpr.args?.length===1&&typeof countArg==='object'&&countArg!==null&&'kind' in countArg&&countArg.kind==='column'&&'name' in countArg&&countArg.name==='id'&&
-      typeof countCol==='object'&&'as' in countCol&&countCol.as==='event_count';
+    const countExpr=((countCol&&(typeof countCol==='object'))&&('expr' in countCol))?countCol.expr:undefined;
+    const countArg=(((countExpr&&(typeof countExpr==='object'))&&('args' in countExpr))&&Array.isArray(countExpr.args))?countExpr.args[0]:undefined;
+    const isCount=((((((((((((((typeof countExpr==='object')&&(countExpr!==null))&&('kind' in countExpr))&&(countExpr.kind==='function'))&&(countExpr.name==='COUNT'))&&
+      (countExpr.args?.length===1))&&(typeof countArg==='object'))&&(countArg!==null))&&('kind' in countArg))&&(countArg.kind==='column'))&&('name' in countArg))&&(countArg.name==='id'))&&
+      (typeof countCol==='object'))&&('as' in countCol))&&(countCol.as==='event_count');
     const dimensionCol=cols?.[0];
-    const dimExpr=dimensionCol&&typeof dimensionCol==='object'&&'expr' in dimensionCol?dimensionCol.expr:undefined;
-    const dimension=dimExpr&&typeof dimExpr==='object'&&'kind' in dimExpr&&dimExpr.kind==='column'?dimExpr.name:undefined;
-    const grouped=cols?.length===2&&isCount&&typeof dimension==='string'&&
-      typeof dimensionCol==='object'&&'as' in dimensionCol&&dimensionCol.as==='category'&&
-      operation.groupBy?.length===1&&operation.groupBy[0]===dimension;
-    const onlyTotal=cols?.length===1&&isCount&&!operation.groupBy?.length;
-    if((grouped||onlyTotal)&&!operation.joins?.length&&!operation.having&&!operation.union?.length&&!operation.unionAll?.length){
+    const dimExpr=((dimensionCol&&(typeof dimensionCol==='object'))&&('expr' in dimensionCol))?dimensionCol.expr:undefined;
+    const dimension=(((dimExpr&&(typeof dimExpr==='object'))&&('kind' in dimExpr))&&(dimExpr.kind==='column'))?dimExpr.name:undefined;
+    const grouped=(((((((cols?.length===2)&&isCount)&&(typeof dimension==='string'))&&
+      (typeof dimensionCol==='object'))&&('as' in dimensionCol))&&(dimensionCol.as==='category'))&&
+      (operation.groupBy?.length===1))&&(operation.groupBy[0]===dimension);
+    const onlyTotal=((cols?.length===1)&&isCount)&&!operation.groupBy?.length;
+    if(((((grouped||onlyTotal)&&!operation.joins?.length)&&!operation.having)&&!operation.union?.length)&&!operation.unionAll?.length){
         const pipeline:unknown[]=[];
         if(operation.where)pipeline.push({$match:buildWhere(operation.where)});
         if(grouped){
@@ -266,37 +306,37 @@ const executeSelect = async (
             if(requestedLimit!==undefined)pipeline.push({$limit:requestedLimit});
         }else pipeline.push({$count:'event_count'});
         const rows=await requireMethod(collection.aggregate,'aggregate').call(collection,pipeline).toArray();
-        return normalizeResult(operation,context,onlyTotal&&rows.length===0?[{event_count:0}]:rows,pipeline);
+        return normalizeResult(operation,context,(onlyTotal&&(rows.length===0))?[{event_count:0}]:rows,pipeline);
     }
     // Opt-in numeric fact metric DSL. This narrow shape is generated exclusively by
     // the analytics package: property field filtering and a validated numeric column.
     const metricColumn=cols?.[0];
-    const numericMetricExpr=metricColumn&&typeof metricColumn==='object'&&'expr' in metricColumn?metricColumn.expr:undefined;
-    const numericArg=numericMetricExpr&&typeof numericMetricExpr==='object'&&'args' in numericMetricExpr&&Array.isArray(numericMetricExpr.args)?numericMetricExpr.args[0]:undefined;
+    const numericMetricExpr=((metricColumn&&(typeof metricColumn==='object'))&&('expr' in metricColumn))?metricColumn.expr:undefined;
+    const numericArg=(((numericMetricExpr&&(typeof numericMetricExpr==='object'))&&('args' in numericMetricExpr))&&Array.isArray(numericMetricExpr.args))?numericMetricExpr.args[0]:undefined;
     const metricNames=['SUM','AVG','MIN','MAX'];
-    const validMetric=numericMetricExpr&&typeof numericMetricExpr==='object'&&'kind' in numericMetricExpr&&numericMetricExpr.kind==='function'&&
-      'name' in numericMetricExpr&&metricNames.includes(String(numericMetricExpr.name))&&
-      'args' in numericMetricExpr&&Array.isArray(numericMetricExpr.args)&&numericMetricExpr.args.length===1&&
-      numericArg&&typeof numericArg==='object'&&numericArg.kind==='column'&&numericArg.name==='numeric_value'&&
-      typeof metricColumn==='object'&&'as' in metricColumn&&metricColumn.as==='metric_value';
+    const validMetric=((((((((((((((numericMetricExpr&&(typeof numericMetricExpr==='object'))&&('kind' in numericMetricExpr))&&(numericMetricExpr.kind==='function'))&&
+      ('name' in numericMetricExpr))&&metricNames.includes(String(numericMetricExpr.name)))&&
+      ('args' in numericMetricExpr))&&Array.isArray(numericMetricExpr.args))&&(numericMetricExpr.args.length===1))&&
+      numericArg)&&(typeof numericArg==='object'))&&(numericArg.kind==='column'))&&(numericArg.name==='numeric_value'))&&
+      (typeof metricColumn==='object'))&&('as' in metricColumn))&&(metricColumn.as==='metric_value');
     const numericCountCol=cols?.[cols.length-1];
-    const numericCountExpr=numericCountCol&&typeof numericCountCol==='object'&&'expr' in numericCountCol?numericCountCol.expr:undefined;
-    const numericCountArg=numericCountExpr&&typeof numericCountExpr==='object'&&'args' in numericCountExpr&&Array.isArray(numericCountExpr.args)?numericCountExpr.args[0]:undefined;
-    const validNumericCount=numericCountExpr&&typeof numericCountExpr==='object'&&'kind' in numericCountExpr&&numericCountExpr.kind==='function'&&numericCountExpr.name==='COUNT'&&
-      'args' in numericCountExpr&&Array.isArray(numericCountExpr.args)&&numericCountExpr.args.length===1&&
-      numericCountArg&&typeof numericCountArg==='object'&&numericCountArg.kind==='column'&&numericCountArg.name==='event_id'&&
-      typeof numericCountCol==='object'&&'as' in numericCountCol&&numericCountCol.as==='numeric_count';
+    const numericCountExpr=((numericCountCol&&(typeof numericCountCol==='object'))&&('expr' in numericCountCol))?numericCountCol.expr:undefined;
+    const numericCountArg=(((numericCountExpr&&(typeof numericCountExpr==='object'))&&('args' in numericCountExpr))&&Array.isArray(numericCountExpr.args))?numericCountExpr.args[0]:undefined;
+    const validNumericCount=(((((((((((((numericCountExpr&&(typeof numericCountExpr==='object'))&&('kind' in numericCountExpr))&&(numericCountExpr.kind==='function'))&&(numericCountExpr.name==='COUNT'))&&
+      ('args' in numericCountExpr))&&Array.isArray(numericCountExpr.args))&&(numericCountExpr.args.length===1))&&
+      numericCountArg)&&(typeof numericCountArg==='object'))&&(numericCountArg.kind==='column'))&&(numericCountArg.name==='event_id'))&&
+      (typeof numericCountCol==='object'))&&('as' in numericCountCol))&&(numericCountCol.as==='numeric_count');
     const numericDimCol=cols?.[0];
-    const numericDimExpr=numericDimCol&&typeof numericDimCol==='object'&&'expr' in numericDimCol?numericDimCol.expr:undefined;
-    const numericDimension=numericDimExpr&&typeof numericDimExpr==='object'&&numericDimExpr.kind==='column'?numericDimExpr.name:undefined;
-    const numericGrouped=cols?.length===3&&validNumericCount&&
-      typeof cols?.[1]==='object'&&'expr' in cols[1]&&cols[1].expr&&typeof cols[1].expr==='object'&&
-      cols[1].expr.kind==='function'&&metricNames.includes(cols[1].expr.name)&&
-      (cols[1].expr.args?.[0] as {name?:string}|undefined)?.name==='numeric_value'&&cols[1].as==='metric_value'&&
-      typeof numericDimCol==='object'&&'as' in numericDimCol&&numericDimCol.as==='category'&&
-      typeof numericDimension==='string'&&operation.groupBy?.length===1&&operation.groupBy[0]===numericDimension;
-    const numericTotal=cols?.length===2&&validMetric&&validNumericCount&&!operation.groupBy?.length;
-    if((numericTotal||numericGrouped)&&!operation.joins?.length&&!operation.having&&!operation.union?.length&&!operation.unionAll?.length){
+    const numericDimExpr=((numericDimCol&&(typeof numericDimCol==='object'))&&('expr' in numericDimCol))?numericDimCol.expr:undefined;
+    const numericDimension=((numericDimExpr&&(typeof numericDimExpr==='object'))&&(numericDimExpr.kind==='column'))?numericDimExpr.name:undefined;
+    const numericGrouped=(((((((((((((((cols?.length===3)&&validNumericCount)&&
+      (typeof cols?.[1]==='object'))&&('expr' in cols[1]))&&cols[1].expr)&&(typeof cols[1].expr==='object'))&&
+      (cols[1].expr.kind==='function'))&&metricNames.includes(cols[1].expr.name))&&
+      ((cols[1].expr.args?.[0] as {name?:string}|undefined)?.name==='numeric_value'))&&(cols[1].as==='metric_value'))&&
+      (typeof numericDimCol==='object'))&&('as' in numericDimCol))&&(numericDimCol.as==='category'))&&
+      (typeof numericDimension==='string'))&&(operation.groupBy?.length===1))&&(operation.groupBy[0]===numericDimension);
+    const numericTotal=(((cols?.length===2)&&validMetric)&&validNumericCount)&&!operation.groupBy?.length;
+    if(((((numericTotal||numericGrouped)&&!operation.joins?.length)&&!operation.having)&&!operation.union?.length)&&!operation.unionAll?.length){
       const metric=numericGrouped?(cols![1] as {expr:{name:string}}).expr.name:String((numericMetricExpr as {name:string}).name);
       const mongoMetric:Record<string,string>={SUM:'$sum',AVG:'$avg',MIN:'$min',MAX:'$max'};
       const accumulator={[mongoMetric[metric]]:'$numeric_value'};
@@ -313,9 +353,9 @@ const executeSelect = async (
         pipeline.push({$project:{_id:0,metric_value:1,numeric_count:1}});
       }
       const rows=await requireMethod(collection.aggregate,'aggregate').call(collection,pipeline).toArray();
-      return normalizeResult(operation,context,numericTotal&&rows.length===0?[{metric_value:null,numeric_count:0}]:rows,pipeline);
+      return normalizeResult(operation,context,(numericTotal&&(rows.length===0))?[{metric_value:null,numeric_count:0}]:rows,pipeline);
     }
-    const advanced = Boolean(operation.joins?.length || operation.groupBy?.length || operation.having || operation.union?.length || operation.unionAll?.length);
+    const advanced = Boolean((((operation.joins?.length || operation.groupBy?.length) || operation.having) || operation.union?.length) || operation.unionAll?.length);
     if (!advanced) {
         const filter = operation.where ? buildWhere(operation.where) : {};
         const cursor = requireMethod(collection.find, "find").call(collection, filter, { projection: buildProjection(operation) });
@@ -359,13 +399,13 @@ const executeSelect = async (
         pipeline.push({ $project: projection });
     }
 
-    if (operation.groupBy && operation.groupBy.length > 0) {
+    if (operation.groupBy && (operation.groupBy.length > 0)) {
         pipeline.push({
             $group: {
                 _id: Object.fromEntries(
                     operation.groupBy.map((entry) => [
-                        typeof entry === "string" ? entry : "value",
-                        typeof entry === "string" ? `$${entry}` : toMongoValue(entry)
+                        (typeof entry === "string") ? entry : "value",
+                        (typeof entry === "string") ? (assertSafeField(entry), `$${entry}`) : toMongoValue(entry, true)
                     ])
                 )
             }
@@ -381,12 +421,12 @@ const executeSelect = async (
         pipeline.push({ $sort: sort });
     }
 
-    if (typeof operation.offset === "number" && operation.offset > 0) {
+    if ((typeof operation.offset === "number") && (operation.offset > 0)) {
         pipeline.push({ $skip: operation.offset });
     }
 
-    const limit = operation.limit ?? operation.top ?? (
-        typeof operation.fetch === "number"
+    const limit = (operation.limit ?? operation.top) ?? (
+        (typeof operation.fetch === "number")
             ? operation.fetch
             : operation.fetch?.count
     );
@@ -457,30 +497,42 @@ const executeDelete = async (
  * @param options Connector options.
  * @returns Mongo connector instance.
  */
-export const createConnector: DatabaseConnectorFactory = async (options) => {
-    const normalized = options as MongoConnectorOptions;
-    let ownedClient: { connect?(): Promise<unknown>; close?(): Promise<unknown>; db(name?: string): MongoDbLike } | undefined;
-    const uri = normalized.uri ?? normalized.url;
-    if (!normalized.db && !normalized.client && !normalized.executor && uri) {
-        if (typeof uri !== "string" || !/^mongodb(?:\+srv)?:\/\//i.test(uri)) throw createDatabaseError({ code: "INVALID_CONNECTION", message: "Invalid MongoDB URI" });
-        const packageName = "mongodb"; // optional peer dependency; loaded only for real connections
-        let driver: Record<string, any>;
-        try { driver = await import(packageName); }
-        catch (cause) { throw createDatabaseError({ code: "MISSING_MONGO_DRIVER", message: "Install mongodb to use a URI connection", cause }); }
-        ownedClient = new driver.MongoClient(uri, normalized.clientOptions ?? {});
-        normalized.client = ownedClient;
+export interface MongoConnector extends DatabaseConnector {transaction:DatabaseTransaction;disconnect():Promise<void>}
+export async function createConnector(options:MongoConnectorOptions={},connection?:NormalizedConnectionConfig):Promise<MongoConnector>{
+    if((!options||(typeof options!=='object'))||Array.isArray(options))throw createDatabaseError({code:'INVALID_MONGO_OPTIONS',message:'Invalid Mongo options'});
+    const normalized={...options};
+    for(const key of ['transactions','allowUnfilteredWrites','fixedDatabase','locked','lockDatabase'] as const)if((normalized[key]!==undefined)&&(typeof normalized[key]!=='boolean'))throw createDatabaseError({code:'INVALID_MONGO_OPTIONS',message:'Invalid Mongo boolean option'});
+    const limit=(value:unknown,fallback:number,max:number)=>{const n=(value===undefined)?fallback:value;if((((typeof n!=='number')||!Number.isSafeInteger(n))||(n<1))||(n>max))throw createDatabaseError({code:'INVALID_MONGO_OPTIONS',message:'Invalid Mongo limit'});return n;};
+    const policy={maxCommitAttempts:limit(normalized.maxCommitAttempts,1,3),maxCommitTimeMS:limit(normalized.maxCommitTimeMS,10000,60000),maxSessions:limit(normalized.maxSessions,32,1024),probeTimeoutMS:limit(normalized.probeTimeoutMS,5000,60000)};
+    if(normalized.database!==undefined)assertSafeField(normalized.database);
+    if((normalized.clientOptions!==undefined)&&((!normalized.clientOptions||(typeof normalized.clientOptions!=='object'))||Array.isArray(normalized.clientOptions)))throw createDatabaseError({code:'INVALID_MONGO_OPTIONS',message:'Invalid Mongo client options'});
+    if((((normalized.db!==undefined)&&(!normalized.db||(typeof normalized.db.collection!=='function')))||((normalized.client!==undefined)&&(!normalized.client||(typeof normalized.client.db!=='function'))))||((normalized.executor!==undefined)&&(typeof normalized.executor!=='function')))throw createDatabaseError({code:'INVALID_MONGO_OPTIONS',message:'Invalid Mongo transport'});
+    if(normalized.transactions&&(normalized.db||normalized.executor))throw createDatabaseError({code:'UNSUPPORTED_MONGO_SESSIONS',message:'Transactions require a client owning both database and session'});
+    let ownedClient:MongoClientLike|undefined;
+    const uri=normalized.uri??normalized.url;
+    if((uri!==undefined)&&((typeof uri!=='string')||!/^mongodb(?:\+srv)?:\/\//i.test(uri)))throw createDatabaseError({code:'INVALID_CONNECTION',message:'Invalid MongoDB URI'});
+    if(((!normalized.db&&!normalized.client)&&!normalized.executor)&&uri){
+        const packageName='mongodb';let driver:Record<string,any>;
+        try{driver=await import(packageName);}catch(cause){throw createDatabaseError({code:'MISSING_MONGO_DRIVER',message:'Install mongodb to use a URI connection',cause});}
+        ownedClient=new driver.MongoClient(uri,{serverSelectionTimeoutMS:policy.probeTimeoutMS,connectTimeoutMS:policy.probeTimeoutMS,...normalized.clientOptions});normalized.client=ownedClient;
     }
-    if (!normalized.db && !normalized.client && !normalized.executor) throw createDatabaseError({ code: "MISSING_MONGO_CLIENT", message: "Provide db, client, executor, or uri" });
-    const connector: DatabaseConnector = {
-        kind: "mongo",
-        options: normalized,
-        async connect() { await ownedClient?.connect?.(); },
-        async disconnect() { await ownedClient?.close?.(); },
-        execute(operation, context) { return executeWithDb(normalized, operation, context); },
-        getNativeConnection() { return normalized.client ?? normalized.db; }
+    if((!normalized.db&&!normalized.client)&&!normalized.executor)throw createDatabaseError({code:'MISSING_MONGO_CLIENT',message:'Provide db, client, executor, or uri'});
+    const fallback={connection:connection??{name:'MongoDB',slug:'default',connector:'@zeruxjs/db-mongo',options:{}}};
+    let closed=false,closing:Promise<void>|undefined;const active=new Set<Promise<unknown>>();
+    const check=(ctx:DatabaseExecutionContext)=>{if(closed)throw createDatabaseError({code:'MONGO_CLOSED',message:'Mongo connector closed'});if(((((!ctx||!ctx.connection)||(typeof ctx.connection.slug!=='string'))||(typeof ctx.connection.connector!=='string'))||((ctx.signal!==undefined)&&!(ctx.signal instanceof AbortSignal)))||((ctx.deadline!==undefined)&&(!Number.isSafeInteger(ctx.deadline)||(ctx.deadline<0))))throw createDatabaseError({code:'INVALID_MONGO_CONTEXT',message:'Invalid Mongo execution context'});if(ctx.signal?.aborted||((ctx.deadline!==undefined)&&(ctx.deadline<=Date.now())))throw createDatabaseError({code:'MONGO_CANCELLED',message:'Mongo operation cancelled or deadline exceeded'});};
+    let sessions:ReturnType<typeof transactionAdapter>|undefined;
+    if(normalized.transactions){try{await ownedClient?.connect?.();await verifyTransactionDeployment(normalized.client!,policy);sessions=transactionAdapter(normalized.client!,policy,(op,ctx,session)=>executeWithDb({...normalized,db:sessionDatabase(getDatabase(normalized),session)},op,ctx),check);}catch(error){try{await ownedClient?.close?.();}catch(cleanup){throw new AggregateError([error,cleanup],'Mongo initialization cleanup failed');}throw error;}}
+    const transaction=sessions?createPinnedTransaction(sessions.adapter,fallback.connection):undefined;
+    const tracked=async<T>(run:()=>Promise<T>)=>{const work=Promise.resolve().then(run);active.add(work);try{return await work;}finally{active.delete(work);}};
+    return {
+        kind:'mongo',options:normalized,
+        capabilities:{returning:'unsupported',transactions:sessions?'supported':'unsupported',cancellation:'unsupported',schema:'supported',indexes:'supported',nativeAggregation:'supported'},
+        ...(sessions?{transactionAdapter:sessions.adapter}:{}),
+        async connect(){check(fallback);await ownedClient?.connect?.();},
+        disconnect(){closed=true;return closing??=Promise.resolve().then(async()=>{await Promise.allSettled([...active]);await sessions?.drain();await ownedClient?.close?.();});},
+        execute(operation,context=fallback){check(context);if(('returning'in operation)&&operation.returning?.length)throw createDatabaseError({code:'UNSUPPORTED_RETURNING',message:'Mongo structured operations do not support returning'});return tracked(()=>executeWithDb(normalized,operation,context));},
+        transaction(run,opts){check(fallback);return tracked(()=>transaction?transaction(run,opts):Promise.reject(createDatabaseError({code:'UNSUPPORTED_TRANSACTION',message:'Mongo transactions require explicit enablement and a capable deployment'})));},
+        getNativeConnection(){check(fallback);return normalized.client??normalized.db;}
     };
-
-    return connector;
-};
-
+}
 export default createConnector;

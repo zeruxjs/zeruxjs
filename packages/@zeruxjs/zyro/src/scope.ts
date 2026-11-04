@@ -11,6 +11,7 @@ export function createZyroSubscriptionScope():ZyroSubscriptionScope {
  let destroyed=false;
  const disposers=new Set<()=>void>();
  const add=(stop:()=>void)=>{
+  if(typeof stop!=='function')throw new TypeError('A subscription disposer is required');
   if(destroyed){stop();return()=>{}}
   let active=true;
   const dispose=()=>{if(!active)return;active=false;disposers.delete(dispose);stop()};
@@ -20,11 +21,20 @@ export function createZyroSubscriptionScope():ZyroSubscriptionScope {
   get destroyed(){return destroyed},add,
   observe<T>(source:Observable<T>,onChange:(value:T)=>void,options:{immediate?:boolean}={}){
    if(destroyed)throw new Error('Zyro subscription scope is destroyed');
-   // Install first to avoid missing a concurrent transition; re-read after subscription.
-   let synchronous=false,installing=true;
-   const stop=add(source.subscribe(value=>{if(installing)synchronous=true;onChange(value)}));
+   if(!source||typeof source.get!=='function'||typeof source.subscribe!=='function'||typeof onChange!=='function')throw new TypeError('Invalid observable subscription');
+   // Capture synchronous callback errors until subscribe returns its rollback handle.
+   let synchronous=false,installing=true,observing=true,failed=false,failure:unknown;
+   const unsubscribe=source.subscribe(value=>{
+    if(!observing||destroyed)return;
+    if(installing){synchronous=true;try{onChange(value)}catch(error){failed=true;failure=error}}
+    else onChange(value);
+   });
    installing=false;
-   if(options.immediate!==false&&!synchronous){try{onChange(source.get())}catch(error){stop();throw error}}
+   if(typeof unsubscribe!=='function')throw new TypeError('Observable subscribe must return a disposer');
+   const stop=add(()=>{observing=false;unsubscribe()});
+   if(failed){try{stop()}catch(cleanup){throw new AggregateError([failure,cleanup],'Observable subscription rollback failed')}throw failure}
+   if(destroyed)return stop;
+   if(options.immediate!==false&&!synchronous){try{onChange(source.get())}catch(error){try{stop()}catch(cleanup){throw new AggregateError([error,cleanup],'Observable initial read and cleanup failed')}throw error}}
    return stop;
   },
   destroy(){if(destroyed)return;destroyed=true;const errors:unknown[]=[];

@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   ArrayPathItem,
   BaseIssue,
@@ -111,7 +112,7 @@ export function arrayAsync(
 
         // Parse schema of each item async
         const itemDatasets = await Promise.all(
-          input.map((value) => this.item['~run']({ value }, config))
+          input.map((value) => _runSchema(this.item, { value }, config))
         );
 
         // Process each item dataset

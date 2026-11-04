@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/performance",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Performance metrics, resource hints, cache directives and timing utilities.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -14,7 +14,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.browser.json && node scripts/prepare-browser.cjs",
     "dev": "tsc --watch",
     "test": "node --test test/*.test.mjs",
     "prepack": "npm run build"
@@ -30,7 +30,8 @@
     "dist/",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "examples/"
   ],
   "publishConfig": {
     "access": "public"
@@ -82,6 +83,21 @@
     "./package.json": "./package.json",
     "./README.md": "./README.md",
     "./LICENSE-MIT": "./LICENSE-MIT",
-    "./LICENSE-APACHE": "./LICENSE-APACHE"
+    "./LICENSE-APACHE": "./LICENSE-APACHE",
+    "./analytics": {
+      "import": {
+        "types": "./dist/browser/analytics.d.ts",
+        "default": "./dist/browser/analytics.js"
+      },
+      "require": {
+        "types": "./dist/analytics.d.ts",
+        "default": "./dist/analytics.js"
+      }
+    },
+    "./response": {
+      "types": "./dist/response.d.ts",
+      "import": "./dist/response.js",
+      "require": "./dist/response.js"
+    }
   }
 }

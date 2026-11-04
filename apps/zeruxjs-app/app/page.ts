@@ -1,10 +1,13 @@
 const sections = [
+  { href: "/workspace", title: "Local Integration Workspace", body: "ZyroJS UI, SQLite notes, local objects/assets, search, protocols, analytics, reports and consent-controlled tools." },
   { href: "/playground", title: "Playground", body: "HTML page route with middleware state and controller data." },
+  { href: "/index.html", title: "Standalone ZyroJS Counter", body: "Interactive component using the installed ZyroJS runtime." },
   { href: "/blog/zerux-runtime", title: "Dynamic Blog Route", body: "Checks `[slug]` route params and composable formatting." },
   { href: "/api/health", title: "API Health", body: "JSON route handler using middleware and controller references." },
   { href: "/api/echo", title: "API Echo", body: "POST endpoint for request body and query parsing." },
-  { href: "/db-demo", title: "DB Demo", body: "Creates a table on demand and inserts rows through @zeruxjs/db." },
+  { href: "/db-demo", title: "Optional MySQL Demo", body: "Requires ENABLE_MYSQL_DEMO and a real MySQL connection. SQLite examples are in the workspace." },
   { href: "/plugin/runtime", title: "Plugin Route", body: "Route added at runtime by a Zerux plugin." },
+  { href: "/plugin/workers", title: "Worker Demo", body: "Heartbeat state and a real worker-thread calculation." },
   { href: "/boom", title: "Intentional Error", body: "Throws an `HttpError` so error handling and logs are visible." }
 ];
 
@@ -20,7 +23,7 @@ export default () => `<!DOCTYPE html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ZeruxJS Playground</title>
+    <title>ZeruxJS Local Integration App</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -196,7 +199,7 @@ export default () => `<!DOCTYPE html>
               public assets, logging, and framework error responses.
             </p>
             <div class="hero-actions">
-              <a class="primary" href="/playground">Open Playground</a>
+              <a class="primary" href="/workspace">Open Local Workspace</a>
               <a class="secondary" href="/plugin/runtime">See Plugin Route</a>
               <a class="secondary" href="/public-note.txt">Public Asset</a>
             </div>

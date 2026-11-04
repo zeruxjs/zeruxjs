@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -97,7 +98,7 @@ export function fallbackAsync<
       return _getStandardProps(this);
     },
     async '~run'(dataset, config) {
-      const outputDataset = await schema['~run'](dataset, config);
+      const outputDataset = await _runSchema(schema, dataset, config);
       return outputDataset.issues
         ? {
           typed: true,

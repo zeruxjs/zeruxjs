@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -20,14 +21,17 @@ export function config<
   const TSchema extends
   | BaseSchema<unknown, unknown, BaseIssue<unknown>>
   | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
->(schema: TSchema, config: Config<InferIssue<TSchema>>): TSchema {
+>(schema: TSchema, config: Pick<Config<InferIssue<TSchema>>, 'lang' | 'message' | 'abortEarly' | 'abortPipeEarly'>): TSchema {
+  for (const key of ['maxDepth', 'maxNodes', 'maxCollectionSize', 'maxIssues', 'maxConcurrency', 'signal', 'onSuccess', 'onError']) {
+    if (Object.hasOwn(config, key)) throw new TypeError('Execution controls belong on the parse call');
+  }
   return {
     ...schema,
     get '~standard'() {
       return _getStandardProps(this);
     },
     '~run'(dataset, config_) {
-      return schema['~run'](dataset, { ...config_, ...config });
+      return _runSchema(schema, dataset, { ...config_, ...config });
     },
   };
 }

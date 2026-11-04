@@ -17,6 +17,29 @@ publishing is not atomic: a failure can leave earlier packages published; retry
 the run or use the manual missing-version option to finish the remaining ones.
 Builds are parallel; publication is sequential to respect package dependencies.
 
+## Parallel verification and artifact handoff
+
+The workflow plans releases first. When npm has no missing versions, it skips
+installation, builds and publication. For eligible releases, source/version
+verification runs in parallel with preparation: locked installation, production
+audit, license evidence, workspace builds and package packing. Every existing
+check remains required. A failed source or preparation job blocks publication;
+dry runs execute both jobs but skip the publishing job.
+
+Only the final publishing job receives OIDC permission. It downloads the prepared
+plan and tarballs by the successful upstream jobs' artifact IDs and publishes without another
+install or build. The publisher checks the plan's commit, package manifests and
+SHA-512 archive integrity before uploading. Packing still runs package prepack
+hooks; their builds and supply-chain checks are deliberately preserved.
+
+Artifacts have separate plan, preparation and publication names so failures retain
+available evidence without jobs overwriting one another. Artifact IDs also allow
+failed-job reruns to reuse successful upstream artifacts from an earlier attempt.
+Already-compressed npm
+tarballs are uploaded without extra artifact compression. Only planning needs full
+Git history. Extra runner startup and artifact transfer may offset the parallelism
+for small releases; compare Actions timings before claiming a measured speedup.
+
 ## One-time npm authentication setup
 
 All 47 public packages now have an initial npm release. The workflow uses only

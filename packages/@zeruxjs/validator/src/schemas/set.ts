@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -98,7 +99,7 @@ export function set(
 
         // Parse schema of each set value
         for (const inputValue of input) {
-          const valueDataset = this.value['~run'](
+          const valueDataset = _runSchema(this.value,
             { value: inputValue },
             config
           );

@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -70,7 +71,7 @@ export function returnsAsync(
     '~run'(dataset, config) {
       const func = dataset.value;
       dataset.value = async (...args_) => {
-        const returnsDataset = await this.schema['~run'](
+        const returnsDataset = await _runSchema(this.schema,
           { value: await func(...args_) },
           config
         );

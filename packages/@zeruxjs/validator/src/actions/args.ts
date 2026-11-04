@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   LooseTupleIssue,
   LooseTupleSchema,
@@ -83,7 +84,7 @@ export function args(
     '~run'(dataset, config) {
       const func = dataset.value;
       dataset.value = (...args_) => {
-        const argsDataset = this.schema['~run']({ value: args_ }, config);
+        const argsDataset = _runSchema(this.schema, { value: args_ }, config);
         if (argsDataset.issues) {
           throw new ValidationError(argsDataset.issues);
         }

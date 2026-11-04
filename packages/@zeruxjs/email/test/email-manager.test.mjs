@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createEmailManager, createRecipientFilter, createTemplateRegistry, createEmailLayout, emailRow, emailButton, validateSmtp} from '../dist/index.js';
+import { createEmailManager, createTemplateRegistry, createEmailLayout, emailRow, emailButton, validateSmtp } from '../dist/index.js';
 const mail=(to='a@example.com',override={})=>({to,subject:'Hi',text:'Hello',...override});
 test('multiple accounts on same SMTP settings select independent transports',async()=>{
   const sent=[];const make=(name)=>({async sendMail(body){sent.push({name,body});return {accepted:body.to.map(x=>typeof x==='string'?x:x.address),messageId:name};},async verify(){return true;}});

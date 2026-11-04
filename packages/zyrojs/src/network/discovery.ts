@@ -46,13 +46,13 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
    const declared=Number(response.headers.get('content-length'));if(Number.isFinite(declared)&&declared>maxBytes)throw new DiscoveryHttpError('Discovery response too large',413);
    if(!response.body)throw new DiscoveryHttpError('Missing response body',502);
    const reader=response.body.getReader();const chunks:Uint8Array[]=[];let size=0;
-   try {while(true){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>maxBytes){await reader.cancel();throw new DiscoveryHttpError('Discovery response too large',413)}chunks.push(next.value);}}
-   finally{reader.releaseLock()}
-   const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
+   try {while(true){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>maxBytes){await reader.cancel();throw new DiscoveryHttpError('Discovery response too large',413);}chunks.push(next.value);}}
+   finally{reader.releaseLock();}
+   const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
    return {status:response.status,body:new TextDecoder('utf-8',{fatal:true}).decode(bytes),etag:response.headers.get('etag')??undefined,contentType:response.headers.get('content-type')??''};
   }finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);controllers.delete(controller);}
  }
- const integer=(value:number|undefined,name:string,max:number)=>{if(value!==undefined&&(!Number.isSafeInteger(value)||value<0||value>max))throw new RangeError(`Invalid ${name}`);return value};
+ const integer=(value:number|undefined,name:string,max:number)=>{if(value!==undefined&&(!Number.isSafeInteger(value)||value<0||value>max))throw new RangeError(`Invalid ${name}`);return value;};
  const search=async<T=unknown>(q:string,options:DiscoverySearchOptions={}):Promise<DiscoverySearchResponse<T>>=>{
   if(typeof q!=='string'||q.length>1024)throw new TypeError('Invalid search query');
   const url=endpoint(searchPath);url.searchParams.set('q',q);
@@ -78,7 +78,7 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
   const accept=({rss:'application/rss+xml',atom:'application/atom+xml',json:'application/feed+json'})[format];
   const url=endpoint(feedPath);const cached=feedCache.get(format);
   const result=await get(url,accept,signal,cached?.etag);
-  if(result.status===304){if(!cached)throw new DiscoveryHttpError('Uncached 304 feed response',502);return cached.body}
+  if(result.status===304){if(!cached)throw new DiscoveryHttpError('Uncached 304 feed response',502);return cached.body;}
   if(!result.contentType.toLowerCase().includes(accept))throw new DiscoveryHttpError('Unexpected feed content type',502);
   if(result.etag)feedCache.set(format,{etag:result.etag,body:result.body,contentType:result.contentType});else feedCache.delete(format);
   return result.body;
@@ -89,7 +89,7 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
   searchResource<T=unknown>(q:string,options:Omit<DiscoverySearchOptions,'signal'>={}):RemoteResource<DiscoverySearchResponse<T>> {
    return createRemoteResource(signal=>search<T>(q,{...options,signal}));
   },
-  clearFeedCache(){feedCache.clear()},
-  dispose(){disposed=true;for(const controller of controllers)controller.abort();controllers.clear();feedCache.clear()}
+  clearFeedCache(){feedCache.clear();},
+  dispose(){disposed=true;for(const controller of controllers)controller.abort();controllers.clear();feedCache.clear();}
  };
 }

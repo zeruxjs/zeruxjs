@@ -1,3 +1,4 @@
+import { executeSchema } from '../utils/_run.js';
 import type { BaseIssue, BaseSchema, InferInput } from '../types/index.js';
 import { ValidationError } from '../utils/index.js';
 
@@ -11,7 +12,7 @@ import { ValidationError } from '../utils/index.js';
 export function assert<
   const TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(schema: TSchema, input: unknown): asserts input is InferInput<TSchema> {
-  const issues = schema['~run']({ value: input }, { abortEarly: true }).issues;
+  const issues = executeSchema(schema, input, { abortEarly: true }).issues;
   if (issues) {
     throw new ValidationError(issues);
   }

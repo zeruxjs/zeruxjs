@@ -1,0 +1,48 @@
+{
+  "name": "@zeruxjs/queue-rabbitmq",
+  "version": "0.0.4",
+  "type": "module",
+  "description": "RabbitMQ confirmed publishing and acknowledged consumers",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./worker": {
+      "types": "./dist/worker.d.ts",
+      "default": "./dist/worker.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "npm run build",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^25.4.0",
+    "@types/amqplib": "^0.10.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

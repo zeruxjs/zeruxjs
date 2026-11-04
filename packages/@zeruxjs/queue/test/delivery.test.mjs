@@ -38,7 +38,6 @@ test('SMTP timeout is uncertain and never automatically resent, including job re
 test('crashed sending lease expires into uncertain state, without repeat SMTP',async()=>{
  let now=100_000,sends=0,alerts=0;
  const store=createMemoryEmailDeliveryStore([record('crash')]);
- const release=()=>{};
  let fire;
  const pending=new Promise(resolve=>{fire=resolve});
  const process=createDurableEmailDeliveryProcessor({store,isSubscribed:async()=>true,send:async()=>{sends++;await pending;},now:()=>now,leaseMs:3000,onUncertain:()=>{alerts++;}});

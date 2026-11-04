@@ -1,4 +1,5 @@
-import { getDefault, getFallback } from '../methods/index.js';
+import { _runSchema } from '../utils/_run.js';
+import { getFallback } from '../methods/index.js';
 import type {
   BaseSchemaAsync,
   ErrorMessage,
@@ -97,7 +98,7 @@ export function strictObjectAsync(
       const input = dataset.value;
 
       // If root type is valid, check nested types
-      if (input && typeof input === 'object') {
+      if (input && typeof input === 'object' && !Array.isArray(input)) {
         // Set typed to `true` and value to blank object
         // @ts-expect-error
         dataset.typed = true;
@@ -108,7 +109,7 @@ export function strictObjectAsync(
         const valueDatasets = await Promise.all(
           Object.entries(this.entries).map(async ([key, valueSchema]) => {
             if (
-              key in input ||
+              Object.hasOwn(input, key) ||
               ((valueSchema.type === 'exact_optional' ||
                 valueSchema.type === 'optional' ||
                 valueSchema.type === 'nullish') &&
@@ -116,15 +117,15 @@ export function strictObjectAsync(
                 valueSchema.default !== undefined)
             ) {
               const value: unknown =
-                key in input
+                Object.hasOwn(input, key)
                   ? // @ts-expect-error
                   input[key]
-                  : await getDefault(valueSchema);
+                  : undefined;
               return [
                 key,
                 value,
                 valueSchema,
-                await valueSchema['~run']({ value }, config),
+                await _runSchema(valueSchema, { value }, config),
               ] as const;
             }
             return [
@@ -220,8 +221,8 @@ export function strictObjectAsync(
 
         // Check input for unknown keys if necessary
         if (!dataset.issues || !config.abortEarly) {
-          for (const key in input) {
-            if (!(key in this.entries)) {
+          for (const key of Object.keys(input)) {
+            if (!(Object.hasOwn(this.entries, key))) {
               _addIssue(this, 'key', dataset, config, {
                 input: key,
                 expected: 'never',

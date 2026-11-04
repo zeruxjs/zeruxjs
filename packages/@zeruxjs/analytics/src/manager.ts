@@ -1,5 +1,7 @@
 import type {AnalyticsConfig,AnalyticsConnection,AnalyticsEventInput,AnalyticsRow,AnalyticsSummaryQuery,AnalyticsAggregateQuery,AnalyticsNumericAggregateQuery,DatabaseResultLike} from './types.js';
-import {validateEvent,validateTableName} from './validation.js';
+import {validateEvent,validateTableName,validateRegisteredEvent} from './validation.js';
+import {isEventSchemaRegistry} from './schemas.js';
+import {createAnalyticsAnalysis,type AnalyticsAnalysisOptions} from './analysis.js';
 import {createDatabaseRequestIdStore} from './request-id.js';
 import {createDatabaseDocumentStore} from './documents.js';
 import {aggregateEventCounts} from './aggregation.js';
@@ -37,6 +39,12 @@ export function createAnalytics(config:AnalyticsConfig = {}){
       schemas=config.eventSchemas;
     }
   }catch{warn('invalid event schemas; collection disabled');configurationValid=false;enabled=false;}
+  const registry=isEventSchemaRegistry(config.schemaRegistry)?config.schemaRegistry:undefined;
+  if(config.schemaRegistry!==undefined&&!registry){warn('invalid schema registry; collection disabled');configurationValid=false;enabled=false;}
+  if(registry&&schemas){warn('conflicting event schema configuration; collection disabled');configurationValid=false;enabled=false;}
+  function validateInput(input:AnalyticsEventInput){return validateRegisteredEvent(input,registry);}
+  const durableRetention=config.durableRetention===true;
+  if(config.durableRetention!==undefined&&typeof config.durableRetention!=='boolean'){warn('invalid durable retention policy; collection disabled');configurationValid=false;enabled=false;}
   if(config.webConsent!==undefined&&!['required','optional'].includes(config.webConsent)){warn('invalid web consent configuration; collection disabled');configurationValid=false;enabled=false;}
   // Numeric materialization is explicit. Never silently opt in every property.
   let numericFields:string[]=[];
@@ -64,6 +72,11 @@ export function createAnalytics(config:AnalyticsConfig = {}){
   let initializing:Promise<boolean>|undefined,initialized=false,indexesReady=false,recorded=0,dropped=0;
   const manager={
     databaseConnection:databaseName,
+    /** Host-authorized tenant scope, borrowing this manager's named connection. */
+    createAnalysis(options:AnalyticsAnalysisOptions){return createAnalyticsAnalysis({...options,connection:locate,table});},
+    /** Validates before collector request-ID reservation; never writes or runs filters. */
+    validateInput(input:AnalyticsEventInput){validateInput(input);},
+    schemaCatalog(){return registry?.describe();},
     /** Uses the named analytics DB for atomic UTC-day request ID reservations. */
     createRequestIdStore(){const connection=locate();return connection?createDatabaseRequestIdStore(connection):undefined;},
     createDocumentStore<T extends VersionedDocument>(table:string,id:string,initial:T){const connection=locate();return connection?.update?createDatabaseDocumentStore(connection as DocumentConnection,table,id,initial):undefined;},
@@ -71,7 +84,7 @@ export function createAnalytics(config:AnalyticsConfig = {}){
     /** Reports can retain sampled compatibility when no numeric materialization is configured. */
     supportsNumericField(field:string){return numericFields.includes(field);},
     setEnabled(value:boolean){enabled=value===true&&configurationValid;},
-    status(){return {enabled,configured:!!databaseName,connected:!!locate(),initialized,indexesReady,numericReady,numericIndexed,numericDropped,numericUniqueIndexReady,recorded,dropped,warnings:[...warnings]};},
+    status(){return {schemaCoverageVersion:1 as const,schemaCatalogId:registry?.describe().catalogId,enabled,configured:!!databaseName,connected:!!locate(),initialized,indexesReady,numericReady,numericIndexed,numericDropped,numericUniqueIndexReady,recorded,dropped,warnings:[...warnings]};},
     /** Optional explicit schema migration; failure returns false, never throws. May be retried. */
     async initialize():Promise<boolean>{
       if(initializing)return initializing;
@@ -154,7 +167,7 @@ export function createAnalytics(config:AnalyticsConfig = {}){
             else if((value===null?'null':typeof value)!==expected)throw new TypeError('Event property type mismatch');
           }
         }
-        const row=validateEvent(filtered);
+        const row=validateInput(filtered);
         const result=await connection.insert({table,values:row as unknown as Record<string,string|number>});
         if(!succeeded(result)){warn('event storage unavailable; event skipped');dropped++;return undefined;}
         recorded++;
@@ -206,7 +219,9 @@ export function createAnalytics(config:AnalyticsConfig = {}){
       if(!numericFields.includes(query.valueField))throw new Error('Numeric property not configured for indexing');
       const connection=locate();
       if(!connection||!numericReady)throw new Error('Numeric analytics connector unavailable');
-      return aggregateNumericFacts(connection,numericTable,query);
+      const schema=registry?.metric(query.valueField,query.name);
+      const result=await aggregateNumericFacts(connection,numericTable,query);
+      return {...result,...(schema?{schema}:{})};
     },
     async events(query:AnalyticsSummaryQuery={}):Promise<AnalyticsRow[]>{
       const connection=locate();if(!connection)return [];
@@ -236,6 +251,7 @@ export function createAnalytics(config:AnalyticsConfig = {}){
     /** Trusted operator retention: explicit tenant, cutoff, page size and approval. */
     async purgePage(query:AnalyticsRetentionQuery){
       validateRetentionQuery(query);
+      if(durableRetention)throw new Error('Durable retention requires its ledger preview and coordinated purge');
       const connection=locate();
       if(!connection?.delete||!initialized)throw new Error('Retention requires an initialized database with delete support');
       if(query.dryRun===false){

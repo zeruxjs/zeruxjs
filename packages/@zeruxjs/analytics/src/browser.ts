@@ -1,3 +1,4 @@
+import type {EventProperties} from './types.js';
 /** Generates a cryptographically random, opaque token; only call after obtaining consent.
  * Never reads cookies, localStorage, IP addresses or browser fingerprints. The caller owns persistence.
  */
@@ -28,16 +29,19 @@ export function createEventClient(options:{
     },
     /** Success means the endpoint accepted the request, NOT a durable database commit. */
     async track(name:string,properties:Record<string,string|number|boolean|null>={},options2:{
-      signal?:AbortSignal;site?:string;pathname?:string;sessionId?:string;visitorId?:string
+      signal?:AbortSignal;site?:string;pathname?:string;sessionId?:string;visitorId?:string;
+      schemaVersion?:number;userProperties?:EventProperties;sessionProperties?:EventProperties
     }={}):Promise<boolean>{
       if(!enabled||consent==='denied'||(options.requireConsent&&consent!=='granted'))return false;
       try{
         // No local identifiers leak before explicit opt-in; invalid events fail without a network call.
-        if((options2.sessionId||options2.visitorId)&&consent!=='granted')return false;
+        if((options2.sessionId||options2.visitorId||options2.userProperties||options2.sessionProperties)&&consent!=='granted')return false;
+        if(options2.userProperties&&!options2.visitorId||options2.sessionProperties&&!options2.sessionId)return false;
+        if(options2.schemaVersion!==undefined&&(!Number.isSafeInteger(options2.schemaVersion)||options2.schemaVersion<1||options2.schemaVersion>10000))return false;
         if(typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9_.:-]{0,95}$/.test(name)||!properties||
           typeof properties!=='object'||Array.isArray(properties)||Object.keys(properties).length>40)return false;
         const body=JSON.stringify({name,properties,site:options2.site,pathname:options2.pathname,source:'web',
-          consent,...(consent==='granted'?{sessionId:options2.sessionId,visitorId:options2.visitorId}:{})});
+          consent,schemaVersion:options2.schemaVersion,...(consent==='granted'?{sessionId:options2.sessionId,visitorId:options2.visitorId,userProperties:options2.userProperties,sessionProperties:options2.sessionProperties}:{})});
         if(new TextEncoder().encode(body).byteLength>8192)return false;
         const signal=AbortSignal.any([AbortSignal.timeout(timeout),...(options2.signal?[options2.signal]:[])]);
         const response=await fetcher(endpoint.href,{method:'POST',headers:{'content-type':'application/json'},body,signal,credentials:'omit',cache:'no-store'});

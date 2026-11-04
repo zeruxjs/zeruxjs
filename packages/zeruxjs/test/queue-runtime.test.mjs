@@ -33,7 +33,7 @@ test('optional queue dashboard HTTP routes are generation-owned and private',asy
   {pattern:'/_queue/admin',handler:async()=>new Response('private')},
   {pattern:'/_queue/admin/api',handler:async()=>new Response('{}')}
  ],close:async()=>events.push('queue')})};
- const config={queue:{enabled:true,required:true,redis:{url:'redis://secret'},queues:['emails'],dashboard:{authorize:()=>({id:1}),csrfToken:()=>''}}};
+ const config={queue:{enabled:true,required:true,redis:{url:'redis://secret'},queues:['emails'],dashboard:{authorize:()=>({id:1}),verifyCsrf:()=>true,csrfToken:()=>''}}};
  const scope=await initializeRuntimeServices(config,process.cwd(),p);
  assert.equal(config.queue,undefined);
  assert.deepEqual(scope.httpRoutes().map(r=>[r.service,r.pattern]),[['queue','/_queue/admin'],['queue','/_queue/admin/api']]);

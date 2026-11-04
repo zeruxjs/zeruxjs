@@ -10,10 +10,11 @@ export class ConnectRouter {
     this.handlers.set(path, handler);
     return () => { if (this.handlers.get(path) === handler) this.handlers.delete(path); };
   }
+  paths(): string[] { return [...this.handlers.keys()]; }
   has(path: string): boolean { return this.handlers.has(path); }
   async call(path: string, input: unknown, context: RpcContext = {}): Promise<unknown> {
     const handler = this.handlers.get(path);
-    if (!handler) throw new Error('Unknown Connect procedure');
+    if (typeof handler !== 'function') throw new Error('Unknown Connect procedure');
     return handler(input, context);
   }
 }
@@ -27,10 +28,11 @@ export class TrpcRouter {
     this.handlers.set(name, handler);
     return () => { if (this.handlers.get(name) === handler) this.handlers.delete(name); };
   }
+  paths(): string[] { return [...this.handlers.keys()].map(name => `/trpc/${name}`); }
   has(name: string): boolean { return this.handlers.has(name); }
   async call(name: string, input: unknown, context: RpcContext = {}): Promise<unknown> {
     const handler = this.handlers.get(name);
-    if (!handler) throw new Error('Unknown procedure');
+    if (typeof handler !== 'function') throw new Error('Unknown procedure');
     return handler(input, context);
   }
 }

@@ -1,0 +1,14 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {mkdtemp,mkdir,readFile,writeFile,symlink,rm,access} from 'node:fs/promises';import {join,resolve} from 'node:path';import {tmpdir} from 'node:os';import {execFile} from 'node:child_process';import {promisify} from 'node:util';import {createRequire} from 'node:module';
+const exec=promisify(execFile),require=createRequire(import.meta.url);
+test('real archive contains every public JS/declaration subpath and licenses; authored example compiles',async()=>{
+ const temp=await mkdtemp(join(tmpdir(),'zx-bullmq-archive-')),packageRoot=resolve(import.meta.dirname,'..'),workspace=resolve(packageRoot,'../../..');
+ try{
+ const report=JSON.parse((await exec('npm',['pack','--json','--pack-destination',temp],{cwd:packageRoot,env:{...process.env,npm_config_cache:join(temp,'cache')}})).stdout);const packed=Array.isArray(report)?report[0]:Object.values(report)[0];const dest=join(temp,'node_modules/@zeruxjs/queue-bullmq');await mkdir(dest,{recursive:true});await exec('tar',['-xzf',join(temp,packed.filename),'--strip-components=1','-C',dest]);
+ const metadata=JSON.parse(await readFile(join(dest,'package.json'),'utf8'));assert.equal(metadata.version,'0.0.4');assert.equal(metadata.dependencies['@zeruxjs/queue'],undefined);for(const target of Object.values(metadata.exports)){await access(join(dest,target.default));await access(join(dest,target.types));}
+ for(const license of ['LICENSE-MIT','LICENSE-APACHE'])await access(join(dest,license));assert.ok(packed.files.every(file=>!file.path.startsWith('src/')&&!file.path.startsWith('test/')));
+ await symlink(join(workspace,'node_modules/@zeruxjs/cache-redis'),join(temp,'node_modules/@zeruxjs/cache-redis'),'dir');await symlink(join(workspace,'node_modules/@types'),join(temp,'node_modules/@types'),'dir');await writeFile(join(temp,'package.json'),'{"type":"module"}');
+ const example=(await readFile(join(packageRoot,'README.md'),'utf8')).split('## Bounded enqueue and shutdown diagnostics')[1].match(/```ts\n([\s\S]*?)```/)[1];await writeFile(join(temp,'example.ts'),example);await exec(process.execPath,[require.resolve('typescript/bin/tsc'),'--strict','--skipLibCheck','--module','NodeNext','--moduleResolution','NodeNext','--target','ES2022','--types','node','--noEmit','example.ts'],{cwd:temp});
+ await writeFile(join(temp,'run.mjs'),`import {createQueueService,QUEUE_JOB_LIMITS} from '@zeruxjs/queue-bullmq';const metadata=${JSON.stringify(metadata)};for(const subpath of Object.keys(metadata.exports)){const id='@zeruxjs/queue-bullmq'+(subpath==='.'?'':subpath.slice(1));if(!Object.keys(await import(id)).length)throw Error('empty export');}if(typeof createQueueService!=='function'||QUEUE_JOB_LIMITS.maxBulk!==256)throw Error('root contract');`);await exec(process.execPath,['run.mjs'],{cwd:temp});
+ }finally{await rm(temp,{recursive:true,force:true});}
+});

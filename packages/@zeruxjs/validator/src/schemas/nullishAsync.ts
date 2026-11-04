@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import { getDefault } from '../methods/index.js';
 import type {
   BaseIssue,
@@ -119,7 +120,7 @@ export function nullishAsync(
       }
 
       // Otherwise, return dataset of wrapped schema
-      return this.wrapped['~run'](dataset, config);
+      return _runSchema(this.wrapped, dataset, config);
     },
   };
 }

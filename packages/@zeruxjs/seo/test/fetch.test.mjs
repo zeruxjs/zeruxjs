@@ -5,7 +5,7 @@ test('sitemap splits into discoverable pages with proper route patterns',async()
  assert.deepEqual(routes.map(x=>x.path),['/robots.txt','/sitemap.xml','/sitemaps/:page']);
  const handler=routes[1].handler;
  const index=await handler(new Request('https://example.com/sitemap.xml'));assert.equal(index.status,200);assert.match(await index.text(),/sitemaps\/2/);
- const page=await handler(new Request('https://example.com/sitemaps/2'));assert.match(await page.text(),/https:\/\/example.com\/3/);
+ const page=await handler(new Request('https://example.com/sitemaps/2'));assert.ok((await page.text()).split('<loc>').some(value=>value.split('</loc>')[0]==='https://example.com/3'));
  assert.equal((await handler(new Request('https://example.com/sitemaps/3'))).status,404);
  assert.match(await (await handler(new Request('https://example.com/robots.txt'))).text(),/sitemap.xml/);
 });
@@ -34,7 +34,7 @@ test('crawler snapshots coalesce concurrent rebuilds and allow explicit invalida
  const handler=service.routes[0].handler;
  await Promise.all(Array.from({length:8},()=>handler(new Request('https://example.com/sitemap.xml'))));
  assert.equal(calls,1);
- const before=await (await handler(new Request('https://example.com/sitemap.xml'))).text();assert.match(before,/example.com\/1/);
+ const before=await (await handler(new Request('https://example.com/sitemap.xml'))).text();assert.ok(before.split('<loc>').some(value=>value.split('</loc>')[0]==='https://example.com/1'));
  content=[item(2)];assert.equal(calls,1);
- service.invalidate();const after=await(await handler(new Request('https://example.com/sitemap.xml'))).text();assert.match(after,/example.com\/2/);assert.equal(calls,2);
+ service.invalidate();const after=await(await handler(new Request('https://example.com/sitemap.xml'))).text();assert.ok(after.split('<loc>').some(value=>value.split('</loc>')[0]==='https://example.com/2'));assert.equal(calls,2);
 });

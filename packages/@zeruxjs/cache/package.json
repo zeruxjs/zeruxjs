@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/cache",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "cache on browser application",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -32,6 +32,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./policy": {
+      "types": "./dist/policy.d.ts",
+      "default": "./dist/policy.js"
     }
   },
   "publishConfig": {

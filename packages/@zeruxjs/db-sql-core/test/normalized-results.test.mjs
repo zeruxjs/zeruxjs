@@ -17,3 +17,14 @@ test('bigint insert IDs preserve precision',async()=>{
  const result=await connector.execute({op:'insert',table:'t',values:{id:1}},context);
  assert.deepEqual(result.insertedIds,['9007199254740993']);
 });
+test('capabilities describe the structured API and zero affected counts remain exact',async()=>{
+ let calls=0;const connector=createSqlConnector(dialect,{executor:()=>{calls++;return {changes:0};}});
+ assert.equal(connector.capabilities.returning,'unsupported');assert.equal(connector.capabilities.transactions,'unsupported');assert.equal(connector.capabilities.cancellation,'unsupported');
+ assert.throws(()=>connector.execute({op:'update',table:'t',values:{id:1},returning:['id']},context),/RETURNING/);assert.equal(calls,0);
+ const result=await connector.execute({op:'update',table:'t',values:{id:1}},context);assert.equal(result.affectedCount,0);assert.equal(result.counts.affected,'exact');
+});
+test('explicit synchronous execution never creates an async multi-statement tail',async()=>{
+ const operation={op:'createTable',table:'t',columns:[{name:'id',type:'integer'}],indexes:[{op:'createIndex',table:'t',name:'ix',columns:['id']}]};
+ const seen=[];const synchronous=createSqlConnector(dialect,{synchronous:true,executor(sql){seen.push(sql);return {changes:0};}});const result=synchronous.execute(operation,context);assert.equal(typeof result.then,'undefined');assert.equal(seen.length,2);
+ const asynchronous=[];const denied=createSqlConnector(dialect,{synchronous:true,executor(sql){asynchronous.push(sql);return Promise.resolve({changes:0});}});assert.throws(()=>denied.execute(operation,context),error=>error.details?.code==='ASYNCHRONOUS_EXECUTOR');await new Promise(setImmediate);assert.equal(asynchronous.length,1);
+});

@@ -1,3 +1,4 @@
+import { syncCallback } from '../utils/_run.js';
 import type { BaseValidation } from '../types/index.js';
 import { _addIssue } from '../utils/index.js';
 import type { RawCheckContext, RawCheckIssue } from './types/rawCheck.js';
@@ -39,7 +40,7 @@ export function rawCheck<TInput>(
     async: false,
     expects: null,
     '~run'(dataset, config) {
-      action({
+      syncCallback(action, {
         dataset,
         config,
         addIssue: (info) =>

@@ -11,7 +11,6 @@ import {
   minLength,
   minValue,
   nonNullable,
-  null_,
   nullable,
   nullish,
   number,
@@ -27,7 +26,7 @@ import {
   transform,
   trim,
   union,
-} from '../index.js';
+} from '../core.js';
 import type {
   BaseIssue,
   BaseSchema,

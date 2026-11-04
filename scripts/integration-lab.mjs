@@ -9,7 +9,7 @@ import {createHash} from 'node:crypto';
 import {dirname,resolve} from 'node:path';
 import {Socket} from 'node:net';
 import {fileURLToPath} from 'node:url';
-import {labSuites,parseLabArgs,suiteReadiness,suitesFor,parseTapSummary,testResult,overallStatus,safeReportPath} from './integration-lab-core.mjs';
+import { parseLabArgs, suiteReadiness, suitesFor, parseTapSummary, testResult, overallStatus, safeReportPath } from './integration-lab-core.mjs';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const usage='Usage: node scripts/integration-lab.mjs [--offline|--live|--all] [--build] [--only=sqlite,source] [--require=sqlite] [--dry-run] [--report=relative/path.json]';

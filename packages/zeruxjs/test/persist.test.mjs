@@ -13,7 +13,6 @@ test('atomic runtime metadata never follows symlinks; file permissions remain pr
     writeRuntimeJson(file, { revision: 1 });
     writeRuntimeJson(file, { revision: 2 });
     assert.deepEqual(readRuntimeJson(file, {}), { revision: 2 });
-    assert.equal(statSync(file).mode & 0o777, 0o600);
     const link = path.join(root, 'link.json');
     symlinkSync(file, link);
     assert.throws(() => readRuntimeJson(link, {}), /Unsafe/);
@@ -22,5 +21,6 @@ test('atomic runtime metadata never follows symlinks; file permissions remain pr
     writeFileSync(file, '{corrupt');
     assert.throws(() => readRuntimeJson(file, {}), /JSON/);
     assert.throws(() => writeRuntimeJson(file, { payload: 'x'.repeat(5_000_000) }), /exceeds/);
+    assert.equal(statSync(file).mode & 0o777, 0o600);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

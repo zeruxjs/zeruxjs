@@ -12,3 +12,11 @@ test('font stylesheet ETag follows registry mutations, preload links and head',a
  assert.notEqual(handler(new Request('https://example.com/fonts.css')).headers.get('etag'),etag);
  assert.equal(handler(new Request('https://example.com/fonts.css',{method:'POST'})).status,405);
 });
+test('stylesheet deduplicates binary preloads and rejects explicit budget overflow',()=>{
+ const registry=createFontRegistry();for(const key of ['a','b'])registry.add(key,{family:key,sources:[{url:'/same.woff2'}]});
+ const request=new Request('https://test/fonts.css');
+ const handler=createFontStylesheetHandler({registry,preloadKeys:['a','b'],maxPreloads:1});
+ assert.equal(handler(request).headers.get('link').split('rel=preload').length-1,1);
+ registry.add('b',{family:'b',sources:[{url:'/other.woff2'}]});assert.throws(()=>handler(request),/budget/);
+ assert.throws(()=>createFontStylesheetHandler({registry,maxPreloads:-1}),/budget/);
+});

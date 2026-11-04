@@ -109,7 +109,7 @@ function makeEncoder(name: CompressionEncoding, config: Required<ProxyCompressio
 export function forwardCompressedResponse(
   request: IncomingMessage, upstream: Readable & { statusCode?: number; headers: IncomingHttpHeaders },
   response: ServerResponse, options: ProxyCompressionOptions = {},
-): void {
+): ReturnType<typeof zlib.createGzip> | undefined {
   const config = validateCompressionOptions(options);
   const status = upstream.statusCode ?? 502;
   const headers: IncomingHttpHeaders = { ...upstream.headers };
@@ -146,6 +146,10 @@ export function forwardCompressedResponse(
   }
   if (!selected) {
     response.writeHead(status, headers);
+    if(noBody){upstream.destroy();response.end();return;}
+    upstream.once('error',error=>response.destroy(error));
+    // pipe preserves backpressure but does not destroy its source on destination close.
+    response.once('close', () => { if (!upstream.destroyed) upstream.destroy(); });
     upstream.pipe(response);
     return;
   }
@@ -153,6 +157,7 @@ export function forwardCompressedResponse(
   delete headers['content-length'];
   delete headers['content-md5'];
   delete headers['content-digest'];
+  delete headers['repr-digest'];
   delete headers.digest;
   delete headers.etag; // An origin ETag for uncompressed representation is no longer valid.
   delete headers['accept-ranges'];
@@ -163,4 +168,5 @@ export function forwardCompressedResponse(
   upstream.on('error', err => { encoder.destroy(err); response.destroy(err); });
   response.once('close', () => { if (!upstream.destroyed) upstream.destroy(); encoder.destroy(); });
   upstream.pipe(encoder).pipe(response);
+  return encoder as ReturnType<typeof zlib.createGzip>;
 }

@@ -1,4 +1,4 @@
-import fs from "node:fs";
+import {readLocalFileSync} from '../utils/file-content.js';
 
 const parseEnvLine = (line: string) => {
     const trimmed = line.trim();
@@ -25,9 +25,8 @@ export const loadEnvironmentFiles = (envFiles: string[]) => {
     const loadedFiles: string[] = [];
 
     for (const envFile of envFiles) {
-        if (!fs.existsSync(envFile) || !fs.statSync(envFile).isFile()) continue;
-
-        const content = fs.readFileSync(envFile, "utf-8");
+        let content:string;
+        try{content=readLocalFileSync(envFile,1024*1024,true).toString('utf8');}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT'||(error as NodeJS.ErrnoException).code==='EISDIR'||(error as NodeJS.ErrnoException).code==='EFTYPE')continue;throw error;}
         for (const line of content.split(/\r?\n/)) {
             const parsed = parseEnvLine(line);
             if (!parsed) continue;

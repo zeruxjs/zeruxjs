@@ -23,6 +23,7 @@ export function createInjectedAppHandler(
     const write = res.write.bind(res);
     const end = res.end.bind(res);
     const setHeader = res.setHeader.bind(res);
+    const flushHeaders = res.flushHeaders.bind(res);
     const chunks: Buffer[] = [];
     let bytes = 0;
     let passthrough = false;
@@ -33,6 +34,7 @@ export function createInjectedAppHandler(
       res.write = write as typeof res.write;
       res.end = end as typeof res.end;
       res.setHeader = setHeader as typeof res.setHeader;
+      res.flushHeaders = flushHeaders;
     }
     function flushBuffered(): void {
       if (passthrough) return;
@@ -41,12 +43,26 @@ export function createInjectedAppHandler(
       for (const buffer of chunks) write(buffer);
       chunks.length = 0;
     }
+    // Explicit streaming commits headers immediately and opts out of buffering.
+    res.flushHeaders = () => { flushBuffered(); flushHeaders(); };
     // writeHead can be called before the last chunk; defer it only until
     // the point at which headers/body are actually sent.
     res.writeHead = ((status: number, reasonOrHeaders?: any, maybeHeaders?: any) => {
       res.statusCode = status;
       const supplied = typeof reasonOrHeaders === 'string' ? maybeHeaders : reasonOrHeaders;
-      if (supplied && !Array.isArray(supplied)) {
+      if (Array.isArray(supplied)) {
+        if (supplied.length % 2) throw new TypeError('Invalid raw response headers');
+        const pairs = new Map<string, { name: string; values: (string | number)[] }>();
+        for (let index = 0; index < supplied.length; index += 2) {
+          const name = supplied[index];
+          if (typeof name !== 'string') throw new TypeError('Invalid raw response header name');
+          const key = name.toLowerCase();
+          const prior = pairs.get(key);
+          if (prior) prior.values.push(supplied[index + 1]);
+          else pairs.set(key, { name, values: [supplied[index + 1]] });
+        }
+        for (const { name, values } of pairs.values()) setHeader(name, values.length === 1 ? values[0] : values.map(String));
+      } else if (supplied) {
         for (const [name, value] of Object.entries(supplied)) {
           if (value !== undefined) setHeader(name, value as string | number | readonly string[]);
         }
@@ -74,7 +90,10 @@ export function createInjectedAppHandler(
       }
       const contentType = String(res.getHeader('content-type') ?? '').toLowerCase();
       const contentEncoding = String(res.getHeader('content-encoding') ?? '').toLowerCase();
-      const shouldInject = bytes <= MAX_INJECTED_HTML_BYTES && /(?:^|\s|;)text\/html(?:\s*;|$)/.test(contentType) &&
+      const hasEnforcedCsp = res.getHeader('content-security-policy') !== undefined;
+      // The application owns its policy and per-response nonce. Do not guess one,
+      // widen directives, or inject a blocked inline client into an enforced-CSP page.
+      const shouldInject = !hasEnforcedCsp && !res.headersSent && bytes <= MAX_INJECTED_HTML_BYTES && /(?:^|\s|;)text\/html(?:\s*;|$)/.test(contentType) &&
         (!contentEncoding || contentEncoding === 'identity') && res.statusCode !== 204 && res.statusCode !== 304;
       if (!shouldInject) {
         flushBuffered();

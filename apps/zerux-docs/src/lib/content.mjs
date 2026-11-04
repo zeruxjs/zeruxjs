@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { groupFor } from './navigation.mjs';
 import { site, sitePath } from '../site.config.mjs';
 
 export const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -79,6 +80,7 @@ export async function loadContent() {
         )
           throw new Error(`Missing source file: ${reference}`);
       }
+      groupFor({ ...metadata, slug }); // Validate optional taxonomy before rendering.
       const words = match[2].split(/\s+/).length;
       pages.push({
         ...metadata,

@@ -56,7 +56,7 @@ test('rejects duplicate IDs and prohibited/untrusted tag shapes',()=>{
 test('cross-origin subdomain beacon is CORS-simple text/plain and keeps ID correlation',async()=>{
  const {manager,hits}=analytics(),rt=createTagManager({analytics:manager,requestIds:createMemoryRequestIdStore(),publicOrigin:'https://tags.example.com',allowedOrigins:['https://app.example.com']});
  const js=await rt.routes().find(x=>x.pattern==='/_tags/ttag.js').handler(new Request('https://tags.example.com/_tags/ttag.js'));
- assert.ok((await js.text()).includes('https://tags.example.com/_tags/collect'));
+ assert.match(await js.text(),/"https:\/\/tags\.example\.com\/_tags\/collect"/);
  const req=new Request('https://tags.example.com/_tags/collect',{method:'POST',headers:{origin:'https://app.example.com','content-type':'text/plain;charset=UTF-8'},body:JSON.stringify({name:'page_view',requestId:createRequestId(),properties:{name:'welcome'}})});
  const res=await rt.routes().find(x=>x.pattern==='/_tags/collect').handler(req);
  assert.equal(res.status,204);assert.equal(res.headers.get('access-control-allow-origin'),'https://app.example.com');assert.equal(hits.length,1);

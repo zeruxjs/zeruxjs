@@ -1,4 +1,4 @@
-import { getGlobalConfig } from '../storages/index.js';
+import { executeSchemaAsync } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -27,10 +27,7 @@ export async function parseAsync<
   input: unknown,
   config?: Config<InferIssue<TSchema>>
 ): Promise<InferOutput<TSchema>> {
-  const dataset = await schema['~run'](
-    { value: input },
-    getGlobalConfig(config)
-  );
+  const dataset = await executeSchemaAsync(schema, input, config);
   if (dataset.issues) {
     throw new ValidationError(dataset.issues);
   }

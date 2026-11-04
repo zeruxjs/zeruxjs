@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -90,7 +91,7 @@ function writeRoutesAtomic(filename: string, routes: RouteMapping[], mode: numbe
     fd = undefined;
     fs.renameSync(tmp, filename);
     try {
-      const dirFd = fs.openSync(path.dirname(filename), 'r');
+      const dirFd = fs.openSync(path.dirname(filename), 'r', 0o600);
       try { fs.fsyncSync(dirFd); } finally { fs.closeSync(dirFd); }
     } catch { /* Some platforms do not support directory fsync. */ }
   } finally {
@@ -212,11 +213,11 @@ export class RouteStore {
     // The public reader remains tolerant for the UI; mutations fail closed.
     // Never treat invalid on-disk state as an empty registry during a write.
     try {
-      const stat = fs.lstatSync(this.routesPath);
+      const {stat,bytes} = readStateFile(this.routesPath,MAX_ROUTES_FILE_BYTES);
       if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_ROUTES_FILE_BYTES) {
         throw new Error('Unsafe or oversized routes registry');
       }
-      const raw = fs.readFileSync(this.routesPath, 'utf8');
+      const raw = bytes.toString('utf8');
       let parsed: unknown;
       try {
         parsed = JSON.parse(raw);

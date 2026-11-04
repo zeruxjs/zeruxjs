@@ -1,3 +1,4 @@
+import { syncCallback } from '../utils/_run.js';
 import type { BaseTransformation, SuccessDataset } from '../types/index.js';
 
 /**
@@ -38,7 +39,7 @@ export function transform<TInput, TOutput>(
     operation,
     '~run'(dataset) {
       // @ts-expect-error
-      dataset.value = this.operation(dataset.value);
+      dataset.value = syncCallback(this.operation, dataset.value);
       // @ts-expect-error
       return dataset as SuccessDataset<TOutput>;
     },

@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseValidation,
@@ -40,7 +41,7 @@ export function forwardAsync<
       const prevIssues = dataset.issues && [...dataset.issues];
 
       // Run validation action
-      dataset = await action['~run'](dataset, config);
+      dataset = await _runSchema(action, dataset, config);
 
       // If dataset contains issues, forward newly added issues
       if (dataset.issues) {

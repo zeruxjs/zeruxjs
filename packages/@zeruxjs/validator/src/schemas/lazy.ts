@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -57,7 +58,7 @@ export function lazy<
       return _getStandardProps(this);
     },
     '~run'(dataset, config) {
-      return this.getter(dataset.value)['~run'](dataset, config);
+      return _runSchema(this.getter(dataset.value), dataset, config);
     },
   };
 }

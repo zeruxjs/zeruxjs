@@ -1,6 +1,6 @@
 {
   "name": "zforge",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Dev tools present here like mapping function and classes and all internal services",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -16,17 +16,30 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "build:core": "tsc -p tsconfig.core.json"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./modules": {
+      "types": "./dist/module-endpoints.d.ts",
+      "import": "./dist/module-endpoints.js"
+    },
+    "./diagnostics": {
+      "types": "./dist/request-diagnostics.d.ts",
+      "import": "./dist/request-diagnostics.js"
+    },
+    "./experiments": {
+      "types": "./dist/experiments.d.ts",
+      "import": "./dist/experiments.js"
     }
   },
   "type": "module",
   "dependencies": {
-    "@zeruxjs/security": "0.0.3"
+    "@zeruxjs/security": "0.0.4"
   },
   "keywords": [
     "Dev tools present here like mapping function and classes and all internal services"
@@ -40,13 +53,38 @@
     "assets/style.css",
     "assets/favicon.ico",
     "assets/favicon.png",
-    "assets/robots.txt"
+    "assets/robots.txt",
+    "examples/"
   ],
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
+    "@types/node": "^25.4.0",
     "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "ztrial": "0.0.4"
+  },
+  "peerDependencies": {
+    "zeruxjs": "0.0.4",
+    "zhost": "0.0.4",
+    "ztrial": "0.0.4"
+  },
+  "peerDependenciesMeta": {
+    "zhost": {
+      "optional": true
+    },
+    "zeruxjs": {
+      "optional": true
+    },
+    "ztrial": {
+      "optional": true
+    }
+  },
+  "workspaceBuild": {
+    "bootstrapScript": "build:core",
+    "finalizeDependencies": [
+      "zhost",
+      "zeruxjs"
+    ]
   }
 }

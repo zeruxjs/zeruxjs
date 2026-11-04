@@ -1,3 +1,5 @@
+import type { GenericSchema, GenericPipeItem } from '../types/index.js';
+import type { SchemaWithPipe } from '../methods/pipe.js';
 import { pipe } from '../methods/pipe.js';
 import { pipeAsync } from '../methods/pipeAsync.js';
 import {
@@ -61,7 +63,7 @@ import {
 } from '../schemas/index.js';
 
 type CompatActions = readonly unknown[];
-type WithActions0<T> = T & ((actions: CompatActions) => any);
+type WithActions0<T extends (...args: any[]) => GenericSchema> = T & (<const A extends readonly GenericPipeItem<any, any>[]>(actions: A) => SchemaWithPipe<readonly [ReturnType<T>, ...A]>);
 type WithActions1<T> = T & ((arg0: any, actions: CompatActions) => any);
 type WithActions2<T> = T & ((arg0: any, arg1: any, actions: CompatActions) => any);
 

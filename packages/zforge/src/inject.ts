@@ -1,6 +1,9 @@
+import { assertSecurityNonce, escapeHtmlAttribute } from '@zeruxjs/security';
 import type { IncomingMessage } from "node:http";
 
 export interface DevClientScriptOptions {
+  /** From the host response policy; never extracted from untrusted HTML/headers. */
+  nonce?: string;
   routeName: string;
   devServerUrl: string;
   allowedDevDomain?: string | null;
@@ -14,7 +17,7 @@ const scriptValue = (value: unknown) => JSON.stringify(value).replace(/[<>&\u202
   '\u2028': '\\u2028', '\u2029': '\\u2029'
 } as Record<string, string>)[char]);
 
-const buildInjectedClient = ({ routeName, devServerUrl, allowedDevDomain, devPortLessAlias, serviceName }: DevClientScriptOptions) => `<script data-zdev-client="true">
+const buildInjectedClient = ({ nonce, routeName, devServerUrl, allowedDevDomain, devPortLessAlias, serviceName }: DevClientScriptOptions) => `<script data-zdev-client="true"${nonce ? ` nonce="${escapeHtmlAttribute(nonce)}"` : ''}>
 (() => {
   if (window.__ZDEV_CLIENT__) return;
   window.__ZDEV_CLIENT__ = true;
@@ -800,6 +803,7 @@ export const isPrimaryHtmlRequest = (req: IncomingMessage) => {
 };
 
 export const injectDevClient = (html: string, options: DevClientScriptOptions) => {
+  if (options.nonce !== undefined) assertSecurityNonce(options.nonce);
   if (/data-zdev-client=["']true["']/.test(html)) return html;
   const snippet = buildInjectedClient(options);
   return /<\/body\s*>/i.test(html)

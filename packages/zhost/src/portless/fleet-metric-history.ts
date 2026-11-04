@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Privacy-preserving and bounded fleet metric snapshots, stored outside deployment ownership records. */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -28,10 +29,10 @@ export function readFleetMetricHistory(dir: string, hostname: string, now = Date
   const file = fleetMetricHistoryPath(dir, hostname);
   try {
     ensureControlDirectory(dir);
-    const st = fs.lstatSync(file);
+    const {stat: st, bytes} = readStateFile(file, MAX_BYTES);
     if (!st.isFile() || st.isSymbolicLink() || st.size > MAX_BYTES || (st.mode & 0o077) !== 0 ||
       (typeof process.getuid === 'function' && st.uid !== process.getuid())) throw new Error('Unsafe fleet metric history');
-    const value: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const value: unknown = JSON.parse(bytes.toString('utf8'));
     if (!Array.isArray(value) || value.length > MAX_POINTS || !value.every(row => valid(row, now))) {
       throw new Error('Corrupt fleet metric history');
     }

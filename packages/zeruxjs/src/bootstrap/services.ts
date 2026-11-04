@@ -1,32 +1,41 @@
+import type {QueueSelection} from '@zeruxjs/queue/neutral';
+import {prepareConfiguration} from './config-validation.js';
+import {startCustomServices,type RuntimeServiceName} from './service-definitions.js';
 import path from 'node:path';
 import type { ZeruxConfig } from '../index.js';
 import { initializeDatabaseRuntime } from './database.js';
 import { initializeCacheRuntime } from './cache.js';
 import { serviceRouteOverlaps } from './service-http.js';
 
-export type ServiceName = 'database' | 'cache' | 'files' | 'analytics' | 'email' | 'tags' | 'reports' | 'queue';
-export type ServiceStatus = { name: ServiceName; state: 'ready' | 'disabled' | 'degraded' | 'closed' };
+export type ServiceName = 'database' | 'cache' | 'files' | 'analytics' | 'email' | 'tags' | 'reports' | 'queue' | 'search';
+export type ServiceStatus = { name: RuntimeServiceName; state: 'ready' | 'disabled' | 'degraded' | 'closed' };
 /** Framework-neutral Fetch endpoints owned by a single runtime generation. */
 export interface ServiceHttpRoute {
   pattern: string;
   handler: (request: Request) => Promise<Response> | Response;
 }
-export interface ScopedServiceHttpRoute extends ServiceHttpRoute { service: 'analytics' | 'email' | 'tags' | 'reports' | 'queue' }
+export interface ScopedServiceHttpRoute extends ServiceHttpRoute { service: RuntimeServiceName }
 
 
 /** Own every generation's resources. Failed preparations close in reverse initialization order. */
-export function createServiceScope() {
-  const services = new Map<ServiceName, unknown>();
+export function createServiceScope(publicConfig:Record<string,unknown>={}) {
+  const services = new Map<RuntimeServiceName, unknown>();
   const httpRoutes: ScopedServiceHttpRoute[] = [];
-  const releases: Array<{ name: ServiceName; release: () => Promise<void> }> = [];
+  const releases: Array<{ name: RuntimeServiceName; release: () => Promise<void> }> = [];
   let closed = false;
   let closing: Promise<void> | undefined;
-  const disabled = new Set<ServiceName>();
-  const degraded = new Set<ServiceName>();
+  const disabled = new Set<RuntimeServiceName>();
+  const degraded = new Set<RuntimeServiceName>();
+  const failures=new Map<RuntimeServiceName,unknown>();
+  const activations:(()=>void)[]=[];let activated=false;
   return {
-    get<T = unknown>(name: ServiceName): T | undefined { return services.get(name) as T | undefined; },
-    add(name: ServiceName, value: unknown, release?: () => Promise<void> | void) {
-      if (closed || services.has(name)) throw new Error(`Duplicate or closed runtime service: ${name}`);
+    publicConfig() { return publicConfig; },
+    errors() { return new Map(failures); },
+    onActivate(callback:()=>void) { if(closed||activated)throw new Error('Service scope activation closed');activations.push(callback); },
+    activate() { if(closed)throw new Error('Service scope closed');if(activated)return;for(const callback of activations)callback();activated=true; },
+    get<T = unknown>(name: RuntimeServiceName): T | undefined { return services.get(name) as T | undefined; },
+    add(name: RuntimeServiceName, value: unknown, release?: () => Promise<void> | void) {
+      if (closed || services.has(name) || disabled.has(name)) throw new Error(`Duplicate or closed runtime service: ${name}`);
       if (value == null) { disabled.add(name); return; }
       services.set(name, value);
       const cleanup = release ?? (() => {
@@ -36,9 +45,9 @@ export function createServiceScope() {
       });
       releases.push({ name, release: async () => { await cleanup(); } });
     },
-    markDegraded(name: ServiceName) { degraded.add(name); },
+    markDegraded(name: RuntimeServiceName,error?:unknown) { degraded.add(name);if(error)failures.set(name,error); },
     /** Register only distinct, absolute service paths; never override application routes. */
-    addHttpRoutes(service: 'analytics' | 'email' | 'tags' | 'reports' | 'queue', routes: readonly ServiceHttpRoute[]) {
+    addHttpRoutes(service: RuntimeServiceName, routes: readonly ServiceHttpRoute[]) {
       if (closed) throw new Error('Cannot register HTTP routes on a closed service scope');
       // Check the entire batch before mutating the live scope. Dynamic paths and
       // catch-alls can shadow routes even when their strings differ.
@@ -59,7 +68,7 @@ export function createServiceScope() {
     },
     httpRoutes(): readonly ScopedServiceHttpRoute[] { return [...httpRoutes]; },
     status(): ServiceStatus[] {
-      return (['database', 'cache', 'files', 'analytics', 'email', ...(services.has('tags') || degraded.has('tags') ? ['tags'] : []), ...(services.has('reports') || degraded.has('reports') ? ['reports'] : []), ...(services.has('queue') || degraded.has('queue') ? ['queue'] : [])] as ServiceName[]).map(name => ({
+      return (['database', 'cache', 'files', 'analytics', 'email', ...(services.has('tags') || degraded.has('tags') ? ['tags'] : []), ...(services.has('reports') || degraded.has('reports') ? ['reports'] : []), ...(services.has('search') ? ['search'] : []), ...(services.has('queue') || degraded.has('queue') ? ['queue'] : []), ...new Set([...services.keys(),...disabled,...degraded].filter(name=>name.startsWith('custom:')))] as RuntimeServiceName[]).map(name => ({
         name, state: closed ? 'closed' : degraded.has(name) ? 'degraded' : services.has(name) ? 'ready' : 'disabled'
       }));
     },
@@ -167,7 +176,8 @@ export interface ReportsStartupConfig {
   site?:string;
 }
 /** Queue workers run only when explicitly configured. Redis config stays private. */
-export interface QueueStartupConfig {
+export type QueueStartupConfig = LegacyQueueStartupConfig | {enabled?:boolean;required?:boolean;selection:QueueSelection};
+export interface LegacyQueueStartupConfig {
   enabled?:boolean;
   required?:boolean;
   redis: {url?:string;host?:string;port?:number;username?:string;password?:string;db?:number;tls?:Record<string,unknown>;cluster?:{nodes:Array<{host:string;port:number}>};keyPrefix?:never};
@@ -193,7 +203,7 @@ export interface QueueStartupConfig {
     maxPageSize?:number;
   };
 }
-export interface EndpointProvider { routes(): ServiceHttpRoute[] }
+export interface EndpointProvider { routes(): ServiceHttpRoute[]; close?(): void | Promise<void> }
 export interface EmailStartupConfig {
   accounts?: Array<Record<string, unknown>>;
   /** Optional receive-only or combined SMTP/IMAP/POP3 runtime. Inbound credentials are server-only. */
@@ -276,9 +286,18 @@ export interface EmailStartupConfig {
 }
 export interface AnalyticsStartupConfig { analytics?: string; enabled?: boolean; table?: string; indexes?:boolean; numericFields?:string[]; numericUniqueIndexManagedExternally?:boolean; required?: false; collector?: AnalyticsCollectorStartupConfig; }
 
+/** Private executable registration produced by @zeruxjs/search/adapters. */
+export interface SearchStartupConfig {
+  enabled?: boolean;
+  registration: {
+    readonly kind: 'zerux-search-v1';
+    validate(): void;
+    start(): Promise<{ close(): Promise<void> | void }>;
+  };
+}
 export interface ServiceInitializers {
-  database(config: ZeruxConfig): Promise<unknown>;
-  cache(config: ZeruxConfig): Promise<unknown>;
+  database(config: ZeruxConfig, activation?:{onActivate:(callback:()=>void)=>void}): Promise<unknown>;
+  cache(config: ZeruxConfig, activation?:{onActivate:(callback:()=>void)=>void}): Promise<unknown>;
   files(config: FilesStartupConfig, rootDir: string): Promise<unknown>;
   analytics(config: AnalyticsStartupConfig, database: unknown): Promise<unknown>;
   email(config: EmailStartupConfig, files: unknown, analytics: unknown, tracking?: unknown, preferences?: unknown, reputation?:unknown, database?:unknown): Promise<unknown>;
@@ -288,9 +307,11 @@ export interface ServiceInitializers {
   tags(config: TagsStartupConfig, analytics: unknown): Promise<EndpointProvider>;
   reports(config: ReportsStartupConfig, analytics: unknown): Promise<EndpointProvider>;
   queue(config: QueueStartupConfig): Promise<unknown>;
+  search(config: SearchStartupConfig): Promise<{close(): Promise<void> | void}>;
 }
 
 const defaults: ServiceInitializers = {
+  async search(config) { return config.registration.start(); },
   database: initializeDatabaseRuntime,
   cache: initializeCacheRuntime,
   async files(config, rootDir) {
@@ -355,6 +376,7 @@ const defaults: ServiceInitializers = {
     return createReports({...config,analytics,...(store?{store}:{})});
   },
   async queue(config) {
+    if('selection' in config){const {createQueueBackend}=await import('@zeruxjs/queue/neutral');return createQueueBackend(config.selection);}
     const moduleId='@zeruxjs/queue';
     const {createQueueService}=await import(moduleId) as {createQueueService:(config:unknown)=>Promise<unknown>};
     return createQueueService(config);
@@ -415,21 +437,25 @@ const defaults: ServiceInitializers = {
 };
 
 /** Start configured application services. Credentials never enter the public runtime config. */
-export async function initializeRuntimeServices(config: ZeruxConfig, rootDir: string, providers: Partial<ServiceInitializers> = {}): Promise<RuntimeServiceScope> {
-  const scope = createServiceScope();
+export async function initializeRuntimeServices(config: ZeruxConfig, rootDir: string, providers: Partial<ServiceInitializers> = {}, options:{deferActivation?:boolean}={}): Promise<RuntimeServiceScope> {
+  const prepared=await prepareConfiguration(config);
+  const privateConfig=prepared.config;
+  const scope = createServiceScope(prepared.publicConfig);
   const start = { ...defaults, ...providers };
-  const files = config.files as FilesStartupConfig | undefined;
-  const email = config.email as EmailStartupConfig | undefined;
-  const analytics = config.analytics as AnalyticsStartupConfig | undefined;
-  const tags = config.tags as TagsStartupConfig | undefined;
-  const reports = config.reports as ReportsStartupConfig | undefined;
-  const queue = config.queue as QueueStartupConfig | undefined;
+  const files = privateConfig.files as FilesStartupConfig | undefined;
+  const email = privateConfig.email as EmailStartupConfig | undefined;
+  const analytics = privateConfig.analytics as AnalyticsStartupConfig | undefined;
+  const tags = privateConfig.tags as TagsStartupConfig | undefined;
+  const reports = privateConfig.reports as ReportsStartupConfig | undefined;
+  const queue = privateConfig.queue as QueueStartupConfig | undefined;
+  const search = privateConfig.search as SearchStartupConfig | undefined;
   // All service config, session authorizers and destination credentials stay out of public build manifests.
-  delete config.files; delete config.email; delete config.analytics; delete config.tags; delete config.reports; delete config.queue;
+  delete config.db;delete config.database;delete config.connectorManager;delete config.cache;delete config.services;delete config.serviceDefinitions;delete config.files; delete config.email; delete config.analytics; delete config.tags; delete config.reports; delete config.queue;delete config.search;
   try {
-    scope.add('database', await start.database(config));
-    scope.add('cache', await start.cache(config));
+    scope.add('database', await start.database(privateConfig, {onActivate:scope.onActivate}));
+    scope.add('cache', await start.cache(privateConfig, {onActivate:scope.onActivate}));
     if (files) scope.add('files', await start.files(files, rootDir));
+    if (search?.enabled === true) scope.add('search', await start.search(search));
     if (queue?.enabled === true) {
       try {
         const queueService=await start.queue(queue) as {routes?:()=>ServiceHttpRoute[]};
@@ -443,8 +469,8 @@ export async function initializeRuntimeServices(config: ZeruxConfig, rootDir: st
       }
       catch(error){
         if(queue.required === true) throw error;
-        scope.markDegraded('queue');
-        try{console.warn('[zerux queue] Service unavailable:',error instanceof Error?error.message:String(error));}catch{ /* This optional failure is intentionally ignored. */ }
+        scope.markDegraded('queue',error);
+        try{console.warn('[zerux queue] Service unavailable');}catch{ /* This optional failure is intentionally ignored. */ }
       }
     }
     if (analytics?.enabled !== false && analytics) {
@@ -468,7 +494,7 @@ export async function initializeRuntimeServices(config: ZeruxConfig, rootDir: st
       try {
         if (!scope.get('analytics')) throw new Error('Tags requires the analytics service');
         const tagService=await start.tags(tags,scope.get('analytics'));
-        scope.addHttpRoutes('tags',tagService.routes());
+        try { scope.addHttpRoutes('tags',tagService.routes()); } catch (error) { await tagService.close?.(); throw error; }
         scope.add('tags',tagService);
       } catch(error){scope.markDegraded('tags');
         try{console.warn('[zerux tags] Service unavailable:',error instanceof Error?error.message:String(error));}catch{ /* This optional failure is intentionally ignored. */ }
@@ -478,7 +504,7 @@ export async function initializeRuntimeServices(config: ZeruxConfig, rootDir: st
       try {
         if (!scope.get('analytics')) throw new Error('Reports requires the analytics service');
         const reportService=await start.reports(reports,scope.get('analytics'));
-        scope.addHttpRoutes('reports',reportService.routes());
+        try { scope.addHttpRoutes('reports',reportService.routes()); } catch (error) { await reportService.close?.(); throw error; }
         scope.add('reports',reportService);
       } catch(error){scope.markDegraded('reports');
         try{console.warn('[zerux reports] Service unavailable:',error instanceof Error?error.message:String(error));}catch{ /* This optional failure is intentionally ignored. */ }
@@ -538,9 +564,11 @@ export async function initializeRuntimeServices(config: ZeruxConfig, rootDir: st
       scope.addHttpRoutes('email',createMarketingCampaignDashboard(email.marketingCampaignDashboard).routes());
     }
     if (email) scope.add('email', await start.email(email, scope.get('files'), scope.get('analytics'), tracking, preferences,reputation,scope.get('database')));
+    await startCustomServices(scope,prepared.services,rootDir);
+    if(!options.deferActivation)scope.activate();
     return scope;
   } catch (error) {
-    try { await scope.close(); } catch { /* Preserve initialization failure. */ }
+    try { await scope.close(); } catch (cleanup) { throw new AggregateError([error,cleanup],'Service startup and rollback failed'); }
     throw error;
   }
 }

@@ -1,3 +1,4 @@
+import {importReportDefinition,exportReportDefinition} from './definitions.js';
 import {createHash} from 'node:crypto';
 import type {ReportsOptions,ReportsStore,AnalyticsReportSource,ReportAction,ChartDefinition,ChartData} from './types.js';
 import {createMemoryReportsStore,validateReports,queryChart,isReportId} from './model.js';
@@ -46,10 +47,17 @@ function exported(data:unknown,format:string,filename:string){
   return new Response(payload,{headers:{...headers,'content-type':format==='csv'?'text/csv; charset=utf-8':'application/json; charset=utf-8',
     'content-disposition':`attachment; filename="${filename}.${format}"`}});
 }
+/** Bounded definition body reader; cancellation/deadlines release the owned reader. */
+async function definitionBody(request:Request){
+ if(!request.body)throw new TypeError('Definition body required');const reader=request.body.getReader(),decoder=new TextDecoder('utf-8',{fatal:true});let bytes=0,text='',expired=false;
+ const abort=()=>{void reader.cancel().catch(()=>{});};const timer=setTimeout(()=>{expired=true;abort();},10000);request.signal.addEventListener('abort',abort,{once:true});
+ try{while(true){if(expired||request.signal.aborted)throw new TypeError('Definition read cancelled');const next=await reader.read();if(expired||request.signal.aborted)throw new TypeError('Definition read cancelled');if(next.done)break;bytes+=next.value.byteLength;if(bytes>262144)throw new RangeError('Definition too large');text+=decoder.decode(next.value,{stream:true});}return text+decoder.decode();}finally{clearTimeout(timer);request.signal.removeEventListener('abort',abort);await reader.cancel().catch(()=>{});reader.releaseLock();}
+}
 export function createReports(options:ReportsOptions){
   if(!options?.analytics||typeof options.authorize!=='function')throw new TypeError('Reports requires analytics and an application authorizer');
   if(options.resolveScope&&typeof options.resolveScope!=='function')throw new TypeError('Invalid tenant resolver');
   if(options.site!==undefined&&!validSite(options.site))throw new TypeError('Invalid enforced site');
+  if(options.renderDashboard!==undefined&&typeof options.renderDashboard!=='function')throw new TypeError('Invalid dashboard renderer');
   const prefix=options.prefix??'/_reports';if(!/^\/[A-Za-z0-9/_-]+$/.test(prefix)||prefix.includes('//')||prefix.endsWith('/'))throw new TypeError('Invalid reports path');
   if(options.dashboardHost&&!/^[A-Za-z0-9.-]+(?::\d{2,5})?$/.test(options.dashboardHost))throw new TypeError('Invalid reports dashboard host');
   if(options.maxSourceRows!==undefined&&(!Number.isSafeInteger(options.maxSourceRows)||options.maxSourceRows<1||options.maxSourceRows>500))throw new RangeError('Invalid report row cap');
@@ -69,9 +77,9 @@ export function createReports(options:ReportsOptions){
   };
   const main=async(req:Request)=>{
     if(!await authorized(req,'read'))return new Response('Not found',{status:404});
-    const html=reportDashboard(prefix);
-    const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1]??'';
-    const style=html.match(/<style>([\s\S]*?)<\/style>/)?.[1]??'';
+    let html:string;try{html=options.renderDashboard?options.renderDashboard({prefix}):reportDashboard(prefix);if(typeof html!=='string'||Buffer.byteLength(html)>524288)throw new TypeError('Invalid dashboard output');}catch{return error('Report UI unavailable',503);}
+    const script=html.match(/<script>([\s\S]*?)<\/script>/i)?.[1]??'';
+    const style=html.match(/<style>([\s\S]*?)<\/style>/i)?.[1]??'';
     return new Response(html,{headers:{...headers,'content-type':'text/html; charset=utf-8',
       'content-security-policy':`default-src 'none'; script-src ${sha(script)}; style-src ${sha(style)}; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'`}});
   };
@@ -84,10 +92,18 @@ export function createReports(options:ReportsOptions){
     if(req.method==='GET'){try{return json(validateReports(await tenantStore.load()));}catch{return error('Report storage unavailable',503);}}
     if(req.headers.get('origin')!==new URL(req.url).origin)return error('Origin required',403);
     let next;
-    try{const raw=await req.text();if(Buffer.byteLength(raw)>256*1024)return error('Report document too large',413);
-      next=validateReports(JSON.parse(raw));}catch{return error('Invalid report document',422);}
+    try{const raw=await definitionBody(req);
+      next=validateReports(JSON.parse(raw));}catch(e){return error('Invalid report document',e instanceof RangeError?413:422);}
     try{if(!await tenantStore.save(next,next.version-1))return error('Version conflict',409);
       return json({ok:true,version:next.version});}catch{return error('Report storage unavailable',503);}
+  };
+  const definition=async(req:Request)=>{
+    if(!['GET','POST'].includes(req.method))return error('Method not allowed',405);
+    if(!await authorized(req,req.method==='GET'?'export':'edit'))return error('Forbidden',403);
+    if(req.method==='POST'&&(req.headers.get('origin')!==new URL(req.url).origin||req.headers.get('content-type')?.split(';')[0].trim()!=='application/json'))return error('Same-origin JSON required',403);
+    let current;try{current=validateReports(await (await scoped(req)).store.load());}catch{return error('Report storage unavailable',503);}
+    if(req.method==='GET')try{return new Response(exportReportDefinition(current),{headers:{...headers,'content-type':'application/json','content-disposition':'attachment; filename="report-definition.json"'}});}catch{return error('Definition export exceeds limits',413);}
+    try{const imported=importReportDefinition(await definitionBody(req));return json({...imported,version:current.version});}catch(e){return error('Invalid definition import',e instanceof RangeError?413:422);}
   };
   const catalog=async(req:Request)=>{
     if(!await authorized(req,'read'))return error('Forbidden',403);
@@ -197,6 +213,6 @@ export function createReports(options:ReportsOptions){
     const doc=validateReports(await store.load());const chart=doc.reports.find(r=>r.id===reportId)?.pages.find(p=>p.id===pageId)?.charts.find(c=>c.id===chartId);
     if(!chart)throw new Error('Unknown report chart');return queryChart(source,chart,options.maxSourceRows??500,options.site);
   },routes(){return [{pattern:prefix,handler:main},{pattern:prefix+'/api',handler:api},
-    {pattern:prefix+'/catalog',handler:catalog},{pattern:prefix+'/query',handler:query},
+    {pattern:prefix+'/definition',handler:definition},{pattern:prefix+'/catalog',handler:catalog},{pattern:prefix+'/query',handler:query},
     {pattern:prefix+'/export',handler:exportRoute},{pattern:prefix+'/campaign',handler:campaign}];}};
 }

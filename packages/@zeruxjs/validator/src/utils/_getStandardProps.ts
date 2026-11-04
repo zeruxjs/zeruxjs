@@ -1,4 +1,4 @@
-import { getGlobalConfig } from '../storages/index.js';
+import { executeSchema, executeSchemaAsync } from './_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -26,7 +26,7 @@ export function _getStandardProps<
     version: 1,
     vendor: '@zeruxjs/validator',
     validate(value) {
-      return context['~run']({ value }, getGlobalConfig()) as
+      return (context.async ? executeSchemaAsync(context, value) : executeSchema(context, value)) as
         | StandardResult<InferOutput<TSchema>>
         | Promise<StandardResult<InferOutput<TSchema>>>;
     },

@@ -18,8 +18,8 @@ test('stream declared length errors roll back before final metadata commit',()=>
 test('inline display allows inert content types but forces unknown HTML to download',()=>fixture(async store=>{
  const html=await store.upload(Buffer.from('<script>oops</script>'),{name:'index.html',contentType:'text/html'});
  const response=await createMediaResponse(store,html.id,{inline:true});
- assert.match(response.headers.get('content-disposition'),/^attachment;/);
+ assert.match(response.headers.get('content-disposition'),/^attachment;/);await response.body?.cancel();
  const png=await store.upload(Buffer.from('PNG'),{name:'image.png',contentType:'image/png'});
  const inline=await createMediaResponse(store,png.id,{inline:true,request:new Request('https://example.test/image')});
- assert.match(inline.headers.get('content-disposition'),/^inline;/);
+ assert.match(inline.headers.get('content-disposition'),/^inline;/);await inline.body?.cancel();
 }));

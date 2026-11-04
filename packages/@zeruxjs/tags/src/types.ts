@@ -4,9 +4,9 @@ export type Scalar=string|number|boolean|null;
 export type Values=Record<string,Scalar>;
 export interface TagEvent {name:string;properties:Values;site?:string;pathname?:string;sessionId?:string;requestId:string;requestUtcDay:string;source:'web'|'server';data?:Values}
 export interface Condition {field:string;operator:'eq'|'neq'|'contains'|'exists'|'gte'|'lte';value?:Scalar}
-export interface Trigger {id:string;name:string;type:'event'|'all'|'pageview'|'click'|'form'|'history';event?:string;conditions?:Condition[];enabled?:boolean}
-export interface Variable {id:string;name:string;type:'constant'|'event'|'dataLayer'|'context';key?:string;value?:Scalar}
-export interface TagDefinition {id:string;name:string;type:'analytics'|'ga4'|'webhook';triggerIds:string[];enabled?:boolean;eventName?:string;measurementId?:string;credentialRef?:string;destinationRef?:string;clientIdVariable?:string;parameters?:Record<string,Scalar|string>}
+export interface Trigger {id:string;name:string;type:'event'|'all'|'pageview'|'click'|'form'|'history'|'group';schemaVersion?:1;composition?:{mode:'all'|'any'|'not';triggerIds:string[]};event?:string;conditions?:Condition[];enabled?:boolean}
+export interface Variable {id:string;name:string;type:'constant'|'event'|'dataLayer'|'context';schemaVersion?:1;key?:string;value?:Scalar}
+export interface TagDefinition {id:string;name:string;type:'analytics'|'ga4'|'webhook'|'provider';providerRef?:string;providerVersion?:number;publicConfig?:Values;triggerIds:string[];enabled?:boolean;eventName?:string;measurementId?:string;credentialRef?:string;destinationRef?:string;clientIdVariable?:string;parameters?:Record<string,Scalar|string>}
 /** A historical release is immutable; revisions (container.version) advance on every edit. */
 export interface TagRelease {id:number;at:string;action:'initial'|'publish'|'rollback';container:TagContainer}
 export interface TagGovernance {release:number;published:TagContainer;history:TagRelease[]}
@@ -19,6 +19,7 @@ export interface TagRuntimeOptions {
   store?:TagContainerStore;
   container?:TagContainer;
   prefix?:string;
+  administration?:import('./admin-policy.js').TagAdminMount;
   /** Absolute public origin for a separate tagging subdomain; browser sends here. */
   publicOrigin?:string;
   site?:string;
@@ -44,6 +45,11 @@ export interface TagRuntimeOptions {
   onDebug?:(data:{requestId:string;event:string;matchedTriggers:string[];firedTags:string[];failures:string[]})=>void;
   /** Fail-soft sink, store and ID warnings. Never receives credentials, URLs or event payloads. */
   onWarning?:(message:string)=>void;
+  /** App-owned trusted code registry; borrowed unless ownProviders is true. */
+  providers?:import('./providers.js').TagProviderRegistry;ownProviders?:boolean;
+  maxConcurrentDispatches?:number;dispatchTimeoutMs?:number;
+  /** Host-owned fresh consent decision, checked before each destination. */
+  allowDispatch?:(event:Readonly<TagEvent>)=>boolean|Promise<boolean>;
   maxBodyBytes?:number;
   maxEventsPerMinute?:number;
 }

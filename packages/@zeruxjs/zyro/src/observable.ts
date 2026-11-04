@@ -17,8 +17,16 @@ export function createObservable<T>(initial: T): BatchedObservable<T> {
 /** Memoizes a selected snapshot for consumers such as React useSyncExternalStore. */
 export function mapObservable<A,B>(source:Observable<A>,selector:(value:A)=>B,equal:(a:B,b:B)=>boolean=Object.is):Observable<B>{
  let input=source.get(),selected=selector(input);
- const read=()=>{const next=source.get();if(!Object.is(next,input)){input=next;const projected=selector(next);if(!equal(selected,projected))selected=projected}return selected};
- return{get:read,subscribe(listener){let previous=read();return source.subscribe(()=>{const next=read();if(!equal(previous,next)){previous=next;listener(next)}})}};
+ const read=()=>{const next=source.get();if(!Object.is(next,input)){const projected=selector(next);const same=equal(selected,projected);input=next;if(!same)selected=projected}return selected};
+ return{get:read,subscribe(listener){
+  let previous=read(),installing=true,failed=false,failure:unknown;
+  const notify=()=>{const next=read();if(!equal(previous,next)){previous=next;listener(next)}};
+  const stop=source.subscribe(()=>{if(installing){try{notify()}catch(error){failed=true;failure=error}}else notify()});
+  installing=false;
+  if(typeof stop!=='function')throw new TypeError('Observable subscribe must return a disposer');
+  if(failed){try{stop()}catch(cleanup){throw new AggregateError([failure,cleanup],'Observable subscription rollback failed')}throw failure}
+  return stop;
+ }};
 }
 export function combineObservables<T extends readonly unknown[]>(sources:{[K in keyof T]:Observable<T[K]>}):Observable<T>{
  let previous = sources.map(source=>source.get()) as unknown as T;

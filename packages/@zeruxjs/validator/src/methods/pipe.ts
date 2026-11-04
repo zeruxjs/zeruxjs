@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -2718,8 +2719,7 @@ export function pipe<
             !dataset.issues ||
             (!config.abortEarly && !config.abortPipeEarly)
           ) {
-            // @ts-expect-error
-            dataset = item['~run'](dataset, config);
+            dataset = _runSchema(item, dataset, config);
           }
         }
       }

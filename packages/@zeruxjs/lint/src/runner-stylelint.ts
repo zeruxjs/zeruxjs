@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises';
+import {readLintSource,writeLintSource} from './file-content.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { discoverLintFiles } from './files.js';
@@ -21,9 +21,7 @@ export async function runStylelint(options: LintOptions = {}): Promise<LintResul
   const fallbackConfig = fileURLToPath(new URL('./stylelint.config.js', import.meta.url));
   const messages: string[] = [];
   for (const filename of files) {
-    const stat = await fs.lstat(filename);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 5 * 1024 * 1024) throw new Error('Unsafe or oversized stylesheet');
-    const source = await fs.readFile(filename, 'utf8');
+    const source = await readLintSource(filename);
     if (Buffer.byteLength(source) > 5 * 1024 * 1024) throw new Error('Stylesheet exceeds 5 MiB');
     let projectConfig: Awaited<ReturnType<typeof stylelint.resolveConfig>>;
     if (!explicitConfig) {
@@ -54,9 +52,7 @@ export async function runStylelint(options: LintOptions = {}): Promise<LintResul
     result.errors += checked.errored ? Math.max(1, errors) : errors;
     if (options.fix && typeof checked.code === 'string' && checked.code !== source) {
       // Recheck the target before applying only the explicitly requested fixes.
-      const target = await fs.lstat(filename);
-      if (!target.isFile() || target.isSymbolicLink()) throw new Error('Unsafe stylesheet fix target');
-      await fs.writeFile(filename, checked.code, 'utf8');
+      await writeLintSource(filename, source, checked.code);
       result.changed++;
     }
   }

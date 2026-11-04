@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -6,6 +7,7 @@ import type {
   InferIssue,
   InferOutput,
   MaybePromise,
+  OutputDataset,
 } from '../types/index.js';
 import { _getStandardProps } from '../utils/index.js';
 import type { lazy } from './lazy.js';
@@ -66,7 +68,7 @@ export function lazyAsync<
       return _getStandardProps(this);
     },
     async '~run'(dataset, config) {
-      return (await this.getter(dataset.value))['~run'](dataset, config);
+      return await _runSchema((await this.getter(dataset.value)), dataset, config) as OutputDataset<InferOutput<TWrapped>, InferIssue<TWrapped>>;
     },
   };
 }

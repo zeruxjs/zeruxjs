@@ -14,9 +14,13 @@ export function escape(value) {
 /** Make a stable heading identifier. @param {string} text Heading. @returns {string} URL fragment. No globals. */
 export function slugify(text) {
   return (
-    text
+    Array.from(text.matchAll(/[^<>]+|[<>]/g)).reduce((state, token) => {
+      if (token[0] === '<') state.tag = true;
+      else if (token[0] === '>') state.tag = false;
+      else if (!state.tag) state.text += token[0];
+      return state;
+    }, {text: '', tag: false}).text
       .toLowerCase()
-      .replace(/<[^>]*>/g, '')
       .replace(/[^\p{L}\p{N}\s-]/gu, '')
       .trim()
       .replace(/\s+/g, '-') || 'section'

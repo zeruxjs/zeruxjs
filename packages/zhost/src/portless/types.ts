@@ -22,7 +22,7 @@ export interface ProxyServerOptions {
   /** Advertise external HTTP/3+QUIC termination only if actually configured. */
   http3Terminator?: import("../protocols/transport.js").Http3Terminator;
 
-  /** Optional admission limits for HTTP forwarding (WebSocket upgrades are separate). */
+  /** Optional process-local admission budgets shared by HTTP requests and WebSocket upgrades. */
   limits?: import('./proxy-admission.js').ProxyAdmissionOptions;
   /** Called on each request to get the current route table. */
   getRoutes: () => RouteInfo[];

@@ -1,9 +1,10 @@
 {
   "name": "create-zerux-js",
-  "version": "0.0.3",
-  "description": "Placeholder CLI for the future ZeruxJS project generator",
+  "version": "0.0.4",
+  "description": "Safe opt-in ZeruxJS project generator with validated SSR renderer templates",
   "bin": {
-    "create-zerux": "./dist/index.js"
+    "create-zerux": "./dist/index.js",
+    "create-zerux-js": "./dist/index.js"
   },
   "type": "module",
   "license": "(MIT OR Apache-2.0)",
@@ -23,20 +24,35 @@
     "prepack": "npm run build"
   },
   "keywords": [
-    "placeholder",
-    "zeruxjs"
+    "zeruxjs",
+    "generator",
+    "ssr"
   ],
   "files": [
     "dist/",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "examples/"
   ],
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./templates": {
+      "types": "./dist/templates.d.ts",
+      "import": "./dist/templates.js"
+    }
+  },
+  "dependencies": {
+    "zclivo": "0.0.4"
   }
 }

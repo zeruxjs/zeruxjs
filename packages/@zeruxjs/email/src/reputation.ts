@@ -1,4 +1,4 @@
-import {createHash,randomUUID} from 'node:crypto';
+import { createHash } from 'node:crypto';
 import type {CampaignDatabaseConnection} from './campaign-storage.js';
 import {addressString,validateEmailAddress} from './validation.js';
 

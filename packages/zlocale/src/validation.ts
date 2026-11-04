@@ -1,3 +1,4 @@
+import { validateMessagePlaceholders } from "./placeholders.js";
 import type {
   Catalog,
   CatalogLimits,
@@ -89,6 +90,7 @@ export function defineCatalog(
   for (const [key, value] of entries) {
     text(key);
     if (typeof value === "string") {
+      validateMessagePlaceholders(key.split("\u0004").at(-1)!, value);
       messages[key] = text(value);
       continue;
     }
@@ -96,7 +98,9 @@ export function defineCatalog(
     for (const [category, translation] of dataEntries(value)) {
       if (!categories.has(category))
         throw new TypeError("zlocale: unsupported plural category");
-      forms[category as PluralCategory] = text(translation);
+      const translated = text(translation);
+      validateMessagePlaceholders(key.split("\u0004").at(-1)!, translated);
+      forms[category as PluralCategory] = translated;
     }
     if (typeof forms.other !== "string")
       throw new TypeError("zlocale: plural message requires other");

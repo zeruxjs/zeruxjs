@@ -1,3 +1,4 @@
+import type { ValidationContext } from '../types/runtime.js';
 import type {
   BaseValidationAsync,
   ErrorMessage,
@@ -42,7 +43,7 @@ export interface PartialCheckActionAsync<
   /**
    * The validation function.
    */
-  readonly requirement: (input: TSelection) => MaybePromise<boolean>;
+  readonly requirement: (input: TSelection, context: ValidationContext) => MaybePromise<boolean>;
   /**
    * The error message.
    */
@@ -63,7 +64,7 @@ export function partialCheckAsync<
   const TSelection extends DeepPickN<TInput, TPaths>,
 >(
   paths: ValidPaths<TInput, TPaths>,
-  requirement: (input: TSelection) => MaybePromise<boolean>
+  requirement: (input: TSelection, context: ValidationContext) => MaybePromise<boolean>
 ): PartialCheckActionAsync<TInput, TPaths, TSelection, undefined>;
 
 /**
@@ -84,14 +85,14 @@ export function partialCheckAsync<
   | undefined,
 >(
   paths: ValidPaths<TInput, TPaths>,
-  requirement: (input: TSelection) => MaybePromise<boolean>,
+  requirement: (input: TSelection, context: ValidationContext) => MaybePromise<boolean>,
   message: TMessage
 ): PartialCheckActionAsync<TInput, TPaths, TSelection, TMessage>;
 
 // @__NO_SIDE_EFFECTS__
 export function partialCheckAsync(
   paths: Paths,
-  requirement: (input: PartialInput) => MaybePromise<boolean>,
+  requirement: (input: PartialInput, context: ValidationContext) => MaybePromise<boolean>,
   message?: ErrorMessage<PartialCheckIssue<PartialInput>>
 ): PartialCheckActionAsync<
   PartialInput,
@@ -112,7 +113,7 @@ export function partialCheckAsync(
       if (
         (dataset.typed || _isPartiallyTyped(dataset, paths)) &&
         // @ts-expect-error
-        !(await this.requirement(dataset.value))
+        !(await this.requirement(dataset.value, { signal: config.signal }))
       ) {
         _addIssue(this, 'input', dataset, config);
       }

@@ -29,11 +29,14 @@ const deny = (code: string, message: string): never => { throw createDatabaseErr
 const checksum = (migration: DatabaseMigration): string => createHash("sha256")
     .update(JSON.stringify({ id: migration.id, up: migration.up, down: migration.down })).digest("hex");
 const checkMigrations = (items: DatabaseMigration[]) => {
-    const seen = new Set<string>();
+    if(!Array.isArray(items)||items.length>4096)deny('INVALID_MIGRATION','Migration collection exceeds supported limit');
+    const seen = new Set<string>();let totalOperations=0;
     for (const item of items) {
         if (!item || !/^[0-9]{4,20}_[a-z0-9_-]{1,90}$/.test(item.id) || seen.has(item.id) || !Array.isArray(item.up) || !item.up.length || !Array.isArray(item.down) || !item.down.length) {
             deny("INVALID_MIGRATION", "Migration IDs must be unique and migrations must provide up/down operations");
         }
+        totalOperations+=item.up.length+item.down.length;
+        if(totalOperations>4096)deny('INVALID_MIGRATION','Migration operation collection exceeds supported limit');
         assertJsonSerializable({ up: item.up, down: item.down }, "Migration definition");
         if ([...item.up, ...item.down].some(op => !op || typeof op.op !== "string" || op.connection || op.dependsOn !== undefined || op.use !== undefined || ("into" in op && op.into))) {
             deny("INVALID_MIGRATION", "Migration contains cross-connection or dependent operations");
@@ -48,14 +51,17 @@ const checkMigrations = (items: DatabaseMigration[]) => {
 export function createDatabaseMigrationRunner(migrations: DatabaseMigration[], options: MigrationRunnerOptions) {
     checkMigrations(migrations);
     if (typeof options?.transaction !== "function") deny("MIGRATION_TRANSACTION_REQUIRED", "Real exclusive transaction required");
+    if(options.now!==undefined&&typeof options.now!=='function')deny('INVALID_MIGRATION','Invalid migration clock');
     const now = options.now ?? (() => new Date());
     const items = migrations.map(item => ({ ...item, up: structuredClone(item.up), down: structuredClone(item.down), checksum: checksum(item) }));
     async function inspect(journal: MigrationJournal) {
         const records = await journal.list();
+        if(!Array.isArray(records)||records.length>4096)deny('MIGRATION_DRIFT','Migration journal exceeds supported limit');
         const known = new Map(items.map(item => [item.id, item]));
         const applied = new Set<string>();
         for (const record of records) {
-            if (applied.has(record.id) || !known.has(record.id) || known.get(record.id)?.checksum !== record.checksum) deny("MIGRATION_DRIFT", "Unknown, duplicate or modified migration in journal");
+            if(!record||typeof record.id!=='string'||typeof record.checksum!=='string'||! /^[a-f0-9]{64}$/.test(record.checksum)||typeof record.appliedAt!=='string'||!Number.isFinite(Date.parse(record.appliedAt)))deny('MIGRATION_DRIFT','Malformed migration journal record');
+            if (applied.has(record.id) || !known.has(record.id) || known.get(record.id)?.checksum !== record.checksum) throw createDatabaseError({code:'MIGRATION_DRIFT',message:'Unknown, duplicate or modified migration in journal',details:{id:record.id.slice(0,128),reason:applied.has(record.id)?'duplicate':!known.has(record.id)?'unknown':'checksum',expected:known.get(record.id)?.checksum,actual:record.checksum}});
             applied.add(record.id);
         }
         const prefix = items.slice(0, applied.size);
@@ -86,7 +92,7 @@ export function createDatabaseMigrationRunner(migrations: DatabaseMigration[], o
                 const status = await inspect(journal);
                 if (!status.applied) return null;
                 const item = items[status.applied - 1];
-                if (!await authorize(item.id)) deny("MIGRATION_APPROVAL_REQUIRED", "Migration rollback not approved");
+                if (await authorize(item.id)!==true) deny("MIGRATION_APPROVAL_REQUIRED", "Migration rollback not approved");
                 await execute(db, item.down);
                 await journal.remove(item.id);
                 return item.id;

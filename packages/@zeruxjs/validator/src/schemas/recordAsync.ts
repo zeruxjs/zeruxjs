@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -150,8 +151,8 @@ export function recordAsync(
               Promise.all([
                 entryKey,
                 entryValue,
-                this.key['~run']({ value: entryKey }, config),
-                this.value['~run']({ value: entryValue }, config),
+                _runSchema(this.key, { value: entryKey }, config),
+                _runSchema(this.value, { value: entryValue }, config),
               ])
             )
         );

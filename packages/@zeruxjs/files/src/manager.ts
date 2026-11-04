@@ -27,6 +27,13 @@ export function createFileManager(options: StorageManagerOptions): StorageManage
   const cacheKey=(a:FileAddress)=>`${a.storage ?? fallback}\0${a.bucket}\0${a.key}`;
   const invalidate=(a?:FileAddress)=>a?cache?.deletePrefix(cacheKey(a)+':'):cache?.clear();
   const manager:StorageManager = {
+    validateWrite(address,opts){
+      const {connection,address:canonical}=resolve(address);validatePut(opts);
+      if(connection.readonly)throw new Error('Storage is read-only');
+      if(connection.allowedTypes?.length&&!connection.allowedTypes.some(pattern=>pattern.endsWith('/*')?opts.contentType?.startsWith(pattern.slice(0,-1)):opts.contentType===pattern))throw new Error('Content type not allowed');
+      if(connection.maxBytes!==undefined&&opts.maxBytes!==undefined&&opts.maxBytes>connection.maxBytes)throw new RangeError('File size exceeds limit');
+      return canonical;
+    },
     getDriver(name?:string):StorageDriver { if(closed) throw new Error('File manager closed'); const result=stores.get(name??fallback); if(!result) throw new Error('Unknown storage');return result.driver; },
     async put(address:FileAddress,data:FileSource,opts:PutFileOptions={}) {
       const {name,connection,address:a}=resolve(address); validatePut(opts);
@@ -35,7 +42,8 @@ export function createFileManager(options: StorageManagerOptions): StorageManage
       const max=Math.min(opts.maxBytes??Number.MAX_SAFE_INTEGER,connection.maxBytes??Number.MAX_SAFE_INTEGER);
       if (!Number.isSafeInteger(max) || max < 1) throw new RangeError('Invalid storage size limit');
       async function* bounded(){let count=0;for await(const part of chunks(data,opts.signal)){count+=part.byteLength;if(!Number.isSafeInteger(count)||count>max)throw new RangeError('File size exceeds limit');yield part;}}
-      const stored=await connection.driver.put(a,bounded(),{...opts,maxBytes:max});invalidate(a);return {...stored,storage:name};
+      if(data instanceof Uint8Array && data.byteLength>max)throw new RangeError('File size exceeds limit');
+      const stored=await connection.driver.put(a,data instanceof Uint8Array?data:bounded(),{...opts,maxBytes:max});invalidate(a);return {...stored,storage:name};
     },
     async stat(address:FileAddress){const {name,connection,address:a}=resolve(address);const info=await connection.driver.stat(a);if(!info)return null;ensureNotExpired(info);return {...info,storage:name};},
     async read(address:FileAddress, opts:ReadFileOptions={}){validateRange(opts);const {connection,address:a}=resolve(address); const info=await manager.stat(a);if(!info)throw Object.assign(new Error('File not found'),{code:'ENOENT'});return connection.driver.read(a,opts);},
@@ -89,7 +97,7 @@ export function createFileManager(options: StorageManagerOptions): StorageManage
       if(src.name===dst.name && src.connection.driver.copy){const result=await src.connection.driver.copy(src.address,dst.address,opts);invalidate(dst.address);return result;}
       const stream=await manager.read(from);return manager.put(to,stream,{contentType:info.contentType,visibility:info.visibility,cacheControl:info.cacheControl,metadata:info.metadata,...opts,maxBytes:max});
     },
-    async signedUrl(method,address,seconds,opts){const {connection,address:a}=resolve(address);if(!Number.isSafeInteger(seconds)||seconds<1||seconds>604800)throw new RangeError('Invalid signing lifetime');if(!connection.driver.signedUrl)throw new Error('Signed URL unsupported by storage');return connection.driver.signedUrl(method,a,seconds,opts);},
+    async signedUrl(method,address,seconds,opts){const {connection,address:a}=resolve(address);if(!['GET','PUT'].includes(method))throw new TypeError('Invalid signed method');if(method==='PUT'&&connection.readonly)throw new Error('Storage is read-only');validatePut(opts??{});if(method==='PUT'&&(connection.maxBytes!==undefined||connection.allowedTypes?.length))throw new TypeError('Signed PUT cannot enforce manager size/type policies');if(!Number.isSafeInteger(seconds)||seconds<1||seconds>604800)throw new RangeError('Invalid signing lifetime');if(!connection.driver.signedUrl)throw new Error('Signed URL unsupported by storage');return connection.driver.signedUrl(method,a,seconds,opts);},
     publicUrl(address){const {connection,address:a}=resolve(address);return connection.driver.publicUrl?.(a);},
     cacheStats(){return cache?.stats()??{entries:0,bytes:0,hits:0,misses:0};}, invalidate,
     async close(){if(closed)return;closed=true;invalidate();await Promise.all([...new Set([...stores.values()].map(s=>s.driver))].map(s=>s.close?.()));}

@@ -1,3 +1,4 @@
+import {rankKnowledgeDocuments,type KnowledgeRankingOptions} from './ranking.js';
 import {tokenize} from './tokenizer.js';
 import type {KnowledgeDocument,KnowledgeResult,KnowledgeSnapshot,KnowledgeOptions} from './types.js';
 function clone(doc:KnowledgeDocument):KnowledgeDocument{return {id:doc.id,text:doc.text,title:doc.title,metadata:doc.metadata?{...doc.metadata}:undefined};}
@@ -11,7 +12,7 @@ export class DocumentKnowledgeBase {
  remove(id:string){return this.docs.delete(id);} clear(){this.docs.clear();}
  get(id:string){const doc=this.docs.get(id);return doc?clone(doc):undefined;}
  list(){return [...this.docs.values()].map(clone);}
- search(query:string,limit=5):KnowledgeResult[]{if(typeof query!=='string'||query.length>10000)throw new TypeError('Invalid knowledge query');if(!Number.isSafeInteger(limit)||limit<0||limit>1000)throw new RangeError('Invalid search limit');const terms=[...new Set(tokenize(query).filter(t=>!this.stop.has(t)))];if(!terms.length)return[];
+ search(query:string,limit=5,ranking?:KnowledgeRankingOptions):KnowledgeResult[]{if(typeof query!=='string'||query.length>10000)throw new TypeError('Invalid knowledge query');if(!Number.isSafeInteger(limit)||limit<0||limit>1000)throw new RangeError('Invalid search limit');if(ranking)return rankKnowledgeDocuments(this.list(),query,limit,ranking,this.stop);const terms=[...new Set(tokenize(query).filter(t=>!this.stop.has(t)))];if(!terms.length)return[];
  const docs=[...this.docs.values()];const frequencies=new Map<string,number>();const counts=docs.map(doc=>{const terms=tokenize(`${doc.title??''} ${doc.text}`);const set=new Set(terms);for(const term of set)frequencies.set(term,(frequencies.get(term)??0)+1);return {doc,terms};});
  return counts.map(({doc,terms:words})=>{let score=0;const count=new Map<string,number>();for(const word of words)count.set(word,(count.get(word)??0)+1);const title=new Set(tokenize(doc.title??''));for(const term of terms){const tf=count.get(term)??0;if(tf)score+=(1+Math.log(tf))*(Math.log(1+(docs.length-(frequencies.get(term)??0)+0.5)/((frequencies.get(term)??0)+0.5))+1)*(title.has(term)?2:1);}return {document:clone(doc),score};}).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.document.id.localeCompare(b.document.id)).slice(0,limit);
  }

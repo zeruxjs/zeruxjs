@@ -1,6 +1,6 @@
 {
   "name": "zyrojs",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Standalone signal reactivity, lifecycle-managed DOM rendering, and abortable network clients",
   "type": "module",
   "main": "./dist/index.js",
@@ -24,6 +24,18 @@
     "./network": {
       "types": "./dist/network/index.d.ts",
       "default": "./dist/network/index.js"
+    },
+    "./component": {
+      "types": "./dist/component.d.ts",
+      "default": "./dist/component.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./hydrate": {
+      "types": "./dist/hydrate.d.ts",
+      "default": "./dist/hydrate.js"
     }
   },
   "license": "MIT",
@@ -40,11 +52,15 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "parse5": "7.3.0",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "dependencies": {
+    "@zeruxjs/security": "0.0.4"
   }
 }

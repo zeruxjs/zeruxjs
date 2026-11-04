@@ -46,7 +46,7 @@ jobs:
           import assert from 'node:assert/strict';
           import fs from 'node:fs';
           import path from 'node:path';
-          for (const name of ['zuixs', '@zeruxjs/typescript', '@zeruxjs/performance', '@zeruxjs/search']) {
+          for (const name of ['zlook', 'zuixs', '@zeruxjs/typescript', '@zeruxjs/performance', '@zeruxjs/search']) {
             const actual = fs.realpathSync(path.join('node_modules', name));
             const expected = fs.realpathSync(path.join('packages', name));
             assert.equal(actual, expected, `${name} must use the checked-out workspace`);

@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -149,7 +150,7 @@ export function variant(
                 const discriminatorSchema = schema.entries[currentKey];
                 if (
                   currentKey in input
-                    ? discriminatorSchema['~run'](
+                    ? _runSchema(discriminatorSchema,
                       // @ts-expect-error
                       { typed: false, value: input[currentKey] },
                       { abortEarly: true }
@@ -194,7 +195,7 @@ export function variant(
 
               // If all discriminators are valid, parse input with schema of option
               if (keysAreValid) {
-                const optionDataset = schema['~run']({ value: input }, config);
+                const optionDataset = _runSchema(schema, { value: input }, config);
 
                 // Store output dataset if necessary
                 // Hint: Only the first untyped or typed dataset is returned, and

@@ -1,3 +1,4 @@
+import {readStateFile} from './state-file.js';
 /** Authenticated, loopback-only process control. Control descriptors are private
  * to the OS user; untrusted clients cannot select a different process by PID. */
 import * as fs from 'node:fs';
@@ -53,10 +54,10 @@ export function readControlDescriptor(stateDir: string, name: string): ControlDe
   try {
     ensureControlDirectory(stateDir);
     const filename = descriptorPath(stateDir, name);
-    const st = fs.lstatSync(filename);
+    const {stat: st, bytes} = readStateFile(filename, 2048);
     if (!st.isFile() || st.isSymbolicLink() || st.size > 2048 || (st.mode & 0o077) !== 0 ||
       (typeof process.getuid === 'function' && st.uid !== process.getuid())) throw new Error('Unsafe control descriptor');
-    const value: unknown = JSON.parse(fs.readFileSync(filename, 'utf8'));
+    const value: unknown = JSON.parse(bytes.toString('utf8'));
     if (!validateRecord(value, name)) throw new Error('Invalid control descriptor');
     return value;
   } catch (error) {
@@ -78,7 +79,7 @@ export type ControlHandler = (action: string, data: unknown) => Promise<unknown>
 /** Serve JSON-line requests on an ephemeral IPv4 loopback port. Auth is required
  * even on localhost because another local user may reach the TCP listener. */
 export async function createLocalControl(stateDir: string, name: string, handler: ControlHandler): Promise<LocalControl> {
-  const dir = ensureControlDirectory(stateDir, true);
+  ensureControlDirectory(stateDir, true);
   const filename = descriptorPath(stateDir, name);
   const old = readControlDescriptor(stateDir, name);
   if (old && processExists(old.pid) && processIdentity(old.pid) === old.identity) throw new Error(`Control already running: ${name}`);

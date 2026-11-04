@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { buildProjectSources, resolveProductionStructure } from '../dist/commands/project-builder.js';
 
 async function fixture() {
@@ -86,13 +87,14 @@ test('production build never follows linked output directories or manifest files
 });
 
 test('real installed TypeScript compiler emits executable JS, not just a manifest', async t => {
-  const globalTs = path.resolve(path.dirname(process.execPath), '../lib/node_modules/typescript');
-  if (!(await fs.stat(globalTs).catch(() => null))) return t.skip('Installed TypeScript unavailable');
+  let installedTs;
+  try { installedTs = path.dirname(createRequire(import.meta.url).resolve('typescript/package.json')); }
+  catch { return t.skip('Installed TypeScript package unavailable'); }
   const f = await fixture();
   try {
     await fs.writeFile(path.join(f.rootDir, 'package.json'), JSON.stringify({ type: 'module' }));
     await fs.mkdir(path.join(f.rootDir, 'node_modules'), { recursive: true });
-    await fs.symlink(globalTs, path.join(f.rootDir, 'node_modules', 'typescript'));
+    await fs.symlink(installedTs, path.join(f.rootDir, 'node_modules', 'typescript'));
     const built = await buildProjectSources({ rootDir: f.rootDir });
     assert.equal(built.files, 2);
     const { answer } = await import('file://' + path.join(f.rootDir, '.zerux/build/app/route.js'));
@@ -122,4 +124,20 @@ test('nested symlink output parents are rejected in build and production modes',
     await assert.rejects(resolveProductionStructure(f.rootDir, 'zerux', config), /Unsafe build output directory/);
     assert.equal((await fs.readdir(external.rootDir)).includes('output'), false);
   } finally { await f.close(); await external.close(); }
+});
+
+test('source roots cannot escape through a symlinked parent',async()=>{
+ const f=await fixture(),other=await fixture();try{await fs.symlink(other.rootDir,path.join(f.rootDir,'linked'),'dir');await assert.rejects(buildProjectSources({rootDir:f.rootDir,config:{structure:{app:'linked/app'}},transform:source=>source}),/Unsafe build source/);}finally{await f.close();await other.close();}
+});
+
+test('browser bundles may use local exports data while Node/global exports remain forbidden', async () => {
+  const { classifyModules } = await import('../dist/compiler/module-boundaries.js');
+  const ts = await import('typescript');
+  const fixture = source => [{ relative: 'public/client.js', source, publicPath: 'client.js' }];
+  const wrapped = 'const wrap=(factory,state)=>()=>{state ||= {exports:{}}; factory(state.exports,state); return state.exports}; const value=wrap((target)=>{target.answer=42}); value();';
+  assert.ok(classifyModules(ts, fixture(wrapped)).clientModules.has('public/client.js'));
+  assert.ok(classifyModules(ts, fixture('const wrap=(fn,s)=>()=>{return s||fn((s={exports:{}}).exports,s),s.exports};')).clientModules.has('public/client.js'));
+  for (const source of ['exports.secret=1;', 'module.exports={};', 'require("node:fs");', 'globalThis.exports;', 'window.exports;', 'self.exports;', 'globalThis["exports"];', 'missing.exports;', 'const data={exports:process.env.SECRET};']) {
+    assert.throws(() => classifyModules(ts, fixture(source)), error => error.code === 'CLIENT_USES_SERVER_GLOBAL', source);
+  }
 });

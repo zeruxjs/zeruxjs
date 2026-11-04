@@ -11,6 +11,7 @@ export function generateTotpSecret(bytes = 20): string {
     return output;
 }
 function decodeBase32(secret: string): Buffer {
+    if (typeof secret !== "string" || secret.length > 128) throw new Error("Invalid TOTP secret");
     const input = secret.replace(/\s|-/g, "").toUpperCase().replace(/=+$/, "");
     if (input.length < 16 || !/^[A-Z2-7]+$/.test(input)) throw new Error("Invalid TOTP secret");
     let bits = 0, value = 0; const result: number[] = [];
@@ -23,6 +24,7 @@ function decodeBase32(secret: string): Buffer {
 export interface TotpOptions { period?: number; digits?: 6 | 8; algorithm?: "sha1" | "sha256" | "sha512"; now?: number; }
 export function generateTotp(secret: string, options: TotpOptions = {}): string {
     const period = options.period ?? 30, digits = options.digits ?? 6;
+    if (!["sha1", "sha256", "sha512"].includes(options.algorithm ?? "sha1")) throw new RangeError("Invalid TOTP algorithm");
     if (!Number.isSafeInteger(period) || period < 10 || period > 300 || (digits !== 6 && digits !== 8)) throw new RangeError("Invalid TOTP parameters");
     const timestamp = options.now ?? Date.now();
     if (!Number.isFinite(timestamp) || timestamp < 0) throw new RangeError("Invalid TOTP time");

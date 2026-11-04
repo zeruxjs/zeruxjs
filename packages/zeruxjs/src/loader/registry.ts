@@ -8,7 +8,6 @@ type LoaderModuleStore = Map<string, Record<string, unknown>>;
 
 const RESOLVER_SYMBOL = Symbol.for("zerux.loader.resolvers");
 const MODULE_SYMBOL = Symbol.for("zerux.loader.modules");
-const SERVICE_SYMBOL = Symbol.for("zerux.loader.service");
 
 let currentService = "zerux";
 

@@ -12,7 +12,7 @@ export function validateEvent(input:AnalyticsEventInput):AnalyticsRow {
   if(!props||typeof props!=='object'||Array.isArray(props)||Object.keys(props).length>40)throw new TypeError('Invalid event properties');
   const clean:EventProperties=Object.create(null) as EventProperties;
   for(const [key,value] of Object.entries(props)){
-    if(!eventName.test(key)||key==='__proto__'||key==='constructor'||key==='prototype'||['zVisitorId','zConsent','zRequestId','zRequestUtcDay'].includes(key))throw new TypeError('Invalid property key');
+    if(!eventName.test(key)||key==='__proto__'||key==='constructor'||key==='prototype'||['zVisitorId','zConsent','zRequestId','zRequestUtcDay','zAnalyticsSchema'].includes(key))throw new TypeError('Invalid property key');
     if(value!==null&&typeof value!=='string'&&typeof value!=='boolean'&&typeof value!=='number')throw new TypeError('Event values must be scalar');
     if(typeof value==='number'&&!Number.isFinite(value))throw new TypeError('Invalid numeric event value');
     if(typeof value==='string'&&value.length>1024)throw new RangeError('Event property too long');
@@ -43,4 +43,12 @@ export function validateEvent(input:AnalyticsEventInput):AnalyticsRow {
   const at=input.occurredAt??Date.now();
   if(!Number.isSafeInteger(at)||at<Date.now()-30*86_400_000||at>Date.now()+5*60_000)throw new RangeError('Event timestamp outside accepted window');
   return {id:randomUUID(),event_name:input.name,source:input.source??'server',site:string(input.site,200),pathname:string(input.pathname,2048),session_id:string(input.sessionId,128),occurred_at:at,properties_json};
+}
+
+/** Shared registered ingestion boundary for best-effort and explicit durable acceptance. */
+export function validateRegisteredEvent(input:AnalyticsEventInput,registry?:import('./schemas.js').AnalyticsEventSchemaRegistry):AnalyticsRow {
+  const prepared=registry?.prepare(input);const row=validateEvent(input);
+  if(prepared){const properties=JSON.parse(row.properties_json);properties.zAnalyticsSchema=prepared.metadata;row.properties_json=JSON.stringify(properties);if(Buffer.byteLength(row.properties_json)>8192)throw new RangeError('Event properties exceed limit');}
+  else if(input.schemaVersion!==undefined||input.userProperties!==undefined||input.sessionProperties!==undefined)throw new TypeError('Versioned properties require a schema registry');
+  return row;
 }

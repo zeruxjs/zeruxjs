@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { BackendConnections } from '../dist/portless/backend-connections.js';
 import { createProxyServer } from '../dist/portless/proxy.js';
 import http from 'node:http';
-import { once } from 'node:events';
+import 'node:events';
 
 test('HTTP completion data is bounded and produces error rate and p95 latency',()=>{
  const monitor=new BackendConnections();
