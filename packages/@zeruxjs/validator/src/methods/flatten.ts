@@ -96,13 +96,13 @@ export function flatten(
       // If path has valid keys, add message to nested errors
       if (dotPath) {
         if (!flatErrors.nested) {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           flatErrors.nested = {};
         }
         if (flatErrors.nested![dotPath]) {
           flatErrors.nested![dotPath]!.push(issue.message);
         } else {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           flatErrors.nested![dotPath] = [issue.message];
         }
 
@@ -111,7 +111,7 @@ export function flatten(
         if (flatErrors.other) {
           flatErrors.other.push(issue.message);
         } else {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           flatErrors.other = [issue.message];
         }
       }
@@ -121,7 +121,7 @@ export function flatten(
       if (flatErrors.root) {
         flatErrors.root.push(issue.message);
       } else {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         flatErrors.root = [issue.message];
       }
     }

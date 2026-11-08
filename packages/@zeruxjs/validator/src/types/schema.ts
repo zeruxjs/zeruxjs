@@ -23,7 +23,7 @@ export interface BaseSchema<
    * The schema reference.
    */
   readonly reference: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     ...args: any[]
   ) => BaseSchema<unknown, unknown, BaseIssue<unknown>>;
   /**
@@ -83,7 +83,7 @@ export interface BaseSchemaAsync<
    * The schema reference.
    */
   readonly reference: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     ...args: any[]
   ) =>
     | BaseSchema<unknown, unknown, BaseIssue<unknown>>

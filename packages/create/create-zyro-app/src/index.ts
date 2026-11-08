@@ -37,8 +37,8 @@ export async function runCreateZyro(
     out(version);
     return 0;
   }
-  let basePath = '/',
-    rest: string[] = [];
+  let basePath = '/';
+  const rest: string[] = [];
   try {
     parseArguments(argv);
     let found = false,

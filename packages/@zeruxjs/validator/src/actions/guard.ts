@@ -12,7 +12,7 @@ import { _addIssue } from '../utils/index.js';
  */
 export type GuardFunction<TInput> = (
   input: TInput
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
 ) => input is any;
 
 /**
@@ -20,9 +20,9 @@ export type GuardFunction<TInput> = (
  *
  * @beta
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export type InferGuardOutput<TGuard extends GuardFunction<any>> =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TGuard extends (input: any) => input is infer TOutput ? TOutput : unknown;
 
 /**
@@ -103,7 +103,7 @@ export function guard<TInput, const TGuard extends GuardFunction<TInput>>(
  * @beta
  */
 // unknown input, e.g. standalone
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export function guard<const TGuard extends GuardFunction<any>>(
   requirement: TGuard
 ): GuardAction<Parameters<TGuard>[0], TGuard, undefined>;
@@ -140,7 +140,7 @@ export function guard<
  */
 // unknown input, e.g. standalone
 export function guard<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const TGuard extends GuardFunction<any>,
   const TMessage extends
   | ErrorMessage<GuardIssue<Parameters<TGuard>[0], TGuard>>
@@ -169,7 +169,7 @@ export function guard(
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement(dataset.value)) {
         _addIssue(this, 'input', dataset, config);
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = false;
       }
       return dataset;

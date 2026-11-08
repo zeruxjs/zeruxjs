@@ -469,15 +469,15 @@ export function pick<
   const TKeys extends ObjectKeys<TSchema>,
 >(schema: TSchema, keys: TKeys): SchemaWithPick<TSchema, TKeys> {
   // Create modified object entries
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   const entries: Pick<TSchema['entries'], TKeys[number]> = {};
   for (const key of keys) {
-    // @ts-expect-error
+    // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
     entries[key] = schema.entries[key];
   }
 
   // Return modified copy of schema
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   return {
     ...schema,
     entries,

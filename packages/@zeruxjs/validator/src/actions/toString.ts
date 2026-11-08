@@ -83,7 +83,7 @@ export function toString(
         dataset.value = String(dataset.value);
       } catch {
         _addIssue(this, 'string', dataset, config);
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = false;
       }
       return dataset as OutputDataset<string, ToStringIssue<unknown>>;

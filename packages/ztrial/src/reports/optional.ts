@@ -10,6 +10,7 @@ export class ReportDependencyError extends ReportExportError {constructor(readon
 async function dependency(name:string,load?:()=>Promise<unknown>):Promise<any>{try{return await(load?load():import(name));}catch(error){throw new ReportDependencyError(name,error);}}
 function loader(options:OptionalReportOptions){if(!options||typeof options!=='object'||(options.load!==undefined&&typeof options.load!=='function'))throw new TypeError('Invalid optional report loader');return options.load;}
 function fontPath(value:unknown):string {
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if(typeof value!=='string'||!value||value.length>4096||/[\x00-\x1f\x7f]/.test(value)||value.split(/[\\/]/).includes('..')||!/^\.(ttf|otf)$/i.test(path.extname(value)))throw new ReportExportError('INVALID_FONT');return value;
 }
 async function font(file:string):Promise<Buffer>{
@@ -53,6 +54,7 @@ export function createPdfExporter(options:FontReportOptions&{maxPages?:number}):
 /** XLSX stores strings, never formula objects; the workbook embeds no recording files. */
 export function createXlsxExporter(options:OptionalReportOptions&{maxRows?:number;fontFamily:string}):ReportExporter {
   const load=loader(options),maxRows=bounded(options.maxRows,1000,1,10000,'maxRows'),family=options.fontFamily;
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if(typeof family!=='string'||!family||family.length>128||/[\x00-\x1f\x7f]/.test(family))throw new TypeError('Invalid spreadsheet font family');
   return {format:'xlsx',extension:'results.xlsx',kind:'summary',async render(report,context){
     if(report.results.length>maxRows)throw new ReportExportError('ROW_LIMIT');const module=await dependency('exceljs',load);const Workbook=module.Workbook??module.default?.Workbook;if(typeof Workbook!=='function')throw new ReportDependencyError('exceljs');

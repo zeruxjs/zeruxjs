@@ -6,6 +6,7 @@ export function escapeHtmlText(value: unknown): string {
  * require separate policies. URL attributes require URL validation first.
  */
 export function escapeHtmlAttribute(value: unknown): string {
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     return escapeHtmlText(value).replace(/[\x00-\x1f\x7f`]/g, char => `&#x${char.charCodeAt(0).toString(16)};`);
 }
 /** Serialize a JSON-compatible value as one JavaScript value in an HTML script
@@ -36,6 +37,7 @@ export interface NavigationUrlOptions { baseUrl?: string; allowedOrigins?: reado
  * an SSRF/egress/redirect authorization policy. Attribute-encode at an HTML sink.
  */
 export function validateNavigationUrl(value: string, options: NavigationUrlOptions = {}): string {
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if (typeof value !== 'string' || value.length > 8192 || !value || /[\x00-\x20\x7f\\]/.test(value) || value.startsWith('//')) throw new TypeError('Invalid navigation URL');
     if (!options || typeof options !== 'object') throw new TypeError('Invalid navigation URL options');
     function parse(text: string): URL {

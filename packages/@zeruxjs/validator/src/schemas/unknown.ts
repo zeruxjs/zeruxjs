@@ -36,9 +36,9 @@ export function unknown(): UnknownSchema {
       return _getStandardProps(this);
     },
     '~run'(dataset) {
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       dataset.typed = true;
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as SuccessDataset<unknown>;
     },
   };

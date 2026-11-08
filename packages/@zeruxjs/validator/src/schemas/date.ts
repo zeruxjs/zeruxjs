@@ -82,9 +82,9 @@ export function date(
     },
     '~run'(dataset, config) {
       if (dataset.value instanceof Date) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         if (!isNaN(dataset.value)) {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.typed = true;
         } else {
           _addIssue(this, 'type', dataset, config, {
@@ -94,7 +94,7 @@ export function date(
       } else {
         _addIssue(this, 'type', dataset, config);
       }
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<Date, DateIssue>;
     },
   };

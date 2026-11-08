@@ -830,6 +830,7 @@ const createRuntime = async (
     registerServiceHttpRoutes(pluginApi, serviceScope, [...routes.map(route => route.pattern), ...publicFiles.keys()]);
     routesSealed = true;
 
+    // eslint-disable-next-line prefer-const -- Plugin callbacks capture the runtime before its deferred initialization.
     runtime = {
         rootDir,
         mode,

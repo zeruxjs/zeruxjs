@@ -96,7 +96,7 @@ export function strictObject(
       // If root type is valid, check nested types
       if (input && typeof input === 'object' && !Array.isArray(input)) {
         // Set typed to `true` and value to blank object
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
         dataset.value = {};
 
@@ -112,12 +112,12 @@ export function strictObject(
             ((valueSchema.type === 'exact_optional' ||
               valueSchema.type === 'optional' ||
               valueSchema.type === 'nullish') &&
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               valueSchema.default !== undefined)
           ) {
             const value: unknown =
               Object.hasOwn(input, key)
-                ? // @ts-expect-error
+                ? // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 input[key]
                 : undefined;
             const valueDataset = _runSchema(valueSchema, { value }, config);
@@ -138,14 +138,14 @@ export function strictObject(
                 if (issue.path) {
                   issue.path.unshift(pathItem);
                 } else {
-                  // @ts-expect-error
+                  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                   issue.path = [pathItem];
                 }
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 dataset.issues?.push(issue);
               }
               if (!dataset.issues) {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 dataset.issues = valueDataset.issues;
               }
 
@@ -162,13 +162,13 @@ export function strictObject(
             }
 
             // Add entry to dataset
-            // @ts-expect-error
+            // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
             dataset.value[key] = valueDataset.value;
 
             // Otherwise, if key is missing but has a fallback, use it
-            // @ts-expect-error
+            // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           } else if (valueSchema.fallback !== undefined) {
-            // @ts-expect-error
+            // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
             dataset.value[key] = getFallback(valueSchema);
 
             // Otherwise, if key is missing and required, add issue
@@ -186,7 +186,7 @@ export function strictObject(
                   origin: 'key',
                   input: input as Record<string, unknown>,
                   key,
-                  // @ts-expect-error
+                  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                   value: input[key],
                 },
               ],
@@ -212,7 +212,7 @@ export function strictObject(
                     origin: 'key',
                     input: input as Record<string, unknown>,
                     key,
-                    // @ts-expect-error
+                    // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                     value: input[key],
                   },
                 ],
@@ -234,7 +234,7 @@ export function strictObject(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         InferObjectOutput<ObjectEntries>,
         StrictObjectIssue | InferObjectIssue<ObjectEntries>

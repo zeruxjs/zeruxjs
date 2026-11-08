@@ -93,7 +93,7 @@ export type LastTupleItem<TTuple extends readonly [unknown, ...unknown[]]> =
  * Converts union to intersection type.
  */
 export type UnionToIntersect<TUnion> =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   (TUnion extends any ? (arg: TUnion) => void : never) extends (
     arg: infer Intersect
   ) => void

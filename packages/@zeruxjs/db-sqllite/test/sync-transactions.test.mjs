@@ -14,7 +14,7 @@ test('sync commit, rollback-only failure, nested denial and stale scopes',async(
  assert.throws(()=>captured.execute(insert(2)),code('SQLITE_TRANSACTION_SCOPE_CLOSED'));
  assert.throws(()=>db.transactionSync(tx=>{tx.execute(insert(2));throw Error('callback failed');}),/callback failed/);
  assert.equal(db.transactionSync(tx=>tx.select({table:'items'})).rowCount,1);
- assert.throws(()=>db.transactionSync(tx=>{try{tx.execute(insert(1));}catch{}}),code('SQLITE_TRANSACTION_ROLLBACK_ONLY'));
+ assert.throws(()=>db.transactionSync(tx=>{try{tx.execute(insert(1));}catch{ /* Drain or observe the deliberately failing fixture; the enclosing assertion checks its outcome. */ }}),code('SQLITE_TRANSACTION_ROLLBACK_ONLY'));
  db.transactionSync(tx=>{assert.throws(()=>db.transactionSync(()=>{}),code('SQLITE_NESTED_TRANSACTION_UNSUPPORTED'));assert.throws(()=>db.execute(insert(3)),code('SQLITE_USE_TRANSACTION_FACADE'));assert.throws(()=>db.getNativeConnection(),code('SQLITE_USE_TRANSACTION_FACADE'));tx.execute(insert(3));});
  }finally{await db.disconnect();await db.disconnect();}
  assert.throws(()=>db.transactionSync(()=>{}),code('SQLITE_CONNECTOR_CLOSED'));
@@ -87,7 +87,7 @@ test('readonly borrowed facade rejects writes without changing native ownership'
 test('sync callback elapsed deadline rolls back and row metadata ignores keyword literals',async()=>{
  const db=await createConnector({driver:'node'});try{
  db.transactionSync(tx=>tx.execute({...table,columns:[{name:'id',type:'integer',primary:true},{name:'value',type:'text',default:'RETURNING'}]}));
- assert.throws(()=>db.transactionSync(tx=>{tx.execute(insert(1));const end=performance.now()+5;while(performance.now()<end){}},{timeoutMs:1}),code('SQLITE_TRANSACTION_ABORTED'));
+ assert.throws(()=>db.transactionSync(tx=>{tx.execute(insert(1));const end=performance.now()+5;while(performance.now()<end){ /* Drain or observe the deliberately failing fixture; the enclosing assertion checks its outcome. */ }},{timeoutMs:1}),code('SQLITE_TRANSACTION_ABORTED'));
  assert.equal(db.transactionSync(tx=>tx.select({table:'items'})).rowCount,0);
  }finally{await db.disconnect();}
 });

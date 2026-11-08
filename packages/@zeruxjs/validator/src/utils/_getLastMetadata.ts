@@ -27,7 +27,7 @@ type Schema =
   | SchemaWithPipe<
     readonly [
       BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       ...(PipeItem<any, unknown, BaseIssue<unknown>> | MetadataAction)[],
     ]
   >
@@ -38,8 +38,8 @@ type Schema =
         | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
       ),
       ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
-        | PipeItemAsync<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
+        | PipeItem<any, unknown, BaseIssue<unknown>>  
+        | PipeItemAsync<any, unknown, BaseIssue<unknown>>  
         | MetadataAction
       )[],
     ]
@@ -68,7 +68,7 @@ export function _getLastMetadata(
       if (item.kind === 'schema' && 'pipe' in item) {
         nestedSchemas.push(item);
       } else if (item.kind === 'metadata' && item.type === type) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         return item[type];
       }
     }

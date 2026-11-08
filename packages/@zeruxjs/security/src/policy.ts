@@ -41,6 +41,7 @@ export class SecurityPolicyConflictError extends Error {
         this.conflicts = Object.freeze(conflicts.map(conflict => Object.freeze({ ...conflict })));
     }
 }
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 const control = /[\x00-\x20\x7f]/;
 function object(value: unknown, label: string): asserts value is Record<string, any> {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(`Invalid ${label}`);

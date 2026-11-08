@@ -19,7 +19,7 @@ type Schema =
     readonly [
       BaseSchema<unknown, unknown, BaseIssue<unknown>>,
       ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
+        | PipeItem<any, unknown, BaseIssue<unknown>>  
         | DescriptionAction<unknown, string>
       )[],
     ]
@@ -31,8 +31,8 @@ type Schema =
         | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
       ),
       ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
-        | PipeItemAsync<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
+        | PipeItem<any, unknown, BaseIssue<unknown>>  
+        | PipeItemAsync<any, unknown, BaseIssue<unknown>>  
         | DescriptionAction<unknown, string>
       )[],
     ]

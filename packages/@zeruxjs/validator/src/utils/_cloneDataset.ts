@@ -18,7 +18,7 @@ export function _cloneDataset<TValue, TIssue extends BaseIssue<unknown>>(
 ): OutputDataset<TValue, TIssue> {
   // Hint: We assign the known dataset properties directly instead of using the
   // spread operator for better runtime performance.
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   return {
     typed: dataset.typed,
     value: dataset.value,

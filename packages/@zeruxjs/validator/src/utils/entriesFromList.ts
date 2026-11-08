@@ -19,7 +19,7 @@ export function entriesFromList<
   | BaseSchema<unknown, unknown, BaseIssue<unknown>>
   | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(list: TList, schema: TSchema): Record<TList[number], TSchema> {
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   const entries: Record<TList[number], TSchema> = {};
   for (const key of list) {
     entries[key as TList[number]] = schema;

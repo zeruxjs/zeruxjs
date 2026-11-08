@@ -22,6 +22,7 @@ export function rabbitMQBackend<O,B extends PullBackend>(create:(options:O)=>Pro
 }
 export function memcacheQBackend<O,B extends PullBackend>(create:(options:O)=>B,queues:readonly string[]):QueueBackendFactory<O,B>{
  return {name:'memcacheq',queues:allowedQueues(queues),capabilities:Object.freeze({...base,pull:true,destructiveRead:true}),
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   validate(value){queueOptionKeys(value,['host','port','tls','timeoutMs','maxBytes','maxConcurrent','prefix','serverMaxBytes','acceptLegacy']);prefix(value);if(value.acceptLegacy!==undefined&&typeof value.acceptLegacy!=='boolean'||value.maxBytes!==undefined&&value.serverMaxBytes!==undefined&&value.maxBytes>value.serverMaxBytes)throw new QueueBackendError('INVALID_OPTIONS');limits(value,{port:65535,timeoutMs:120000,maxBytes:65500,maxConcurrent:1000,serverMaxBytes:65500});if(value.host!==undefined&&(typeof value.host!=='string'||!value.host.length||value.host.length>253||/[\s\x00-\x1f]/.test(value.host))||value.tls!==undefined&&typeof value.tls!=='boolean')throw new QueueBackendError('INVALID_OPTIONS');return {...value} as O;},
   open(options,ownership){const client=create(options);ownership.onCleanup(async()=>{await client.close();await client.whenClosed?.();});return {extension:client,async publish(queue,name,data){await client.add(queue,name,data);return {};},async take(queue){const job=await client.take(queue);return job?{...job,disposition:'consumed'}:undefined;}};}
  };

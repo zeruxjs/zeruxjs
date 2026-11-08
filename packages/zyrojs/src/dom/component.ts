@@ -5,7 +5,7 @@ export interface ComponentOptions {
   /** Handles synchronous setup/render failures only; event and Promise errors stay with their caller. */
   onError?: (error: unknown) => VNodeChild;
 }
-const definitions = new WeakMap<Function, { setup: Function; onError?: ComponentOptions['onError'] }>();
+const definitions = new WeakMap<object, { setup: ((...args: any[]) => any); onError?: ComponentOptions['onError'] }>();
 let rendering = 0;
 /** Signal convenience hooks allocate resources and must run in setup, never in a repeated render. */
 export function assertSetupHook(): void {
@@ -15,7 +15,7 @@ export function runComponentRender<T>(fn: () => T): T {
   rendering++;
   try { return fn(); } finally { rendering--; }
 }
-export function getComponentDefinition(component: Function) { return definitions.get(component); }
+export function getComponentDefinition(component: object) { return definitions.get(component); }
 /** Setup runs once per mounted type/key. Returned render receives current props on every update. */
 export function defineComponent<P extends Record<string, any> = Record<string, unknown>>(
   setup: (initialProps: P) => Component<P>, options: ComponentOptions = {}

@@ -35,6 +35,7 @@ export function trackConnections(server: net.Server): ConnectionTracker {
       }
       draining = new Promise<void>((resolve, reject) => {
         let settled = false;
+        // eslint-disable-next-line prefer-const -- Callbacks observe this lifetime handle before its deferred initialization.
         let timer: ReturnType<typeof setTimeout> | undefined;
         const finish = (error?: Error) => {
           if (settled) return;

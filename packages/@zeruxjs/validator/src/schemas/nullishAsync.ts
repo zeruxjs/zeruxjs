@@ -112,9 +112,9 @@ export function nullishAsync(
 
         // If value is still `null` or `undefined`, return dataset
         if (dataset.value === null || dataset.value === undefined) {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.typed = true;
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           return dataset as SuccessDataset<unknown>;
         }
       }

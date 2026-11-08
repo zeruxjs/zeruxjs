@@ -11,7 +11,7 @@ import { ValidationError } from '../utils/index.js';
  * Returns action type.
  */
 export interface ReturnsAction<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput extends (...args: any[]) => unknown,
   TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 > extends BaseTransformation<
@@ -41,7 +41,7 @@ export interface ReturnsAction<
  * @returns An returns action.
  */
 export function returns<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput extends (...args: any[]) => unknown,
   TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(schema: TSchema): ReturnsAction<TInput, TSchema>;

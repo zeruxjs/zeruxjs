@@ -86,7 +86,7 @@ function atomicWrite(file: string, text: string): void {
 export function createDeploymentHistory(stateDir: string, hostname: string, initial: RollingStatus, options: HistoryRetentionOptions = {}) {
   retention(options);
   ensureControlDirectory(stateDir, true);
-  let previous = readDeploymentHistory(stateDir, hostname);
+  const previous = readDeploymentHistory(stateDir, hostname);
   let status = { ...initial };
   let history: DeploymentEvent[] = compactHistory(previous?.history ?? [], options);
   const save = () => {

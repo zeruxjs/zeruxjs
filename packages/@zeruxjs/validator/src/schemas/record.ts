@@ -125,7 +125,7 @@ export function record(
       // If root type is valid, check nested types
       if (input && typeof input === 'object') {
         // Set typed to `true` and value to empty object
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
         dataset.value = {};
 
@@ -153,13 +153,13 @@ export function record(
 
               // Add modified item dataset issues to issues
               for (const issue of keyDataset.issues) {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 issue.path = [pathItem];
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 dataset.issues?.push(issue);
               }
               if (!dataset.issues) {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 dataset.issues = keyDataset.issues;
               }
 
@@ -192,14 +192,14 @@ export function record(
                 if (issue.path) {
                   issue.path.unshift(pathItem);
                 } else {
-                  // @ts-expect-error
+                  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                   issue.path = [pathItem];
                 }
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 dataset.issues?.push(issue);
               }
               if (!dataset.issues) {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 dataset.issues = valueDataset.issues;
               }
 
@@ -217,7 +217,7 @@ export function record(
 
             // If key is typed, add entry to dataset
             if (keyDataset.typed) {
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.value[keyDataset.value] = valueDataset.value;
             }
           }
@@ -229,7 +229,7 @@ export function record(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         Record<string | number | symbol, unknown>,
         RecordIssue | BaseIssue<unknown>

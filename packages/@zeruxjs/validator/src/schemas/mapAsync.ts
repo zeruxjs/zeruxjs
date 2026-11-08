@@ -129,7 +129,7 @@ export function mapAsync(
       // If root type is valid, check nested types
       if (input instanceof Map) {
         // Set typed to `true` and value to empty map
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
         dataset.value = new Map();
 
@@ -168,14 +168,14 @@ export function mapAsync(
               if (issue.path) {
                 issue.path.unshift(pathItem);
               } else {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 issue.path = [pathItem];
               }
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues?.push(issue);
             }
             if (!dataset.issues) {
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues = keyDataset.issues;
             }
 
@@ -202,14 +202,14 @@ export function mapAsync(
               if (issue.path) {
                 issue.path.unshift(pathItem);
               } else {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 issue.path = [pathItem];
               }
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues?.push(issue);
             }
             if (!dataset.issues) {
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues = valueDataset.issues;
             }
 
@@ -226,7 +226,7 @@ export function mapAsync(
           }
 
           // Add value to dataset
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.value.set(keyDataset.value, valueDataset.value);
         }
 
@@ -236,7 +236,7 @@ export function mapAsync(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         Map<unknown, unknown>,
         MapIssue | BaseIssue<unknown>

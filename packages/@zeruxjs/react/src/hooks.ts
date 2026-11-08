@@ -9,7 +9,7 @@ export interface ReactHookRuntime {
 export function useReactStore<T>(useSyncExternalStore:UseSyncExternalStore,store:ExternalStore<T>,serverSnapshot?:()=>T):T {
  return useSyncExternalStore(store.subscribe,store.getSnapshot,serverSnapshot??store.getServerSnapshot);
 }
-const selectors=new WeakMap<object,WeakMap<Function,{comparator:Function;serverSnapshot?:Function;store:ExternalStore<unknown>}>>();
+const selectors=new WeakMap<object,WeakMap<((...args: any[]) => any),{comparator:((...args: any[]) => any);serverSnapshot?:((...args: any[]) => any);store:ExternalStore<unknown>}>>();
 /** Prefer createReactBindings inside actual components: it uses React's own hook memoization. */
 export function useReactSelector<A,B>(useSyncExternalStore:UseSyncExternalStore,store:ExternalStore<A>,selector:(state:A)=>B,options:{equal?:(a:B,b:B)=>boolean;serverSnapshot?:()=>A}={}):B{
  let cached=selectors.get(store);if(!cached){cached=new WeakMap();selectors.set(store,cached)}

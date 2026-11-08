@@ -38,6 +38,7 @@ test('LIVE S3-compatible: upload, range, metadata, scoped copy and cleanup', {sk
   for(const item of [duplicate,original])try{await manager.delete(item);}catch(error){cleanupError??=error;}
   if(createdBucket){try{const {DeleteBucketCommand}=await import('@aws-sdk/client-s3');await (await store.getClient()).send(new DeleteBucketCommand({Bucket:bucket}));}catch(error){cleanupError??=error;}}
   try{await manager.close();}catch(error){cleanupError??=error;}
+  // eslint-disable-next-line no-unsafe-finally -- Cleanup failure must propagate; this owner explicitly reports failed resource release.
   if(cleanupError)throw cleanupError;
  }
 });

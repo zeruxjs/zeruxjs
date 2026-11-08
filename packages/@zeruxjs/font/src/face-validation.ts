@@ -1,6 +1,7 @@
 import type {FontDefinition} from './types.js';
 /** Deliberately bounded CSS Fonts grammar, not an arbitrary declaration parser. */
 export function validateFace(face:FontDefinition):void{
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  if(!face||typeof face.family!=='string'||!face.family.trim()||face.family.length>128||/[\x00-\x1f\x7f<>;{}\\]/.test(face.family))throw new TypeError('Invalid font family');
  const weight=String(face.weight??400);if(!['normal','bold'].includes(weight)){const values=weight.split(' ');if(values.length>2||values.some(v=>! /^(?:\d+(?:\.\d+)?)$/.test(v)||Number(v)<1||Number(v)>1000)||values.length===2&&Number(values[0])>Number(values[1]))throw new TypeError('Invalid font weight');}
  const style=face.style??'normal';if(!['normal','italic','oblique'].includes(style)){const match=/^oblique (-?\d+(?:\.\d+)?)deg(?: (-?\d+(?:\.\d+)?)deg)?$/.exec(style);if(!match||Math.abs(Number(match[1]))>90||match[2]!==undefined&&(Math.abs(Number(match[2]))>90||Number(match[2])<Number(match[1])))throw new TypeError('Invalid font style');}

@@ -25,9 +25,9 @@
     "html-to-text": "^9.0.0",
     "imapflow": "^1.0.0",
     "juice": "^11.0.0",
-    "mailparser": "^3.7.0",
+    "mailparser": "^3.14.2",
     "node-pop3": "^0.15.1",
-    "nodemailer": "^10.1.2",
+    "nodemailer": "^10.4.0",
     "sanitize-html": "^2.13.0"
   },
   "peerDependencies": {

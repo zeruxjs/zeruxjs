@@ -73,14 +73,16 @@
     "versions:check": "node scripts/check-package-versions.mjs",
     "test:versions": "node --test scripts/workspace-version-policy.test.mjs",
     "lint:prepare": "node scripts/build-workspaces.mjs --scope @zeruxjs/lint",
-    "lint": "npm run lint:js && npm run lint:css",
+    "lint": "npm run lint:js && npm run lint:css && npm run lint:html",
     "lint:fix": "npm run lint:js:fix && npm run lint:css:fix",
     "lint:js": "eslint --config eslint.config.mjs .",
     "lint:js:fix": "npm run lint:js -- --fix",
     "lint:js:report": "npm run lint:js -- --format json --output-file reports/eslint.json",
     "lint:css": "stylelint \"**/*.{css,scss}\" --config stylelint.config.mjs",
     "lint:css:fix": "npm run lint:css -- --fix",
-    "lint:css:report": "npm run lint:css -- --formatter json --output-file reports/stylelint.json"
+    "lint:css:report": "npm run lint:css -- --formatter json --output-file reports/stylelint.json",
+    "lint:html": "html-validate --config htmlvalidate.config.json \"**/*.html\"",
+    "lint:html:report": "node -e \"require('node:fs').mkdirSync('reports',{recursive:true})\" && html-validate --config htmlvalidate.config.json --formatter json \"**/*.html\" > reports/htmlvalidate.json"
   },
   "workspaces": [
     "packages/@zenixjs/*",
@@ -97,6 +99,7 @@
     "better-sqlite3": "^12.6.2",
     "eslint": "9.39.4",
     "globals": "17.5.0",
+    "html-validate": "10.17.0",
     "postcss-media-query-parser": "file:vendor/zeruxjs-scss-media-parser-0.2.3.tgz",
     "postcss-scss": "4.0.9",
     "stylelint": "17.16.0",
@@ -113,6 +116,10 @@
   ],
   "overrides": {
     "braces": "npm:@zklogic/braces@3.0.7",
-    "postcss-media-query-parser": "$postcss-media-query-parser"
+    "postcss-media-query-parser": "$postcss-media-query-parser",
+    "minimatch@>=7 <11.0.1": "11.0.5",
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.5"
+    }
   }
 }

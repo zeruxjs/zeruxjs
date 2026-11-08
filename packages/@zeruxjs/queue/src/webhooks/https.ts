@@ -6,6 +6,7 @@ const denied=new BlockList();for(const [ip,prefix] of [['0.0.0.0',8],['10.0.0.0'
 /** Deliberately IPv4-only. IPv6/mapped/transition addresses fail closed. */
 export function isWebhookAddressAllowed(address:string):boolean{return isIP(address)===4&&!denied.check(address,'ipv4');}
 export function webhookURL(value:string,origins:readonly string[]):URL{
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  if(typeof value!=='string'||value.length>2048||/[\x00-\x20\x7f]/.test(value))throw fail('DESTINATION_DENIED');let target:URL;try{target=new URL(value);}catch{throw fail('DESTINATION_DENIED');}
  if(target.protocol!=='https:'||target.username||target.password||target.search||target.hash||!origins.includes(target.origin)||target.hostname.includes(':')||isIP(target.hostname)&&!isWebhookAddressAllowed(target.hostname))throw fail('DESTINATION_DENIED');return target;
 }
@@ -23,6 +24,7 @@ export function createWebhookHttpsTransport(options:WebhookHttpsOptions){
  const max=number(options.maxPending??16,1,128),responseLimit=number(options.maxResponseBytes??8192,0,65536);let closed=false;
  const active=new Set<Promise<unknown>>(),controllers=new Set<AbortController>();
  const transport:WebhookTransport&{close():Promise<void>;status():{pending:number;closed:boolean}}={contract:'webhook-https-v1',validate(url){webhookURL(url,origins);},
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   async send(input){fields(input,['url','body','headers','signal','timeoutMs']);fields(input.headers,['x-zerux-webhook-id','x-zerux-webhook-timestamp','x-zerux-webhook-signature','x-zerux-webhook-schema']);if(Object.values(input.headers).some(value=>typeof value!=='string'||value.length>256||/[\x00-\x1f\x7f]/.test(value)))throw fail('NOT_SENT');if(closed||active.size>=max)throw fail(closed?'TRANSPORT_CLOSED':'TRANSPORT_OVERLOAD');const target=webhookURL(input.url,origins);number(input.timeoutMs,1,30000);if(!(input.signal instanceof AbortSignal)||typeof input.body!=='string'||Buffer.byteLength(input.body)>65536||input.signal.aborted)throw fail('NOT_SENT');
    if(isIP(target.hostname)&&approve(target.hostname,target.hostname)!==true)throw fail('ADDRESS_DENIED');
    const controller=new AbortController(),abort=()=>controller.abort();controllers.add(controller);input.signal.addEventListener('abort',abort,{once:true});

@@ -27,6 +27,7 @@ export function reportLimits(options:ReportLimits={}){
 }
 /** XML 1.0-compatible text; presentation encoders escape markup separately. */
 export function plain(value:string):string {return [...value].filter(char=>{const code=char.codePointAt(0)!;return code===9||code===10||code===13||(code>=32&&code<=0xd7ff)||(code>=0xe000&&code<=0xfffd)||(code>=0x10000&&code<=0x10ffff);}).join('');}
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 function relative(value:string){return value.length<=2048&&!/[\x00-\x1f\x7f\\]/.test(value)&&!value.startsWith('/')&&!/^[A-Za-z]:/.test(value)&&value.split('/').every(part=>part&&part!=='.'&&part!=='..');}
 const id=(prefix:string,value:string)=>prefix+'-'+createHash('sha256').update(value).digest('hex').slice(0,24);
 /** One versioned, bounded document for every encoder; never mutate runner results. */

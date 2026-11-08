@@ -94,9 +94,9 @@ export function optional(
 
         // If value is still `undefined`, return dataset
         if (dataset.value === undefined) {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.typed = true;
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           return dataset as SuccessDataset<unknown>;
         }
       }

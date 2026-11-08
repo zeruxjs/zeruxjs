@@ -92,7 +92,7 @@ export function nonNullish(
     '~run'(dataset, config) {
       // If value is not `null` and `undefined`, run wrapped schema
       if (!(dataset.value === null || dataset.value === undefined)) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset = _runSchema(this.wrapped, dataset, config);
       }
 
@@ -102,7 +102,7 @@ export function nonNullish(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<unknown, BaseIssue<unknown>>;
     },
   };

@@ -75,6 +75,7 @@ export interface QueueEventsLike {
   waitUntilReady?():Promise<unknown>;
   close():Promise<void>;
 }
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Preserve the public interface as an extension point for declaration merging.
 export interface BullJobLike extends QueueJob {}
 export interface BullQueueLike {
   add(name:string,data:JobData,options?:QueueJobOptions):Promise<BullJobLike>;
@@ -400,6 +401,7 @@ export async function createQueueService(config:QueueServiceConfig, injected?:Bu
         for(const type of ['completed','failed','waiting','active','stalled','progress'] as const){
           stream.on(type,(payload:unknown)=>{
             const obj=(payload&&(typeof payload==='object'))?payload as {jobId?:unknown}:{};
+            // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
             const jobId=(((typeof obj.jobId==='string')&&(obj.jobId.length<=256))&&!/[\x00-\x1f\x7f]/.test(obj.jobId))?obj.jobId:undefined;
             try{config.events?.onEvent?.({queue:def.name,type,at:new Date().toISOString(),...(jobId?{jobId}:{})});}catch{/* No callback may crash the stream */}
           });

@@ -38,9 +38,9 @@ export function transform<TInput, TOutput>(
     async: false,
     operation,
     '~run'(dataset) {
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       dataset.value = syncCallback(this.operation, dataset.value);
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as SuccessDataset<TOutput>;
     },
   };

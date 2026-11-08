@@ -26,6 +26,7 @@ export function validateComponentProps(element:HTMLElement,input:ComponentA11yPr
  for(const [name,descriptor] of Object.entries(descriptors)){
   if(!Object.hasOwn(descriptor,'value')||(!Object.hasOwn(attributes,name)&&(name!=='disabled'))){report('INVALID_PROP',name);continue;}
   const value=descriptor.value;if(value===undefined)continue;
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if(['disabled','expanded','selected'].includes(name)?(typeof value!=='boolean'):((((typeof value!=='string')||!value.trim())||(value.length>1024))||/[\u0000-\u001f\u007f]/.test(value))){report('INVALID_PROP',name);continue;}
   props[name]=value;
  }

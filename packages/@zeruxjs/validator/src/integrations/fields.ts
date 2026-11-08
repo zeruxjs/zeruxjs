@@ -9,7 +9,7 @@ export interface FieldPolicy {
 }
 export interface FieldLimits { maxFields: number; maxFieldBytes: number; maxBytes: number }
 export function unsafeKey(key: string): boolean {
-  return key.split(/[.\[\]]/).some(segment => ['__proto__', 'constructor', 'prototype'].includes(segment));
+  return key.split(/[.[\]]/).some(segment => ['__proto__', 'constructor', 'prototype'].includes(segment));
 }
 export function validatePolicy(options: FieldPolicy) {
   if (options.duplicates !== undefined && !['array', 'reject', 'first', 'last'].includes(options.duplicates)) throw new TypeError('Invalid duplicate-field policy');
@@ -30,6 +30,7 @@ export function collectFields(entries: Iterable<readonly [string, string | File]
     if (++count > limits.maxFields) throw new HttpValidationError(413, 'Too many input fields');
     if (typeof original !== 'string') throw new HttpValidationError(400, 'Invalid field name');
     const key = headers ? original.toLowerCase() : original;
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if (!key || key.length > 256 || /[\x00-\x1f\x7f]/.test(key) || unsafeKey(key) || (headers && !/^[!#$%&'*+.^_`|~0-9a-z-]+$/.test(key))) throw new HttpValidationError(400, 'Unsafe input field');
     const keyBytes = encoder.encode(key).length;
     if (keyBytes > limits.maxFieldBytes) throw new HttpValidationError(413, 'Field name too large');

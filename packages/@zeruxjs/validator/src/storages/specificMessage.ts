@@ -14,7 +14,7 @@ import type {
  * Reference type.
  */
 type Reference = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   ...args: any[]
 ) =>
   | BaseSchema<unknown, unknown, BaseIssue<unknown>>

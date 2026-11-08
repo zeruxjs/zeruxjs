@@ -36,7 +36,7 @@ export function createMcpServer(options: McpServerOptions) {
           try {
             const result = await tools.call(p.name, p.arguments ?? {},context);
             return ok(id, { content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) ?? 'null' }] });
-          } catch (err) { try { options.onError?.(err); } catch {} return ok(id, { isError: true, content: [{ type: 'text', text: 'Tool execution failed' }] }); }
+          } catch (err) { try { options.onError?.(err); } catch { /* Host diagnostic callbacks must not replace the primary operation outcome. */ } return ok(id, { isError: true, content: [{ type: 'text', text: 'Tool execution failed' }] }); }
         }
         default: return fail(id, -32601, 'Method not found');
       }

@@ -44,6 +44,7 @@ export function balancedSyntax(value:string,maxDepth=8):boolean {
 }
 /** Split composable variants only outside balanced arbitrary brackets. Undefined rejects malformed input. */
 export function splitToken(input:string):string[]|undefined {
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  if(!balancedSyntax(input)||/[\u0000-\u001f\u007f{};\\]/.test(input))return;
  const result:string[]=[];let start=0,depth=0;
  for(let index=0;index<input.length;index++){

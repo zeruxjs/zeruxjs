@@ -36,9 +36,9 @@ export function _merge(value1: unknown, value2: unknown): MergeDataset {
     ) {
       // Deeply merge entries of `value2` into `value1`
       for (const key in value2) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         if (key in value1) {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           const dataset = _merge(value1[key], value2[key]);
 
           // If dataset has issue, return it
@@ -47,12 +47,12 @@ export function _merge(value1: unknown, value2: unknown): MergeDataset {
           }
 
           // Otherwise, replace merged entry
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           value1[key] = dataset.value;
 
           // Otherwise, just add entry
         } else {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           value1[key] = value2[key];
         }
       }

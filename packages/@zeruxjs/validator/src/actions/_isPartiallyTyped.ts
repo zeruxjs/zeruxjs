@@ -33,9 +33,9 @@ export function _isPartiallyTyped(
         // Mark data as typed if any path items of same index do not match
         for (let index = 0; index < bound; index++) {
           if (
-            // @ts-expect-error
+            // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
             path[index] !== issue.path[index].key &&
-            // @ts-expect-error
+            // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
             (path[index] !== '$' || issue.path[index].type !== 'array')
           ) {
             typed = true;

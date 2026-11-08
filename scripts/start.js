@@ -18,7 +18,7 @@ function scanApps(dir) {
                 if (pkg.scripts && pkg.scripts.start && pkg.scripts.dev) {
                     apps.push({ dir: appPath, pkgName: pkg.name || entry.name });
                 }
-            } catch (e) {}
+            } catch (e) { /* Best-effort cleanup/discovery may already be unavailable; the owning operation handles its outcome. */ }
         }
     }
     return apps;

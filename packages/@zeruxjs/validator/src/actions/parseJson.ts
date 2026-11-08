@@ -14,7 +14,7 @@ export interface ParseJsonConfig {
   /**
    * The JSON reviver function.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   reviver?: (this: any, key: string, value: any) => any;
 }
 
@@ -141,7 +141,7 @@ export function parseJson(
           _addIssue(this, 'JSON', dataset, config, {
             received: `"${error.message}"`,
           });
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.typed = false;
         } else {
           throw error;

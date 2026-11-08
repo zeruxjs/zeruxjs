@@ -28,6 +28,7 @@ export function createMediaAssetService(options:MediaAssetOptions){
    const identity=await identify(request),version=(await assets.versions(identity,assetId)).find(v=>v.reference.versionId===versionId&&!v.retired);if(!version)return new Response('Not found',{status:404});
    // This path is deliberately bounded/verified; use files-backed streaming for larger transfers.
    const bytes=await assets.download(identity,versionId,request.signal);
+   // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
    const name=version.asset.name.replace(/[\\/\x00-\x1f\x7f"']/g,'_').slice(0,180)||'download';
    return new Response(request.method==='HEAD'?null:new Uint8Array(bytes),{headers:{'Content-Type':version.reference.contentType,'Content-Length':String(bytes.byteLength),'Content-Disposition':`attachment; filename="${name.replace(/[^\x20-\x7e]/g,'_')}"; filename*=UTF-8''${encodeURIComponent(name)}`,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','X-Media-SHA256':version.reference.sha256}});
   });},

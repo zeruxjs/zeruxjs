@@ -13,7 +13,7 @@ import { ValidationError } from '../utils/index.js';
  * Returns action async type.
  */
 export interface ReturnsActionAsync<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput extends (...args: any[]) => unknown,
   TSchema extends
   | BaseSchema<unknown, unknown, BaseIssue<unknown>>
@@ -45,7 +45,7 @@ export interface ReturnsActionAsync<
  * @returns An returns action.
  */
 export function returnsAsync<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput extends (...args: any[]) => unknown,
   TSchema extends
   | BaseSchema<unknown, unknown, BaseIssue<unknown>>

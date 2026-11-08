@@ -47,6 +47,7 @@ function property(value:unknown):AnalyticsPropertyDefinition {
     keys(value,['kind','type','values','maxCardinality','required']);const max=integer(value.maxCardinality,1,256);
     if(!['string','number','boolean'].includes(value.type as string)||!Array.isArray(value.values)||!value.values.length||value.values.length>max)reject('DIMENSION_CARDINALITY');
     if(Object.values(Object.getOwnPropertyDescriptors(value.values)).some(d=>!('value'in d)))reject('INVALID_DIMENSION_VALUE');
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     for(const item of value.values as unknown[]){if(typeof item!==value.type||typeof item==='number'&&!finite(item)||typeof item==='string'&&(!item.length||Buffer.byteLength(item)>128||/[\x00-\x1f\x7f@]/.test(item)))reject('INVALID_DIMENSION_VALUE');}
     if(new Set((value.values as unknown[]).map(canonical)).size!==(value.values as unknown[]).length)reject('DUPLICATE_DIMENSION_VALUE');
   }else if(value.kind==='metric'){

@@ -53,7 +53,7 @@ export function forwardAsync<
             // Try to forward issue to end of path list
             for (const key of path) {
               // Create path value variable
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               const pathValue: unknown = pathInput[key];
 
               // Create path item for current key
@@ -69,7 +69,7 @@ export function forwardAsync<
               if (issue.path) {
                 issue.path.push(pathItem);
               } else {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 issue.path = [pathItem];
               }
 

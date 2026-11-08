@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 export interface CoverageRange { functionIndex:number; rangeIndex:number; startOffset:number; endOffset:number; count:number; block:boolean }
 export interface CoverageRecord { version:1; format:'v8-ranges'; runtime:string; source:string; status:'instrumented'|'uninstrumented'|'unsupported'; sourceHash?:string; ranges:readonly CoverageRange[]; reason?:string }
 export interface V8SourceCoverage { url:string; source?:string; functions: readonly {isBlockCoverage:boolean;ranges:readonly {startOffset:number;endOffset:number;count:number}[]}[] }
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 const label=(value:unknown):value is string=>typeof value==='string'&&value.length>0&&value.length<=2048&&!/[\x00-\x1f\x7f]/.test(value);
 function number(value:number){if(!Number.isSafeInteger(value)||value<0)throw new TypeError('Invalid coverage counter/offset');}
 /** Explicit expected sources are required: absent code is not falsely counted as covered. */

@@ -79,6 +79,6 @@ export function getFallbacks<
   }
 
   // Otherwise, return fallback or `undefined`
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   return getFallback(schema);
 }

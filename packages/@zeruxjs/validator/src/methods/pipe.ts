@@ -22,7 +22,7 @@ import { _getStandardProps } from '../utils/index.js';
 export type SchemaWithPipe<
   TPipe extends readonly [
     BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     ...PipeItem<any, unknown, BaseIssue<unknown>>[],
   ],
 > = Omit<FirstTupleItem<TPipe>, 'pipe' | '~standard' | '~run' | '~types'> & {
@@ -2725,7 +2725,7 @@ export function pipe<
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<unknown, BaseIssue<unknown>>;
     },
   };

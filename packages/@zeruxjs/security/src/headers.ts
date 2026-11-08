@@ -33,6 +33,7 @@ export function createSecurityHeaders(options: SecureHeadersOptions = {}, https 
     if (options.crossOriginResourcePolicy) headers['cross-origin-resource-policy'] = options.crossOriginResourcePolicy;
     if (options.crossOriginEmbedderPolicy) headers['cross-origin-embedder-policy'] = options.crossOriginEmbedderPolicy;
     if (options.csp) {
+        // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
         if (/[\x00-\x1f\x7f]/.test(options.csp)) throw new Error("Invalid CSP");
         headers["content-security-policy"] = options.csp;
     }

@@ -32,17 +32,17 @@ jobs:
       has_releases: ${{ steps.plan.outputs.has_releases }}
       artifact_id: ${{ steps.plan_artifact.outputs.artifact-id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24'
+          node-version: '24.15.0'
       - name: Compare every package version with npm and plan retries
         id: plan
         run: node scripts/publish-packages.mjs --plan
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         id: plan_artifact
         if: always()
         with:
@@ -57,12 +57,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24'
+          node-version: '24.15.0'
       - name: Check source and version contracts
         run: npm run verify:source
 
@@ -74,17 +74,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24'
+          node-version: '24.15.0'
           cache: npm
           cache-dependency-path: package-lock.json
       - name: Use release npm version
-        run: npm install --global npm@11
-      - uses: actions/download-artifact@v4
+        run: node -e "const [major,minor,patch]=require('node:child_process').execFileSync('npm',['--version'],{encoding:'utf8'}).trim().split('.').map(Number); if(!(major>11 || major===11 && (minor>5 || minor===5 && patch>=1))) throw new Error('npm 11.5.1+ is required for trusted publishing');"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           artifact-ids: ${{ needs.plan.outputs.artifact_id }}
           merge-multiple: true
@@ -99,7 +99,7 @@ jobs:
         run: npm run build:workspaces -- --concurrency auto
       - name: Pack selected releases and record archive integrity
         run: node scripts/publish-packages.mjs --pack
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         id: prepared_artifact
         if: always()
         with:
@@ -120,22 +120,22 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24'
+          node-version: '24.15.0'
       - name: Use npm with trusted publishing support
-        run: npm install --global npm@11
-      - uses: actions/download-artifact@v4
+        run: node -e "const [major,minor,patch]=require('node:child_process').execFileSync('npm',['--version'],{encoding:'utf8'}).trim().split('.').map(Number); if(!(major>11 || major===11 && (minor>5 || minor===5 && patch>=1))) throw new Error('npm 11.5.1+ is required for trusted publishing');"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           artifact-ids: ${{ needs.prepare.outputs.artifact_id }}
           merge-multiple: true
           path: .npm-release/
       - name: Publish exact verified archives through npm trusted publishing
         run: node scripts/publish-packages.mjs --publish
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: npm-release-${{ github.sha }}-${{ github.run_attempt }}

@@ -274,7 +274,7 @@ export function partial(
   // Create modified object entries
   const entries: PartialEntries<ObjectEntries, ObjectKeys<Schema>> = {};
   for (const key in schema.entries) {
-    // @ts-expect-error
+    // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
     entries[key] =
       !keys || keys.includes(key)
         ? optional(schema.entries[key])

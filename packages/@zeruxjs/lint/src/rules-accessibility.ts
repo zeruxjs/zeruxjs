@@ -35,6 +35,7 @@ export const accessibilityRules:Record<string,Rule.RuleModule>={
      const own=value(attr(node,'id'));
      for(const name of ['aria-labelledby','aria-describedby','aria-controls','aria-owns','aria-activedescendant']){
       const attribute=attr(node,name),text=value(attribute);if(!attribute||text===undefined)continue;
+      // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
       if(!text.trim()||/[\u0000-\u001f\u007f]/.test(text)||name==='aria-activedescendant'&&text.trim().split(/\s+/).length!==1)context.report({node:attribute,messageId:'reference'});
       else if(name==='aria-activedescendant'&&own&&own===text.trim())context.report({node:attribute,messageId:'self'});
      }

@@ -111,6 +111,7 @@ export function createEvidenceRetriever(snapshot: CorpusSnapshot, options: Evide
     identity(estimatorId);
     const estimate = options.estimateTokens ?? ((value: string) => Buffer.byteLength(value));
     const embedding = options.embedding;
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if (embedding && (embedding.capability !== 'authorized-candidates-v1' || !['local', 'remote'].includes(embedding.location) || typeof embedding.rank !== 'function' || typeof embedding.model !== 'string' || embedding.model.length < 1 || embedding.model.length > 128 || /[\x00-\x20\x7f/]/.test(embedding.model) || embedding.location === 'remote' && (options.allowRemoteEmbedding !== true || typeof options.approveRemoteEmbedding !== 'function')))
         throw new TypeError('Qualified authorized embedding capability required');
     const approveRemote = options.approveRemoteEmbedding, ownEmbedding = options.ownEmbedding === true;

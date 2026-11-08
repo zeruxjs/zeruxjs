@@ -334,7 +334,7 @@ test('private portable export is bounded, expires, rechecks access and guards CS
       for await (const _ of f.coordinator.download(
         f.reference(j),
         'operator',
-      )) {
+      )) { /* Drain or observe the deliberately failing fixture; the enclosing assertion checks its outcome. */ 
       }
     }, /EXPORT_UNAVAILABLE/);
     assert.equal(
@@ -440,7 +440,7 @@ test('download access revocation stops the next chunk and returns the owned iter
       for await (const _ of f.coordinator.download(
         f.reference(j),
         'operator',
-      )) {
+      )) { /* Drain or observe the deliberately failing fixture; the enclosing assertion checks its outcome. */ 
       }
     }, /DENIED/);
     assert.equal(cleaned, true);
@@ -455,6 +455,7 @@ test('export-store outage is redacted and releases stream ownership', async () =
     let j = await f.prepare('export');
     for (let i = 0; i < 5 && j.phase !== 'partial'; i++)
       j = await f.coordinator.resume(f.reference(j), 'operator');
+    // eslint-disable-next-line require-yield -- This negative fixture throws before yielding to exercise iterator failure cleanup.
     f.options.exports.read = async function* () {
       throw Error('private-access-key');
     };
@@ -463,7 +464,7 @@ test('export-store outage is redacted and releases stream ownership', async () =
         for await (const _ of f.coordinator.download(
           f.reference(j),
           'operator',
-        )) {
+        )) { /* Drain or observe the deliberately failing fixture; the enclosing assertion checks its outcome. */ 
         }
       },
       (error) =>

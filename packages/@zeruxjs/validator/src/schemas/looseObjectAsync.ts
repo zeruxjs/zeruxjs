@@ -104,7 +104,7 @@ export function looseObjectAsync(
       // If root type is valid, check nested types
       if (input && typeof input === 'object' && !Array.isArray(input)) {
         // Set typed to `true` and value to blank object
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
         dataset.value = {};
 
@@ -117,12 +117,12 @@ export function looseObjectAsync(
               ((valueSchema.type === 'exact_optional' ||
                 valueSchema.type === 'optional' ||
                 valueSchema.type === 'nullish') &&
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 valueSchema.default !== undefined)
             ) {
               const value: unknown =
                 Object.hasOwn(input, key)
-                  ? // @ts-expect-error
+                  ? // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                   input[key]
                   : undefined;
               return [
@@ -134,7 +134,7 @@ export function looseObjectAsync(
             }
             return [
               key,
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               input[key] as unknown,
               valueSchema,
               null,
@@ -163,14 +163,14 @@ export function looseObjectAsync(
                 if (issue.path) {
                   issue.path.unshift(pathItem);
                 } else {
-                  // @ts-expect-error
+                  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                   issue.path = [pathItem];
                 }
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 dataset.issues?.push(issue);
               }
               if (!dataset.issues) {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 dataset.issues = valueDataset.issues;
               }
 
@@ -187,13 +187,13 @@ export function looseObjectAsync(
             }
 
             // Add entry to dataset
-            // @ts-expect-error
+            // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
             dataset.value[key] = valueDataset.value;
 
             // Otherwise, if key is missing but has a fallback, use it
-            // @ts-expect-error
+            // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           } else if (valueSchema.fallback !== undefined) {
-            // @ts-expect-error
+            // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
             dataset.value[key] = await getFallback(valueSchema);
 
             // Otherwise, if key is missing and required, add issue
@@ -228,7 +228,7 @@ export function looseObjectAsync(
         if (!dataset.issues || !config.abortEarly) {
           for (const key of Object.keys(input)) {
             if (_isValidObjectKey(input, key) && !(Object.hasOwn(this.entries, key))) {
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.value[key] = input[key];
             }
           }
@@ -240,7 +240,7 @@ export function looseObjectAsync(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         InferObjectOutput<ObjectEntriesAsync> & { [key: string]: unknown },
         LooseObjectIssue | InferObjectIssue<ObjectEntriesAsync>

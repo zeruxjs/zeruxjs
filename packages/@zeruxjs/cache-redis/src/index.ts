@@ -17,7 +17,7 @@ export const createCacheHelper=async(raw:Record<string,unknown>):Promise<RedisCa
  if(connectionOptions.tls!==undefined&&(!connectionOptions.tls||typeof connectionOptions.tls!=='object'||Array.isArray(connectionOptions.tls)||(connectionOptions.tls as Record<string,unknown>).rejectUnauthorized===false))throw redisError('REDIS_INVALID_TLS');
  if(connectionOptions.socket&&typeof connectionOptions.socket==='object'&&(connectionOptions.socket as Record<string,unknown>).rejectUnauthorized===false)throw redisError('REDIS_INVALID_TLS');
  const onError=()=>{};
- let connection:RedisCacheClient&{connect():Promise<unknown>;off?:(event:string,listener:()=>void)=>unknown};
+ type CacheConnection = RedisCacheClient&{connect():Promise<unknown>;off?:(event:string,listener:()=>void)=>unknown};
  if(driver==='ioredis'){
   const moduleId='ioredis';const {default:IORedis}=await import(moduleId);const {url,...opts}=connectionOptions;
   const bounded={...opts,lazyConnect:true,connectTimeout:policy.connectTimeoutMs,enableOfflineQueue:false,maxRetriesPerRequest:0,autoResendUnfulfilledCommands:false,reconnectOnError:false,retryStrategy:(attempt:number)=>attempt<=policy.maxReconnectAttempts?Math.min(50*attempt,250):null};
@@ -28,7 +28,7 @@ export const createCacheHelper=async(raw:Record<string,unknown>):Promise<RedisCa
  const moduleId='redis';const redis=await import(moduleId);
  const socket=connectionOptions.socket;if(socket!==undefined&&(!socket||typeof socket!=='object'||Array.isArray(socket)))throw redisError('REDIS_INVALID_OPTIONS');
  if(socket&&'reconnectStrategy'in socket)throw redisError('REDIS_CACHE_POLICY_OVERRIDE');
- connection=redis.createClient({...connectionOptions,disableOfflineQueue:true,commandsQueueMaxLength:policy.maxPendingCommands,socket:{...socket as object,connectTimeout:policy.connectTimeoutMs,reconnectStrategy:(attempt:number)=>attempt<policy.maxReconnectAttempts?Math.min(50*(attempt+1),250):false}}) as unknown as typeof connection;
+ const connection=redis.createClient({...connectionOptions,disableOfflineQueue:true,commandsQueueMaxLength:policy.maxPendingCommands,socket:{...socket as object,connectTimeout:policy.connectTimeoutMs,reconnectStrategy:(attempt:number)=>attempt<policy.maxReconnectAttempts?Math.min(50*(attempt+1),250):false}}) as unknown as CacheConnection;
  connection.on?.('error',onError);
  try{await start(()=>connection.connect(),()=>connection.destroy?.(),policy.connectTimeoutMs);return createRedisCacheHelper(connection,{...helperConfig,ownClient:true});}
  catch(cause){try{connection.destroy?.();}catch(cleanup){throw new AggregateError([redisError('REDIS_CONNECT_FAILED',cause),cleanup],'Redis initialization cleanup failed');}throw redisError('REDIS_CONNECT_FAILED',cause);}

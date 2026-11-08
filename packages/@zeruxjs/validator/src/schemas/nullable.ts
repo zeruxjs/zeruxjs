@@ -94,9 +94,9 @@ export function nullable(
 
         // If value is still `null`, return dataset
         if (dataset.value === null) {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.typed = true;
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           return dataset as SuccessDataset<unknown>;
         }
       }

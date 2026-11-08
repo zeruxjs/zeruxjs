@@ -16,7 +16,7 @@ test('destination encoders block script/style breaking values and preserve legac
     const encoded = security.serializeJavaScriptValue({ attack });
     assert.doesNotMatch(encoded, /[<>&\u2028\u2029]/);
     assert.deepEqual(vm.runInThisContext(encoded), { attack });
-    const prototypeData = vm.runInThisContext(security.serializeJavaScriptValue(JSON.parse('{\"__proto__\":{\"privileged\":true}}')));
+    const prototypeData = vm.runInThisContext(security.serializeJavaScriptValue(JSON.parse('{"__proto__":{"privileged":true}}')));
     assert.equal(Object.hasOwn(prototypeData, '__proto__'), true); assert.equal(prototypeData.privileged, undefined);
     assert.equal(vm.runInThisContext(security.serializeJavaScriptValue(null)), null);
     assert.equal(security.serializeJsonForScript(null), '{}');

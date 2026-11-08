@@ -58,6 +58,7 @@ test('help, errors and formatting strip CSI, OSC, CR and controls', async () => 
   const attack='safe\x1b[2J\x1b]52;c;clipboard\x07\r\x00';
   assert.equal(stripTerminalCodes(attack),'safe');assert.equal(formatError(new Error(attack)),'Error: safe');
   const registry=new CommandRegistry();registry.register('app','run',()=>{throw new Error(attack);},{description:attack,docs:attack});
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   assert.doesNotMatch(registry.help('app'),/[\x00\x1b\r]/);assert.equal(registry.docs('app','run'),'safe');assert.equal((await registry.dispatch('app',['run'])).message,'safe');
 });
 
@@ -125,6 +126,7 @@ test('standalone entry point sanitizes unknown-command diagnostics and suggests 
   assert.equal(runZcli(['creat'],()=>{},message=>messages.push(message)),2);
   assert.match(messages[0],/Did you mean create/);
   assert.equal(runZcli(['bad\x1b[2J\r'],()=>{},message=>messages.push(message)),2);
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   assert.doesNotMatch(messages[1],/[\x1b\r]/);
   assert.equal(runZcli([null],()=>{},()=>{}),2);
 });

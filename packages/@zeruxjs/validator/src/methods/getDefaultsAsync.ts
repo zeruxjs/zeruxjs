@@ -129,6 +129,6 @@ export async function getDefaultsAsync<
   }
 
   // Otherwise, return default or `undefined`
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   return getDefault(schema);
 }

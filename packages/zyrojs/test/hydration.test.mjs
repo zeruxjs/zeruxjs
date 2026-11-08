@@ -140,6 +140,7 @@ test('raw HTML requires an explicit host sanitizer token and owns an opaque leaf
 test('hydration handles do not dispose a replacement owner; malformed and oversized payloads fail closed',()=>{
   const C=()=>h('p',{},'old'), output=renderToHydratable(C,{label:'a'},options), container=parsed(output.html);
   const handle=hydrate(C,container,{data:output.data,validateProps});render(h('b',{},'new owner'),container);handle.dispose();assert.equal(container.textContent,'new owner');unmount(container);
+  // eslint-disable-next-line no-sparse-arrays -- Deliberately sparse input verifies that the public boundary rejects array holes.
   assert.throws(()=>renderToHydratable(()=>null,{value:[,1]},{...options,validateProps:x=>x}),e=>e.code==='INVALID_PUBLIC_PROPS');
   assert.throws(()=>renderToHydratable(()=>null,{label:'a'},{...options,maxPropsBytes:10}),e=>e.code==='PROPS_LIMIT');
   assert.throws(()=>renderToHydratable(()=>h('input',{type:'password',value:'PRIVATE'}),{label:'a'},options),e=>(e.code==='PRIVATE_FORM_VALUE')&&!e.message.includes('PRIVATE'));

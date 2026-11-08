@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - uses: ./.github/actions/start-test-api
+      - uses: $/.github/actions/start-test-api
         with:
           port: ${{ vars.SECURITY_PORT || '3000' }}
       - name: Passive ZAP scan
@@ -33,7 +33,7 @@ jobs:
             -t "http://127.0.0.1:${PORT}" -m 2 -T 15 -I -J zap.json -r zap.html
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scan-zap
           path: |
@@ -52,10 +52,10 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - uses: ./.github/actions/start-test-api
+      - uses: $/.github/actions/start-test-api
         with:
           port: ${{ vars.SECURITY_PORT || '3000' }}
       - name: Scan local HTTP service (no DoS/fuzz templates)
@@ -70,13 +70,13 @@ jobs:
             -jsonl -o /reports/nuclei.jsonl -sarif-export /reports/nuclei.sarif -no-color
       - name: Upload SARIF
         if: always() && hashFiles('reports/nuclei.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           sarif_file: reports/nuclei.sarif
           category: nuclei
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scan-nuclei
           path: |
@@ -92,13 +92,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - uses: ./.github/actions/start-test-api
+      - uses: $/.github/actions/start-test-api
         with:
           port: ${{ vars.SECURITY_PORT || '3000' }}
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
       - name: Fuzz API automatically from OpenAPI specification
         env:
           PORT: ${{ vars.SECURITY_PORT || '3000' }}
@@ -110,7 +110,7 @@ jobs:
             --max-examples 50 --report junit --report-junit-path reports/schemathesis.xml
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scan-schemathesis
           path: |

@@ -43,7 +43,7 @@ if (!targetName) {
         execSync("pkill -f 'npm run dev' || true");
         execSync("pkill -f 'npm run start' || true");
         execSync("pkill -f 'npm start' || true");
-    } catch (e) {}
+    } catch (e) { /* Best-effort cleanup/discovery may already be unavailable; the owning operation handles its outcome. */ }
 
     const fs = require('fs');
     if (!fs.existsSync('/.dockerenv') && isHard) {

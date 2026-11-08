@@ -12,6 +12,7 @@ const idPattern=/^[a-f0-9]{48}$/;
 const digestPattern=/^[a-f0-9]{64}$/;
 function integer(value:number,min:number,max:number){if(!Number.isSafeInteger(value)||value<min||value>max)throw fail('UPLOAD_LIMIT');return value;}
 function binding(identity:UploadIdentity){
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if(!identity||[identity.tenant,identity.subject].some(v=>typeof v!=='string'||!v||v.length>256||/[\x00-\x1f\x7f]/.test(v)))throw fail('UPLOAD_IDENTITY');
   return hash(JSON.stringify([identity.tenant,identity.subject]));
 }

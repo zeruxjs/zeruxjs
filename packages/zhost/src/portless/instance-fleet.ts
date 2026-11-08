@@ -54,6 +54,7 @@ export async function launchInstanceFleet(argv: readonly string[], options: Inst
   let lastError: string | null = null;
   let stopping = false;
   let phase: FleetPhase = 'starting';
+  // eslint-disable-next-line prefer-const -- Callbacks observe this lifetime handle before its deferred initialization.
   let timer: ReturnType<typeof setInterval> | undefined;
   let operation: Promise<FleetReconcileResult> | undefined;
   let resizeOperation: Promise<Readonly<FleetStatus>> | undefined;

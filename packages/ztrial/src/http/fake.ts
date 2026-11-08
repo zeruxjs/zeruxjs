@@ -35,6 +35,7 @@ export function createHttpFake(options:HttpFakeOptions) {
   const keys=new Set<string>();let totalBytes=0;
   const routes=options.routes.map((route:HttpRoute,index:number)=>{
     const method=route.method??'GET';
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if(!/^[A-Z]{1,16}$/.test(method)||typeof route.path!=='string'||route.path.length>2048||!route.path.startsWith('/')||/[\x00-\x20\x7f#]/.test(route.path)||new URL(route.path,origin).origin!==origin||new URL(route.path,origin).pathname+new URL(route.path,origin).search!==route.path||!Array.isArray(route.responses)||!route.responses.length||route.responses.length>128)throw new TypeError('Invalid fake route');
     const key=method+' '+route.path;if(keys.has(key))throw new TypeError('Duplicate fake route');keys.add(key);
     const expected=integer(route.expectedCalls??route.responses.length,0,128,'expectedCalls');
@@ -63,6 +64,7 @@ export function createHttpFake(options:HttpFakeOptions) {
   let closeFailure:unknown;
   let closed=false,unexpected=0,completed=0,cancelled=0,streams=0,waiting=0;let server:http.Server|undefined,listenPromise:Promise<string>|undefined,closing:Promise<void>|undefined;
   const calls:{route:number;method:string;at:number}[]=[];
+  // eslint-disable-next-line prefer-const -- Callbacks observe this lifetime handle before its deferred initialization.
   let deadline:ReturnType<typeof setTimeout>|undefined;
   const abort=()=>{void close().catch(error=>{closeFailure=error;});};
   async function close():Promise<void>{
@@ -70,7 +72,7 @@ export function createHttpFake(options:HttpFakeOptions) {
     closed=true;lifetime.abort(new HttpFakeError('FIXTURE_CLOSED'));if(deadline)clearTimeout(deadline);externalSignal?.removeEventListener('abort',abort);
     for(const controller of requests)controller.abort(lifetime.signal.reason);
     const socketClosures=[...sockets].map(socket=>new Promise<void>(resolve=>{socket.once('close',()=>resolve());socket.destroy();}));
-    closing=(async()=>{if(server){try{await listenPromise;}catch{}await new Promise<void>((resolve,reject)=>server!.close(error=>error&&(error as NodeJS.ErrnoException).code!=='ERR_SERVER_NOT_RUNNING'?reject(error):resolve()));}await Promise.all(socketClosures);await Promise.allSettled([...sleeps]);})();
+    closing=(async()=>{if(server){try{await listenPromise;}catch{ /* Best-effort cleanup/discovery may already be unavailable; the owning operation handles its outcome. */ }await new Promise<void>((resolve,reject)=>server!.close(error=>error&&(error as NodeJS.ErrnoException).code!=='ERR_SERVER_NOT_RUNNING'?reject(error):resolve()));}await Promise.all(socketClosures);await Promise.allSettled([...sleeps]);})();
     return closing;
   }
   options.scope?.onCleanup(close);

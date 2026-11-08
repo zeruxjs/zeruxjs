@@ -15,7 +15,7 @@ function listener() {
       server.maxConnections=context.limits.maxConcurrent;
       server.requestTimeout=context.limits.timeoutMs;server.headersTimeout=context.limits.timeoutMs;
       await new Promise<void>((resolve,reject)=>{
-        const finish=(error?:Error)=>{server.off('error',failed);server.off('listening',ready);context.signal.removeEventListener('abort',abort);error?reject(error):resolve();};
+        const finish=(error?:Error)=>{server.off('error',failed);server.off('listening',ready);context.signal.removeEventListener('abort',abort);if(error)reject(error);else resolve();};
         const failed=(e:Error)=>finish(e),ready=()=>finish(),abort=()=>{server.close();finish(new Error('Transport cancelled'));};
         server.once('error',failed);server.once('listening',ready);context.signal.addEventListener('abort',abort,{once:true});server.listen(context.bind.port,context.bind.host);
       });

@@ -165,6 +165,7 @@ function text(v: unknown, max = 4096): asserts v is string {
   if (
     typeof v !== "string" ||
     v.length > max ||
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(v)
   )
     invalid();
@@ -261,8 +262,8 @@ function layer(v: unknown): asserts v is MetadataLayer {
 function merge(layers: readonly MetadataLayer[]): MetadataLayer {
   inert(layers);
   if (!Array.isArray(layers) || !layers.length || layers.length > 32) invalid();
-  let result: MetadataLayer = {},
-    title: { text?: string; template?: string | null; absolute?: boolean } = {};
+  const result: MetadataLayer = {};
+  let title: { text?: string; template?: string | null; absolute?: boolean } = {};
   for (let i = 0; i < layers.length; i++) {
     const input = layers[i];
     layer(input);
@@ -349,7 +350,7 @@ function sitePolicy(site: MetadataSite, context: MetadataContext) {
   const route = absolute(context.url);
   within(route, selected);
   if (route.search || route.hash) invalid();
-  let page = context.page ?? 1;
+  const page = context.page ?? 1;
   const pagination = site.pagination;
   if (pagination !== undefined) {
     record(pagination, ["parameter", "maxPage"]);

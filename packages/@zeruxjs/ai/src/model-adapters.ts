@@ -45,6 +45,7 @@ function normalize(raw: any, kind: 'anthropic' | 'gemini'): AiChatResult {
 function adapter(kind: 'anthropic' | 'gemini', config: ModelProviderConfig, version?: string): AiProvider {
     if (typeof window !== 'undefined')
         throw new Error('Model credentials require a server runtime');
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if ((((((!config || (typeof config.apiKey !== 'string')) || !config.apiKey.trim()) || (config.apiKey.length > 8192)) || /[\x00-\x20\x7f]/.test(config.apiKey)) || (typeof config.model !== 'string')) || !/^[A-Za-z0-9_.-]{1,128}$/.test(config.model))
         throw new TypeError('Invalid model credentials/configuration');
     const endpoint = new URL(config.baseUrl ?? ((kind === 'anthropic') ? 'https://api.anthropic.com/v1' : 'https://generativelanguage.googleapis.com/v1beta'));
@@ -168,7 +169,8 @@ function adapter(kind: 'anthropic' | 'gemini', config: ModelProviderConfig, vers
     } }
     async function* streamEvents(messages: (ChatMessage|AiContentMessage)[], options: ChatOptions = {},contentMode=false): AsyncIterable<AiStreamEvent> {
         const req = await send(messages, options, true,contentMode);
-        let complete = false, started = false, accumulated: AiUsage = {},finalReason:AiChatResult['finishReason']='unknown';
+        const accumulated: AiUsage = {};
+        let complete = false, started = false, finalReason:AiChatResult['finishReason']='unknown';
         try {
             for await (const frame of parseAiSseEvents(req.response.body!, req.responseLimit, req.signal)) {
                 const raw = json(frame);

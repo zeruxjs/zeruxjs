@@ -53,7 +53,7 @@ export type SchemaWithoutPipe<
  * Generic pipe action type.
  */
 export type GenericPipeAction<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,
@@ -63,7 +63,7 @@ export type GenericPipeAction<
  * Generic pipe action async type.
  */
 export type GenericPipeActionAsync<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,
@@ -73,7 +73,7 @@ export type GenericPipeActionAsync<
  * Generic pipe item type.
  */
 export type GenericPipeItem<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,
@@ -83,7 +83,7 @@ export type GenericPipeItem<
  * Generic pipe item async type.
  */
 export type GenericPipeItemAsync<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,

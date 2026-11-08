@@ -25,7 +25,7 @@ import { portlessProxy, portlessAlias, portlessGet } from "../portless/portless.
 
 let sharedDevWebSocketServer: WebSocketServer | null = null;
 let sharedDevWebSocketHttpServer: http.Server | null = null;
-let devPortLessAlias: { value: string | null | false } = { value: null };
+const devPortLessAlias: { value: string | null | false } = { value: null };
 
 const ensureSharedDevSockets = (server: http.Server) => {
     if (sharedDevWebSocketServer && sharedDevWebSocketHttpServer === server) {
@@ -378,7 +378,7 @@ export const startServer = async (details: any) => {
     };
 
     const liveHandler = createLiveRequestHandler(appRequestHandler);
-    let appServer = http.createServer(liveHandler.handle);
+    const appServer = http.createServer(liveHandler.handle);
     bindWebSocketUpgrade(appServer);
 
     await new Promise<void>((resolve, reject) => {

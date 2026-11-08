@@ -29,8 +29,8 @@ export type SchemaWithPipeAsync<
       | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
     ),
     ...(
-      | PipeItem<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
-      | PipeItemAsync<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
+      | PipeItem<any, unknown, BaseIssue<unknown>>  
+      | PipeItemAsync<any, unknown, BaseIssue<unknown>>  
     )[],
   ],
 > = Omit<
@@ -3115,7 +3115,7 @@ export function pipeAsync<
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<unknown, BaseIssue<unknown>>;
     },
   };

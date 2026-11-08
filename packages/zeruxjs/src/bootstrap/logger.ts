@@ -28,6 +28,7 @@ interface LoggerOptions {
  */
 function format(level: LogLevel, message: string, ...args: unknown[]): string {
   const timestamp = new Date().toISOString();
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   message=String(message).slice(0,4096).replace(/[\x00-\x1f\x7f]/g,' ').replace(/https?:\/\/[^\s]+/gi,'[url redacted]').replace(/(bearer\s+)[^\s]+/gi,'$1[redacted]');
   const context=getRequestCorrelation();
   const safe=args.slice(0,16).map(value=>value instanceof Error?{name:'Error'}:typeof value==='number'||typeof value==='boolean'?value:'[redacted]');
@@ -64,7 +65,7 @@ export class Logger {
     const entry = format(level, message, ...args);
 
     // Console – colour‑coded for readability
-    // eslint-disable-next-line no-console
+     
     switch (level) {
       case "debug":
         console.debug(entry.trim());

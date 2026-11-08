@@ -131,6 +131,7 @@ test('argument copying is bounded and failed getters do not acquire pending hand
   Object.defineProperty(args, '0', { get() { throw Error('payload unavailable'); } });
   assert.throws(() => hooks.dispatch('event', args), /payload unavailable/);
   assert.equal(hooks.getDiagnostics().pending, 0);
+  // eslint-disable-next-line require-yield -- This negative fixture throws before yielding to exercise iterator failure cleanup.
   let count = 0; const values = [1]; values[Symbol.iterator] = function* () { throw Error('must not run iterator'); };
   hooks.register('event', (_ctx, value) => { count += value; });
   hooks.dispatch('event', values); assert.equal(count, 1); hooks.dispose(); await hooks.whenIdle();

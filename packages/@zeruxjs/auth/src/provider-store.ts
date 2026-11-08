@@ -17,6 +17,7 @@ export interface ProviderLoginStore {
 export class ProviderLoginError extends Error {
   constructor(readonly code: 'LOGIN_DENIED' | 'LOGIN_UNAVAILABLE' | 'LOGIN_CAPACITY' | 'LOGIN_CLOSED', options?: ErrorOptions) { super(code, options); this.name = 'ProviderLoginError'; }
 }
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 export const loginText = (value: unknown, max = 512): value is string => typeof value === 'string' && value.length > 0 && value.length <= max && Buffer.byteLength(value) <= max && !/[\x00-\x1f\x7f]/.test(value);
 export const loginDenied = () => new ProviderLoginError('LOGIN_DENIED');
 const hash = (value: unknown) => typeof value === 'string' && /^[A-Za-z0-9_-]{43}$/.test(value);

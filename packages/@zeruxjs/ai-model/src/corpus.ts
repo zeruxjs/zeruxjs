@@ -74,6 +74,7 @@ function integer(value: number, min: number, max: number) { if (!Number.isSafeIn
     throw new TypeError('Invalid corpus budget'); return value; }
 function safePath(value: unknown): asserts value is string { if (typeof value !== 'string' || value.length > 240 || !/^[A-Za-z0-9_@./-]+$/.test(value) || value.startsWith('/') || value.split('/').some(s => !s || s === '.' || s === '..' || s.startsWith('.') || /^(?:notes?|secrets?|private|drafts?)(?:[._-]|$)/i.test(s) || /^(?:notes?|secrets?|private|drafts?|dist|build|coverage|node_modules|tests?|fixtures?|cache|tmp|vendor)$/i.test(s)) || /(?:^|\/)(?:env|credentials|id_rsa)(?:\.|$)/i.test(value))
     throw new TypeError('Excluded/unsafe corpus path'); }
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 function strings(value: unknown, max = 128): asserts value is string[] { if (!Array.isArray(value) || value.length > 64 || value.some(v => typeof v !== 'string' || v.length < 1 || v.length > max || /[\x00-\x1f\x7f]/.test(v)))
     throw new TypeError('Invalid corpus symbols'); }
 function manifestHash(policy: CorpusSnapshot['policy'], sources: CorpusSource[]) { return hash(canonical({ generator: 'zerux-public-corpus-v1', policy, sources })); }

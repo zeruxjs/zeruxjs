@@ -257,20 +257,16 @@ export async function buildSites({ production = true } = {}) {
       .replaceAll("{{PACKAGE_COUNT}}", String(packages.length))
       .replace("{{PACKAGE_CARDS}}", cards)
       .replaceAll(
-        "{{FRAMEWORK_CONFIG_URL}}",
-        docs
-          ? `${docsApp.mount}/docs/${docs.latest}/configuration-handbook/`
-          : "/zeruxjs/",
+        'href="#framework-config"',
+        `href="${escape(docs ? `${docsApp.mount}/docs/${docs.latest}/configuration-handbook/` : "/zeruxjs/")}"`,
       )
       .replaceAll(
-        "{{FRAMEWORK_ARCHITECTURE_URL}}",
-        docs
-          ? `${docsApp.mount}/docs/${docs.latest}/mental-model/`
-          : "/zeruxjs/",
+        'href="#framework-architecture"',
+        `href="${escape(docs ? `${docsApp.mount}/docs/${docs.latest}/mental-model/` : "/zeruxjs/")}"`,
       )
       .replaceAll(
-        "{{FRAMEWORK_TUTORIAL_URL}}",
-        docs ? `${docsApp.mount}/docs/${docs.latest}/tutorial/` : "/zeruxjs/",
+        'href="#framework-tutorial"',
+        `href="${escape(docs ? `${docsApp.mount}/docs/${docs.latest}/tutorial/` : "/zeruxjs/")}"`,
       );
     await fs.writeFile(path.join(staging, "index.html"), html);
     await fs.writeFile(

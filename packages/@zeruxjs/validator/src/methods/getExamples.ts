@@ -18,7 +18,7 @@ type Schema =
     readonly [
       BaseSchema<unknown, unknown, BaseIssue<unknown>>,
       ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
+        | PipeItem<any, unknown, BaseIssue<unknown>>  
         | ExamplesAction<unknown, readonly unknown[]>
       )[],
     ]
@@ -30,8 +30,8 @@ type Schema =
         | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
       ),
       ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
-        | PipeItemAsync<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
+        | PipeItem<any, unknown, BaseIssue<unknown>>  
+        | PipeItemAsync<any, unknown, BaseIssue<unknown>>  
         | ExamplesAction<unknown, readonly unknown[]>
       )[],
     ]
@@ -42,18 +42,18 @@ type Schema =
  */
 type RecursiveConcat<
   TRootPipe extends readonly // prettier-ignore
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   (| PipeItem<any, unknown, BaseIssue<unknown>>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     | PipeItemAsync<any, unknown, BaseIssue<unknown>>
   )[],
   TCollectedExamples extends unknown[] = [],
 > = TRootPipe extends readonly [
   infer TFirstItem,
   ...infer TPipeRest extends readonly // prettier-ignore
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   (| PipeItem<any, unknown, BaseIssue<unknown>>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     | PipeItemAsync<any, unknown, BaseIssue<unknown>>
   )[],
 ]
@@ -101,13 +101,13 @@ export function getExamples<const TSchema extends Schema>(
         if (item.kind === 'schema' && 'pipe' in item) {
           depthFirstCollect(item);
         } else if (item.kind === 'metadata' && item.type === 'examples') {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           examples.push(...item.examples);
         }
       }
     }
   }
   depthFirstCollect(schema);
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   return examples;
 }

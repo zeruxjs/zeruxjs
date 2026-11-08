@@ -20,7 +20,7 @@ export function createSpeechController(win:Window,options:{ownership:'exclusive'
  const assertLive=()=>{if(disposed)throw new Error('Speech controller destroyed');};
  const status=():SpeechStatus=>Object.freeze({available:voices().length>0,active:!!utterance,paused:!!utterance&&!!synth?.paused,...(lastError?{error:lastError}:{})});
  const notify=()=>{if(notifying||disposed)return;notifying=true;try{for(const listener of [...listeners])if(listeners.has(listener))try{listener();}catch{/* Observers cannot take engine ownership. */}}finally{notifying=false;}};
- const report=(code:'UNAVAILABLE'|'FAILED')=>{lastError=code;if(!reporting){reporting=true;try{options.onError?.(code);}catch{}finally{reporting=false;}}notify();};
+ const report=(code:'UNAVAILABLE'|'FAILED')=>{lastError=code;if(!reporting){reporting=true;try{options.onError?.(code);}catch{ /* Host diagnostic callbacks must not replace the primary operation outcome. */ }finally{reporting=false;}}notify();};
  const release=()=>{if(utterance){utterance.removeEventListener('end',onEnd);utterance.removeEventListener('error',onError);}utterance=undefined;if(synth&&leases.get(synth)===owner)leases.delete(synth);};
  const onEnd=()=>{release();notify();};const onError=()=>{release();report('FAILED');};
  const gesture=(event:Event)=>{

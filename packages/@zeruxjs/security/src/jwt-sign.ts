@@ -16,6 +16,7 @@ export function createJwtSigner(options:JwtSignerOptions) {
   if(key.kty==='RSA'){if(key.oth!==undefined)throw deny();for(const name of ['d','p','q','dp','dq','qi'] as const)privateBytes(key[name],1024);}
   else if(key.kty==='EC'){const size=key.crv==='P-256'?32:key.crv==='P-384'?48:66;privateBytes(key.d,size,size);}
   else if(key.kty==='OKP')privateBytes(key.d,32,32);
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   const text=(value:unknown,max=512):value is string=>typeof value==='string'&&value.length>0&&value.length<=max&&Buffer.byteLength(value)<=max&&!/[\x00-\x1f\x7f]/.test(value);
   const max=options.maxLifetimeSeconds===undefined?3600:options.maxLifetimeSeconds,cap=options.maxPending===undefined?32:options.maxPending,now=options.now===undefined?Date.now:options.now;
   if(!text(options.issuer)||!text(options.audience)||!text(options.type,64)||!Number.isSafeInteger(max)||max<1||max>604800||!Number.isSafeInteger(cap)||cap<1||cap>256||typeof now!=='function')throw deny();

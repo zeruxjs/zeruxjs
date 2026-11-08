@@ -47,8 +47,8 @@ test('WebSocket aggregate fragments, denied upgrade, oversize and disconnect can
 test('Connect handles coalesced bounded frames and rejects truncated/oversize frames',async()=>{
   const frames=Buffer.concat(Array.from({length:20},()=>encodeConnectEnvelope({a:1})));let count=0;
   for await(const value of readConnectEnvelopes([frames],{maxMessageBytes:16,maxTotalBytes:1000})){assert.deepEqual(value,{a:1});count++;}assert.equal(count,20);
-  await assert.rejects(async()=>{for await(const _ of readConnectEnvelopes([Buffer.from([0,0,0,1,0])],{maxMessageBytes:16})){}},/too large/);
-  await assert.rejects(async()=>{for await(const _ of readConnectEnvelopes([Buffer.from([0,0])])){}},/Truncated/);
+  await assert.rejects(async()=>{for await(const _ of readConnectEnvelopes([Buffer.from([0,0,0,1,0])],{maxMessageBytes:16})){ /* Drain or observe the deliberately failing fixture; the enclosing assertion checks its outcome. */ }},/too large/);
+  await assert.rejects(async()=>{for await(const _ of readConnectEnvelopes([Buffer.from([0,0])])){ /* Drain or observe the deliberately failing fixture; the enclosing assertion checks its outcome. */ }},/Truncated/);
 });
 
 test('stop during startup aborts and releases partial resources',async()=>{

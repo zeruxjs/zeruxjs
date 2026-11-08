@@ -78,7 +78,7 @@ type WithReadonly<
 > = TValue extends
   | SchemaWithPipe<infer TPipe>
   | SchemaWithPipeAsync<infer TPipe>
-  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ?  
   ReadonlyAction<any> extends TPipe[number]
   ? Readonly<TObject>
   : TObject

@@ -16,7 +16,7 @@ export function _getGraphemeCount(input: string): number {
   }
   const segments = segmenter.segment(input);
   let count = 0;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   for (const _ of segments) {
     count++;
   }

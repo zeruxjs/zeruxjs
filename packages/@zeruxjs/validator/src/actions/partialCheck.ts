@@ -107,7 +107,7 @@ export function partialCheck(
     '~run'(dataset, config) {
       if (
         (dataset.typed || _isPartiallyTyped(dataset, paths)) &&
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         !this.requirement(dataset.value)
       ) {
         _addIssue(this, 'input', dataset, config);

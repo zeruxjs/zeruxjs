@@ -41,6 +41,7 @@ export function absolute(v: unknown): URL {
     typeof v !== "string" ||
     !v ||
     v.length > 8192 ||
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     /[\x00-\x20\x7f\\?#]/.test(v) ||
     /\/(?:\.|%2e){1,2}(?:\/|$)/i.test(v)
   )

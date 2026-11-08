@@ -8,6 +8,7 @@ export function createNativeS3Multipart(
   createOnly:boolean
 ):NativeMultipartOperations {
   const digest=/^[a-f0-9]{64}$/;
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   function address(value:Parameters<NativeMultipartOperations['initiate']>[0],id?:string){validateAddress(value);if(id!==undefined&&(typeof id!=='string'||!id||id.length>2048||/[\x00-\x1f\x7f]/.test(id)))throw new TypeError('Invalid native upload ID');return {Bucket:value.bucket,Key:value.key,UploadId:id};}
   return Object.freeze({
     minPartBytes:5*1024*1024,createOnly,

@@ -526,6 +526,7 @@ export async function createMilleSearchAdapter(
           (typeof v === "number" &&
             (!Number.isFinite(v) ||
               (Number.isInteger(v) && !Number.isSafeInteger(v)))) ||
+          // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
           (typeof v === "string" && /[\x00-\x1f\x7f]/.test(v))
         )
           bad();

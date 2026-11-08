@@ -221,7 +221,7 @@ function constructNode(value: VNodeChild, parent: Node, anchor: Node | null, _ow
         return { start, end: marker, type: Array, update(next) { updateChildren(flat(next as VNodeChild[])); }, destroy: () => scope.dispose() };
       }
       const componentVNode = isVNode(value) ? value : undefined;
-      const component = componentVNode ? componentVNode.type as Function : value as Function;
+      const component = componentVNode ? componentVNode.type as ((...args: any[]) => any) : value as ((...args: any[]) => any);
       const definition = componentVNode ? getComponentDefinition(component) : undefined;
       let currentVNode = componentVNode;
       let renderComponent = component;

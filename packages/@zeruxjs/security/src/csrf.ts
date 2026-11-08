@@ -30,11 +30,13 @@ export function createCsrfProtection(options: CsrfOptions): CsrfTokenManager {
     }
     return {
         issue(sessionId) {
+            // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
             if (typeof sessionId !== 'string' || !sessionId || Buffer.byteLength(sessionId) > 1024 || /[\x00-\x1f\x7f]/.test(sessionId)) throw new Error("Session identifier is required");
             const payload = `${timestamp()}.${randomBytes(24).toString("base64url")}`;
             return `${encode(payload)}.${signature(payload, sessionId).toString("base64url")}`;
         },
         verify(token, sessionId) {
+            // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
             if (typeof sessionId !== 'string' || !sessionId || Buffer.byteLength(sessionId) > 1024 || /[\x00-\x1f\x7f]/.test(sessionId) || typeof token !== 'string' || !token || token.length > 512) return false;
             const parts = token.split(".");
             if (parts.length !== 2 || !/^[A-Za-z0-9_-]+$/.test(parts[0]) || !/^[A-Za-z0-9_-]+$/.test(parts[1])) return false;

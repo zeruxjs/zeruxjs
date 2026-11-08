@@ -42,7 +42,7 @@ async function execute(command,timeout){
   let output='',timedOut=false,spawnError;
   const append=chunk=>{output=(output+String(chunk)).slice(-80000);};
   child.stdout.on('data',append);child.stderr.on('data',append);child.on('error',error=>{spawnError=error.message;});
-  const timer=setTimeout(()=>{timedOut=true;try{if(process.platform==='win32')child.kill('SIGKILL');else process.kill(-child.pid,'SIGKILL');}catch{}},timeout);
+  const timer=setTimeout(()=>{timedOut=true;try{if(process.platform==='win32')child.kill('SIGKILL');else process.kill(-child.pid,'SIGKILL');}catch{ /* Best-effort cleanup/discovery may already be unavailable; the owning operation handles its outcome. */ }},timeout);
   child.once('close',(code,signal)=>{clearTimeout(timer);ok({exitCode:code??1,signal:signal??undefined,timedOut,spawnError,tap:parseTapSummary(output)});});
  });
 }

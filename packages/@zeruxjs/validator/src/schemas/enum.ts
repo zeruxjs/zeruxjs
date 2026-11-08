@@ -144,14 +144,14 @@ export function enum_(
       return _getStandardProps(this);
     },
     '~run'(dataset, config) {
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       if (this.options.includes(dataset.value)) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
       } else {
         _addIssue(this, 'type', dataset, config);
       }
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<string | number, EnumIssue>;
     },
   };

@@ -2,6 +2,7 @@ import {escapeHtml,fontFamily} from './validate.js';
 export interface SvgIcon {viewBox:readonly [number,number,number,number];paths:readonly {d:string;fill?:'none'|'currentColor'|string}[]}
 export function validateSvgIcon(input:SvgIcon):SvgIcon{
  if(!input||Object.keys(input).some(key=>!['viewBox','paths'].includes(key))||!Array.isArray(input.viewBox)||input.viewBox.length!==4||input.viewBox.some(v=>!Number.isFinite(v)||Math.abs(v)>100000)||input.viewBox[2]<=0||input.viewBox[3]<=0||!Array.isArray(input.paths)||!input.paths.length||input.paths.length>128)throw new TypeError('Invalid structured SVG icon');
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  return {viewBox:[...input.viewBox] as [number,number,number,number],paths:input.paths.map(path=>{if(!path||Object.keys(path).some(key=>!['d','fill'].includes(key))||typeof path.d!=='string'||!path.d||path.d.length>8192||! /^[MmZzLlHhVvCcSsQqTtAa0-9eE+.,\s-]+$/.test(path.d)||/[\x00-\x1f\x7f]/.test(path.d)||path.fill!==undefined&&! /^(?:none|currentColor|#[a-fA-F0-9]{6}|#[a-fA-F0-9]{8})$/.test(path.fill))throw new TypeError('Unsafe SVG path');return {d:path.d,...(path.fill?{fill:path.fill}:{})};})};
 }
 export function svgIconMarkup(input:SvgIcon,options:{decorative?:boolean;label?:string}={}):string{

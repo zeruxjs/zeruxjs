@@ -35,7 +35,7 @@ test('Chrome native PCM/WAV playback, captions, native keyboard controls and sou
   assert.equal(await evaluate(`(async()=>{const element=document.createElement('audio');document.body.append(element);const unsupported=playback.createMediaPlayback(element,{variants:[{id:'unknown',contentType:'video/x-zerux-unsupported',source:{blob:new Blob(['bad'])}}]});const result=await unsupported.select();const ok=!result&&unsupported.getSnapshot().error==='UNSUPPORTED_SOURCE';unsupported.destroy();element.remove();return ok;})()`),true);
   await evaluate('URL.revokeObjectURL(trackUrl)');t.diagnostic(version.stdout.trim()+'; exercised audio/wav signed 16-bit PCM mono 8kHz, WebVTT captions; no other codec qualified');
  }finally{
-  if(ws?.readyState===WebSocket.OPEN)try{await call('Browser.close');}catch{}ws?.close();if(child)try{await bounded(exit,3000,'Browser cleanup deadline');}catch{child.kill('SIGKILL');await exit;}
+  if(ws?.readyState===WebSocket.OPEN)try{await call('Browser.close');}catch{ /* Drain or observe the deliberately failing fixture; the enclosing assertion checks its outcome. */ }ws?.close();if(child)try{await bounded(exit,3000,'Browser cleanup deadline');}catch{child.kill('SIGKILL');await exit;}
   for(const request of pending.values()){clearTimeout(request.timer);request.reject(new Error('Fixture closed'));}pending.clear();fs.rmSync(root,{recursive:true,force:true});
  }
 });

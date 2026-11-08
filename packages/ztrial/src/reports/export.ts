@@ -28,6 +28,7 @@ const core:ReportExporter[]=[
   {format:'csv',extension:'results.csv',kind:'summary',render:report=>encode(reportColumns(report).map(row=>row.map(cell=>'"'+spreadsheetText(cell).replace(/"/g,'""')+'"').join(',')).join('\r\n')+'\r\n')}
 ];
 async function directory(value:string){
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if(typeof value!=='string'||!value||value.length>4096||/[\x00-\x1f\x7f]/.test(value)||value.split(/[\\/]/).includes('..'))throw new ReportExportError('UNSAFE_OUTPUT_PATH');
   const root=path.resolve(value);const stat=await fs.lstat(root);if(!stat.isDirectory()||stat.isSymbolicLink()||await fs.realpath(root)!==root)throw new ReportExportError('UNSAFE_OUTPUT_PATH');return root;
 }

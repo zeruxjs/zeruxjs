@@ -708,6 +708,7 @@ class SqlCompiler {
         }
 
         if (typeof input === "string") {
+            // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
             if(/[\x00-\x1f\x7f]/.test(input)||input.includes('\\'))refuseSql('UNSUPPORTED_DDL_LITERAL');
             return `'${input.replace(/'/g, "''")}'`;
         }

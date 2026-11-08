@@ -27,7 +27,7 @@ function getFolders(dirsToScan, scriptName, ignorePrivate = false) {
                                 pkgName: pkg.name || entry.name
                             });
                         }
-                    } catch (e) { }
+                    } catch (e) { /* Best-effort cleanup/discovery may already be unavailable; the owning operation handles its outcome. */  }
                 } else {
                     scan(fullPath, depth + 1);
                 }
@@ -41,14 +41,14 @@ function getFolders(dirsToScan, scriptName, ignorePrivate = false) {
 
 function getSafeName(pkgName) {
     // Replace '/' and '@' with '-' and remove leading dashes
-    return pkgName.replace(/[@\/]/g, '-').replace(/^-+/, '');
+    return pkgName.replace(/[@/]/g, '-').replace(/^-+/, '');
 }
 
 function readState() {
     if (fs.existsSync(STATE_FILE)) {
         try {
             return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
-        } catch (e) { }
+        } catch (e) { /* Best-effort cleanup/discovery may already be unavailable; the owning operation handles its outcome. */  }
     }
     return { type: null, processes: [] };
 }

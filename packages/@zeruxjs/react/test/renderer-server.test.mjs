@@ -28,6 +28,7 @@ test('public state codec matches script-breaking payloads without serializing ex
  const restored=readReactHydrationState(state.data,{validateState});assert.deepEqual(JSON.parse(JSON.stringify(restored.store.getServerSnapshot())),value);
  assert.equal(restored.store.getServerSnapshot(),restored.store.getSnapshot());assert.ok(Object.isFrozen(restored.store.getServerSnapshot()));
  assert.throws(()=>readReactHydrationState(state.data,{validateState:x=>({text:x.text+'changed'})}),e=>e.code==='HYDRATION_STATE_CHANGED');
+ // eslint-disable-next-line no-sparse-arrays -- Deliberately sparse input verifies that the public boundary rejects array holes.
  for(const input of [{password:'private'}, {x:new Date()}, {x:()=>1}, {x:undefined}, {x:NaN}, {x:[,1]}])assert.throws(()=>createReactHydrationState(input,{identifierPrefix:'safe',validateState:x=>x}));
  let invoked=0;const input={};Object.defineProperty(input,'x',{enumerable:true,get(){invoked++;return 'private'}});assert.throws(()=>createReactHydrationState(input,{identifierPrefix:'safe',validateState:x=>x}));assert.equal(invoked,0);
  assert.throws(()=>createReactHydrationState({text:'x'.repeat(50)},{identifierPrefix:'safe',validateState,maxBytes:10}),e=>e.code==='STATE_BYTE_LIMIT');

@@ -286,6 +286,7 @@ export function privacyCsvCell(
   value: string | number | boolean | null,
 ): string {
   let s = String(value ?? '');
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if (/^[\s\u0000-\u001f]*[=+@-]/.test(s) || /^[\t\r\n]/.test(s)) s = "'" + s;
   return '"' + s.replace(/"/g, '""') + '"';
 }
@@ -649,7 +650,7 @@ export function createPrivacyCoordinator(options: PrivacyCoordinatorOptions) {
       execution: { signal?: AbortSignal } = {},
     ) {
       return run(async (signal, deadline) => {
-        let j = await get(reference, principal, 'preview', signal);
+        const j = await get(reference, principal, 'preview', signal);
         if (j.phase !== 'preview') return j;
         const cp = j.participants.find((p) => !p.preview.done);
         if (cp) {
@@ -677,7 +678,7 @@ export function createPrivacyCoordinator(options: PrivacyCoordinatorOptions) {
             cp.code = 'UNAVAILABLE';
             try {
               await save(j, signal);
-            } catch {}
+            } catch { /* Preserve the original participant failure when checkpoint persistence also fails. */ }
             throw error instanceof PrivacyError
               ? error
               : fail(
@@ -697,7 +698,7 @@ export function createPrivacyCoordinator(options: PrivacyCoordinatorOptions) {
       execution: { signal?: AbortSignal } = {},
     ) {
       return run(async (signal) => {
-        let j = await get(reference, principal, 'approve', signal);
+        const j = await get(reference, principal, 'approve', signal);
         if (j.phase !== 'approval') throw fail('NOT_PREVIEWED');
         const hash = plan(j),
           approval = await options.approve(

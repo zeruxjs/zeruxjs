@@ -93,6 +93,6 @@ export function entriesFromObjects(
   for (const schema of schemas) {
     Object.assign(entries, schema.entries);
   }
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   return entries;
 }

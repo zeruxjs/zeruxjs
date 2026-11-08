@@ -1,9 +1,10 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<!-- html-validate-disable no-inline-style -- Self-contained reference previews intentionally embed fixed authored styles; these are not user-supplied styles. --><html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Design System Inspired by Apple</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
 <style>
   :root {
@@ -340,7 +341,7 @@
     <div class="button-item"><a class="btn-outline" href="#">Learn more</a><div class="button-label">Outline Pill</div></div>
     <div class="button-item"><a class="btn-dark-fill" href="#">Shop iPhone</a><div class="button-label">Dark Fill</div></div>
     <div class="button-item"><a class="btn-filter" href="#">Search</a><div class="button-label">Filter</div></div>
-    <div class="button-item"><button class="btn-media">▶</button><div class="button-label">Media</div></div>
+    <div class="button-item"><button type="button" class="btn-media">▶</button><div class="button-label">Media</div></div>
     <div class="button-item"><span style="display:inline-block; background:transparent; color:var(--link-blue); padding:4px 16px; border-radius:980px; border:1px solid var(--link-blue); font-size:14px; font-weight:400; letter-spacing:-0.224px;">Learn more &gt;</span><div class="button-label">Link Pill</div></div>
   </div>
 </section>
@@ -401,7 +402,7 @@
   <div class="section-label">05 / Forms</div>
   <h2 class="section-title">Form Elements</h2>
   <div class="form-group"><label class="form-label">Apple ID</label><input class="form-input" type="text" placeholder="name@example.com"><div class="form-state-label">Default</div></div>
-  <div class="form-group"><label class="form-label">Password</label><input class="form-input form-input--focus" type="password" value="mypassword123"><div class="form-state-label">Focus (blue ring)</div></div>
+  <div class="form-group"><label class="form-label">Password</label><input autocomplete="current-password" class="form-input form-input--focus" type="password" value="mypassword123"><div class="form-state-label">Focus (blue ring)</div></div>
   <div class="form-group"><label class="form-label">Email</label><input class="form-input form-input--error" type="text" value="invalid@"><div class="form-state-label">Error (red ring)</div></div>
   <div class="form-group"><label class="form-label">Feedback</label><textarea class="form-textarea" placeholder="Tell us about your experience..."></textarea></div>
 </section>

@@ -348,7 +348,7 @@ export function requiredAsync(
     ErrorMessage<NonOptionalIssue> | undefined
   > = {};
   for (const key in schema.entries) {
-    // @ts-expect-error
+    // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
     entries[key] =
       !keys || keys.includes(key)
         ? nonOptionalAsync(schema.entries[key], message)

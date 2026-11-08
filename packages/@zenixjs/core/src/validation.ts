@@ -108,6 +108,7 @@ export function media(input: unknown): CmsMediaReference {
     typeof input.versionId !== 'string' ||
     input.versionId.length < 1 ||
     input.versionId.length > 256 ||
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     /[\x00-\x1f]/.test(input.versionId) ||
     typeof input.sha256 !== 'string' ||
     !/^[a-f0-9]{64}$/.test(input.sha256)

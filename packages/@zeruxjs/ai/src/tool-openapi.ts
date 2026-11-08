@@ -19,6 +19,7 @@ export function approvedOpenApiToolOperations(document: unknown, policy: {
     const approved: ApprovedToolOperation[] = [], names = new Set<string>();
     let count = 0;
     for (const [path, item] of Object.entries(doc.paths)) {
+        // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
         if (!path.startsWith('/') || path.length > 512 || /[\x00-\x20\\?#]/.test(path) || path.includes('..') || /[{}]/.test(path) || !item || typeof item !== 'object' || Array.isArray(item))
             throw new TypeError('Invalid operation path');
         if(Object.hasOwn(item,'$ref')||Object.hasOwn(item,'parameters'))throw new TypeError('Unsupported path parameters/reference');

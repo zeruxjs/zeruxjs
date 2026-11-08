@@ -46,6 +46,7 @@ interface Generation {
 /** Separate opt-in owned worker service; legacy pull clients retain their ownership model. */
 export async function createRabbitMQWorker(options:RabbitMQWorkerOptions,connector:RabbitMQWorkerConnector=connect){
  keys(options,['url','prefix','queues','concurrency','maxPending','maxBytes','timeoutMs','drainMs','handlerTimeoutMs','reconnect','signal']);
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  if(typeof options.url!=='string'||options.url.length>4096||/[\x00-\x1f\x7f]/.test(options.url))throw fail('INVALID_CONFIG');
  let target:URL;try{target=new URL(options.url);}catch{throw fail('INVALID_CONFIG');}if(!['amqp:','amqps:'].includes(target.protocol))throw fail('INVALID_CONFIG');
  if(typeof connector!=='function'||options.signal!==undefined&&(!(options.signal instanceof AbortSignal)))throw fail('INVALID_CONFIG');

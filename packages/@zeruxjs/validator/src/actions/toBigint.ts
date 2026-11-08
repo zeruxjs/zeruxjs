@@ -80,11 +80,11 @@ export function toBigint(
     message,
     '~run'(dataset, config) {
       try {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.value = BigInt(dataset.value);
       } catch {
         _addIssue(this, 'bigint', dataset, config);
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = false;
       }
       return dataset as OutputDataset<bigint, ToBigintIssue<unknown>>;

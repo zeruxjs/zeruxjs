@@ -34,6 +34,7 @@ export async function createSqliteConsistentBackup(database: SqliteDatabase, des
         // These random temporary names belong only to this backup, including read-only WAL sidecars.
         const errors:unknown[]=[];
         for(const file of [temp,`${temp}-wal`,`${temp}-shm`])try{await unlink(file);}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')errors.push(error);}
+        // eslint-disable-next-line no-unsafe-finally -- Cleanup failure must propagate; this owner explicitly reports failed resource release.
         if(errors.length)throw new AggregateError([...(failed?[failure]:[]),...errors],'SQLite backup temporary cleanup failed');
     }
 }

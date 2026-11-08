@@ -1,6 +1,7 @@
 import { stripVTControlCharacters } from 'node:util';
 /** Remove terminal escape sequences and controls, retaining ordinary LF/tab layout. */
 export function stripTerminalCodes(text: string): string {
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   return stripVTControlCharacters(text).replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, '');
 }
 export function formatError(error: unknown): string {

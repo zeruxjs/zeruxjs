@@ -93,7 +93,7 @@ export function set(
       // If root type is valid, check nested types
       if (input instanceof Set) {
         // Set typed to `true` and value to empty set
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
         dataset.value = new Set();
 
@@ -120,14 +120,14 @@ export function set(
               if (issue.path) {
                 issue.path.unshift(pathItem);
               } else {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 issue.path = [pathItem];
               }
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues?.push(issue);
             }
             if (!dataset.issues) {
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues = valueDataset.issues;
             }
 
@@ -144,7 +144,7 @@ export function set(
           }
 
           // Add value to dataset
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.value.add(valueDataset.value);
         }
 
@@ -154,7 +154,7 @@ export function set(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         Set<unknown>,
         SetIssue | BaseIssue<unknown>

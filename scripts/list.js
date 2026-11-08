@@ -9,7 +9,7 @@ if (state && state.processes && state.processes.length > 0) {
     let sNo = 1;
 
     state.processes.forEach(p => {
-        const isApp = /[\\\/]apps[\\\/][^\\\/]+$/.test(p.dir);
+        const isApp = /[\\/]apps[\\/][^\\/]+$/.test(p.dir);
         const pkgType = isApp ? 'App' : 'Package';
 
         // For Packages or specific watchers, print directly

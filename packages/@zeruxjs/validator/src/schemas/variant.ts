@@ -151,7 +151,7 @@ export function variant(
                 if (
                   currentKey in input
                     ? _runSchema(discriminatorSchema,
-                      // @ts-expect-error
+                      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                       { typed: false, value: input[currentKey] },
                       { abortEarly: true }
                     ).issues
@@ -228,7 +228,7 @@ export function variant(
 
         // Otherwise, add discriminator issue
         _addIssue(this, 'type', dataset, config, {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           input: input[invalidDiscriminatorKey],
           expected: _joinExpects(expectedDiscriminators, '|'),
           path: [
@@ -237,7 +237,7 @@ export function variant(
               origin: 'value',
               input: input as Record<string, unknown>,
               key: invalidDiscriminatorKey,
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               value: input[invalidDiscriminatorKey],
             },
           ],
@@ -249,7 +249,7 @@ export function variant(
       }
 
       // Finally, return  output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         InferOutput<VariantOptions<string>[number]>,
         VariantIssue | BaseIssue<unknown>

@@ -45,6 +45,7 @@ export class MemcacheTextClient {
       const n = this.#options[key];
       if (!Number.isSafeInteger(n) || n < 1 || n > max) throw memcacheError('MEMCACHE_INVALID_OPTIONS');
     }
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if (typeof this.#options.host !== 'string' || !this.#options.host || this.#options.host.length>253 || /[\s\x00-\x1f\x7f]/.test(this.#options.host) || typeof this.#options.tls !== 'boolean') throw memcacheError('MEMCACHE_INVALID_OPTIONS');
   }
   /** Execute a trusted protocol command. This low-level API must never accept browser input. */

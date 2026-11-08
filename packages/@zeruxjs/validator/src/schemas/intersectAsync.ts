@@ -108,7 +108,7 @@ export function intersectAsync(
         let outputs: unknown[] | undefined;
 
         // Set typed initially to `true`
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
 
         // Parse schema of each option async
@@ -121,10 +121,10 @@ export function intersectAsync(
           // If there are issues, capture them
           if (optionDataset.issues) {
             if (dataset.issues) {
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues.push(...optionDataset.issues);
             } else {
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues = optionDataset.issues;
             }
 
@@ -178,7 +178,7 @@ export function intersectAsync(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         never,
         IntersectIssue | BaseIssue<unknown>

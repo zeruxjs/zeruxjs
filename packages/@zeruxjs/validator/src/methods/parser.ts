@@ -64,9 +64,9 @@ export function parser(
     BaseSchema<unknown, unknown, BaseIssue<unknown>>,
     Config<BaseIssue<unknown>> | undefined
   > = (input: unknown) => parse(schema, input, config);
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   func.schema = schema;
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   func.config = config;
   return func;
 }

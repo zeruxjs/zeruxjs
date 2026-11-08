@@ -246,7 +246,7 @@ try {
   }, 3000);
   try {
     await send("Browser.close");
-  } catch {}
+  } catch { /* Best-effort cleanup/discovery may already be unavailable; the owning operation handles its outcome. */ }
   await closed;
   clearTimeout(killTimer);
   for (const item of pending.values()) clearTimeout(item.timer);

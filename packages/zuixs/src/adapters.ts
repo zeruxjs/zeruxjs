@@ -70,7 +70,7 @@ export function zuixVite(config: ZuixConfig = {}) {
     transform(code: string, id: string) {
       if (
         id.split('?',1)[0].endsWith('.css') &&
-        /@import\s+([\"'])zuixs\1\s*;/.test(code)
+        /@import\s+(["'])zuixs\1\s*;/.test(code)
       ) {
         cssEntries.add(id);
         const tokens = new Set<string>();

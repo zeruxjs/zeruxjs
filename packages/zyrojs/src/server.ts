@@ -49,7 +49,7 @@ export function renderToHydratable<P extends Record<string, any>>(component: Com
     if (Array.isArray(value)) return emit('<!--zyro-start-->') + flatten(value, depth).map(child => render(child, depth + 1)).join('') + emit('<!--zyro-->');
     const vnode = value && typeof value === 'object' ? value as VNode : undefined;
     if (typeof value === 'function' || typeof vnode?.type === 'function') {
-      const fn = typeof value === 'function' ? value : vnode!.type as Function;
+      const fn = typeof value === 'function' ? value : vnode!.type as ((...args: any[]) => any);
       const definition = getComponentDefinition(fn);
       const props = vnode ? {...vnode.props, children: vnode.children} : undefined;
       let content: string;
@@ -57,7 +57,7 @@ export function renderToHydratable<P extends Record<string, any>>(component: Com
       scope.add(() => setupScope.dispose());
       try {
         const componentId = ++components;
-        let run: Function;
+        let run: ((...args: any[]) => any);
         try { run = definition ? setupScope.run(() => withComponentIds(idPrefix, componentId, () => definition.setup(props))) : fn; }
         catch (error) { setupScope.dispose(); throw error; }
         if (typeof run !== 'function') throw new HydrationError('INVALID_SETUP', 'ZyroJS: setup must return a render function');

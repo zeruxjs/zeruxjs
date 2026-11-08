@@ -30,7 +30,7 @@ const status = document.querySelector("#search-status");
 let singleKeys = true;
 try {
   singleKeys = localStorage.getItem("zerux-single-shortcuts") !== "off";
-} catch {}
+} catch { /* Browser persistence is optional; retain the usable default UI on storage failure. */ }
 let searchModule;
 let searchTrigger;
 /** Load the search engine only on explicit search intent. @returns {Promise<object>} Search module. Reads generated script URL only. */
@@ -278,7 +278,7 @@ if (shortcutOption) {
     singleKeys = shortcutOption.checked;
     try {
       localStorage.setItem("zerux-single-shortcuts", singleKeys ? "on" : "off");
-    } catch {}
+    } catch { /* Browser persistence is optional; retain the usable default UI on storage failure. */ }
   });
 }
 shortcuts?.addEventListener("close", () => shortcutTrigger?.focus());
@@ -311,7 +311,7 @@ document.addEventListener("keydown", (event) => {
 let motion = true;
 try {
   motion = localStorage.getItem("zerux-docs-motion") !== "off";
-} catch {}
+} catch { /* Browser persistence is optional; retain the usable default UI on storage failure. */ }
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 function syncMotion() {
   const allowed = motion && !reducedMotion.matches;
@@ -336,7 +336,7 @@ for (const button of document.querySelectorAll("[data-motion-toggle]"))
     motion = !motion;
     try {
       localStorage.setItem("zerux-docs-motion", motion ? "on" : "off");
-    } catch {}
+    } catch { /* Browser persistence is optional; retain the usable default UI on storage failure. */ }
     syncMotion();
   });
 reducedMotion.addEventListener("change", syncMotion);

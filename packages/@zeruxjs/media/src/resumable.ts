@@ -35,6 +35,7 @@ export function createMediaResumableHandler(options:MediaResumableOptions){
    const suffix=path.slice(options.prefix.length),match=/^\/([a-f0-9]{48})(?:\/(complete)|\/parts\/([1-9][0-9]{0,3}))?$/.exec(suffix);
    if((suffix==='')&&(request.method==='POST')){
     const input=await json(request,['name','size','sha256','contentType']);
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if((((((((((typeof input.name!=='string')||!input.name)||(input.name.length>180))||/[\\/\x00-\x1f\x7f]/.test(input.name))||!Number.isSafeInteger(input.size))||(input.size<1))||(input.size>maxBytes))||(typeof input.sha256!=='string'))||! /^[a-f0-9]{64}$/.test(input.sha256))||!options.allowedTypes.includes(input.contentType))throw new TypeError('Invalid initiation');
     const address=options.destination({...identity},input);
     const session=await options.uploads.initiate(identity,address,{size:input.size,sha256:input.sha256,contentType:input.contentType,metadata:{'media-name':input.name},ifNoneMatch:true,visibility:'private'});

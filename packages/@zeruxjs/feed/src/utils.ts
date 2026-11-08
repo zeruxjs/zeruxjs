@@ -8,6 +8,7 @@ import type {
 // XML 1.0 text/attribute escaping; this is not an HTML sanitizer or script encoder.
 export const escapeXml = (value: string): string =>
   String(value)
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -39,6 +40,7 @@ function text(v: unknown, max = 4096, empty = false): asserts v is string {
     typeof v !== "string" ||
     (!empty && !v) ||
     v.length > max ||
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     /[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(
       v,
     )
@@ -59,6 +61,7 @@ function array<T>(value: readonly T[], max: number): void {
 }
 export function safeFeedUrl(value: string): string {
   text(value, 8192);
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if (/[\x00-\x20\x7f\\]/.test(value)) throw new TypeError("Invalid feed URL");
   let u: URL;
   try {
@@ -350,6 +353,7 @@ export function atomId(value: string): string {
     !["http:", "https:", "urn:", "tag:"].includes(url.protocol) ||
     url.username ||
     url.password ||
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     /[\x00-\x20\x7f]/.test(value)
   )
     throw new TypeError("Invalid Atom ID");

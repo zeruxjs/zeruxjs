@@ -81,15 +81,15 @@ export function toNumber(
     '~run'(dataset, config) {
       try {
         dataset.value = Number(dataset.value);
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         if (isNaN(dataset.value)) {
           _addIssue(this, 'number', dataset, config);
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.typed = false;
         }
       } catch {
         _addIssue(this, 'number', dataset, config);
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = false;
       }
       return dataset as OutputDataset<number, ToNumberIssue<unknown>>;

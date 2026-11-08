@@ -42,6 +42,7 @@ export function createPreferenceState(options:{initial?:Partial<PreferenceValues
  let reporting=false;
  const error=(code:PreferenceErrorCode)=>{lastError=code;if(reporting)return;reporting=true;try{options.onError?.(code);}catch{/* Diagnostic callbacks never disable the preference UI. */}finally{reporting=false;}};
  if(options.persistence){
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   key=options.persistence.key;if(typeof key!=='string'||!key||key.length>128||/[\u0000-\u001f\u007f]/.test(key))throw new TypeError('Invalid preference storage key');
   try{
    storage=typeof options.persistence.storage==='function'?options.persistence.storage():options.persistence.storage;

@@ -41,9 +41,9 @@ export function transformAsync<TInput, TOutput>(
     async: true,
     operation,
     async '~run'(dataset, config) {
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       dataset.value = await this.operation(dataset.value, { signal: config.signal });
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as SuccessDataset<TOutput>;
     },
   };

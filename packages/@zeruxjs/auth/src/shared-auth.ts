@@ -21,6 +21,7 @@ export class AuthStateError extends Error {
     }
 }
 const invalid = () => new AuthStateError('AUTH_INVALID');
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 const text = (value: unknown, max = 128): value is string => typeof value === 'string' && value.length > 0 && value.length <= max && !/[\x00-\x1f\x7f]/.test(value);
 const integer = (value: number, min: number, max: number) => Number.isSafeInteger(value) && value >= min && value <= max;
 const empty = (): AuthAccountState => ({ sessions: [], challenges: [], steps: Object.create(null) });

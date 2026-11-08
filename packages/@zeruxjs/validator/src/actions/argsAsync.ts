@@ -58,7 +58,7 @@ type Schema =
  * Args action async type.
  */
 export interface ArgsActionAsync<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput extends (...args: any[]) => unknown,
   TSchema extends Schema,
 > extends BaseTransformation<
@@ -88,7 +88,7 @@ export interface ArgsActionAsync<
  * @returns An args action.
  */
 export function argsAsync<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput extends (...args: any[]) => unknown,
   TSchema extends Schema,
 >(schema: TSchema): ArgsActionAsync<TInput, TSchema>;

@@ -80,19 +80,19 @@ export function toDate(
     message,
     '~run'(dataset, config) {
       try {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.value = new Date(dataset.value);
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         if (isNaN(dataset.value)) {
           _addIssue(this, 'date', dataset, config, {
             received: '"Invalid Date"',
           });
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.typed = false;
         }
       } catch {
         _addIssue(this, 'date', dataset, config);
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = false;
       }
       return dataset as OutputDataset<Date, ToDateIssue<unknown>>;

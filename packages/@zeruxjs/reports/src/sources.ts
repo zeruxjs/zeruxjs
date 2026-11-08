@@ -19,6 +19,7 @@ export class ReportSourceError extends Error {
 }
 function fail(code:ReportSourceError['code']):never {throw new ReportSourceError(code);}
 export function sourceScope(value:ReportSourceScope):ReportSourceScope {
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  if(!value||Object.keys(value).some(k=>!['tenant','site','principal','credentialPartition'].includes(k))||!['tenant','site','principal','credentialPartition'].every(k=>typeof value[k as keyof ReportSourceScope]==='string'&&value[k as keyof ReportSourceScope].length>0&&value[k as keyof ReportSourceScope].length<=200&&!/[\x00-\x1f\x7f]/.test(value[k as keyof ReportSourceScope])))fail('DENIED');
  return Object.freeze({tenant:value.tenant,site:value.site,principal:value.principal,credentialPartition:value.credentialPartition});
 }

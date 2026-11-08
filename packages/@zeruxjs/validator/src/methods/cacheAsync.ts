@@ -83,7 +83,7 @@ export type SchemaWithCacheAsync<
  *
  * @beta
  */
-// @ts-expect-error
+// @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
 export function cacheAsync<
   const TSchema extends
   | BaseSchema<unknown, unknown, BaseIssue<unknown>>

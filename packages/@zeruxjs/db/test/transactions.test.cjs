@@ -26,7 +26,7 @@ test('pinned scope commits one identity, closes captured scope and rejects nesti
 });
 test('callback/query failures roll back, including caught query failures and fire-and-forget work',async()=>{
  const f=fixture();await assert.rejects(f.transaction(async tx=>{await tx.query(operation);throw Error('callback');}),/callback/);assert.deepEqual(f.state.changes,[]);assert.equal(f.active,0);
- const failed=fixture({failQuery:true});await assert.rejects(failed.transaction(async tx=>{try{await tx.query(operation);}catch{}}),code('TRANSACTION_ROLLBACK_ONLY'));assert.equal(failed.active,0);
+ const failed=fixture({failQuery:true});await assert.rejects(failed.transaction(async tx=>{try{await tx.query(operation);}catch{ /* Drain or observe the deliberately failing fixture; the enclosing assertion checks its outcome. */ }}),code('TRANSACTION_ROLLBACK_ONLY'));assert.equal(failed.active,0);
  const asyncFailure=fixture({failQuery:'async'});await assert.rejects(asyncFailure.transaction(tx=>{void tx.query(operation);}),code('TRANSACTION_ROLLBACK_ONLY'));assert.equal(asyncFailure.active,0);
 });
 test('failed commit, rollback and release retain errors and release the lease once',async()=>{

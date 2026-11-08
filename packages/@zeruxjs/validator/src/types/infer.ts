@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import type { BaseIssue } from './issue.js';
 import type { BaseMetadata } from './metadata.js';
 import type { BaseSchema, BaseSchemaAsync } from './schema.js';

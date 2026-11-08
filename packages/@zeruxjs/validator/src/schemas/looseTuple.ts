@@ -93,7 +93,7 @@ export function looseTuple(
       // If root type is valid, check nested types
       if (Array.isArray(input)) {
         // Set typed to `true` and value to empty array
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
         dataset.value = [];
 
@@ -118,14 +118,14 @@ export function looseTuple(
               if (issue.path) {
                 issue.path.unshift(pathItem);
               } else {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 issue.path = [pathItem];
               }
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues?.push(issue);
             }
             if (!dataset.issues) {
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues = itemDataset.issues;
             }
 
@@ -142,14 +142,14 @@ export function looseTuple(
           }
 
           // Add item to dataset
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.value.push(itemDataset.value);
         }
 
         // Add rest to dataset if necessary
         if (!dataset.issues || !config.abortEarly) {
           for (let key = this.items.length; key < input.length; key++) {
-            // @ts-expect-error
+            // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
             dataset.value.push(input[key]);
           }
         }
@@ -160,7 +160,7 @@ export function looseTuple(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         unknown[],
         LooseTupleIssue | BaseIssue<unknown>

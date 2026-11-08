@@ -22,8 +22,10 @@ export interface ActionDefinition<S extends GenericSchema|GenericSchemaAsync,T> 
  /** Runs after a confirmed commit, including committed replays. Must be idempotent. */
  invalidate?(context:ActionContext):void|Promise<void>;
 }
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 const text=(value:unknown):value is string=>typeof value==='string'&&value.length>0&&value.length<=128&&!/[\x00-\x1f\x7f]/.test(value);
 function principal(value:ActionPrincipal):Readonly<ActionPrincipal>{if(!value||!text(value.tenant)||!text(value.subject)||!text(value.sessionId))throw new ApplicationError(401);return Object.freeze({tenant:value.tenant,subject:value.subject,sessionId:value.sessionId});}
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 function local(value:string){if(typeof value!=='string'||value.length>2048||!/^\/(?!\/)/.test(value)||/[\\\x00-\x20\x7f]/.test(value))throw new TypeError('Invalid action redirect');return value;}
 /** Fingerprint only inert validated JSON, without invoking getters/toJSON. */
 function canonical(input:unknown):string {
@@ -43,6 +45,7 @@ export function createActionRegistry<T>(options:{origin:string;key:Uint8Array;cs
  const sign=(...parts:unknown[])=>authenticator.sign(message(...parts),purpose).tag;
  const entries=new Map<string,{token:ActionReference<any>;definition:ActionDefinition<any,T>}>(),jobs=new Set<Promise<unknown>>(),controllers=new Set<AbortController>();let sealed=false,closed=false,closing:Promise<void>|undefined;
  const match=(reference:ActionReference<any>)=>{const entry=entries.get(reference?.ref);if(closed||entry?.token!==reference)throw new TypeError('Unknown action reference');return entry;};
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  const issue=(reference:ActionReference<any>,identity:ActionPrincipal):ActionForm=>{match(reference);const who=principal(identity),expires=Date.now()+ttl,nonce=randomBytes(24).toString('base64url'),csrfToken=csrf.issue(who.sessionId),payload=`${expires}.${nonce}`,signature=sign('key',reference.ref,who.tenant,who.subject,payload);if(typeof csrfToken!=='string'||!csrfToken||csrfToken.length>512||/[\x00-\x1f\x7f]/.test(csrfToken))throw new TypeError('Invalid CSRF provider result');return Object.freeze({action:reference.url,method:'post',fields:Object.freeze({_action_key:`${payload}.${signature}`,_action_csrf:csrfToken})});};
  const verify=(token:unknown,ref:string,who:ActionPrincipal)=>{if(typeof token!=='string'||token.length>128)throw new ApplicationError(400);const [time,nonce,signature,...extra]=token.split('.'),expires=Number(time);if(extra.length||!/^\d{13,16}$/.test(time)||!Number.isSafeInteger(expires)||expires<=Date.now()||expires>Date.now()+ttl+skew||!/^[A-Za-z0-9_-]{32}$/.test(nonce)||!/^[A-Za-z0-9_-]{43}$/.test(signature))throw new ApplicationError(409);if(!authenticator.verify(message('key',ref,who.tenant,who.subject,`${time}.${nonce}`),{v:1,alg:'HS256',kid:'actions-v1',tag:signature},purpose))throw new ApplicationError(403);return {expires,key:sign('record',ref,who.tenant,who.subject,nonce)};};
  const response=(status:number,request:Request,issues:readonly ClientIssue[]=[],outcome?:'committed'|'uncertain')=>{

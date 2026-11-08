@@ -165,7 +165,7 @@ test('consent-bound analytics, exact report data, immutable assets and durable s
     assert.equal((await f.call('/workspace/assets/upload', { method: 'POST', body: { csrf, name: 'Stale', content: 'No commit', revision: '0' } })).status, 409);
     csrf = await f.csrf('/workspace/share');
     const created = await (await f.call('/workspace/share/create', { method: 'POST', body: { csrf } })).text();
-    const shortUrl = created.match(/href="(http:\/\/localhost:3010\/workspace\/s\/[^\"]+)"/)[1];
+    const shortUrl = created.match(/href="(http:\/\/localhost:3010\/workspace\/s\/[^"]+)"/)[1];
     await f.reopen();
     const redirect = await f.call(new URL(shortUrl).pathname); assert.equal(redirect.status, 302); assert.equal(redirect.headers.get('location'), origin + '/workspace/public');
     assert.equal(await (await f.call('/workspace/assets/download?version=' + version)).text(), 'Verified bytes');

@@ -9,6 +9,7 @@ test('explicit props validate names/references/roles, stay inert and preserve na
  const env=dom('<span id="name">Name</span><span id="help">Help</span><input id="field"><div id="custom" role="button" tabindex="0"></div>');const doc=env.window.document;
  try{
   const input=doc.getElementById('field');const binding=applyLabelledComponentProps(input,{labelledBy:'name',describedBy:'help',disabled:true});assert.equal(input.disabled,true);assert.equal(input.getAttribute('aria-labelledby'),'name');binding.destroy();assert.equal(input.disabled,false);assert.equal(input.hasAttribute('aria-labelledby'),false);
+  // eslint-disable-next-line zerux/a11y-required-label -- Deliberately missing label verifies runtime rejection; no unlabeled UI is mounted.
   const issues=validateComponentProps(input,{labelledBy:'missing'});assert.ok(issues.some(item=>item.code==='MISSING_ID'));assert.throws(()=>applyLabelledComponentProps(input,{}),AccessibilityValidationError);
   assert.throws(()=>applyComponentProps(input,{label:'x',labelledBy:'name'}),AccessibilityValidationError);assert.equal(input.hasAttribute('aria-label'),false);
   let invoked=0;const custom=doc.getElementById('custom'),disabled=applyLabelledComponentProps(custom,{label:'Save',disabled:true});custom.addEventListener('click',()=>invoked++);custom.click();assert.equal(invoked,0);

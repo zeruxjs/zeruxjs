@@ -30,7 +30,7 @@ export function toBoolean<TInput>(): ToBooleanAction<TInput> {
     reference: toBoolean,
     async: false,
     '~run'(dataset) {
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       dataset.value = Boolean(dataset.value);
       return dataset as SuccessDataset<boolean>;
     },

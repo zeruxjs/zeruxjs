@@ -22,6 +22,7 @@ export async function withTimeout(fn: TestFunction, timeoutMs: number, name: str
       try { await Promise.race([Promise.resolve().then(dispose),new Promise<never>((_,reject)=>{deadline=setTimeout(()=>reject(new Error('Test resource cleanup timeout')),timeoutMs);})]); }
       catch(error){errors.push(error);} finally {if(deadline)clearTimeout(deadline);}
     }
+    // eslint-disable-next-line no-unsafe-finally -- Cleanup failure must propagate; this owner explicitly reports failed resource release.
     if(errors.length)throw new AggregateError([...(failed?[failure]:[]),...errors],'Test or resource cleanup failed');
   }
   if(failed)throw failure;

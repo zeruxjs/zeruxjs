@@ -33,6 +33,7 @@ f.close()
 /** Explicit POSIX Python/FontTools integration. No shell or caller-supplied tool arguments. */
 export function createFontToolsTool(options:{executable?:string;timeoutMs?:number}={}):FontToolsTool {
  const executable=options.executable??'python3',timeout=options.timeoutMs??15000;
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  if(typeof executable!=='string'||!executable||executable.length>2048||/[\x00-\x1f\x7f]/.test(executable)||!Number.isSafeInteger(timeout)||timeout<1||timeout>30000)throw new TypeError('Invalid FontTools configuration');
  async function call(bytes:Uint8Array,mode:'inspect'|'subset',codePoints:readonly number[],signal?:AbortSignal){
   if(!(bytes instanceof Uint8Array)||bytes.length>16*1024*1024||codePoints.length>65536||codePoints.some(cp=>!Number.isSafeInteger(cp)||cp<0||cp>0x10ffff||cp>=0xd800&&cp<=0xdfff))throw new RangeError('FontTools input limit');

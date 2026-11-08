@@ -46,6 +46,7 @@ function validate(options:BrowserOptions){
   if(options.browser&&(['newContext','close','version'] as const).some(key=>typeof options.browser![key]!=='function'))throw new TypeError('Invalid borrowed browser');
   for(const hooks of [options.beforeEach,options.afterEach])if(hooks!==undefined&&(!Array.isArray(hooks)||hooks.length>128||hooks.some(hook=>typeof hook!=='function')))throw new TypeError('Invalid browser hooks');
   const capture=options.artifacts;
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if(capture){if(typeof capture.directory!=='string'||!capture.directory||capture.directory.length>4096||/[\x00-\x1f\x7f]/.test(capture.directory)||capture.directory.split(/[\\/]/).includes('..'))throw new TypeError('Invalid artifact directory');for(const flag of ['screenshot','video','trace'] as const)if(capture[flag]!==undefined&&typeof capture[flag]!=='boolean')throw new TypeError('Invalid capture option');}
   if(options.coverage&&(!options.coverage.expectedSources?.length))throw new TypeError('Coverage requires expected sources');
   if(options.browser&&options.coverage&&!options.browserName&&typeof options.browser.browserType!=='function')throw new TypeError('Borrowed browser coverage requires an explicit browserName');

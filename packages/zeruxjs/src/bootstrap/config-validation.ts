@@ -17,6 +17,7 @@ const core=new Set('files email analytics tags reports queue search protocols ty
 const forbidden=new Set(['__proto__','prototype','constructor']);
 export function record(value:unknown):asserts value is Record<string,any>{if(!value||typeof value!=='object'||Array.isArray(value))throw new ConfigurationError('EXPECTED_OBJECT');}
 function keys(value:unknown,allowed:string[]){record(value);if(Object.keys(value).some(key=>!allowed.includes(key)||forbidden.has(key)))throw new ConfigurationError('UNKNOWN_CORE_KEY');}
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 function text(value:unknown){if(typeof value!=='string'||!value||value.length>4096||/[\x00-\x1f\x7f]/.test(value))throw new ConfigurationError('INVALID_STRING');}
 function integer(value:unknown,min:number,max:number){if(typeof value!=='number'||!Number.isSafeInteger(value)||value<min||value>max)throw new ConfigurationError('INVALID_NUMBER');}
 function list(value:unknown):asserts value is any[]{if(!Array.isArray(value)||value.length>1024)throw new ConfigurationError('COLLECTION_LIMIT');}

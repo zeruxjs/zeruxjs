@@ -469,18 +469,18 @@ export function omit<
   const TKeys extends ObjectKeys<TSchema>,
 >(schema: TSchema, keys: TKeys): SchemaWithOmit<TSchema, TKeys> {
   // Create modified object entries
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   const entries: Omit<TSchema['entries'], TKeys[number]> = {
     ...schema.entries,
   };
   for (const key of keys) {
-    // @ts-expect-error
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
+     
     delete entries[key];
   }
 
   // Rerturn modified copy of schema
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   return {
     ...schema,
     entries,

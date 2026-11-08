@@ -155,7 +155,7 @@ export function multipleOf(
     requirement,
     message,
     '~run'(dataset, config) {
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       if (dataset.typed && dataset.value % this.requirement != 0) {
         _addIssue(this, 'multiple', dataset, config);
       }

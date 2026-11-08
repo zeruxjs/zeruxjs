@@ -15,7 +15,7 @@ export async function* readConnectEnvelopes(source: AsyncIterable<Uint8Array> | 
   const countLimit = options.maxMessages ?? DEFAULT_MAX_COUNT;
   const totalLimit = options.maxTotalBytes ?? 16 * 1024 * 1024;
   if (!Number.isSafeInteger(max) || max < 1 || max > 16 * 1024 * 1024 || !Number.isSafeInteger(totalLimit) || totalLimit < 1 || totalLimit > 64 * 1024 * 1024 || !Number.isSafeInteger(countLimit) || countLimit < 1 || countLimit > 10_000) throw new RangeError('Invalid Connect frame limits');
-  let header=Buffer.alloc(5), headerSize=0, body:Buffer|undefined, bodySize=0, flags=0, count=0, total=0, ended=false;
+  const header=Buffer.alloc(5);let headerSize=0, body:Buffer|undefined, bodySize=0, flags=0, count=0, total=0, ended=false;
   for await(const input of source){
     options.signal?.throwIfAborted();
     if(!(input instanceof Uint8Array))throw new TypeError('Invalid Connect chunk');

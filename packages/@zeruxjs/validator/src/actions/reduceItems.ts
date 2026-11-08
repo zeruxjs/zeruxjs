@@ -60,7 +60,7 @@ export function reduceItems(
     operation,
     initial,
     '~run'(dataset) {
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       dataset.value = dataset.value.reduce(this.operation, this.initial);
       return dataset as SuccessDataset<unknown>;
     },

@@ -21,12 +21,14 @@ function session(value:unknown):Session{
 export function createMediaTransfers(options:BrowserMediaOptions){
  if(!options||typeof options.baseUrl!=='string')throw fail('INVALID_DESTINATION');
  let base:URL;try{base=new URL(options.baseUrl,globalThis.location?.href);}catch{throw fail('INVALID_DESTINATION');}
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  if(!['https:','http:'].includes(base.protocol)||base.username||base.password||base.search||base.hash||/[\x00-\x20\x7f\\]/.test(options.baseUrl))throw fail('INVALID_DESTINATION');
  const origins=options.allowedOrigins??(globalThis.location?[location.origin]:[]);
  if(!Array.isArray(origins)||origins.length>32||origins.some(origin=>{try{return new URL(origin).origin!==origin;}catch{return true;}})||!origins.includes(base.origin))throw fail('DESTINATION_DENIED');
  base.pathname=base.pathname.replace(/\/?$/,'/');const fetcher=options.fetch??globalThis.fetch;
  if(typeof fetcher!=='function')throw fail('FETCH_UNAVAILABLE');const maxPending=options.maxPending??4;limit(maxPending,64);if(!maxPending)throw fail('TRANSFER_LIMIT');
  let closed=false,closing:Promise<void>|undefined;const active=new Set<AbortController>(),urls=new Set<string>(),settlements=new Map<AbortController,Promise<void>>();const objectUrls=options.objectUrls??globalThis.URL;
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  function destination(path:string){if(typeof path!=='string'||path.length>2048||path.startsWith('/')||/[\x00-\x20\x7f\\]/.test(path))throw fail('INVALID_DESTINATION');let url:URL;try{url=new URL(path,base);}catch{throw fail('INVALID_DESTINATION');}if(url.origin!==base.origin||!url.pathname.startsWith(base.pathname)||url.username||url.password||url.hash)throw fail('DESTINATION_DENIED');return url.href;}
  async function owned<T>(signal:AbortSignal|undefined,fn:(signal:AbortSignal)=>Promise<T>){
   if(closed)throw fail('TRANSFER_CLOSED');if(active.size>=maxPending)throw fail('TRANSFER_BUSY');const controller=new AbortController();active.add(controller);let finish!:()=>void;settlements.set(controller,new Promise<void>(resolve=>{finish=resolve;}));const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
@@ -66,6 +68,7 @@ export function createMediaTransfers(options:BrowserMediaOptions){
    const url=objectUrls.createObjectURL(blob);urls.add(url);let revoked=false;return {url,revoke(){if(revoked)return;revoked=true;if(urls.delete(url))objectUrls.revokeObjectURL(url);}};
   },
   downloadAttachment(path:string,name:string,document:Document=globalThis.document){
+   // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
    if(closed)throw fail('TRANSFER_CLOSED');if(!document?.createElement||typeof name!=='string'||!name||name.length>180||/[\\/\x00-\x1f\x7f]/.test(name))throw fail('ATTACHMENT_UNAVAILABLE');
    const anchor=document.createElement('a');anchor.href=destination(path);anchor.download=name;anchor.rel='noopener';document.body.append(anchor);try{anchor.click();}finally{anchor.remove();}
   },

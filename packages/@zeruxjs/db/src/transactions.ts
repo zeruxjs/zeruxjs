@@ -63,7 +63,7 @@ export async function runPinnedTransaction<T>(owner:object,adapter:PinnedTransac
    tail=tracked.catch(()=>{});pending.add(tracked);void tracked.finally(()=>pending.delete(tracked)).catch(()=>{});return tracked;
   });
   const tx:any={slug:base.slug,name:base.name,connector:base.connector,signal:controller.signal,capabilities:base.capabilities,transaction:async()=>{throw transactionError('NESTED_TRANSACTION_UNSUPPORTED');}};
-  for(const name of ['query','createDb','dropDb','switchDB','createTable','dropTable','alterTable','turcunateTable','createIndex','dropIndex','insert','select','update','delete'] as const)tx[name]=(...args:unknown[])=>{check();try{const result=(base[name] as Function)(...args);const observed=Promise.resolve(result).catch(error=>{failed=true;throw error;});pending.add(observed);void observed.finally(()=>pending.delete(observed)).catch(()=>{});return observed;}catch(error){failed=true;throw error;}};
+  for(const name of ['query','createDb','dropDb','switchDB','createTable','dropTable','alterTable','turcunateTable','createIndex','dropIndex','insert','select','update','delete'] as const)tx[name]=(...args:unknown[])=>{check();try{const result=(base[name] as ((...args: any[]) => any))(...args);const observed=Promise.resolve(result).catch(error=>{failed=true;throw error;});pending.add(observed);void observed.finally(()=>pending.delete(observed)).catch(()=>{});return observed;}catch(error){failed=true;throw error;}};
   value=await owners.run(owner,()=>run(Object.freeze(tx)));
   check();scopeOpen=false;await Promise.allSettled([...pending]);
   if(failed)throw transactionError('TRANSACTION_ROLLBACK_ONLY');

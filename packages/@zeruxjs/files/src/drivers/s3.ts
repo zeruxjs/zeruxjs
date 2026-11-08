@@ -54,6 +54,7 @@ export function createS3Storage(options:S3StorageOptions):S3StorageDriver {
   for(const flag of [options.ownClient,options.allowInsecureHttp,options.forcePathStyle,options.useArnRegion])if(flag!==undefined&&typeof flag!=='boolean')throw new TypeError('Invalid S3 boolean option');
   if(options.maxAttempts!==undefined && (!Number.isSafeInteger(options.maxAttempts)||options.maxAttempts<1||options.maxAttempts>20))throw new RangeError('Invalid S3 retry count');
   function storageUrl(value:string,message:string){
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if(typeof value!=='string'||!value||value.length>2048||/[\x00-\x20\x7f]/.test(value))throw new TypeError(message);
     try{return new URL(value);}catch{throw new TypeError(message);}
   }

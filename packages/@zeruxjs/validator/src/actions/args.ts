@@ -36,7 +36,7 @@ type Schema =
  * Args action type.
  */
 export interface ArgsAction<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput extends (...args: any[]) => unknown,
   TSchema extends Schema,
 > extends BaseTransformation<
@@ -66,7 +66,7 @@ export interface ArgsAction<
  * @returns An args action.
  */
 export function args<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   TInput extends (...args: any[]) => unknown,
   TSchema extends Schema,
 >(schema: TSchema): ArgsAction<TInput, TSchema>;

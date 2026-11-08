@@ -26,7 +26,7 @@ export function createZuix(config:ZuixConfig={}) {
   if(config.prefix){if(!name.startsWith(config.prefix))return;name=name.slice(config.prefix.length);}
   const important=name.startsWith('!')||Boolean(config.important);if(name.startsWith('!'))name=name.slice(1);
   const decl=utilityFor(name,theme,{...utilities,...components});if(!decl)return;const body=cssDeclarations(decl,important);if(!body)return;
-  let selector=`.${cssEscapeClass(token)}`;let atRules:string[]=[];let groupPeer='';
+  let selector=`.${cssEscapeClass(token)}`;const atRules:string[]=[];let groupPeer='';
   for(const variant of variants){
    if(Object.hasOwn(theme.screens,variant)){const screen=String(theme.screens[variant]);if(!/^(?:\d+(?:\.\d+)?)(?:px|rem|em)$/.test(screen))return;atRules.push(`@media (min-width: ${screen})`);continue;}
    if(variant==='dark'){if(config.darkMode==='media')atRules.push('@media (prefers-color-scheme: dark)');else selector=`:is(.dark ${selector},[data-theme="dark"] ${selector})`;continue;}

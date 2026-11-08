@@ -21,6 +21,7 @@ export function googleReporting(options:GoogleReportOptions,scope:string){
    const controller=new AbortController(),abort=()=>controller.abort();context.signal.addEventListener('abort',abort,{once:true});if(context.signal.aborted)abort();active.add(controller);const timer=setTimeout(abort,30000);
    const job=(async()=>{try{
     if(controller.signal.aborted)providerFailure('CANCELLED');const token=await options.credentials.getAccessToken({scope,signal:controller.signal});
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if(controller.signal.aborted)providerFailure('CANCELLED');if(!token||typeof token.accessToken!=='string'||!token.accessToken.length||token.accessToken.length>8192||/[\x00-\x20\x7f]/.test(token.accessToken)||!Number.isSafeInteger(token.expiresAt)||token.expiresAt<=Date.now()||!Array.isArray(token.scopes)||!token.scopes.includes(scope))providerFailure('DENIED');
     for(let attempt=0;attempt<attempts;attempt++){
      if(controller.signal.aborted)providerFailure('CANCELLED');if(token.expiresAt<=Date.now())providerFailure('DENIED');

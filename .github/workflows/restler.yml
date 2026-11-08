@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - uses: ./.github/actions/start-test-api
+      - uses: $/.github/actions/start-test-api
         with:
           port: ${{ vars.SECURITY_PORT || '3000' }}
       - name: Build and run RESTler against disposable local API
@@ -43,7 +43,7 @@ jobs:
             --port "${PORT}" --task fuzz-lean
       - name: Save RESTler results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scan-restler
           path: |

@@ -92,6 +92,7 @@ export function conditionalEtag(req: IncomingMessage, res: ServerResponse, body:
 export function validateResponseHeaders(headers: Record<string, string>): void {
   if (!headers || typeof headers !== 'object' || Array.isArray(headers) || Object.keys(headers).length > 64) throw new TypeError('Invalid response headers');
   for (const [key, value] of Object.entries(headers)) {
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if (!/^[a-z\d-]{1,64}$/i.test(key) || /^(?:connection|transfer-encoding|content-length|content-encoding)$/i.test(key) || typeof value !== 'string' || value.length > 16384 || /[\x00-\x1f\x7f]/.test(value)) throw new TypeError('Invalid response header');
   }
 }
@@ -127,6 +128,7 @@ export async function sendStream(res: ServerResponse, result: StreamResult, requ
     const headers = {...options.headers};
     validateResponseHeaders(result.options.headers??{});
     validateResponseHeaders(headers);
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if (options.contentType !== undefined && (typeof options.contentType !== 'string' || /[\x00-\x1f\x7f]/.test(options.contentType))) throw new TypeError('Invalid stream content type');
     // HEAD never executes the producer, but still relinquishes ownership.
     let first = request?.method === 'HEAD' ? {done: true as const, value: undefined} : await next();
@@ -157,6 +159,7 @@ export async function sendStream(res: ServerResponse, result: StreamResult, requ
 
   } catch(error) { workFailed=true;workError=error;throw error; } finally {
     try { await release(); }
+    // eslint-disable-next-line no-unsafe-finally -- Cleanup failure must propagate; this owner explicitly reports failed resource release.
     catch(error){if(workFailed)throw new AggregateError([workError,error],'Stream production and cleanup failed');throw error;}
     finally { res.off('close', close);res.off('drain',ready);res.off('error',failed);request?.off('aborted', close); }
   }

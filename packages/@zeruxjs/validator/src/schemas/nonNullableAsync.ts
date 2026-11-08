@@ -106,7 +106,7 @@ export function nonNullableAsync(
     async '~run'(dataset, config) {
       // If value is not `null`, run wrapped schema
       if (dataset.value !== null) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset = await _runSchema(this.wrapped, dataset, config);
       }
 
@@ -116,7 +116,7 @@ export function nonNullableAsync(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<unknown, BaseIssue<unknown>>;
     },
   };

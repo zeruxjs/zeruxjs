@@ -37,6 +37,7 @@ const catalogLeases=new WeakMap<AssetManager,Set<string>>();
 const recordKey='asset.storage.version',deletedKey='asset.storage.retired';
 const recordId=(id:string)=>'storage.version/'+id;
 const retiredId=(id:string)=>'storage.retired/'+id;
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 function identity(value:AssetIdentity){if(!value||[value.tenant,value.subject].some(v=>typeof v!=='string'||!v||v.length>256||/[\x00-\x1f\x7f]/.test(v)))throw fail('ASSET_IDENTITY');return {...value};}
 function version(id:string){if(typeof id!=='string'||!versionPattern.test(id))throw fail('ASSET_VERSION');return id;}
 function size(value:number,max:number){if(!Number.isSafeInteger(value)||value<0||value>max)throw fail('ASSET_SIZE');}
@@ -58,6 +59,7 @@ export function createAssetStorage(options:AssetStorageOptions){
   const binding=options.location({...who});
   if(!binding||typeof binding.storage!=='string'||!/^[a-z][a-z0-9_-]{0,63}$/.test(binding.storage)||typeof binding.bucket!=='string'||!/^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$/.test(binding.bucket)||binding.bucket.includes('..'))throw fail('ASSET_LOCATION');
   const prefix=binding.prefix??'';
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if(typeof prefix!=='string'||prefix.length>400||prefix&&(!prefix.endsWith('/')||prefix.startsWith('/')||prefix.slice(0,-1).split('/').some(p=>!p||p==='.'||p==='..'))||/[\\\x00-\x1f\x7f]/.test(prefix))throw fail('ASSET_LOCATION');
   const tenantDigest=digest(who.tenant);return {...binding,tenantDigest,prefix:prefix+namespace+'/'+tenantDigest+'/'};
  }

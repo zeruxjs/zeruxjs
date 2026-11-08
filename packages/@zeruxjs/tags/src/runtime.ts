@@ -62,6 +62,7 @@ function matchesCondition(condition:Condition,ev:TagEvent,container:TagContainer
 }
 export function createTagManager(options:TagRuntimeOptions){
   if(typeof options?.analytics?.track!=='function'||typeof options?.requestIds?.reserve!=='function')throw new TypeError('Analytics and request ID store are required');
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if(options.site!==undefined&&(typeof options.site!=='string'||!options.site||options.site.length>200||/[\x00-\x1f]/.test(options.site)))throw new TypeError('Invalid fixed tag site');
   if(options.providers&&['validate','dispatch','allowsDestination','configured','close'].some(k=>typeof (options.providers as unknown as Record<string,unknown>)[k]!=='function'))throw new TypeError('Invalid explicit provider registry');
   const prefix=options.prefix??'/_tags';if(!pathOk(prefix))throw new TypeError('Invalid tag endpoint path');
@@ -140,6 +141,7 @@ export function createTagManager(options:TagRuntimeOptions){
     const failed=(reason:string)=>({requestId:event?.requestId??'',requestUtcDay:event?.requestUtcDay??'',matchedTriggers:[] as string[],firedTags:[] as string[],failures:[reason]});
     if(closed)return failed('closed');if(dispatchContext.getStore())return failed('recursive_dispatch');if(jobs.size>=maxPending)return failed('dispatch_overload');
     inertTagJson(event,options.maxBodyBytes??16384);if(!event||Object.keys(event).some(k=>!['name','properties','site','pathname','sessionId','requestId','requestUtcDay','source','data'].includes(k))||!safeName(event.name)||!validRequestId(event.requestId)||!/^\d{4}-\d\d-\d\d$/.test(event.requestUtcDay)||!['web','server'].includes(event.source)||options.site!==undefined&&event.site!==undefined&&event.site!==options.site&&!(event.source==='web'&&Object.values(siteByOrigin).includes(event.site)))throw new TypeError('Invalid event scope');
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     if(event.site!==undefined&&(typeof event.site!=='string'||!event.site||event.site.length>200||/[\x00-\x1f]/.test(event.site))||event.pathname!==undefined&&(typeof event.pathname!=='string'||event.pathname.length>2000)||event.sessionId!==undefined&&(typeof event.sessionId!=='string'||event.sessionId.length>200))throw new TypeError('Invalid event context');
     event={...event,pathname:event.pathname?.split(/[?#]/)[0],site:event.site??options.site,properties:cleanValues(event.properties),data:cleanValues(event.data??{})};if(!consented())return failed('consent_denied');
     const controller=new AbortController();controllers.add(controller);let timer:ReturnType<typeof setTimeout>|undefined;let stop=()=>{};
@@ -212,6 +214,7 @@ export function createTagManager(options:TagRuntimeOptions){
   const readBody=async(request:Request,limit=8192)=>{if(!request.body)throw new TypeError('Body required');const reader=request.body.getReader(),decoder=new TextDecoder('utf-8',{fatal:true});let bytes=0,body='',expired=false;const abort=()=>{void reader.cancel().catch(()=>{});};const timer=setTimeout(()=>{expired=true;abort();},5000);request.signal.addEventListener('abort',abort,{once:true});try{while(true){if(expired||request.signal.aborted)throw new Error('Read cancelled');const next=await reader.read();if(expired||request.signal.aborted)throw new Error('Read cancelled');if(next.done)break;bytes+=next.value.byteLength;if(bytes>limit)throw new RangeError('Body too large');body+=decoder.decode(next.value,{stream:true});}return JSON.parse(body+decoder.decode()) as unknown;}finally{clearTimeout(timer);request.signal.removeEventListener('abort',abort);await reader.cancel().catch(()=>{});reader.releaseLock();}};
   const admin=async(request:Request):Promise<Response>=>{
     if(!await authorized(request))return new Response('Not found',{status:404});
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     let csrfToken='';try{csrfToken=await mount.issueCsrfToken?.(request)??'';if(typeof csrfToken!=='string'||csrfToken.length>1024||/[\x00-\x1f]/.test(csrfToken))throw new TypeError('Invalid CSRF token');}catch{return json({error:'UI unavailable'},503);}
     const html=dashboard(prefix,{apiBaseUrl:apiUrl,csrfToken,styleHref,scriptSrc}),scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
     const styleHashes=[...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(match=>`'sha256-${createHash('sha256').update(match[1]).digest('base64')}'`).join(' ');

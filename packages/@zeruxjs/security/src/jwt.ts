@@ -15,6 +15,7 @@ export interface JwtVerificationPolicy {
 export class JwtVerificationError extends Error {constructor(readonly code:'JWT_REJECTED'|'JWT_UNAVAILABLE'|'JWT_CLOSED'|'JWT_OVERLOAD',options?:ErrorOptions){super(code.toLowerCase().replaceAll('_',' '),options);this.name='JwtVerificationError';}}
 export const jwtRejected=()=>new JwtVerificationError('JWT_REJECTED');
 const algorithms:readonly string[]=['HS256','HS384','HS512','RS256','RS384','RS512','PS256','PS384','PS512','ES256','ES384','ES512','EdDSA'];
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 const text=(value:unknown,max=512):value is string=>typeof value==='string'&&value.length>0&&value.length<=max&&Buffer.byteLength(value)<=max&&!/[\x00-\x1f\x7f]/.test(value);
 function binary(value:unknown,max:number):Buffer{if(typeof value!=='string'||!value.length||value.length>Math.ceil(max*4/3)||!/^[A-Za-z0-9_-]+$/.test(value))throw jwtRejected();const decoded=Buffer.from(value,'base64url');if(decoded.length>max||decoded.toString('base64url')!==value)throw jwtRejected();return decoded;}
 /** Validate key metadata and curve before JOSE import. Verification never accepts asymmetric private keys. */

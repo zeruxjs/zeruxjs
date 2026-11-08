@@ -173,7 +173,7 @@ export function unionAsync(
         });
 
         // And set typed to `true`
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
 
         // Otherwise, if there is exactly one untyped dataset, return it
@@ -191,7 +191,7 @@ export function unionAsync(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<unknown, BaseIssue<unknown>>;
     },
   };

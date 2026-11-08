@@ -9,7 +9,7 @@ import { _addIssue, _getStandardProps } from '../utils/index.js';
 /**
  * Class type.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export type Class = new (...args: any[]) => any;
 
 /**
@@ -101,12 +101,12 @@ export function instance(
     },
     '~run'(dataset, config) {
       if (dataset.value instanceof this.class) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
       } else {
         _addIssue(this, 'type', dataset, config);
       }
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<InstanceType<Class>, InstanceIssue>;
     },
   };

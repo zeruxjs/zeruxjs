@@ -131,6 +131,7 @@ function origin(value: unknown) {
   if (
     typeof value !== "string" ||
     value.length > 2048 ||
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     /[\x00-\x20\x7f\\]/.test(value)
   )
     return fail("INVALID");
@@ -231,6 +232,7 @@ export function createShortLinkService(input: ShortLinkOptions) {
       !path.startsWith("/") ||
       path.startsWith("//") ||
       path.includes("..") ||
+      // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
       /[\x00-\x20\x7f\\?#%]/.test(path)
     )
       fail("INVALID");
@@ -315,6 +317,7 @@ export function createShortLinkService(input: ShortLinkOptions) {
       typeof value !== "string" ||
       !value ||
       value.length > 4096 ||
+      // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
       /[\x00-\x20\x7f\\]/.test(value)
     )
       return fail("INVALID");

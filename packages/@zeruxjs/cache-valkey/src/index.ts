@@ -8,6 +8,7 @@ export interface ValkeyClientConstructors {
  cluster(nodes:{host:string;port:number}[],options:Record<string,unknown>):ValkeyClient&{connect():Promise<unknown>};
 }
 const connectionKeys=['client','url','host','port','username','password','db','tls','cluster','connectTimeoutMs','maxReconnectAttempts'];
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 const host=(value:unknown)=>{if(typeof value!=='string'||!value.length||value.length>253||/[\s\x00-\x1f\x7f]/.test(value))throw fail('VALKEY_INVALID_CONNECTION');return value;};
 function tls(value:ValkeyConnectionOptions['tls']){
  if(value===undefined)return;keys(value,['ca','cert','key','servername']);for(const key of ['ca','cert','key'] as const){const entries=value[key]===undefined?[]:Array.isArray(value[key])?value[key]:[value[key]];if(entries.length>8||entries.some(text=>typeof text!=='string'||!text.length||Buffer.byteLength(text)>65536))throw fail('VALKEY_INVALID_TLS');}if(value.servername!==undefined)host(value.servername);return {...value,...(Array.isArray(value.ca)?{ca:[...value.ca]}:{}),rejectUnauthorized:true};
@@ -19,7 +20,9 @@ export async function createCacheHelper(raw:ValkeyConnectionOptions={},injected?
  if(raw.client){if(connectionKeys.some(key=>!['client','connectTimeoutMs','maxReconnectAttempts'].includes(key)&&Object.hasOwn(raw,key)))throw fail('VALKEY_CONFLICTING_CONNECTION');return createValkeyCacheHelper(raw.client,helper);}
  if(raw.ownClient===false)throw fail('VALKEY_CONFLICTING_OWNERSHIP');
  const nativeTls=tls(raw.tls);let url:string|undefined;
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  if(raw.url!==undefined){if(typeof raw.url!=='string'||raw.url.length>4096||/[\x00-\x1f\x7f]/.test(raw.url))throw fail('VALKEY_INVALID_URL');let parsed:URL;try{parsed=new URL(raw.url);}catch{throw fail('VALKEY_INVALID_URL');}if(!['redis:','rediss:'].includes(parsed.protocol)||!parsed.hostname||parsed.search||parsed.hash||!/^\/(?:\d{1,10})?$/.test(parsed.pathname||'/')||Number(parsed.pathname.slice(1)||0)>2147483647)throw fail('VALKEY_INVALID_URL');if(['host','port','username','password','db','cluster'].some(key=>Object.hasOwn(raw,key)))throw fail('VALKEY_CONFLICTING_CONNECTION');if(nativeTls&&parsed.protocol!=='rediss:')throw fail('VALKEY_INVALID_TLS');url=raw.url;}
+ // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
  if(raw.host!==undefined)host(raw.host);if(raw.port!==undefined)integer(raw.port,1,65535);if(raw.db!==undefined)integer(raw.db,0,2147483647);for(const field of ['username','password'] as const)if(raw[field]!==undefined&&(typeof raw[field]!=='string'||raw[field]!.length>4096||/[\x00-\x1f\x7f]/.test(raw[field]!)))throw fail('VALKEY_INVALID_CONNECTION');
  let nodes:{host:string;port:number}[]|undefined;
  if(raw.cluster){keys(raw.cluster,['nodes']);if(['url','host','port','db'].some(key=>Object.hasOwn(raw,key)))throw fail('VALKEY_CONFLICTING_CONNECTION');if(!Array.isArray(raw.cluster.nodes)||!raw.cluster.nodes.length||raw.cluster.nodes.length>32)throw fail('VALKEY_INVALID_CLUSTER');nodes=raw.cluster.nodes.map(node=>{keys(node,['host','port']);return {host:host(node.host),port:integer(node.port,1,65535)};});}

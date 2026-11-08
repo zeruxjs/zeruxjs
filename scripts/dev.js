@@ -23,8 +23,8 @@ if (process.argv.includes('--run-packages-watcher')) {
                 const currentState = readState();
                 if (!currentState || currentState.type !== 'dev' || !currentState.processes) return;
 
-                const appProcs = currentState.processes.filter(p => /[\\\/]apps[\\\/][^\\\/]+$/.test(p.dir));
-                const otherProcs = currentState.processes.filter(p => !/[\\\/]apps[\\\/][^\\\/]+$/.test(p.dir));
+                const appProcs = currentState.processes.filter(p => /[\\/]apps[\\/][^\\/]+$/.test(p.dir));
+                const otherProcs = currentState.processes.filter(p => !/[\\/]apps[\\/][^\\/]+$/.test(p.dir));
 
                 const newAppProcs = [];
 
@@ -58,7 +58,8 @@ if (process.argv.includes('--run-packages-watcher')) {
         console.error('Failed to start watcher:', err);
     });
 
-    setInterval(() => { }, 10000);
+    const keepAlive = setInterval(() => { }, 10000);
+    process.once('exit', () => clearInterval(keepAlive));
     return;
 }
 
@@ -76,7 +77,7 @@ function scanApps(dir) {
                 if (pkg.scripts && pkg.scripts.start && pkg.scripts.dev) {
                     apps.push({ dir: appPath, pkgName: pkg.name || entry.name });
                 }
-            } catch (e) { }
+            } catch (e) { /* Best-effort cleanup/discovery may already be unavailable; the owning operation handles its outcome. */  }
         }
     }
     return apps;
@@ -126,7 +127,7 @@ function scanPackages(dir) {
             if (pkg.scripts && pkg.scripts.dev) {
                 packages.push({ dir: fullPath, pkgName: pkg.name || path.basename(fullPath) });
             }
-        } catch (e) { }
+        } catch (e) { /* Best-effort cleanup/discovery may already be unavailable; the owning operation handles its outcome. */  }
     }
 
     return packages;
@@ -222,7 +223,7 @@ const checkInterval = setInterval(() => {
     let allReady = true;
 
     for (const proc of processes) {
-        if (!/[\\\/]apps[\\\/][^\\\/]+$/.test(proc.dir)) continue;
+        if (!/[\\/]apps[\\/][^\\/]+$/.test(proc.dir)) continue;
 
         let foundApp = proc.foundAppPort;
         let foundDev = proc.foundDevPort;

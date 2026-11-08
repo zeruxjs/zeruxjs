@@ -44,6 +44,7 @@ interface Scope {signal:AbortSignal;deadline:number;check:()=>void}
 /** Explicit tenant-bound, cooperative read scope. Borrows its connection and never closes it. */
 export function createAnalyticsAnalysis(options:AnalyticsAnalysisOptions&{connection:()=>AnalyticsConnection|undefined;table?:string}){
   record(options,['site','authorize','connection','table','maxEvents','pageSize','maxBytes','maxConcurrent','timeoutMs']);
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if(typeof options.site!=='string'||!options.site.length||options.site.length>200||/[\x00-\x1f\x7f]/.test(options.site)||typeof options.authorize!=='function'||typeof options.connection!=='function')throw failure('INVALID_OPTIONS');
   const site=options.site,authorize=options.authorize,connection=options.connection,table=validateTableName(options.table??'analytics_events');
   const maxEvents=integer(options.maxEvents??5000,1,10000),pageSize=integer(options.pageSize??200,1,200),maxBytes=integer(options.maxBytes??8*1024*1024,1024,32*1024*1024),maxConcurrent=integer(options.maxConcurrent??2,1,16),timeoutMs=integer(options.timeoutMs??10000,1,60000);

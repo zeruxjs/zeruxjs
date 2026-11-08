@@ -28,13 +28,13 @@ import { _stringify } from './_stringify.js';
 type Context =
   | BaseSchema<unknown, unknown, BaseIssue<unknown>>
   | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   | BaseValidation<any, unknown, BaseIssue<unknown>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   | BaseValidationAsync<any, unknown, BaseIssue<unknown>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   | BaseTransformation<any, unknown, BaseIssue<unknown>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   | BaseTransformationAsync<any, unknown, BaseIssue<unknown>>;
 
 /**
@@ -115,10 +115,10 @@ export function _addIssue<const TContext extends Context>(
 
   // If custom message if specified, override default message
   if (message !== undefined) {
-    // @ts-expect-error
+    // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
     issue.message =
       typeof message === 'function'
-        ? // @ts-expect-error
+        ? // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         message(issue)
         : message;
   }
@@ -132,7 +132,7 @@ export function _addIssue<const TContext extends Context>(
   if (dataset.issues) {
     dataset.issues.push(issue);
   } else {
-    // @ts-expect-error
+    // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
     dataset.issues = [issue];
   }
 }

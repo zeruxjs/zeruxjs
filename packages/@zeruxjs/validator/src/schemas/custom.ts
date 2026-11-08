@@ -83,12 +83,12 @@ export function custom<TInput>(
     },
     '~run'(dataset, config) {
       if (syncCallback(this.check, dataset.value)) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
       } else {
         _addIssue(this, 'type', dataset, config);
       }
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<TInput, CustomIssue>;
     },
   };

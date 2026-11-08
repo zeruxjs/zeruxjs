@@ -34,6 +34,7 @@ export class PasskeyError extends Error {
     }
 }
 export const passkeyDenied = () => new PasskeyError('PASSKEY_DENIED');
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 export const passkeyText = (value: unknown, max = 128): value is string => typeof value === 'string' && value.length > 0 && value.length <= max && !/[\x00-\x1f\x7f]/.test(value);
 export function passkeyBase64(value: unknown, max: number, min = 1): value is string {
     if (typeof value !== 'string' || value.length > Math.ceil(max * 4 / 3) || !/^[A-Za-z0-9_-]+$/.test(value)) return false;

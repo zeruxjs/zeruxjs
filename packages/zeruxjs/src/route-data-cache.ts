@@ -8,6 +8,7 @@ export interface RouteDataPolicy { freshMs:number; staleMs:number; tags?:string[
 export interface RouteDataContext { signal:AbortSignal; deadline:number }
 export interface RouteDataResult { value:CacheValue; state:'fresh'|'stale'|'loaded'; /** Keeps existing content-derived conditional ETag behavior. */ response():CachedResult }
 export interface RouteDataCacheOptions { application:string; cache:CacheManager; coordination?:'process'|'distributed'; maxEntries?:number; maxPending?:number; timeoutMs?:number; maxBytes?:number; development?:boolean; now?:()=>number }
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 function text(value:unknown,max=256):asserts value is string {if(typeof value!=='string'||!value.length||value.length>max||/[\x00-\x1f\x7f]/.test(value))throw new TypeError('Invalid route cache identifier');}
 function integer(value:number,max:number){if(!Number.isSafeInteger(value)||value<1||value>max)throw new TypeError('Invalid route cache budget');return value;}
 function digest(value:unknown){return createHash('sha256').update(JSON.stringify(value)).digest('hex');}
@@ -49,7 +50,7 @@ export function createRouteDataCache(options:RouteDataCacheOptions){
    // A cache outage is explicit. Never call a producer as a silent outage fallback.
    if(work.size>=maxPending)throw new Error('Route cache capacity exceeded');const read=Promise.resolve().then(()=>options.development?undefined:options.cache.get(captured.storage));work.add(read);void read.finally(()=>work.delete(read)).catch(()=>{});const raw=await wait(read,signal);signal?.throwIfAborted();if(closed)throw new Error('Route cache closed');
    if(entries.get(key)!==captured)throw new Error('Route data invalidated during read');
-   if(raw!==undefined){if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.version!==1||typeof raw.at!=='number'||!Number.isFinite(raw.at)||!('value'in raw))throw new Error('Invalid route cache record');const age=now()-raw.at;if(age>=0&&age<fresh)return result(raw.value,'fresh',isPublic,fresh-age);if(age>=fresh&&age<fresh+stale){try{void refresh().catch(()=>{});}catch{}return result(raw.value,'stale',false,0);}}
+   if(raw!==undefined){if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.version!==1||typeof raw.at!=='number'||!Number.isFinite(raw.at)||!('value'in raw))throw new Error('Invalid route cache record');const age=now()-raw.at;if(age>=0&&age<fresh)return result(raw.value,'fresh',isPublic,fresh-age);if(age>=fresh&&age<fresh+stale){try{void refresh().catch(()=>{});}catch{ /* Refresh admission can fail; serving the already-valid stale value remains allowed. */ }return result(raw.value,'stale',false,0);}}
    return wait(refresh(),signal);
   },
   /** Server-only. HTTP callers must authorize tenant/action before invoking. */

@@ -57,6 +57,7 @@ const digest=(bytes:Uint8Array|string)=>createHash('sha256').update(bytes).diges
 
 const ownKeys=(value:unknown,keys:readonly string[])=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(key=>keys.includes(key));
 function number(value:unknown,fallback:number,max:number){const result=value??fallback;if(typeof result!=='number'||!Number.isSafeInteger(result)||result<1||result>max)fail('STATIC_LIMIT_INVALID');return result as number;}
+// eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
 function relative(value:string){if(typeof value!=='string'||!value||value.length>2048||value.includes('\\')||value.startsWith('/')||value.split('/').some(part=>!part||part==='.'||part==='..'||/[\x00-\x1f\x7f]/.test(part)))fail('STATIC_PATH_INVALID');return value;}
 function publicValue<T>(input:T):T {
  let nodes=0;const seen=new Set<object>();
@@ -90,6 +91,7 @@ export async function exportStaticSite<V>(options:StaticExportOptions<V>):Promis
  const maxRoutes=number(options.maxRoutes,1000,10000),maxBytes=number(options.maxBytes,33554432,536870912),maxPage=number(options.maxPageBytes,1048576,16777216),timeout=number(options.timeoutMs,30000,300000),routeTimeout=number(options.routeTimeoutMs,5000,30000);
  const routes=options.routes.map((route:StaticExportPage<V>|StaticExportRedirect)=>{
   if(!route||route.access!=='public'||!ownKeys(route,'redirect'in route?['path','access','redirect','status']:['path','access','view','params','title'])||typeof route.path!=='string'||route.path.includes('//')||route.path.includes('{')||route.path.includes('}')||route.path.split('/').some(part=>part==='.'||part==='..'||part.length>200))fail('STATIC_ROUTE_INVALID');
+  // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   if('redirect'in route){if(typeof route.redirect!=='string'||!route.redirect.startsWith('/')||route.redirect.startsWith('//')||/[\\\x00-\x20\x7f]/.test(route.redirect)||!/^\/[A-Za-z0-9._~/-]*$/.test(route.redirect)||route.redirect.includes('//')||route.redirect.split('/').some(part=>part==='.'||part==='..')||!(base==='/'||route.redirect===base||route.redirect.startsWith(base+'/'))||![301,302,307,308].includes(route.status))fail('STATIC_REDIRECT_INVALID');}
   else if(typeof route.view!=='function'||route.params!==undefined&&typeof route.params!=='function'||route.title!==undefined&&(typeof route.title!=='string'||route.title.length>256))fail('STATIC_ROUTE_INVALID');
   return {...route,path:route.path.replace(/\/$/,'')||'/'};
@@ -137,6 +139,7 @@ export async function exportStaticSite<V>(options:StaticExportOptions<V>):Promis
     if(!values||typeof (values as any)[Symbol.asyncIterator]!=='function'&&typeof(values as any)[Symbol.iterator]!=='function')fail('STATIC_PARAMS_INVALID');iterator=typeof(values as any)[Symbol.asyncIterator]==='function'?(values as any)[Symbol.asyncIterator]():(values as any)[Symbol.iterator]();let enumerated=0;
     while(true){check();if(routeController.signal.aborted||Date.now()>=routeDeadline)fail('STATIC_ENUMERATION_TIMEOUT');const next=await iterator!.next();check();if(routeController.signal.aborted||Date.now()>=routeDeadline)fail('STATIC_ENUMERATION_TIMEOUT');if(next.done)break;if(++enumerated>maxRoutes||paths.size>=maxRoutes)fail('STATIC_ROUTE_LIMIT');const params=publicValue(next.value);
      if(!params||typeof params!=='object'||Array.isArray(params)||Object.keys(params).sort().join(',')!==pattern.parameters.map(item=>item.name).sort().join(','))fail('STATIC_PARAMS_INVALID');let pathname=route.path;
+     // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
      for(const parameter of pattern.parameters){const value=params[parameter.name];if(typeof value!=='string'||!value||!parameter.catchAll&&value.includes('/'))fail('STATIC_PARAMS_INVALID');const parts=value.split('/');if(parts.some(part=>!part||! /^[A-Za-z0-9._~-]+$/.test(part)||part==='.'||part==='..'||/[\\\x00-\x1f\x7f]/.test(part)||encodeURIComponent(part).length>200))fail('STATIC_PARAMS_INVALID');pathname=pathname.replace(':'+parameter.name+(parameter.catchAll?'*':''),parts.map(part=>encodeURIComponent(part)).join('/'));}
      if(pathname.length>2048||paths.has(pathname))fail('STATIC_ROUTE_DUPLICATE');paths.add(pathname);pages.push({route,params,pathname});
     }

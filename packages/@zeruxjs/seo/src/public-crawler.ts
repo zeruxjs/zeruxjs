@@ -93,6 +93,7 @@ export function createPublicCrawlerService(options: PublicCrawlerOptions) {
     trust !== undefined &&
     (typeof trust !== "string" ||
       Buffer.byteLength(trust) > 65536 ||
+      // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
       /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(trust))
   )
     throw new TypeError("Invalid custom trust file");

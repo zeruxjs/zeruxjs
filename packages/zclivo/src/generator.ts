@@ -154,6 +154,7 @@ function relativeFile(value: string) {
     isAbsolute(value) ||
     value.includes('\\') ||
     value.includes(':') ||
+    // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
     /[\x00-\x1f\x7f]/.test(value)
   )
     throw fail('Invalid template file path');
@@ -289,6 +290,7 @@ export function createProjectGenerator(templates: readonly ProjectTemplate[]) {
         typeof input.destination !== 'string' ||
         !input.destination.trim() ||
         input.destination.length > 4096 ||
+        // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
         /[\x00-\x1f\x7f]/.test(input.destination)
       )
         throw fail('Project destination is required');
@@ -434,6 +436,7 @@ function* materialize(
         errors.push(error);
       }
     if (errors.length)
+      // eslint-disable-next-line no-unsafe-finally -- Cleanup failure must propagate; this owner explicitly reports failed resource release.
       throw new AggregateError(
         [...(failure !== undefined ? [failure] : []), ...errors],
         'Generator rollback cleanup failed',

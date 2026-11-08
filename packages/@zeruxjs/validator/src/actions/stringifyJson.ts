@@ -15,7 +15,7 @@ export interface StringifyJsonConfig {
   /**
    * The JSON replacer function or array.
    */
-  replacer?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  replacer?:  
   ((this: any, key: string, value: any) => any) | (number | string)[];
   /**
    * The JSON space option.
@@ -141,13 +141,13 @@ export function stringifyJson(
       try {
         const output = JSON.stringify(
           dataset.value,
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           this.config?.replacer,
           this.config?.space
         );
         if (output === undefined) {
           _addIssue(this, 'JSON', dataset, config);
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.typed = false;
         }
         dataset.value = output;
@@ -156,7 +156,7 @@ export function stringifyJson(
           _addIssue(this, 'JSON', dataset, config, {
             received: `"${error.message}"`,
           });
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.typed = false;
         } else {
           throw error;

@@ -55,7 +55,7 @@ export function findItem(
     async: false,
     operation,
     '~run'(dataset) {
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       dataset.value = dataset.value.find(this.operation);
       return dataset as SuccessDataset<unknown | undefined>;
     },

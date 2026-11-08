@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import type { BaseSchema, SuccessDataset } from '../types/index.js';
 import { _getStandardProps } from '../utils/index.js';
 
@@ -41,9 +41,9 @@ export function any(): AnySchema {
       return _getStandardProps(this);
     },
     '~run'(dataset) {
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       dataset.typed = true;
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as SuccessDataset<any>;
     },
   };

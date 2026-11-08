@@ -76,7 +76,7 @@ export type InferDefault<
   | SchemaWithDefault
   | SchemaWithDefaultAsync,
 > = TSchema extends SchemaWithDefault | SchemaWithDefaultAsync
-  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ?  
   TSchema['default'] extends (...args: any) => any
   ? ReturnType<TSchema['default']>
   : TSchema['default']
@@ -102,10 +102,10 @@ export function getDefault<
   config?: Config<InferIssue<TSchema>>
 ): InferDefault<TSchema> {
   if (!schema.async && 'default' in schema && typeof schema.default === 'function' && schema.default.constructor.name === 'AsyncFunction') throw new AsyncValidationError();
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   return typeof schema.default === 'function'
-    ? // @ts-expect-error
+    ? // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
     (schema.async ? schema.default(dataset, config) : syncValue(schema.default(dataset, config)))
-    : // @ts-expect-error
+    : // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
     schema.default;
 }

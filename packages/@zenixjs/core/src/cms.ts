@@ -624,7 +624,7 @@ export async function createCms(options: CmsOptions) {
   } catch (error) {
     try {
       await api.close();
-    } catch {}
+    } catch { /* Preserve the startup failure after attempting cleanup of partially acquired resources. */ }
     throw error instanceof CmsError ? error : fail('STARTUP_FAILED', error);
   }
 }

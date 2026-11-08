@@ -53,6 +53,7 @@ export function commitOutputs(files: Map<string,string>, maxBytes:number, deleti
   }catch(rollback){errors.push(rollback);}
   if(errors.length>1)throw new AggregateError(errors,'zuix: output replacement/rollback failed');
   throw error;
+ // eslint-disable-next-line no-unsafe-finally -- Cleanup failure must propagate; this owner explicitly reports failed resource release.
  }finally{for(const item of prepared)try{fs.unlinkSync(item.temp);}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}}
 }
 

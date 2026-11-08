@@ -70,6 +70,7 @@ export function createMediaTranscoder(options:MediaTranscoderOptions){
     finally{
      if(timer!==undefined)clearTimeout(timer);controller.signal.removeEventListener('abort',terminate);signal?.removeEventListener('abort',abort);
      let cleanupFailed=false;try{if(job){if(!outputComplete)terminate();try{await termination;}finally{await job.dispose();}}}
+     // eslint-disable-next-line no-unsafe-finally -- Cleanup failure must propagate; this owner explicitly reports failed resource release.
      catch(cause){cleanupFailed=true;throw fail('TRANSCODE_CLEANUP_FAILED',cause);}
      finally{controllers.delete(controller);try{if(presets.includes(preset))options.onEvent?.(Object.freeze({preset,status:outputComplete&&!cleanupFailed?'complete':controller.signal.aborted?'cancelled':'failed'}));}catch{/* Diagnostics cannot change resource ownership. */}}
     }

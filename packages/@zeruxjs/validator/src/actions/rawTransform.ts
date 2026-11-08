@@ -50,15 +50,15 @@ export function rawTransform<TInput, TOutput>(
 
       // Update dataset depending on issues
       if (dataset.issues) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = false;
       } else {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.value = output;
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         TOutput,
         BaseIssue<unknown> | RawTransformIssue<TInput>

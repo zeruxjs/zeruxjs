@@ -21,7 +21,7 @@ type Schema =
     readonly [
       BaseSchema<unknown, unknown, BaseIssue<unknown>>,
       ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
+        | PipeItem<any, unknown, BaseIssue<unknown>>  
         | MetadataAction<unknown, Record<string, unknown>>
       )[],
     ]
@@ -33,8 +33,8 @@ type Schema =
         | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
       ),
       ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
-        | PipeItemAsync<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
+        | PipeItem<any, unknown, BaseIssue<unknown>>  
+        | PipeItemAsync<any, unknown, BaseIssue<unknown>>  
         | MetadataAction<unknown, Record<string, unknown>>
       )[],
     ]
@@ -44,9 +44,9 @@ type Schema =
  * Basic pipe item type.
  */
 type BasicPipeItem =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   | PipeItem<any, unknown, BaseIssue<unknown>>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   | PipeItemAsync<any, unknown, BaseIssue<unknown>>
   | MetadataAction<unknown, Record<string, unknown>>;
 
@@ -76,10 +76,10 @@ type RecursiveMerge<
  * @beta
  */
 export type InferMetadata<TSchema extends Schema> =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   BaseSchema<any, any, any> extends TSchema
   ? Record<string, unknown>
-  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  :  
   BaseSchemaAsync<any, any, any> extends TSchema
   ? Record<string, unknown>
   : TSchema extends
@@ -112,13 +112,13 @@ export function getMetadata<const TSchema extends Schema>(
         if (item.kind === 'schema' && 'pipe' in item) {
           depthFirstMerge(item);
         } else if (item.kind === 'metadata' && item.type === 'metadata') {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           Object.assign(result, item.metadata);
         }
       }
     }
   }
   depthFirstMerge(schema);
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   return result;
 }
