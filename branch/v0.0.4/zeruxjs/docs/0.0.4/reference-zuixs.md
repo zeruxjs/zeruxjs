@@ -132,7 +132,7 @@ Manifest reference for `zuixs@0.0.4`.
   },
   "dependencies": {},
   "peerDependencies": {
-    "source-map-js": "^1.2.1",
+    "source-map-js": "^1.2.2",
     "zlook": "0.0.4"
   },
   "bin": {
