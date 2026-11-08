@@ -45,16 +45,18 @@ JS/JSX/TS/TSX (including `.mjs`, `.cjs`, `.mts`, `.cts`). Root
 `stylelint.config.mjs` selects the existing standard CSS/SCSS configurations and
 SCSS parser. These tools are explicit root development dependencies, installed
 from the npm lockfile; the private Stylelint bundle and its prepack checks remain
-separate. Use Node 24 for the repository tooling.
+separate. Use Node 24.15+ for the repository tooling.
 
 ```sh
 npm ci --ignore-scripts
 npm run lint:prepare     # build the shared preset and its three required packages
-npm run lint             # read-only JS/TS, then CSS/SCSS; stops on the first failure
+npm run lint             # read-only JS/TS, CSS/SCSS, then HTML; stops on failure
 npm run lint:js
 npm run lint:css
+npm run lint:html
 npm run lint:js:report    # reports/eslint.json
 npm run lint:css:report   # reports/stylelint.json
+npm run lint:html:report  # reports/htmlvalidate.json
 # Explicitly opt into changes, then review the diff:
 npm run lint:js:fix
 npm run lint:css:fix
@@ -77,7 +79,12 @@ retain their own responsibilities. CommonJS has an explicit source-type override
 Strict consumer/localization rules remain opt-in. Vue SFCs and CSS embedded in
 HTML/JS are not parsed by these commands.
 
-Both configs ignore dependency/build/cache/vendor/private runtime directories and
+The root HTML checker uses `htmlvalidate.config.json` and `.htmlvalidateignore`.
+Self-contained design previews explicitly allow their fixed authored inline styles;
+structural HTML rules still run on those files. Other sources retain the inline
+style check. Button types, list structure and password autocomplete remain checked.
+
+Lint configs ignore dependency/build/cache/vendor/private runtime directories and
 known generated workspace assets. Authored source, test and sample-module files
 remain in scope; synthetic negative test code may need narrowly justified inline
 suppressions. Configs are trusted executable code. Read-only commands never apply

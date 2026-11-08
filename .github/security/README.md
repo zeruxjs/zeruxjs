@@ -10,10 +10,11 @@ it does not replace those workflows or run application code.
 | --- | --- | --- |
 | `workflows/security.yml`: CodeQL | JavaScript/TypeScript and GitHub Actions, security-and-quality queries | Uploads findings; successful execution is not a zero-alert guarantee. |
 | `workflows/security.yml`: Semgrep CE | Public `p/security-audit` rules over source | Findings fail the job (`--error`); metrics/version telemetry disabled. |
-| Trivy | Filesystem lockfile vulnerabilities and configuration; HIGH/CRITICAL, including unfixed findings | Findings fail; no repository npm install or application startup. |
+| Trivy | Filesystem lockfile vulnerabilities, configuration and current-file secrets; HIGH/CRITICAL, including unfixed findings | Findings fail; no repository npm install or application startup. |
 | Gitleaks | All Git history fetched by checkout | Findings fail; CLI and SARIF use 100% secret redaction. Historical leaks still require revocation. |
 | Zizmor | Local workflow/action configuration, offline | SARIF reporting; SARIF mode can succeed with findings. Online checks are intentionally absent. |
 | ESLint | Root `eslint.config.mjs`, JS/JSX/TS/TSX and CommonJS; public light preset | `npm run lint:js:report`, read-only; errors fail and JSON is retained. |
+| HTML-validate | Root `htmlvalidate.config.json`; authored HTML, including reference previews | Locked CLI, private/generated ignores, explicit reviewed inline-style exceptions; errors fail. |
 | Stylelint | Root `stylelint.config.mjs`, authored CSS/SCSS | `npm run lint:css:report`, read-only; errors fail and JSON is retained. |
 | Dependency Review | Changes introduced by a pull request | New HIGH/CRITICAL dependencies fail; unavailable dependency graph/API access is an error, not an empty result. |
 | `.github/dependabot.yml` | Root npm workspace, separate private Stylelint bundle, standalone `pages`, Actions | Weekly review PRs; no automatic merge or release. Internal package versions are excluded. |
@@ -32,8 +33,9 @@ per-job tokens, no persisted checkout credentials and no repository secrets.
 Semgrep, Trivy and Gitleaks findings fail their jobs without suppressing report
 upload. Download/install/database failures also fail; they are not clean scans.
 
-Find reports in **Actions → Additional security scans → run → Artifacts**
-(`scan-semgrep`, `scan-trivy`, `scan-gitleaks`, `scan-zizmor`, seven-day retention).
+Find reports in **Actions → Security and Code Quality → run → Artifacts**
+(`scan-semgrep`, `scan-trivy`, `scan-gitleaks`, `scan-zizmor`; scanner reports retain
+14 days, while ESLint/Stylelint/HTML JSON reports retain seven days).
 Same-repository runs upload SARIF to **Security → Code scanning** with separate
 categories. Fork PRs retain artifacts but skip these additional SARIF uploads to
 avoid relying on unavailable write permission. Fork approval/repository Actions
@@ -128,7 +130,7 @@ not a global cache that deduplicates commits across manual/scheduled runs.
 `ENABLE_RUNTIME_SCANS`, `ENABLE_RESTLER` and `SECURITY_OPENAPI_PATH` are optional
 repository variables; they were unset when the cited PR checks were inspected.
 The current repository also lacks the referenced
-`.github/actions/start-test-api/action.yml` and root `security:start` script.
+`$/.github/actions/start-test-api/action.yml` and root `security:start` script.
 Do not enable the variables until a reviewed disposable launcher exists; schema
 fuzzers additionally require an actual committed OpenAPI schema. No production or
 operator workspace credentials/state may be used as a substitute. Optional fuzzer
@@ -137,3 +139,45 @@ Existing skipped runs on a PR are historical and cannot be rewritten by editing
 YAML. These checks should not be required by branch rules while unconfigured.
 Dependency Review has its own PR-only workflow; a real failure there still needs
 investigation and is distinct from the expected skip on a push event.
+
+## Finding remediation and local qualification
+
+The reviewed Gitleaks exceptions in root `.gitleaks.toml` apply only to exact RFC
+6238/durable-test constants in named fixtures, or documented SHA-256 content-hash
+entries in generated docs manifests. They are not general key/path exclusions.
+Default detection remains enabled; a synthetic new credential in the same fixture
+still fails. Git history is not rewritten. Semgrep retains its audit rules; the
+reviewed document-renderer annotations cover escaped structural fragments and
+script-safe JSON-LD, with a script-termination regression exercised locally.
+
+All external Actions are pinned to verified upstream commits. The copied
+privileged `workflow_run` reporter referenced a missing Python implementation and
+was removed; native Checks, SARIF and artifacts remain the reporting interface.
+Release jobs use the npm bundled with pinned Node 24.15.0 and validate trusted
+publishing support instead of installing an unlocked global npm. No release was
+executed during qualification. Optional fuzzers use GitHub's self-repository action
+reference syntax but still require a real disposable launcher before enablement.
+Older actionlint versions do not parse that syntax; validate those exact local
+references separately rather than removing the safety gates.
+
+Patched dependency resolutions include source-map-js 1.2.2, systeminformation
+5.33.19, fast-uri 3.1.9 in both lockfiles, and the updated email MIME/SMTP libraries.
+The repository's transitive minimatch 7–10 constraint is overridden to 11.0.5;
+representative glob/TS parser consumers are qualified on Node 24.15. This root
+override is repository tooling policy, not a promise that independently installed
+packages inherit it. The private Stylelint bundle lock, fork and preparation hook
+remain separately checked.
+
+The development Dockerfile uses a digest-pinned official Node image, avoids
+curl-to-shell installation, installs no recommended apt packages and defaults to
+its existing non-root `node` user. Its healthcheck checks runtime availability,
+not application readiness. Existing containers are not restarted; operators must
+review bind-mount UID permissions before explicitly rebuilding their dev image.
+
+Separate npm-audit coverage can differ from Trivy's database. The final npm audit
+reports no high/critical/moderate findings but still reports the low-severity
+`deepmerge` advisory and its dependent `html-to-text` package. Upstream's proposed
+fix requires the next major HTML-to-text converter and a higher Node minimum;
+that runtime migration is not silently forced by this CI repair. The existing
+release audit still fails on low findings and remains enabled. Resolve/qualify
+that dependency before a release requiring a zero-advisory production tree.
