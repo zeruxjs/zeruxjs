@@ -1,14 +1,8 @@
 name: Advanced RESTler Fuzzing
 
+# Optional scanners are manually requested after an isolated harness is configured.
+# Keep their enable flags; a missing harness must never start the operator's app.
 on:
-  push:
-  pull_request:
-  merge_group:
-    types: [checks_requested]
-  schedule:
-    # Weekly: RESTler builds a .NET-based fuzzer and can be costly to run.
-    - cron: '0 0 * * 0'
-      timezone: UTC
   workflow_dispatch:
 
 permissions:

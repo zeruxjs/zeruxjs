@@ -1,13 +1,8 @@
 name: Runtime and API Security
 
+# Optional scanners are manually requested after an isolated harness is configured.
+# Keep their enable flags; a missing harness must never start the operator's app.
 on:
-  push:
-  pull_request:
-  merge_group:
-    types: [checks_requested]
-  schedule:
-    - cron: '0 0 * * *'
-      timezone: UTC
   workflow_dispatch:
 
 permissions:

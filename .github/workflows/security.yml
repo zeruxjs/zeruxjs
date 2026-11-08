@@ -1,7 +1,9 @@
 name: Security and Code Quality
 
 on:
+  # PR branches are checked by pull_request; master is checked after merge.
   push:
+    branches: [master]
   pull_request:
   merge_group:
     types: [checks_requested]
@@ -270,18 +272,3 @@ jobs:
           path: reports/htmlvalidate.json
           if-no-files-found: ignore
           retention-days: 14
-
-  dependency-review:
-    name: Dependency Review (PR only)
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: high

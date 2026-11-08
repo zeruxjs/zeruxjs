@@ -8,7 +8,7 @@ it does not replace those workflows or run application code.
 
 | Owner | Scope | Finding behavior |
 | --- | --- | --- |
-| `workflows/codeql.yml` | JavaScript/TypeScript and GitHub Actions, security-and-quality queries | Uploads findings; successful execution is not a zero-alert guarantee. |
+| `workflows/security.yml`: CodeQL | JavaScript/TypeScript and GitHub Actions, security-and-quality queries | Uploads findings; successful execution is not a zero-alert guarantee. |
 | `workflows/security.yml`: Semgrep CE | Public `p/security-audit` rules over source | Findings fail the job (`--error`); metrics/version telemetry disabled. |
 | Trivy | Filesystem lockfile vulnerabilities and configuration; HIGH/CRITICAL, including unfixed findings | Findings fail; no repository npm install or application startup. |
 | Gitleaks | All Git history fetched by checkout | Findings fail; CLI and SARIF use 100% secret redaction. Historical leaks still require revocation. |
@@ -18,8 +18,16 @@ it does not replace those workflows or run application code.
 | Dependency Review | Changes introduced by a pull request | New HIGH/CRITICAL dependencies fail; unavailable dependency graph/API access is an error, not an empty result. |
 | `.github/dependabot.yml` | Root npm workspace, separate private Stylelint bundle, standalone `pages`, Actions | Weekly review PRs; no automatic merge or release. Internal package versions are excluded. |
 
-Both workflows run on push, PR, merge queue, manual dispatch and daily schedules
-(default UTC). Dependency Review runs only on PRs. Security scans use restricted
+Static security validation runs on PR updates and pushes to `master`, plus its
+existing merge-queue, manual and daily scheduled events. Feature branch pushes do
+not launch a second static run alongside the PR. A branch without an open PR can
+use manual dispatch before opening one. Master validation after merge remains
+intentional. `dependency-review.yml` is PR-only, so it creates no skipped push job.
+Scorecard listens only to master pushes, its weekly schedule and manual dispatch
+on the default branch; it creates no PR check. Runtime/API and RESTler workflows
+are manual-only and keep their enable-flag conditions. An intentional optional
+job skip means no scan occurred; it is not a clean security assessment.
+ Security scans use restricted
 per-job tokens, no persisted checkout credentials and no repository secrets.
 Semgrep, Trivy and Gitleaks findings fail their jobs without suppressing report
 upload. Download/install/database failures also fail; they are not clean scans.
@@ -103,3 +111,29 @@ dependencies and, for ESLint, the compiled shared preset. Unlike scanner-only
 configuration checks, that qualification builds four required library packages;
 it does not build/start apps or run the full workspace suites. Existing lint
 violations remain failures; adding these jobs is not a claim of a clean baseline.
+
+## Push versus pull request runs
+
+Validation uses event/branch filters rather than API lookups or skipping required
+PR jobs. Each push to an open PR branch triggers its static PR validation; additional
+push-triggered static validation is limited to `master`. Runtime/API and RESTler
+are manual-only until their disposable harness is implemented and qualified. Merge-queue runs test
+a separate candidate and are retained. Publishing, GitLab mirroring and site
+deployment keep their existing triggers because they perform different work;
+they can appear alongside PR checks without being duplicate validation. This is
+not a global cache that deduplicates commits across manual/scheduled runs.
+
+## Why historical checks were skipped
+
+`ENABLE_RUNTIME_SCANS`, `ENABLE_RESTLER` and `SECURITY_OPENAPI_PATH` are optional
+repository variables; they were unset when the cited PR checks were inspected.
+The current repository also lacks the referenced
+`.github/actions/start-test-api/action.yml` and root `security:start` script.
+Do not enable the variables until a reviewed disposable launcher exists; schema
+fuzzers additionally require an actual committed OpenAPI schema. No production or
+operator workspace credentials/state may be used as a substitute. Optional fuzzer
+workflows now appear only when manually requested; their safety gates remain.
+Existing skipped runs on a PR are historical and cannot be rewritten by editing
+YAML. These checks should not be required by branch rules while unconfigured.
+Dependency Review has its own PR-only workflow; a real failure there still needs
+investigation and is distinct from the expected skip on a push event.
