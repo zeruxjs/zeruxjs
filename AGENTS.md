@@ -227,6 +227,8 @@ These are development/static-site consumers, not public library packages. Read t
 
 Use each `package.json` for actual npm names, visibility, exports, runtime requirements and scripts. Directory names can differ from npm names: `packages/@zeruxjs/db-sqllite` publishes `@zeruxjs/db-sqlite`, and `packages/create/create-zenix-app` publishes `create-zenix-js`. An empty/invalid manifest file or a directory/roadmap entry is not a package contract.
 
+GitHub security automation keeps one CodeQL workflow plus complementary static scans in [security.yml](.github/workflows/security.yml). See the [security automation guide](.github/security/README.md) for scanner gates, fork upload limits and tool updates. These workflows do not start apps or perform runtime fuzzing; package lint/Stylelint ownership remains with the existing tooling.
+
 ## Workflow
 
 1. Read the affected package/application README and inspect its manifest and implementation before editing.

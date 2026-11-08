@@ -1,0 +1,60 @@
+name: Advanced RESTler Fuzzing
+
+on:
+  push:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  schedule:
+    # Weekly: RESTler builds a .NET-based fuzzer and can be costly to run.
+    - cron: '0 0 * * 0'
+      timezone: UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restler:
+    name: RESTler (optional)
+    # Advanced opt-in only; never fuzz a real production API.
+    if: vars.ENABLE_RUNTIME_SCANS == 'true' && vars.ENABLE_RESTLER == 'true' && vars.SECURITY_OPENAPI_PATH != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/start-test-api
+        with:
+          port: ${{ vars.SECURITY_PORT || '3000' }}
+      - name: Build and run RESTler against disposable local API
+        env:
+          PORT: ${{ vars.SECURITY_PORT || '3000' }}
+          SCHEMA: ${{ vars.SECURITY_OPENAPI_PATH }}
+        run: |
+          set -euo pipefail
+          test -f "$SCHEMA" || { echo "OpenAPI spec not found: $SCHEMA" >&2; exit 1; }
+          mkdir -p reports
+          git clone --quiet --depth 1 https://github.com/microsoft/restler-fuzzer.git "${RUNNER_TEMP}/restler-src"
+          docker build --quiet -t restler-ci "${RUNNER_TEMP}/restler-src"
+          # The RESTler image contains /RESTler/restler/Restler.dll.
+          # The quick start script is supplied read-only from Microsoft's source.
+          timeout 35m docker run --rm --network host \
+            -v "${RUNNER_TEMP}/restler-src:/tool:ro" \
+            -v "$PWD:/work:rw" -w /work \
+            restler-ci python3 /tool/restler-quick-start.py \
+            --api_spec_path "/work/${SCHEMA}" \
+            --restler_drop_dir /RESTler --ip 127.0.0.1 \
+            --port "${PORT}" --task fuzz-lean
+      - name: Save RESTler results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-restler
+          path: |
+            restler_working_dir/**/testing_summary.json
+            restler_working_dir/**/bug_buckets/**
+            ${{ runner.temp }}/test-api.log
+          if-no-files-found: ignore
+          retention-days: 14

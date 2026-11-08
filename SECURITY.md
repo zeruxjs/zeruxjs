@@ -20,3 +20,7 @@ After the first stable npm publication, replace this table with exact supported 
 Include the affected package/version, reproducible steps, impact and a safe proof-of-concept when possible. Maintainers will triage and coordinate a fix and disclosure. Until an explicit security-response SLA is published, response and resolution times are not guaranteed. Never use a placeholder or unverified security-reporting email address.
 
 A reported issue may be accepted, declined with an explanation or held for more information; no automatic public disclosure is implied.
+
+## Automated checks
+
+See the [security automation guide](.github/security/README.md) for CodeQL, complementary static scanners, report locations and dependency-update policy. Passing scanner jobs do not certify the absence of vulnerabilities or replace runtime/provider acceptance checks.

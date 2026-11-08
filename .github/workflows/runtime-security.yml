@@ -1,0 +1,125 @@
+name: Runtime and API Security
+
+on:
+  push:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  schedule:
+    - cron: '0 0 * * *'
+      timezone: UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Requires repository variable ENABLE_RUNTIME_SCANS=true and npm script security:start.
+# Scans only the disposable local app on 127.0.0.1, never a public/production URL.
+jobs:
+  zap:
+    name: OWASP ZAP
+    if: vars.ENABLE_RUNTIME_SCANS == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/start-test-api
+        with:
+          port: ${{ vars.SECURITY_PORT || '3000' }}
+      - name: Passive ZAP scan
+        env:
+          PORT: ${{ vars.SECURITY_PORT || '3000' }}
+        run: |
+          mkdir -p reports && chmod a+rwx reports
+          docker run --rm --network host -v "$PWD/reports:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t "http://127.0.0.1:${PORT}" -m 2 -T 15 -I -J zap.json -r zap.html
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-zap
+          path: |
+            reports/zap.json
+            reports/zap.html
+            ${{ runner.temp }}/test-api.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  nuclei:
+    name: Nuclei
+    if: vars.ENABLE_RUNTIME_SCANS == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/start-test-api
+        with:
+          port: ${{ vars.SECURITY_PORT || '3000' }}
+      - name: Scan local HTTP service (no DoS/fuzz templates)
+        env:
+          PORT: ${{ vars.SECURITY_PORT || '3000' }}
+        run: |
+          mkdir -p reports && chmod a+rwx reports
+          docker run --rm --network host -v "$PWD/reports:/reports:rw" \
+            projectdiscovery/nuclei:latest \
+            -u "http://127.0.0.1:${PORT}" -severity medium,high,critical \
+            -etags dos,fuzz -ni -rate-limit 5 -timeout 5 -omit-raw \
+            -jsonl -o /reports/nuclei.jsonl -sarif-export /reports/nuclei.sarif -no-color
+      - name: Upload SARIF
+        if: always() && hashFiles('reports/nuclei.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: reports/nuclei.sarif
+          category: nuclei
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-nuclei
+          path: |
+            reports/nuclei.sarif
+            reports/nuclei.jsonl
+            ${{ runner.temp }}/test-api.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  schemathesis:
+    name: Schemathesis
+    if: vars.ENABLE_RUNTIME_SCANS == 'true' && vars.SECURITY_OPENAPI_PATH != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/start-test-api
+        with:
+          port: ${{ vars.SECURITY_PORT || '3000' }}
+      - uses: astral-sh/setup-uv@v6
+      - name: Fuzz API automatically from OpenAPI specification
+        env:
+          PORT: ${{ vars.SECURITY_PORT || '3000' }}
+          SCHEMA: ${{ vars.SECURITY_OPENAPI_PATH }}
+        run: |
+          mkdir -p reports
+          test -f "$SCHEMA" || { echo "OpenAPI file not found: $SCHEMA" >&2; exit 1; }
+          uvx schemathesis run "$SCHEMA" --url "http://127.0.0.1:${PORT}" \
+            --max-examples 50 --report junit --report-junit-path reports/schemathesis.xml
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-schemathesis
+          path: |
+            reports/schemathesis.xml
+            ${{ runner.temp }}/test-api.log
+          if-no-files-found: ignore
+          retention-days: 14

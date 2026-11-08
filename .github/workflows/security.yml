@@ -1,0 +1,284 @@
+name: Security and Code Quality
+
+on:
+  push:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  schedule:
+    # Daily at 00:00 UTC; scheduled runs use the default branch.
+    - cron: '0 0 * * *'
+      timezone: UTC
+  workflow_dispatch:
+
+# Restrict the default token; write permissions are granted per job only.
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
+          output: reports/codeql
+      - name: Upload CodeQL report for PR dashboard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-codeql-${{ matrix.language }}
+          path: reports/codeql/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  semgrep:
+    name: Semgrep CE
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Semgrep
+        run: python -m pip install --disable-pip-version-check semgrep
+      - name: Scan source (public community rules)
+        run: |
+          mkdir -p reports
+          semgrep scan --config p/security-audit --sarif --output reports/semgrep.sarif --error .
+      - name: Upload Semgrep to GitHub Code Scanning
+        if: always() && hashFiles('reports/semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: reports/semgrep.sarif
+          category: semgrep
+      - name: Save Semgrep findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-semgrep
+          path: reports/semgrep.sarif
+          if-no-files-found: ignore
+          retention-days: 14
+
+  trivy:
+    name: Trivy (dependencies / config / secrets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Prepare report directory
+        run: mkdir -p reports
+      - name: Scan filesystem
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          format: sarif
+          output: reports/trivy.sarif
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: false
+      - name: Upload Trivy SARIF
+        if: always() && hashFiles('reports/trivy.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: reports/trivy.sarif
+          category: trivy
+      - name: Save Trivy findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-trivy
+          path: reports/trivy.sarif
+          if-no-files-found: ignore
+          retention-days: 14
+
+  gitleaks:
+    name: Gitleaks (Git history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan entire Git history (secrets redacted)
+        run: |
+          mkdir -p reports
+          docker run --rm \
+            -v "$PWD:/repo" \
+            -w /repo \
+            ghcr.io/gitleaks/gitleaks:latest git \
+            --redact --log-opts="--all" --report-format sarif \
+            --report-path /repo/reports/gitleaks.sarif /repo
+      - name: Upload Gitleaks SARIF
+        if: always() && hashFiles('reports/gitleaks.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: reports/gitleaks.sarif
+          category: gitleaks
+      - name: Save redacted Gitleaks findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-gitleaks
+          path: reports/gitleaks.sarif
+          if-no-files-found: ignore
+          retention-days: 14
+
+  zizmor:
+    name: Zizmor (workflow security)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Scan GitHub Actions workflows
+        id: scan
+        uses: zizmorcore/zizmor-action@v0.8.0
+        with:
+          advanced-security: true
+      - name: Save Zizmor findings
+        if: always() && steps.scan.outputs.output-file != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-zizmor
+          path: ${{ steps.scan.outputs.output-file }}
+          if-no-files-found: ignore
+          retention-days: 14
+
+  eslint:
+    name: ESLint (JavaScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Auto-lint JS/JSX without project configuration
+        run: |
+          mkdir -p reports
+          npx --yes eslint@9 . --config .github/security/eslint.config.mjs \
+            --ext .js,.mjs,.cjs,.jsx \
+            --format json --output-file reports/eslint.json
+      - name: Save ESLint results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-eslint
+          path: reports/eslint.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  stylelint:
+    name: Stylelint (CSS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Lint CSS with safe default rules
+        run: |
+          mkdir -p reports
+          npx --yes stylelint@16 '**/*.css' \
+            --config .github/security/stylelint.json \
+            --allow-empty-input --formatter json --output-file reports/stylelint.json
+      - name: Save Stylelint results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-stylelint
+          path: reports/stylelint.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  htmlvalidate:
+    name: HTML-validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check HTML files
+        run: |
+          mkdir -p reports
+          if ! find . -type f -name '*.html' -not -path '*/node_modules/*' -not -path '*/dist/*' -print -quit | grep -q .; then
+            echo '[]' > reports/htmlvalidate.json
+            echo 'No HTML files found.'
+            exit 0
+          fi
+          npx --yes html-validate@10 --config .github/security/htmlvalidate.json \
+            --formatter json '**/*.html' > reports/htmlvalidate.json
+      - name: Save HTML validation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-htmlvalidate
+          path: reports/htmlvalidate.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  dependency-review:
+    name: Dependency Review (PR only)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
