@@ -570,6 +570,8 @@ compare apparent link text with literal destinations without fetching URLs or
 executing markup. These lexical warnings are advisory, not an HTML sanitizer,
 complete browser parser, authentication result or malware certification.
 
+The dependency floor now selects Nodemailer 10.4+ and Mailparser 3.14.2+ to avoid the earlier address-parser advisories. Transport acceptance, ambiguous outcomes and MIME limits retain the contracts above; injected transport and MIME fixtures are not live SMTP qualification.
+
 
 ## Implementation sources
 

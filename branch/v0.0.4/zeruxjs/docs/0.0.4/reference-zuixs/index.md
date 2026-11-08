@@ -431,6 +431,8 @@ Compare IDs/integrity across manifest generations to replace only affected style
 
 Source maps are off by default. With `buildManifest: { ..., sourceMap: true }`, install optional `source-map-js@^1.2.1`. External V3 maps record **file-level ownership at source line 1**, not exact token locations. Reset, authored CSS, recipes and plugin-only rules stay unmapped. Relative source filenames are present only in explicitly enabled maps; source contents require the separate `includeSources: true` option and should remain development-only. Map JSON and CSS count toward `limits.maxOutputBytes`. Disabling maps removes previously generated maps identified by their generated CSS footer; use a fresh production output directory when switching from a source-bearing development build. Hosts must restrict source/map access as appropriate. Source map encoding/consumption follows the [source map format](https://tc39.es/ecma426/2024/); no fabricated fine-grained mappings or production source disclosure by default is claimed.
 
+Source-map generation remains opt-in and requires the patched optional `source-map-js` peer at version 1.2.2 or later within 1.x. It is a build tool dependency, not a browser runtime download.
+
 
 ## Implementation sources
 
