@@ -38,6 +38,55 @@ Build required workspace dependencies first. Run focused existing checks when ne
 
 For a clean package source build, use the dependency-aware `node scripts/build-workspaces.mjs --scope <package>` command. Compile-time imports of optional workspace peers are declared as development dependencies. The explicitly staged zforge build compiles its independent core before zhost/ZeruxJS and then requires its full strict build; this avoids relying on stale declarations while retaining optional consumer integrations. Bootstrap metadata is repository build tooling, not application configuration.
 
+## Monorepo lint commands
+
+Root `eslint.config.mjs` uses the public light preset from `@zeruxjs/lint` for
+JS/JSX/TS/TSX (including `.mjs`, `.cjs`, `.mts`, `.cts`). Root
+`stylelint.config.mjs` selects the existing standard CSS/SCSS configurations and
+SCSS parser. These tools are explicit root development dependencies, installed
+from the npm lockfile; the private Stylelint bundle and its prepack checks remain
+separate. Use Node 24 for the repository tooling.
+
+```sh
+npm ci --ignore-scripts
+npm run lint:prepare     # build the shared preset and its three required packages
+npm run lint             # read-only JS/TS, then CSS/SCSS; stops on the first failure
+npm run lint:js
+npm run lint:css
+npm run lint:js:report    # reports/eslint.json
+npm run lint:css:report   # reports/stylelint.json
+# Explicitly opt into changes, then review the diff:
+npm run lint:js:fix
+npm run lint:css:fix
+# Or run both fix commands sequentially:
+npm run lint:fix
+```
+
+For a focused check, pass explicit files to the installed CLI instead of adding
+paths to the scripts that already select the whole repository:
+
+```sh
+npm exec -- eslint --config eslint.config.mjs packages/zlook/src/index.ts
+npm exec -- stylelint --config stylelint.config.mjs packages/zforge/assets/style.css
+```
+
+The root ESLint config keeps the preset's security/cleanup rules at error level.
+Shared library source accepts both Node and browser ambient globals; that is not
+browser-bundle verification. Dedicated client/server rules and runtime checks
+retain their own responsibilities. CommonJS has an explicit source-type override.
+Strict consumer/localization rules remain opt-in. Vue SFCs and CSS embedded in
+HTML/JS are not parsed by these commands.
+
+Both configs ignore dependency/build/cache/vendor/private runtime directories and
+known generated workspace assets. Authored source, test and sample-module files
+remain in scope; synthetic negative test code may need narrowly justified inline
+suppressions. Configs are trusted executable code. Read-only commands never apply
+fixes, and existing violations fail checks without being silently baselined.
+`lint:prepare` does not start services, build apps or prepare publication archives.
+The security workflow runs the same root report commands in separate jobs and
+retains reports even when lint finds errors. Review initial findings before making
+these checks mandatory in branch rules.
+
 ## Repository layout
 
 - `packages/`: framework, library and tooling workspaces.

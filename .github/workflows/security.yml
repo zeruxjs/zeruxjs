@@ -8,7 +8,6 @@ on:
   schedule:
     # Daily at 00:00 UTC; scheduled runs use the default branch.
     - cron: '0 0 * * *'
-      timezone: UTC
   workflow_dispatch:
 
 # Restrict the default token; write permissions are granted per job only.
@@ -190,54 +189,58 @@ jobs:
           retention-days: 14
 
   eslint:
-    name: ESLint (JavaScript)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    name: ESLint (JavaScript and TypeScript)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Auto-lint JS/JSX without project configuration
-        run: |
-          mkdir -p reports
-          npx --yes eslint@9 . --config .github/security/eslint.config.mjs \
-            --ext .js,.mjs,.cjs,.jsx \
-            --format json --output-file reports/eslint.json
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build repository preset and its required dependencies
+        run: npm run lint:prepare
+      - name: Check source using root flat config
+        run: npm run lint:js:report
       - name: Save ESLint results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-eslint
           path: reports/eslint.json
-          if-no-files-found: ignore
-          retention-days: 14
+          if-no-files-found: warn
+          retention-days: 7
 
   stylelint:
-    name: Stylelint (CSS)
-    runs-on: ubuntu-latest
+    name: Stylelint (CSS and SCSS)
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Lint CSS with safe default rules
-        run: |
-          mkdir -p reports
-          npx --yes stylelint@16 '**/*.css' \
-            --config .github/security/stylelint.json \
-            --allow-empty-input --formatter json --output-file reports/stylelint.json
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check styles using root config
+        run: npm run lint:css:report
       - name: Save Stylelint results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-stylelint
           path: reports/stylelint.json
-          if-no-files-found: ignore
-          retention-days: 14
+          if-no-files-found: warn
+          retention-days: 7
 
   htmlvalidate:
     name: HTML-validate

@@ -13,6 +13,8 @@ it does not replace those workflows or run application code.
 | Trivy | Filesystem lockfile vulnerabilities and configuration; HIGH/CRITICAL, including unfixed findings | Findings fail; no repository npm install or application startup. |
 | Gitleaks | All Git history fetched by checkout | Findings fail; CLI and SARIF use 100% secret redaction. Historical leaks still require revocation. |
 | Zizmor | Local workflow/action configuration, offline | SARIF reporting; SARIF mode can succeed with findings. Online checks are intentionally absent. |
+| ESLint | Root `eslint.config.mjs`, JS/JSX/TS/TSX and CommonJS; public light preset | `npm run lint:js:report`, read-only; errors fail and JSON is retained. |
+| Stylelint | Root `stylelint.config.mjs`, authored CSS/SCSS | `npm run lint:css:report`, read-only; errors fail and JSON is retained. |
 | Dependency Review | Changes introduced by a pull request | New HIGH/CRITICAL dependencies fail; unavailable dependency graph/API access is an error, not an empty result. |
 | `.github/dependabot.yml` | Root npm workspace, separate private Stylelint bundle, standalone `pages`, Actions | Weekly review PRs; no automatic merge or release. Internal package versions are excluded. |
 
@@ -36,10 +38,13 @@ in fixtures, and review artifact access under repository visibility policy.
 - Keep the existing CodeQL job; do not enable a second default setup or copy its
   duplicate job. The invalid explicit `UTC` workflow timezone was removed; cron
   already defaults to UTC.
-- Reuse repository ESLint/Stylelint/HTML validation owners instead of adding a
-  generic uninstalled `npx` lint configuration. The private Stylelint bundle,
-  lockfile, licenses and prepack integrity hooks are unchanged. This change does
-  not add a new root-wide lint gate.
+- ESLint and Stylelint now consume root monorepo configurations, not missing
+  files under `.github/security`. Jobs use Node 24 and `npm ci --ignore-scripts`,
+  not floating `npx` installations. ESLint builds the owning public preset using
+  `npm run lint:prepare`; Stylelint uses installed CSS/SCSS standard configs.
+  Both retain JSON reports on errors. The private Stylelint bundle, lockfile,
+  licenses and prepack integrity hooks are unchanged. See the root README's
+  monorepo lint commands for local checks and explicit fix modes.
 - Gitleaks owns secret scanning; Trivy owns vulnerability/config scanning. There
   is no duplicate Trivy secret report or unredacted secret artifact.
 - Do not import the privileged `workflow_run` PR-comment bot. Findings are
@@ -91,3 +96,10 @@ checks. Validate `codeql.yml` and `security.yml` with a reviewed actionlint bina
 parse Dependabot YAML and verify its declared manifest directories. These are
 configuration checks, not successful GitHub-hosted scanner executions. No packages
 need to be installed or built to validate this workflow change.
+
+The ESLint/Stylelint jobs have read-only repository tokens, seven-day JSON artifact
+retention and no fix flags. Their configuration validation requires the locked
+dependencies and, for ESLint, the compiled shared preset. Unlike scanner-only
+configuration checks, that qualification builds four required library packages;
+it does not build/start apps or run the full workspace suites. Existing lint
+violations remain failures; adding these jobs is not a claim of a clean baseline.
