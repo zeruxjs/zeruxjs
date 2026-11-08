@@ -8,7 +8,6 @@ const inspect = (file: string) => {
   try {
     const st = fs.lstatSync(file);
     if (!st.isFile() || st.isSymbolicLink()) throw new Error(`Unsafe Zerux runtime state file: ${file}`);
-    if (st.size > MAX_BYTES) throw new Error('Zerux runtime state exceeds 4 MiB');
     return true;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
@@ -21,7 +20,7 @@ export function readRuntimeJson<T>(file: string, fallback: T): T {
   try{return JSON.parse(readLocalFileSync(file,MAX_BYTES).toString('utf8')) as T;}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return fallback;throw error;}
 }
 
-/** Replace a complete runtime manifest in one rename; deny linked or huge files. */
+/** Replace complete bounded metadata in one rename. Existing regular files may be oversized; they are never read. */
 export function writeRuntimeJson(file: string, value: unknown): void {
   const data = JSON.stringify(value, null, 2);
   if (Buffer.byteLength(data) > MAX_BYTES) throw new Error('Zerux runtime state exceeds 4 MiB');

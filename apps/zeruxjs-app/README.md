@@ -70,6 +70,10 @@ shows setup instructions while disabled; there is no `db:init` command. Its tabl
 is created on the first enabled API request. Build `@zeruxjs/db-mysql` and its
 dependencies before enabling that example.
 
+When `WORKSPACE_ENABLED` is not `true`, `/workspace` and `/workspace/login`
+return the setup-required page with HTTP 503. Login and other workspace operations
+become available only after configuration, explicit initialization and startup.
+
 ## Implemented local workflows
 
 | Page | Actual behavior and package owners |

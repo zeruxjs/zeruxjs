@@ -4,7 +4,9 @@ import { workspaceOptions } from '../lib/workspace/config.js';
 
 export default async function workspace(api: ZeruxPluginApi) {
   if (process.env.WORKSPACE_ENABLED !== 'true') {
-    registerFetchRoutes(api, [{ path: '/workspace', handler: () => workspaceUnavailable() }]);
+    registerFetchRoutes(api, ['/workspace', '/workspace/login'].map(path => ({
+      path, handler: () => workspaceUnavailable()
+    })));
     return;
   }
   const application = await createWorkspace(workspaceOptions(api.getStructure().rootDir, process.env));

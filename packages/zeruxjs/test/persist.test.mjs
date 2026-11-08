@@ -24,3 +24,17 @@ test('atomic runtime metadata never follows symlinks; file permissions remain pr
     assert.equal(statSync(file).mode & 0o777, 0o600);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+// Existing buggy double-encoded snapshots must not prevent bounded replacement.
+test('oversized prior metadata can be replaced without reading it; repeated snapshots stay objects', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'zerux-state-recovery-'));
+  try {
+    const file = path.join(root, 'dev.json');
+    writeFileSync(file, JSON.stringify('x'.repeat(5_000_000)), {mode: 0o600});
+    for (let generation = 1; generation <= 10; generation++) {
+      writeRuntimeJson(file, {appName: 'fixture', reload: {generation}});
+      assert.deepEqual(readRuntimeJson(file, {}), {appName: 'fixture', reload: {generation}});
+      assert.ok(statSync(file).size < 128);
+    }
+  } finally { rmSync(root, {recursive: true, force: true}); }
+});

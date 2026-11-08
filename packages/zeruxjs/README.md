@@ -189,7 +189,7 @@ Fetch-compatible handlers are registered with the existing plugin API. The adapt
 
 ### Development reload behavior
 
-Development rebuilds now stage new handlers and startup workers before switching the running HTTP handler. If the new application fails to build or start, the last successfully activated runtime stays available. `dev.json` includes the latest `reload` state and error message for diagnostics. Runtime manifests and snapshots use atomic private writes. Workers are rolled back after partial startup failures and thread-pool tasks are rejected during shutdown.
+Development rebuilds now stage new handlers and startup workers before switching the running HTTP handler. If the new application fails to build or start, the last successfully activated runtime stays available. `dev.json` includes the latest `reload` state and error message for diagnostics. Runtime manifests and snapshots use atomic private writes with a 4 MiB serialized-output limit. Development snapshots are fresh JSON objects on startup; prior malformed or oversized regular snapshots are replaced without reading or carrying their contents into a new generation. Workers are rolled back after partial startup failures and thread-pool tasks are rejected during shutdown.
 
 ## Application build and runtime-managed services
 

@@ -62,35 +62,29 @@ const writeDevSnapshot = (details: {
 }) => {
     const outputDir = path.join(details.rootDir, `.${details.serviceName}`);
     const snapshotPath = path.join(outputDir, "dev.json");
-    const previous = readRuntimeJson<Record<string, unknown>>(snapshotPath, {});
 
     writeRuntimeJson(
         snapshotPath,
-        JSON.stringify(
-            {
-                ...previous,
-                appName: details.appName,
-                mode: details.mode,
-                rootDir: details.rootDir,
-                manifestPath: details.manifestPath,
-                logFilePath: logger.getFilePath(),
-                loadedEnvFiles: details.loadedEnvFiles,
-                routes: details.routes,
-                workers: details.workers,
-                threadWorkers: details.threadWorkers,
-                appPort: details.appPort,
-                devtools: {
-                    modules: Array.isArray(details.devtoolsModules) ? details.devtoolsModules.map((item: any) => ({ package: item.package, enabled: item.enabled })) : []
-                },
-                reload: details.reload ?? previous.reload ?? {
-                    generation: 1, attempts: 0, failures: 0,
-                    rebuilding: false, closed: false, lastError: null
-                },
-                updatedAt: new Date().toISOString()
+        {
+            appName: details.appName,
+            mode: details.mode,
+            rootDir: details.rootDir,
+            manifestPath: details.manifestPath,
+            logFilePath: logger.getFilePath(),
+            loadedEnvFiles: details.loadedEnvFiles,
+            routes: details.routes,
+            workers: details.workers,
+            threadWorkers: details.threadWorkers,
+            appPort: details.appPort,
+            devtools: {
+                modules: Array.isArray(details.devtoolsModules) ? details.devtoolsModules.map((item: any) => ({ package: item.package, enabled: item.enabled })) : []
             },
-            null,
-            2
-        )
+            reload: details.reload ?? {
+                generation: 1, attempts: 0, failures: 0,
+                rebuilding: false, closed: false, lastError: null
+            },
+            updatedAt: new Date().toISOString()
+        }
     );
 
     return snapshotPath;
