@@ -2,10 +2,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 
-const workflow = await readFile(new URL('../.github/workflows/security.yml',import.meta.url),'utf8');
+const workflow = await readFile(new URL('../.github/workflows/codeql.yml',import.meta.url),'utf8');
 
-const source = workflow.slice(workflow.indexOf('  codeql:'), workflow.indexOf('  semgrep:'));
-// Inspect the CodeQL job separately from independent installed-tool jobs.
+const source = workflow.slice(workflow.indexOf('  analyze:'));
+const security = await readFile(new URL('../.github/workflows/security.yml', import.meta.url), 'utf8');
+// Preserve the default-branch workflow/job identity for comparable PR analyses.
 test('CodeQL scans TypeScript/JavaScript and workflow actions with security-and-quality queries',()=>{
   assert.match(source,/language:\s*\[javascript-typescript,\s*actions\]/);
   assert.match(source,/queries:\s*security-and-quality/);
@@ -30,4 +31,9 @@ test('CodeQL has no repo write scope, secrets or npm dependency precondition',()
   assert.match(workflow,/cancel-in-progress:/);
   assert.doesNotMatch(source,/^\s*(?:run|working-directory):.*(?:npm|npx|pnpm|yarn)\s/m);
   assert.doesNotMatch(source,/^\s*(?:packages|deployments|id-token|contents):\s*write\s*$/m);
+});
+
+test("CodeQL keeps its baseline identity and is not duplicated in security workflow", () => {
+  assert.match(workflow, /^ {2}analyze:/m);
+  assert.doesNotMatch(security, /github\/codeql-action\/(?:init|analyze)@/);
 });

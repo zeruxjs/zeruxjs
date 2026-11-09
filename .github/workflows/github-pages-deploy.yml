@@ -46,15 +46,15 @@ jobs:
           import assert from 'node:assert/strict';
           import fs from 'node:fs';
           import path from 'node:path';
-          for (const name of ['zlook', 'zuixs', '@zeruxjs/typescript', '@zeruxjs/performance', '@zeruxjs/search']) {
+          for (const name of ['zlook', 'zuixs', '@zeruxjs/typescript', '@zeruxjs/performance', '@zeruxjs/search', '@zeruxjs/security']) {
             const actual = fs.realpathSync(path.join('node_modules', name));
             const expected = fs.realpathSync(path.join('packages', name));
             assert.equal(actual, expected, `${name} must use the checked-out workspace`);
             console.log(`[site-tooling] ${name}: local workspace verified`);
           }
           NODE
-      - name: Build workspace CSS, browser bundler, search and navigation tooling in parallel
-        run: node scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search
+      - name: Build workspace CSS, browser bundler, search, navigation and security tooling in parallel
+        run: node scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security
       - name: Build shared homepage and every configured site
         run: node scripts/build-sites.mjs
       - name: Verify raw Markdown and static Pages artifact (no Jekyll rendering)

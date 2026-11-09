@@ -21,40 +21,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  codeql:
-    name: CodeQL (${{ matrix.language }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [javascript-typescript, actions]
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: none
-          queries: security-and-quality
-      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
-        with:
-          category: /language:${{ matrix.language }}
-          output: reports/codeql
-      - name: Upload CodeQL report for PR dashboard
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: scan-codeql-${{ matrix.language }}
-          path: reports/codeql/
-          if-no-files-found: ignore
-          retention-days: 14
-
   semgrep:
     name: Semgrep CE
     runs-on: ubuntu-latest

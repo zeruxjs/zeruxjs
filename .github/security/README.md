@@ -8,7 +8,7 @@ it does not replace those workflows or run application code.
 
 | Owner | Scope | Finding behavior |
 | --- | --- | --- |
-| `workflows/security.yml`: CodeQL | JavaScript/TypeScript and GitHub Actions, security-and-quality queries | Uploads findings; successful execution is not a zero-alert guarantee. |
+| `workflows/codeql.yml`: CodeQL | JavaScript/TypeScript and GitHub Actions, security-and-quality queries | Uploads findings; successful execution is not a zero-alert guarantee. |
 | `workflows/security.yml`: Semgrep CE | Public `p/security-audit` rules over source | Findings fail the job (`--error`); metrics/version telemetry disabled. |
 | Trivy | Filesystem lockfile vulnerabilities, configuration and current-file secrets; HIGH/CRITICAL, including unfixed findings | Findings fail; no repository npm install or application startup. |
 | Gitleaks | All Git history fetched by checkout | Findings fail; CLI and SARIF use 100% secret redaction. Historical leaks still require revocation. |
@@ -185,3 +185,5 @@ fix requires the next major HTML-to-text converter and a higher Node minimum;
 that runtime migration is not silently forced by this CI repair. The existing
 release audit still fails on low findings and remains enabled. Resolve/qualify
 that dependency before a release requiring a zero-advisory production tree.
+
+CodeQL remains in `workflows/codeql.yml` under job `analyze` to preserve the default-branch analysis identity. Moving it into another workflow breaks PR baseline comparisons even when language categories match. Other static scanners remain in `security.yml`; both use PR scans and master-only push scans.
