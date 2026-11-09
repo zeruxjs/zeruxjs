@@ -5,6 +5,7 @@
   "author": "Shubham Kumar Bansal",
   "type": "module",
   "dependencies": {
+    "@zeruxjs/security": "0.0.4",
     "@zeruxjs/typescript": "0.0.4",
     "zeruxjs": "0.0.4"
   },
@@ -16,8 +17,8 @@
     "start": "node scripts/serve.mjs",
     "check": "node scripts/check.mjs",
     "snapshot": "node scripts/snapshot.mjs",
-    "prebuild": "node ../../scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search",
-    "predev": "node ../../scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search"
+    "prebuild": "node ../../scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security",
+    "predev": "node ../../scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

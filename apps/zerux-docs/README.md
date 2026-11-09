@@ -114,7 +114,7 @@ For presentation changes, verify desktop/mobile widths, keyboard focus, search c
 
 ## Production assets and navigation
 
-`prebuild` and `predev` compile the four required workspace tools in parallel. Production builds use **Zuixs** to generate the `ui-` utilities present in rendered HTML plus reusable utility recipes for document elements and component states. There are no handwritten CSS source files. `zuix.config.mjs` owns the utility prefix and breakpoints. **@zeruxjs/typescript** bundles browser modules and minifies CSS/JavaScript; development builds retain readable output and source maps. The asset manifest records sizes and content hashes used in cache-busting URLs. Production output has no source maps.
+`prebuild` and `predev` compile the five required workspace dependencies in parallel. Production builds use **Zuixs** to generate the `ui-` utilities present in rendered HTML plus reusable utility recipes for document elements and component states. There are no handwritten CSS source files. `zuix.config.mjs` owns the utility prefix and breakpoints. **@zeruxjs/typescript** bundles browser modules and minifies CSS/JavaScript; development builds retain readable output and source maps. The asset manifest records sizes and content hashes used in cache-busting URLs. Production output has no source maps.
 
 **@zeruxjs/performance/navigation** prefetches public documentation pages after hover or keyboard focus. Supporting browsers receive speculation prefetch rules; other browsers receive link prefetch hints. There is no prerendering. Hints are bounded per document and exclude external URLs, query strings, downloads, current-page anchors and slow/data-saving connections. Browsers decide whether to honor hints. Ordinary links work without JavaScript.
 
@@ -207,3 +207,5 @@ node apps/zerux-docs/scripts/browser-check.mjs
 ```
 
 The native browser fixture uses Chrome CDP pipes and serves generated files through request interception; all external requests are denied. It checks desktop/mobile overflow, light/dark palette, six tabs, headings, no-JavaScript reading and keyboard search. Browser profiles/processes are owned and removed on exit. `CHROME_BIN` chooses a trusted installed executable; `DOCS_SCREENSHOTS` optionally writes local verification images outside the app. Chrome 156 Linux was exercised in this task; other engines and assistive technologies were not. Never label an injected provider fixture or a static export as production integration acceptance.
+
+Structured metadata uses `@zeruxjs/security/encoding` to serialize JSON-LD independently from article HTML. Script elements have fixed local module URLs; content cannot supply executable scripts. The dependency is included in prebuild/predev for clean checkouts.

@@ -146,9 +146,13 @@ The reviewed Gitleaks exceptions in root `.gitleaks.toml` apply only to exact RF
 6238/durable-test constants in named fixtures, or documented SHA-256 content-hash
 entries in generated docs manifests. They are not general key/path exclusions.
 Default detection remains enabled; a synthetic new credential in the same fixture
-still fails. Git history is not rewritten. Semgrep retains its audit rules; the
-reviewed document-renderer annotations cover escaped structural fragments and
-script-safe JSON-LD, with a script-termination regression exercised locally.
+still fails. Git history is not rewritten. Semgrep retains its audit rules without document-renderer suppression annotations.
+The renderer separates fixed script elements from article fragments and uses the
+security package JSON script encoder, with script-termination regression tests.
+
+PR scans update the pull-request ref, not the source branch dashboard. To refresh
+a branch dashboard explicitly, run `gh workflow run security.yml --ref <branch>`
+and select the same branch in Code scanning after the run finishes.
 
 All external Actions are pinned to verified upstream commits. The copied
 privileged `workflow_run` reporter referenced a missing Python implementation and
