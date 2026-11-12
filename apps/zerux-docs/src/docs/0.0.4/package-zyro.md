@@ -28,6 +28,7 @@ const scope = createZyroSubscriptionScope();
 scope.observe(count, value => console.log(value));
 state.batch(() => { state.set({ count: 1 }); state.set({ count: 2 }); });
 scope.destroy();
+state.destroy();
 ```
 
 Selected/combined observables keep stable snapshots for external-store consumers. A scope owns subscriptions and drains all disposers even when one throws. Calling destroy repeatedly is safe.
@@ -154,3 +155,31 @@ An explicit ownership boundary for Zyro-style observable subscriptions.
 | `add` | `()=>void` | No |
 | `destroy` | `void` | No |
 | `destroyed` | `boolean` | No |
+
+## Snapshot and cleanup semantics
+
+Observable values are borrowed references. `Object.is` suppresses same-identity
+writes, so mutating a stored object in place does not notify observers. A function
+passed to `set` is an updater; wrap a function-valued replacement in an updater
+that returns it. `batch` coalesces synchronous notifications, flushes when its
+callback exits and does not roll back writes after an exception or span `await`.
+Listener and selector callbacks are trusted synchronous code; no CPU deadline or
+reentrant-notification count limit is implied for the core observable.
+
+`mapObservable`, `combineObservables`, `toExternalStore` and `fromExternalStore`
+borrow their inputs. Their creation does not own a persistent subscription, but
+snapshot projections can read and execute selectors immediately. Each subsequent
+subscription returns its own disposer. The legacy combined subscription registers
+sources in order without universal partial-registration rollback; a throwing
+source registration must clean its own partial work. Its returned cleanup invokes
+source disposers in order, so a throwing disposer can prevent later cleanup.
+`awaitObservable` likewise expects well-behaved source cleanup. Use trusted sources
+with coherent synchronous snapshots and nonthrowing unsubscribe functions.
+
+Subscription scopes and renderer bridges provide stronger owned cleanup: they
+attempt every registered disposer and aggregate failures. They fence callbacks
+before releasing registrations. They cannot recover an undisclosed handle when a
+custom source throws before returning its disposer. Destroying a source clears its
+listeners and prevents future writes; it does not erase objects retained by the
+host or make their contents public-safe. Keep sources scoped to an authorized
+request, tenant or mount, and destroy owned sources separately from borrowed views.

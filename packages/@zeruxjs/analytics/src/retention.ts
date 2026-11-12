@@ -1,90 +1,238 @@
-import type {AnalyticsConnection} from './types.js';
+import type { AnalyticsConnection } from './types.js';
 
 /** Bounded site-scoped, keyset-paged purge. Rerun from the beginning to catch late historical writes. */
 export interface AnalyticsRetentionQuery {
   /** Nonempty tenant site. A global all-sites purge is deliberately unsupported. */
-  site:string;
+  site: string;
   /** Delete only events strictly before this UTC millisecond timestamp. At least one day old. */
-  before:number;
-  cursor?:string;
-  limit?:number;
+  before: number;
+  /** Optional last scanned event ID for an exclusive keyset continuation. */
+  cursor?: string;
+  /** Source page size, default 100 and maximum 100. */
+  limit?: number;
   /** Defaults to true. Explicit false and application approval required to delete. */
-  dryRun?:boolean;
+  dryRun?: boolean;
   /** Required for destructive purges when numericFields are no longer configured.
    * 'absent' is an explicit attestation that no prior sidecar table contains this site's facts. */
-  numericSidecar?:'present'|'absent';
+  numericSidecar?: 'present' | 'absent';
 }
 export interface AnalyticsRetentionResult {
-  scanned:number;deleted:number;deletedNumericFacts:number;
-  nextCursor:string|null;hasMore:boolean;dryRun:boolean;
+  /** Source identifiers examined in this page. */
+  scanned: number;
+  /** Reported source deletions in this page. */
+  deleted: number;
+  /** Confirmed matching sidecar deletions. */
+  deletedNumericFacts: number;
+  /** Last scanned ID when another page exists; otherwise null. */
+  nextCursor: string | null;
+  /** Whether the bounded read observed a lookahead row. */
+  hasMore: boolean;
+  /** Whether this receipt describes preview-only execution. */
+  dryRun: boolean;
   /** Scanned records may have concurrent inserts; never describes a point-in-time snapshot. */
-  coverage:'bounded-keyset';
+  coverage: 'bounded-keyset';
 }
-const eventId=/^[A-Za-z0-9_-]{1,64}$/;
-/** Explicit site + cutoff required, avoids full-table deletion on malformed options. */
-export function validateRetentionQuery(query:AnalyticsRetentionQuery):void {
-  // eslint-disable-next-line no-control-regex -- Intentionally matches control characters for validation or output sanitization.
-  if(!query||typeof query.site!=='string'||query.site.length<1||query.site.length>200||/[\x00-\x1f]/.test(query.site))throw new TypeError('Retention requires a valid tenant site');
-  if(!Number.isSafeInteger(query.before)||query.before<0||query.before>Date.now()-86400000)throw new RangeError('Retention cutoff must be at least one day old');
-  if(query.cursor!==undefined&&!eventId.test(query.cursor))throw new TypeError('Invalid retention cursor');
-  const limit=query.limit??100;
-  if(!Number.isSafeInteger(limit)||limit<1||limit>100)throw new RangeError('Retention page size must be between 1 and 100');
-  if(query.numericSidecar!==undefined&&!['present','absent'].includes(query.numericSidecar))throw new TypeError('Invalid sidecar retention policy');
+/** Conservative persisted identifier grammar required before scoped deletion. */
+const eventId = /^[A-Za-z0-9_-]{1,64}$/;
+/** Require an explicit site, old cutoff and bounded page before any retention work.
+ * @param {AnalyticsRetentionQuery} query - Administrative request; this validates syntax, not host approval.
+ * @returns {void} Invalid scope, cutoff, cursor or page limits throw.
+ */
+export function validateRetentionQuery(query: AnalyticsRetentionQuery): void {
+  if (
+    !query ||
+    typeof query.site !== 'string' ||
+    query.site.length < 1 ||
+    query.site.length > 200 ||
+    // eslint-disable-next-line no-control-regex -- Reject controls in a required tenant site.
+    /[\x00-\x1f]/.test(query.site)
+  ) {
+    throw new TypeError('Retention requires a valid tenant site');
+  }
+  if (
+    !Number.isSafeInteger(query.before) ||
+    query.before < 0 ||
+    query.before > Date.now() - 86400000
+  ) {
+    throw new RangeError('Retention cutoff must be at least one day old');
+  }
+  if (query.cursor !== undefined && !eventId.test(query.cursor)) {
+    throw new TypeError('Invalid retention cursor');
+  }
+  /** Source page limit, default 100 with a maximum of 100. */
+  const limit = query.limit ?? 100;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+    throw new RangeError('Retention page size must be between 1 and 100');
+  }
+  if (
+    query.numericSidecar !== undefined &&
+    !['present', 'absent'].includes(query.numericSidecar)
+  ) {
+    throw new TypeError('Invalid sidecar retention policy');
+  }
 }
-/** Retention is an administrative operation; callers must enforce approvals and role/tenant permissions. */
-export async function purgeAnalyticsEvents(connection:AnalyticsConnection,eventTable:string,numericTable:string,
-  query:AnalyticsRetentionQuery,options:{numericTableReady:boolean}):Promise<AnalyticsRetentionResult>{
+/** Preview or delete one bounded tenant page; the host must authorize and approve destructive use. Facts are deleted first so a partial failure preserves replayable source rows.
+ * @param {AnalyticsConnection} connection - Borrowed connector; deletion capability is required only for destructive use.
+ * @param {string} eventTable - Host-validated source table.
+ * @param {string} numericTable - Host-validated historical sidecar table.
+ * @param {AnalyticsRetentionQuery} query - Explicit site/window/page policy; preview defaults true.
+ * @param {{numericTableReady: boolean}} options - Known sidecar readiness; otherwise historical sidecar policy must be explicit.
+ * @param {boolean} options.numericTableReady - Whether the configured sidecar is known ready.
+ * @returns {Promise<AnalyticsRetentionResult>} Page counters and continuation; uncertain/conflicting deletes reject without claiming atomic erasure.
+ */
+export async function purgeAnalyticsEvents(
+  connection: AnalyticsConnection,
+  eventTable: string,
+  numericTable: string,
+  query: AnalyticsRetentionQuery,
+  options: { numericTableReady: boolean }
+): Promise<AnalyticsRetentionResult> {
   validateRetentionQuery(query);
-  const limit=query.limit??100;
-  const where:[{field:string;operator:'eq';value:string},{field:string;operator:'lt';value:number},...Array<{field:string;operator:'gt';value:string}>]=[
-    {field:'site',operator:'eq',value:query.site},
-    {field:'occurred_at',operator:'lt',value:query.before}
+  /** Source page limit, default 100 with a maximum of 100. */
+  const limit = query.limit ?? 100;
+  /** Explicit site, strict age cutoff and optional exclusive keyset continuation. */
+  const where: [
+    { field: string; operator: 'eq'; value: string },
+    { field: string; operator: 'lt'; value: number },
+    ...Array<{ field: string; operator: 'gt'; value: string }>,
+  ] = [
+    { field: 'site', operator: 'eq', value: query.site },
+    { field: 'occurred_at', operator: 'lt', value: query.before },
   ];
-  if(query.cursor)where.push({field:'id',operator:'gt',value:query.cursor});
-  const read=await connection.select({table:eventTable,columns:['id'],where:{and:where},orderBy:[{by:'id',direction:'asc'}],limit:limit+1});
-  if(!read?.ok||!Array.isArray(read.rows))throw new Error('Retention event read unavailable');
-  const hasMore=read.rows.length>limit,rows=read.rows.slice(0,limit) as Array<{id:unknown}>;
-  if(rows.some(row=>typeof row.id!=='string'||!eventId.test(row.id)))throw new Error('Unsafe persisted event identifier');
-  const dryRun=query.dryRun!==false;
-  if(!dryRun&&!connection.delete)throw new Error('Retention requires delete support');
-  if(!dryRun&&!options.numericTableReady&&!['present','absent'].includes(query.numericSidecar??''))throw new Error('Retention requires explicit historical numeric sidecar policy');
-  const removeFacts=options.numericTableReady||query.numericSidecar==='present';
-  let deleted=0,deletedNumericFacts=0;
-  for(const row of rows){
-    if(dryRun)continue;
-    const id=row.id as string;
-    if(removeFacts){
+  if (query.cursor) {
+    where.push({ field: 'id', operator: 'gt', value: query.cursor });
+  }
+  /** Bounded source-ID read with one lookahead row; this is not a pinned snapshot. */
+  const read = await connection.select({
+    table: eventTable,
+    columns: ['id'],
+    where: { and: where },
+    orderBy: [{ by: 'id', direction: 'asc' }],
+    limit: limit + 1,
+  });
+  if (!read?.ok || !Array.isArray(read.rows)) {
+    throw new Error('Retention event read unavailable');
+  }
+  /** Whether another source page was observed beyond the requested limit. */
+  const hasMore = read.rows.length > limit;
+  /** Validated bounded source identifiers considered for this page. */
+  const rows = read.rows.slice(0, limit) as Array<{ id: unknown }>;
+  if (rows.some((row) => typeof row.id !== 'string' || !eventId.test(row.id))) {
+    throw new Error('Unsafe persisted event identifier');
+  }
+  /** Preview is the default; only literal false permits destructive execution. */
+  const dryRun = query.dryRun !== false;
+  if (!dryRun && !connection.delete) {
+    throw new Error('Retention requires delete support');
+  }
+  if (
+    !dryRun &&
+    !options.numericTableReady &&
+    !['present', 'absent'].includes(query.numericSidecar ?? '')
+  ) {
+    throw new Error(
+      'Retention requires explicit historical numeric sidecar policy'
+    );
+  }
+  /** Historical sidecar policy; source deletion must not silently strand configured facts. */
+  const removeFacts =
+    options.numericTableReady || query.numericSidecar === 'present';
+  let deleted = 0,
+    deletedNumericFacts = 0;
+  // Scope each destructive operation by site and cutoff; preview never enters deletion.
+  for (const row of rows) {
+    if (dryRun) {
+      continue;
+    }
+    /** Validated source event identifier, always combined with tenant and age constraints. */
+    const id = row.id as string;
+    if (removeFacts) {
       // Validate numeric facts before touching them. Never use an event's ID to
       // erase another tenant's facts if the database contains corrupt duplicates.
-      const existing=await connection.select({table:numericTable,columns:['event_id','site','occurred_at'],
-        where:{field:'event_id',operator:'eq',value:id},limit:101});
-      if(!existing?.ok||!Array.isArray(existing.rows)||existing.rows.length>100||existing.rows.some(value=>{
-        const fact=value as {site?:unknown;occurred_at?:unknown};
-        const at=typeof fact.occurred_at==='string'&&/^\d+$/.test(fact.occurred_at)?Number(fact.occurred_at):fact.occurred_at;
-        return fact.site!==query.site||!Number.isSafeInteger(at)||(at as number)>=query.before;
-      }))throw new Error('Numeric retention contains conflicting tenant/date facts; source event preserved');
+      /** At most 101 sidecar references; overflow or conflicting scope preserves the source. */
+      const existing = await connection.select({
+        table: numericTable,
+        columns: ['event_id', 'site', 'occurred_at'],
+        where: { field: 'event_id', operator: 'eq', value: id },
+        limit: 101,
+      });
+      if (
+        !existing?.ok ||
+        !Array.isArray(existing.rows) ||
+        existing.rows.length > 100 ||
+        existing.rows.some((value) => {
+          /** Stored sidecar scope/time metadata checked before any delete. */
+          const fact = value as { site?: unknown; occurred_at?: unknown };
+          /** Driver timestamp normalized only from decimal digits, then checked for safe integer precision. */
+          const at =
+            typeof fact.occurred_at === 'string' &&
+            /^\d+$/.test(fact.occurred_at)
+              ? Number(fact.occurred_at)
+              : fact.occurred_at;
+          return (
+            fact.site !== query.site ||
+            !Number.isSafeInteger(at) ||
+            (at as number) >= query.before
+          );
+        })
+      ) {
+        throw new Error(
+          'Numeric retention contains conflicting tenant/date facts; source event preserved'
+        );
+      }
       // Facts first, bound by site and cutoff. A crash before source deletion
       // leaves the source event available for an idempotent page replay.
-      const facts=await connection.delete!({table:numericTable,where:{and:[
-        {field:'event_id',operator:'eq',value:id},
-        {field:'site',operator:'eq',value:query.site},
-        {field:'occurred_at',operator:'lt',value:query.before}
-      ]}});
-      if(!facts?.ok)throw new Error('Numeric retention delete failed; source event preserved');
-      const removed=facts.affectedCount??facts.rowCount;
-      if(!Number.isSafeInteger(removed)||removed!==existing.rows.length)
-        throw new Error('Numeric retention result is indeterminate; source event preserved');
-      deletedNumericFacts+=removed;
+      /** Sidecar deletion outcome; source deletion waits for a definite expected count. */
+      const facts = await connection.delete!({
+        table: numericTable,
+        where: {
+          and: [
+            { field: 'event_id', operator: 'eq', value: id },
+            { field: 'site', operator: 'eq', value: query.site },
+            { field: 'occurred_at', operator: 'lt', value: query.before },
+          ],
+        },
+      });
+      if (!facts?.ok) {
+        throw new Error(
+          'Numeric retention delete failed; source event preserved'
+        );
+      }
+      /** Exact reported sidecar count, compared with the validated pre-delete page. */
+      const removed = facts.affectedCount ?? facts.rowCount;
+      if (!Number.isSafeInteger(removed) || removed !== existing.rows.length) {
+        throw new Error(
+          'Numeric retention result is indeterminate; source event preserved'
+        );
+      }
+      deletedNumericFacts += removed;
     }
     // Scope EACH delete by both tenant and old timestamp, not by cursor alone.
-    const result=await connection.delete!({table:eventTable,where:{and:[
-      {field:'id',operator:'eq',value:id},
-      {field:'site',operator:'eq',value:query.site},
-      {field:'occurred_at',operator:'lt',value:query.before}
-    ]}});
-    if(!result?.ok)throw new Error('Event retention delete failed; replay this page from its prior cursor');
-    deleted+=(result.affectedCount??result.rowCount??0) as number;
+    /** Source deletion result for this ID, site and strict cutoff. */
+    const result = await connection.delete!({
+      table: eventTable,
+      where: {
+        and: [
+          { field: 'id', operator: 'eq', value: id },
+          { field: 'site', operator: 'eq', value: query.site },
+          { field: 'occurred_at', operator: 'lt', value: query.before },
+        ],
+      },
+    });
+    if (!result?.ok) {
+      throw new Error(
+        'Event retention delete failed; replay this page from its prior cursor'
+      );
+    }
+    deleted += (result.affectedCount ?? result.rowCount ?? 0) as number;
   }
-  return {scanned:rows.length,deleted,deletedNumericFacts,
-    nextCursor:hasMore?(rows.at(-1)?.id as string):null,hasMore,dryRun,coverage:'bounded-keyset'};
+  return {
+    scanned: rows.length,
+    deleted,
+    deletedNumericFacts,
+    nextCursor: hasMore ? (rows.at(-1)?.id as string) : null,
+    hasMore,
+    dryRun,
+    coverage: 'bounded-keyset',
+  };
 }

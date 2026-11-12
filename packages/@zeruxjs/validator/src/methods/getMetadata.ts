@@ -18,35 +18,33 @@ type Schema =
   | BaseSchema<unknown, unknown, BaseIssue<unknown>>
   | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
   | SchemaWithPipe<
-    readonly [
-      BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-      ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>>  
-        | MetadataAction<unknown, Record<string, unknown>>
-      )[],
-    ]
-  >
+      readonly [
+        BaseSchema<unknown, unknown, BaseIssue<unknown>>,
+        ...(
+          | PipeItem<any, unknown, BaseIssue<unknown>>
+          | MetadataAction<unknown, Record<string, unknown>>
+        )[],
+      ]
+    >
   | SchemaWithPipeAsync<
-    readonly [
-      (
-        | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-        | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
-      ),
-      ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>>  
-        | PipeItemAsync<any, unknown, BaseIssue<unknown>>  
-        | MetadataAction<unknown, Record<string, unknown>>
-      )[],
-    ]
-  >;
+      readonly [
+        (
+          | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+          | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
+        ),
+        ...(
+          | PipeItem<any, unknown, BaseIssue<unknown>>
+          | PipeItemAsync<any, unknown, BaseIssue<unknown>>
+          | MetadataAction<unknown, Record<string, unknown>>
+        )[],
+      ]
+    >;
 
 /**
  * Basic pipe item type.
  */
 type BasicPipeItem =
-   
   | PipeItem<any, unknown, BaseIssue<unknown>>
-   
   | PipeItemAsync<any, unknown, BaseIssue<unknown>>
   | MetadataAction<unknown, Record<string, unknown>>;
 
@@ -62,12 +60,12 @@ type RecursiveMerge<
   ...infer TPipeRest extends readonly BasicPipeItem[],
 ]
   ? TFirstItem extends
-  | SchemaWithPipe<infer TNestedPipe>
-  | SchemaWithPipeAsync<infer TNestedPipe>
-  ? RecursiveMerge<TPipeRest, RecursiveMerge<TNestedPipe, TCollectedMetadata>>
-  : TFirstItem extends MetadataAction<unknown, infer TCurrentMetadata>
-  ? RecursiveMerge<TPipeRest, Merge<TCollectedMetadata, TCurrentMetadata>>
-  : RecursiveMerge<TPipeRest, TCollectedMetadata>
+      | SchemaWithPipe<infer TNestedPipe>
+      | SchemaWithPipeAsync<infer TNestedPipe>
+    ? RecursiveMerge<TPipeRest, RecursiveMerge<TNestedPipe, TCollectedMetadata>>
+    : TFirstItem extends MetadataAction<unknown, infer TCurrentMetadata>
+      ? RecursiveMerge<TPipeRest, Merge<TCollectedMetadata, TCurrentMetadata>>
+      : RecursiveMerge<TPipeRest, TCollectedMetadata>
   : TCollectedMetadata;
 
 /**
@@ -76,18 +74,16 @@ type RecursiveMerge<
  * @beta
  */
 export type InferMetadata<TSchema extends Schema> =
-   
   BaseSchema<any, any, any> extends TSchema
-  ? Record<string, unknown>
-  :  
-  BaseSchemaAsync<any, any, any> extends TSchema
-  ? Record<string, unknown>
-  : TSchema extends
-  | SchemaWithPipe<infer TPipe>
-  | SchemaWithPipeAsync<infer TPipe>
-  ? Prettify<RecursiveMerge<TPipe>>
-  : // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  {};
+    ? Record<string, unknown>
+    : BaseSchemaAsync<any, any, any> extends TSchema
+      ? Record<string, unknown>
+      : TSchema extends
+            | SchemaWithPipe<infer TPipe>
+            | SchemaWithPipeAsync<infer TPipe>
+        ? Prettify<RecursiveMerge<TPipe>>
+        : // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+          {};
 
 /**
  * Returns the metadata of a schema.
@@ -95,9 +91,9 @@ export type InferMetadata<TSchema extends Schema> =
  * If multiple metadata are defined, it shallowly merges them using depth-first
  * search. If no metadata is defined, an empty object is returned.
  *
- * @param schema Schema to get the metadata from.
+ * @param {TSchema} schema - Borrowed trusted graph; metadata objects are host code/data and their getters may run during Object.assign.
  *
- * @returns The metadata, if any.
+ * @returns {InferMetadata<TSchema>} Fresh shallow result with later depth-first entries overriding earlier keys; nested references remain borrowed, unvalidated and unescaped.
  *
  * @beta
  */
@@ -105,9 +101,15 @@ export type InferMetadata<TSchema extends Schema> =
 export function getMetadata<const TSchema extends Schema>(
   schema: TSchema
 ): InferMetadata<TSchema> {
+  /** Fresh top-level accumulation target; this is not a sanitizer or safe ingestion API for untrusted objects. */
   const result = {};
+  /** Merge nested pipeline metadata in source order without invoking schema validation.
+   * @param {Schema} schema - Current borrowed trusted schema node.
+   * @returns {void} Mutates only the local accumulation target; source object getters remain trusted host behavior.
+   */
   function depthFirstMerge(schema: Schema): void {
     if ('pipe' in schema) {
+      // Resolve nested metadata at its original pipeline position so later records keep precedence.
       for (const item of schema.pipe) {
         if (item.kind === 'schema' && 'pipe' in item) {
           depthFirstMerge(item);

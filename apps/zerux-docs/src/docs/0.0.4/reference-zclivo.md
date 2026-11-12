@@ -63,7 +63,7 @@ Use installed public declarations and validate untrusted runtime values separate
 
 ## Failures, ownership and production use
 
-Use the dispatch result instead of calling process.exit from reusable handlers. Unknown commands/invalid flags are distinct from a successful command; preserve nonzero status in automation. Async servers may retain handles after dispatch returns. Test help, aliases, repeated flags, wrong choices, unknown plugin entry paths and plugin exceptions. The reserved create packages do not become complete project generators merely because this toolkit contains scaffolding primitives.
+Use the dispatch result instead of calling process.exit from reusable handlers. Unknown commands/invalid flags are distinct from a successful command; preserve nonzero status in automation. A long-running handler must keep its Promise pending for its resource lifetime; returning early ends invocation ownership and starts cleanup. Test help, aliases, repeated flags, wrong choices, unknown plugin entry paths and plugin exceptions. The separate create-zerux-js, create-zyro-app and create-zenix-js packages own their verified templates and prerequisites; zclivo itself supplies only the minimal starter and shared safe engine.
 
 ## Verify the integration
 
@@ -75,23 +75,28 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 | Option | Accepted TypeScript value | Required | Meaning |
 | --- | --- | --- | --- |
-| `rea` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `description` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `help` | `{arg:string;'its description':string}[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `docs` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `example` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `aliases` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `usage` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `hidden` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `flags` | `OptionSchema` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `allowUnknownFlags` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `rea` | `boolean` | No | Retained compatibility flag; it does not add a dispatch policy. |
+| `description` | `string` | No | Help display text, terminal-sanitized when rendered. |
+| `help` | `{arg:string;'its description':string}[]` | No | Legacy argument descriptions; display text only. |
+| `docs` | `string` | No | Authored documentation returned by --docs; never evaluated. |
+| `example` | `string` | No | Authored example display text; never executed. |
+| `aliases` | `string[]` | No | Alternative command names validated against canonical/alias collisions. |
+| `usage` | `string` | No | Authored usage suffix for command help. |
+| `hidden` | `boolean` | No | Hide from listings/completion; this does not authorize or deny dispatch. |
+| `flags` | `OptionSchema` | No | Strict scalar option schema validated at registration and dispatch. |
+| `allowUnknownFlags` | `boolean` | No | Explicitly retain undeclared flags under a schema instead of rejecting them. |
 
 ### StarterOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `language` | `StarterLanguage` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `dryRun` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option | Type | Meaning |
+| --- | --- | --- |
+| `language` | `StarterLanguage` | JavaScript or TypeScript supported by the minimal template. |
+| `dryRun` | `boolean` | Validate and list files without writing the destination. |
+| `name` | `string` | Portable display/package name; defaults from the destination. |
+| `port` | `number` | Integer 1–65535 configuration, never a port reservation. |
+| `renderer` | `string` | Only `none` for this built-in minimal template. |
+| `mode` | `string` | Only `minimal` for this built-in template. |
+| `signal` | `AbortSignal` | Cooperative write cancellation; use the async writer to observe signals between files. |
 
 ## Predictable validation and lifecycle
 
@@ -191,3 +196,26 @@ commands never install dependencies or start generated code. New directories are
 private; whole-directory crash atomicity and hostile same-account filesystem races
 are not claimed. See the package README and `examples/generator.mjs` for ownership,
 runtime floors, public APIs and checks.
+
+## Resource handles and display boundaries
+
+`CommandRegistry` registration is inert. A returned transaction disposer owns only
+its staged additions; it does not unload modules or roll back arbitrary plugin
+side effects. `loadPlugins` and `loadConfiguredPlugins` return owned records, so
+retain the array and await each `dispose()` at the host lifecycle boundary.
+`createTerminalGeneratorPrompt` is a lazy close owner; shared command orchestration
+closes it when the invocation ends. Inert generators and parsed argument values
+have no invented close method.
+
+Terminal sanitization removes control sequences, not secrets. `color` deliberately
+emits ANSI styles and stringifies application values without sanitizing their
+contents. Keep raw error causes, input arguments and cleanup failures in private
+tool diagnostics. Help visibility is not authorization, and a command schema does
+not authorize the operation its trusted handler performs.
+
+Planning and snapshot digests describe bytes, not permission or authorship. A plan
+must come from this package instance before its writers accept it; importing a
+serialized review document does not authorize writes. Template code is explicit
+trusted server tooling, not a browser module or a safe place to evaluate saved
+content. The package's lint boundaries detect direct static misuse only; they do
+not prove eventual disposal, sandbox code or certify an authorization policy.

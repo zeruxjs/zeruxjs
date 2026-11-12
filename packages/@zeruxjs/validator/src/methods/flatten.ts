@@ -13,9 +13,9 @@ import { getDotPath } from '../utils/index.js';
  */
 export type FlatErrors<
   TSchema extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
-  | undefined,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
+    | undefined,
 > = Prettify<{
   /**
    * The root errors.
@@ -36,10 +36,10 @@ export type FlatErrors<
       Partial<
         Record<
           TSchema extends
-          | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-          | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
-          ? IssueDotPath<TSchema>
-          : string,
+            | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+            | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
+            ? IssueDotPath<TSchema>
+            : string,
           [string, ...string[]]
         >
       >
@@ -56,34 +56,39 @@ export type FlatErrors<
 }>;
 
 /**
- * Flatten the error messages of issues.
+ * Group private raw issue messages into root, convertible dot-path and other categories; this is not a public redaction boundary.
  *
- * @param issues The list of issues.
+ * @param {[BaseIssue<unknown>, ...BaseIssue<unknown>[]]} issues - Nonempty private raw issue list.
  *
- * @returns A flat error object.
+ * @returns {FlatErrors<undefined>} Private grouped messages; custom text and dynamic paths remain present.
  */
 export function flatten(
   issues: [BaseIssue<unknown>, ...BaseIssue<unknown>[]]
 ): FlatErrors<undefined>;
 
 /**
- * Flatten the error messages of issues.
+ * Group private raw issue messages into root, convertible dot-path and other categories; this is not a public redaction boundary.
  *
- * @param issues The list of issues.
+ * @param {[InferIssue<TSchema>, ...InferIssue<TSchema>[]]} issues - Nonempty private schema-specific issue list.
  *
- * @returns A flat error object.
+ * @returns {FlatErrors<TSchema>} Typed private message grouping; not sanitized HTTP feedback.
  */
 export function flatten<
   TSchema extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(issues: [InferIssue<TSchema>, ...InferIssue<TSchema>[]]): FlatErrors<TSchema>;
 
+/** Group raw diagnostic messages without altering the retained issue objects.
+ * @param {[BaseIssue<unknown>, ...BaseIssue<unknown>[]]} issues - Nonempty private diagnostic list.
+ * @returns {FlatErrors<undefined>} Raw root/path/other messages; do not expose without an explicit privacy policy.
+ */
 // @__NO_SIDE_EFFECTS__
 export function flatten(
   issues: [BaseIssue<unknown>, ...BaseIssue<unknown>[]]
 ): FlatErrors<undefined> {
   // Create flat errors object
+  /** Private grouped message accumulator; this compatibility shape is not a redaction format. */
   const flatErrors: FlatErrors<undefined> = {};
 
   // Add message of each issue to flat errors object
@@ -91,6 +96,7 @@ export function flatten(
     // If issue has path, add message to nested or other errors
     if (issue.path) {
       // Get dot path from issue
+      /** Raw convertible diagnostic path; dynamic keys are preserved in this compatibility formatter. */
       const dotPath = getDotPath(issue);
 
       // If path has valid keys, add message to nested errors

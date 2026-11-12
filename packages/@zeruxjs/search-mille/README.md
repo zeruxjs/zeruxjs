@@ -136,7 +136,7 @@ It does not close borrowed clients or the global Fetch pool. The official SDK ha
 no client-close API: the adapter owns request scopes, not a dedicated socket pool.
 Host-injected fetch/dispatchers remain borrowed. Deadlines default to 5000 ms
 (1–60000), pending operations to 32 (1–128). A wait occupies one slot including
-poll delays. Noncooperative callbacks can delay direct calls/close; the shared
+poll delays. Closing waits for that operation’s actual settlement before zeroing this wrapper’s key copy; it never zeroes the host’s original key buffer. Noncooperative callbacks can delay direct calls/close; the shared
 manager separately bounds caller observation while retaining native ownership.
 
 ## Checks and live prerequisites

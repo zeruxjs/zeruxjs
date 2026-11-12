@@ -76,7 +76,6 @@ Close only resources owned by this instance. A transaction requires one native c
 - Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
 - Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
 
-
 ## Pinned clients, budgets and cleanup
 
 Native-compatible pools now expose the shared pinned transaction adapter. A callback owns one client through BEGIN, all statements, COMMIT/ROLLBACK and verified restoration of statement/lock timeout settings. Callback SQL uses that client, not pool.query. Query-only injected clients/executors preserve the legacy interface and remain caller-owned, without transaction/native cancellation capability. Nested transactions and automatic retries are unsupported.
@@ -84,3 +83,7 @@ Native-compatible pools now expose the shared pinned transaction adapter. A call
 Acquisition and execution have separate bounded phases and connector-local saturation counters. Cancelled/timed-out acquisitions retain their slot until connect settles; late clients are destroyed. Server statement_timeout/lock_timeout and an independent client watchdog bound query work. In-flight AbortSignal cancellation uses public client.end destructively, waits for native settlement and discards the client; no unsupported pg signal option/private protocol is assumed. Failed rollback/reset cannot return a healthy client. Write outcome and rollback confirmation can be indeterminate after disconnect/COMMIT failure.
 
 The package README contains a public-import example, exact limits, redacted pool status fields and owned/injected lifecycle rules. No credentials or SQL values enter pool metrics, and global pg type parsers are unchanged. Live acceptance requires ZX_TEST_PG_URL pointing to a dedicated disposable database; injected fixtures do not prove native transaction, cancellation or numeric/time precision behavior.
+
+## Source ownership
+
+Pool policy and owned/borrowed transport selection live in `pool.ts`; native dialect/placeholders live in `dialect.ts`. `session.ts` owns actual client settlement, destructive cancellation and verified settings restoration; `index.ts` binds structured compiler operations and pins to that owner. Trusted native/executor access is not sandboxed and returned records/errors remain private until sanitized. The package README source map separates deterministic cleanup fixtures, lazy-pool checks and configured live deployment acceptance.

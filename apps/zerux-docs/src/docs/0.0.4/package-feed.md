@@ -8,6 +8,9 @@
     "packages/@zeruxjs/feed/README.md",
     "packages/@zeruxjs/feed/package.json",
     "packages/@zeruxjs/feed/src/types.ts",
+    "packages/@zeruxjs/feed/src/utils.ts",
+    "packages/@zeruxjs/feed/src/http.ts",
+    "packages/@zeruxjs/feed/src/fetch.ts",
     "packages/@zeruxjs/feed/examples/publication.ts"
   ],
   "related": [
@@ -25,7 +28,7 @@ import { createRssFeed } from '@zeruxjs/feed';
 const xml = createRssFeed({ title: 'Updates', description: 'Product news',
   siteUrl: 'https://example.com', feedUrl: 'https://example.com/feed.xml',
   items: [{ id: 'release-1', title: 'First release',
-    url: 'https://example.com/releases/1', date: new Date() }] });
+    url: 'https://example.com/releases/1', date: '2025-01-02' }] });
 ```
 
 Equivalent generators cover Atom 1.0 and JSON Feed 1.1. URLs must be credential-free HTTP(S); dates and enclosure sizes are validated. Keep entry IDs stable as content changes.
@@ -44,7 +47,7 @@ Only publish content intended for all feed readers. Personalized feeds require a
 npm install @zeruxjs/feed@0.0.4
 ```
 
-There is no automatic `feed` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
+There is no automatic `feed` startup service in `zerux.config.js` for this package. Import its public APIs in the owning Node application and retain any Fetch handler for awaited close. There is no browser controller. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
 
 ## A practical integration workflow
 
@@ -80,33 +83,46 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### FeedOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `title` | `string` | No |
-| `description` | `string` | No |
-| `siteUrl` | `string` | No |
-| `feedUrl` | `string` | Yes |
-| `language` | `string` | Yes |
-| `copyright` | `string` | Yes |
-| `image` | `string` | Yes |
-| `updated` | `string\|Date` | Yes |
-| `items` | `FeedItem[]` | No |
+| Field         | Accepted type/value                              | Optional |
+| ------------- | ------------------------------------------------ | -------- |
+| `title`       | `string`                                         | No       |
+| `description` | `string`                                         | No       |
+| `siteUrl`     | `string`                                         | No       |
+| `feedUrl`     | `string`                                         | Yes      |
+| `id`          | Authored feed identity, at most 2048 units       | Yes      |
+| `authors`     | `FeedAuthor[]`, at most 32                       | Yes      |
+| `tags`        | `string[]`, at most 100                          | Yes      |
+| `categories`  | `FeedCategory[]`, at most 100                    | Yes      |
+| `strict`      | Atom author/IRI/date checks; default false       | Yes      |
+| `maxItems`    | Integer 1–10000; direct-generator default 10000  | Yes      |
+| `maxBytes`    | UTF-8 output bytes 256–67108864; default 8388608 | Yes      |
+| `language`    | `string`                                         | Yes      |
+| `copyright`   | `string`                                         | Yes      |
+| `image`       | `string`                                         | Yes      |
+| `updated`     | `string\|Date`                                   | Yes      |
+| `items`       | `FeedItem[]`                                     | No       |
 
 ### FeedItem
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `title` | `string` | No |
-| `url` | `string` | No |
-| `description` | `string` | Yes |
-| `contentHtml` | `string` | Yes |
-| `date` | `Date \| string` | Yes |
-| `updated` | `Date \| string` | Yes |
-| `author` | `string` | Yes |
-| `tags` | `string[]` | Yes |
-| `image` | `string` | Yes |
-| `enclosure` | `{url:string;type:string;length:number}` | Yes |
+| Field         | Accepted type/value                             | Optional |
+| ------------- | ----------------------------------------------- | -------- |
+| `id`          | `string`                                        | No       |
+| `atomId`      | Separate authored Atom identity                 | Yes      |
+| `contentText` | Plain text, at most 1048576 units               | Yes      |
+| `authors`     | `FeedAuthor[]`, at most 32                      | Yes      |
+| `categories`  | `FeedCategory[]`, at most 100                   | Yes      |
+| `attachments` | `FeedAttachment[]`, at most 16; RSS at most one | Yes      |
+| `language`    | Canonicalized BCP 47 tag, at most 64 units      | Yes      |
+| `title`       | `string`                                        | No       |
+| `url`         | `string`                                        | No       |
+| `description` | `string`                                        | Yes      |
+| `contentHtml` | `string`                                        | Yes      |
+| `date`        | `Date \| string`                                | Yes      |
+| `updated`     | `Date \| string`                                | Yes      |
+| `author`      | `string`                                        | Yes      |
+| `tags`        | `string[]`                                      | Yes      |
+| `image`       | `string`                                        | Yes      |
+| `enclosure`   | `{url:string;type:string;length:number}`        | Yes      |
 
 ## Choose deliberate format coverage
 
@@ -134,3 +150,50 @@ actual producer settlement owns capacity and borrowed resources remain with the
 host. This public helper does not authenticate a tenant or personalize a feed.
 The public-import example covers strict authored publication; parser/HTTP fixtures
 are separate from live reader or HTML-sanitizer qualification.
+
+## Source and cleanup ownership
+
+The Node-oriented root validates/serializes public content with explicit UTF-16 string and UTF-8 byte budgets. Selection helpers may borrow existing records; `normalizeFeed` produces a detached mutable candidate. Encoding XML delimiters is separate from Unicode validation and HTML sanitization. Raw JSON must not be inserted into an HTML script block. Host objects/producers are trusted code, not a sandbox boundary.
+
+The low-level `createFeedResponse` always returns public cache headers. Only the explicit `/fetch` owner performs negotiation, validators, defensive credential-bearing no-store responses and cooperative producer cancellation. Its timer cannot preempt synchronous serialization; timed-out work retains capacity until it actually settles. Await close without expecting it to close borrowed databases or sockets. The [public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/feed/examples/publication.ts) uses stable authored dates and owns no remote downloads.
+
+### FeedAuthor
+
+| Field    | Accepted type/value                  | Optional |
+| -------- | ------------------------------------ | -------- |
+| `name`   | `string`, at most 512 UTF-16 units   | No       |
+| `url`    | Absolute credential-free HTTP(S) URL | Yes      |
+| `email`  | Validated mailbox, at most 254 units | Yes      |
+| `avatar` | HTTP(S) URL, JSON Feed only          | Yes      |
+
+### FeedCategory
+
+| Field    | Accepted type/value                    | Optional |
+| -------- | -------------------------------------- | -------- |
+| `term`   | `string`, at most 512 units            | No       |
+| `scheme` | HTTP(S) taxonomy URL                   | Yes      |
+| `label`  | `string`, at most 512 units; Atom only | Yes      |
+
+### FeedAttachment
+
+| Field      | Accepted type/value                         | Optional |
+| ---------- | ------------------------------------------- | -------- |
+| `url`      | Absolute credential-free HTTP(S) URL        | No       |
+| `type`     | Bare MIME type/subtype, at most 128 units   | No       |
+| `length`   | Safe nonnegative integer bytes              | No       |
+| `title`    | `string`, at most 512 units                 | Yes      |
+| `duration` | Finite seconds, 0–315360000; JSON Feed only | Yes      |
+
+### FeedFetchOptions
+
+| Field          | Accepted type/value                                                                           | Optional |
+| -------------- | --------------------------------------------------------------------------------------------- | -------- |
+| `feed`         | `FeedOptions` or trusted `(context: {signal: AbortSignal}) => FeedOptions` / Promise producer | No       |
+| `format`       | `rss`, `atom`, `json`, `negotiate`; default `rss`                                             | Yes      |
+| `cacheSeconds` | Integer 0–31536000 seconds; default 300                                                       | Yes      |
+| `maxItems`     | Selected prefix 1–10000; default 1000                                                         | Yes      |
+| `maxBytes`     | Returned UTF-8 bytes 256–67108864; default 8388608                                            | Yes      |
+| `timeoutMs`    | Cooperative observation 1–60000ms; default 5000                                               | Yes      |
+| `maxPending`   | Actual unsettled jobs 1–128 per handler; default 8                                            | Yes      |
+
+The handler also exposes `status()` with immutable `closed`/`pending` counters and an idempotent awaited `close()`. These are process-local lifecycle facts, not distributed coordination, durable storage or reader interoperability guarantees.

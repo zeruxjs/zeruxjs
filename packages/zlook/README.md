@@ -186,3 +186,17 @@ npm-installed declaration consumer using shared TypeScript tooling. No live prov
 or browser is needed. Windows/macOS/network filesystems and real kernel-event-loss
 behavior need platform-specific verification; mocked native failure proves only the
 polling fallback path. Full scan costs O(entries) and no performance gain is claimed.
+
+### Reading and maintaining the watcher
+
+`src/scan.ts` owns process-local scan admission and complete candidate snapshots.
+`src/watcher.ts` owns shared root/settings identities, timers and native handles;
+subscriber ignore policies are applied after scanning so they cannot hide files
+from another subscriber. Failed scans keep the last complete baseline. Metadata
+comparison uses size and modification time, not a content hash.
+
+Use `watchDirectory` when teardown must be awaited: call `close()` and then await
+`closed`. This drains owned startup/scans/native handles, but does not await promises
+returned by consumer callbacks; the consumer must cancel and drain that work. The
+legacy `startWatcher` returns a stop function only, and an omitted callback remains
+an inert compatibility call. Retain that disposer rather than inventing a handle API.

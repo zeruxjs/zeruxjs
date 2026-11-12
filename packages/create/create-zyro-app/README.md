@@ -48,3 +48,38 @@ See [the inert example](examples/plan.mjs). The generator and `/templates` expor
 Run `npm run build --workspace=create-zyro-app` and `node --test packages/create/create-zyro-app/test/consumer.test.mjs` from the repository. Fixtures install local workspace packages offline into temporary consumers, build all eight mode/language combinations twice, typecheck, serve `/demo`, exercise DOM/hydration in jsdom and clean owned servers/files. These are not clean-registry installation or real-browser acceptance. Production hosting, TLS, assistive technology and other browser engines remain unqualified.
 
 License: MIT OR Apache-2.0.
+
+## Planning, build and preview ownership
+
+```js
+import { planZyroApp } from 'create-zyro-app';
+
+const plan = planZyroApp({
+  name: 'demo',
+  destination: './demo',
+  mode: 'static',
+  language: 'javascript',
+  basePath: '/demo',
+  port: 3000,
+});
+console.log(Object.keys(plan.files));
+```
+
+Planning reads fixed authored assets as inert text. Only explicit generation writes
+them, and only subsequent operator commands execute a build or start preview.
+The reusable CLI creates no process listeners on import; its executable owns its
+invocation's SIGINT/SIGTERM handlers. Public mount parsing delegates general
+argument validation to zclivo, rejects repeated base-path options and leaves
+arguments after `--` uninterpreted as creator switches.
+
+The generated build owns an exclusive private lock, temporary candidate files and
+previous-output verification. It checks manifests/hashes before replacing output;
+a failed compilation does not authorize deleting an edited or unowned output tree.
+The preview reads only manifest-listed bounded regular files, closes file
+descriptors on failure and binds loopback. Its shutdown handlers own that preview
+alone. These checks do not sandbox edited build scripts or qualify production
+hosting, hostile same-account filesystem races or crash recovery.
+
+Fixture tooling resolves the explicitly installed TypeScript package rather than
+assuming npm kept a nested dependency directory. The generated browser graph and
+all existing public source/fixture literals remain unchanged by that test-path fix.

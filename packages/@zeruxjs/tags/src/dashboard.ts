@@ -1,14 +1,54 @@
-export function dashboard(prefix:string,settings:{apiBaseUrl?:string;csrfToken?:string;styleHref?:string;scriptSrc?:string}={}):string{
-  const api=JSON.stringify((settings.apiBaseUrl??prefix+'/admin')+'/api').replace(/</g,'\\u003c'),csrf=JSON.stringify(settings.csrfToken??'').replace(/</g,'\\u003c');
-  const attr=(value:string)=>value.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;');
-  const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="zerux-tags-api" content="${attr(settings.apiBaseUrl??prefix+'/admin')}"><meta name="zerux-tags-csrf" content="${attr(settings.csrfToken??'')}"><title>Zerux Tags — Container Manager</title><style>
+/** Generate the optional authored admin HTML using escaped host settings. This low-level serializer grants no permissions; runtime owns fresh authorization, CSRF, exact CSP hashes and private responses.
+ * @param {string} prefix - Validated host telemetry prefix used only for compatible default API resolution.
+ * @param {{apiBaseUrl?:string;csrfToken?:string;styleHref?:string;scriptSrc?:string}} settings - Explicit validated API/token/asset references; module asset replaces built-in inline UI code.
+ * @param {string} settings.apiBaseUrl - Optional explicit API location, default prefix/admin.
+ * @param {string} settings.csrfToken - Optional session-bound host token for protected writes.
+ * @param {string} settings.styleHref - Optional host-validated stylesheet URL.
+ * @param {string} settings.scriptSrc - Optional host-validated module replacing inline client.
+ * @returns {string} Serialized admin HTML; no listener, fetch, asset compiler or server execution starts here.
+ */
+export function dashboard(
+  prefix: string,
+  settings: {
+    /** Explicit admin API base independent of UI asset paths. */
+    apiBaseUrl?: string;
+    /** Host-issued authenticated session token; never a destination/provider secret. */
+    csrfToken?: string;
+    /** Optional validated host-served stylesheet supplementing built-in styles. */
+    styleHref?: string;
+    /** Optional validated host module replacing built-in inline script. */
+    scriptSrc?: string;
+  } = {}
+): string {
+  /** Script-context encoded fixed administrative API URL. */
+  const api = JSON.stringify(
+    (settings.apiBaseUrl ?? prefix + '/admin') + '/api'
+  ).replace(/</g, '\\u003c');
+  /** Script-context encoded host-issued session CSRF token, not authorization by itself. */
+  const csrf = JSON.stringify(settings.csrfToken ?? '').replace(
+    /</g,
+    '\\u003c'
+  );
+  /** Encode a quoted HTML attribute value, independently of script JSON policy.
+   * @param {string} value - Validated authored setting rendered in an attribute.
+   * @returns {string} HTML-escaped attribute content; not a URL permission grant.
+   */
+  const attr = (value: string) =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/'/g, '&#39;');
+  /** Authored static UI shell plus script-safe settings; saved container values use text/native inputs. */
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="zerux-tags-api" content="${attr(settings.apiBaseUrl ?? prefix + '/admin')}"><meta name="zerux-tags-csrf" content="${attr(settings.csrfToken ?? '')}"><title>Zerux Tags — Container Manager</title><style>
 :root{--tags-border:#8885;--tags-radius:10px;--tags-focus:#2563eb;--tags-gap:12px;color-scheme:light dark;font:15px system-ui,sans-serif}body{max-width:1000px;margin:0 auto;padding:22px}h1{margin-bottom:3px}p{color:#777}
 nav{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}button{cursor:pointer;border:1px solid #888;border-radius:6px;padding:9px 14px;background:transparent;color:inherit}button:hover{opacity:.8}
 section{border:1px solid var(--tags-border);padding:16px;border-radius:var(--tags-radius);margin:12px 0}label{display:block;margin:8px 0}input,select,textarea{padding:10px;box-sizing:border-box;width:100%;border:1px solid #8887;border-radius:6px;background:transparent;color:inherit}textarea{min-height:160px;font:13px monospace}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:var(--tags-gap)}.help{font-size:13px}pre{white-space:pre-wrap;overflow-wrap:anywhere}strong{color:inherit}.small{font-size:12px}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--tags-focus);outline-offset:3px}
-</style>${settings.styleHref?'<link rel="stylesheet" href="'+attr(settings.styleHref)+'">':''}</head><body><h1>Zerux Tags</h1><p>Versioned triggers, tags and variables. All destination credentials stay on the server.</p>
+</style>${settings.styleHref ? '<link rel="stylesheet" href="' + attr(settings.styleHref) + '">' : ''}</head><body><h1>Zerux Tags</h1><p>Versioned triggers, tags and variables. All destination credentials stay on the server.</p>
 <nav><button id="reload">Reload</button><button id="addTrigger">Add trigger</button><button id="addVariable">Add variable</button><button id="addTag">Add tag</button><button id="save">Save draft</button><button id="publish">Publish draft</button><button id="test">Dry-run trigger</button></nav>
 <main><section><label>Container name<input id="name"></label><div class="small" id="version"></div><div class="small" id="release"></div></section>
 <section><h2>Triggers</h2><div id="triggers"></div></section><section><h2>Variables</h2><div id="variables"></div></section><section><h2>Tags</h2><div id="tags"></div></section>
@@ -51,5 +91,10 @@ $('save').onclick=async()=>{try{const proposal=JSON.parse($('editor').value);del
 $('publish').onclick=async()=>{try{await transition('publish',{expectedVersion:current.version});say('Draft published successfully');}catch(e){say('Publish failed: '+e.message);}};
 $('rollback').onclick=async()=>{try{const id=Number($('rollbackRelease').value);if(!Number.isSafeInteger(id))throw Error('Select a release');await transition('rollback',{expectedVersion:current.version,releaseId:id});say('Live release rolled back; draft unchanged');}catch(e){say('Rollback failed: '+e.message);}};
 load();})();</script></body></html>`;
-  return settings.scriptSrc?html.replace(/<script>[\s\S]*?<\/script>/i,'<script type="module" src="'+attr(settings.scriptSrc)+'"></script>'):html;
+  return settings.scriptSrc
+    ? html.replace(
+        /<script>[\s\S]*?<\/script>/i,
+        '<script type="module" src="' + attr(settings.scriptSrc) + '"></script>'
+      )
+    : html;
 }

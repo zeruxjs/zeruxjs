@@ -1,3 +1,14 @@
 {
-  "extends": ["html-validate:recommended"]
+  "extends": ["html-validate:recommended"],
+  "rules": {
+    "attr-delimiter": "error",
+    "attr-spacing": "error",
+    "attr-quotes": [
+      "error",
+      {
+        "style": "double"
+      }
+    ],
+    "no-trailing-whitespace": "error"
+  }
 }

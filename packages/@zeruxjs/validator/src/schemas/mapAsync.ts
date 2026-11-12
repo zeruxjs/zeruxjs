@@ -17,11 +17,11 @@ import type { InferMapInput, InferMapOutput, MapIssue } from './types/map.js';
  */
 export interface MapSchemaAsync<
   TKey extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   TMessage extends ErrorMessage<MapIssue> | undefined,
 > extends BaseSchemaAsync<
   InferMapInput<TKey, TValue>,
@@ -29,64 +29,58 @@ export interface MapSchemaAsync<
   MapIssue | InferIssue<TKey> | InferIssue<TValue>
 > {
   /**
-   * The schema type.
+   * Stable schema discriminator used by structured issue consumers.
    */
   readonly type: 'map';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof map | typeof mapAsync;
   /**
-   * The expected property.
+   * Private native-type diagnostic, not a permission or coercion policy.
    */
   readonly expects: 'Map';
   /**
-   * The map key schema.
+   * Borrowed explicit Map key schema; no automatic key serialization or tenant scoping.
    */
   readonly key: TKey;
   /**
-   * The map value schema.
+   * Borrowed explicit Map value schema; no deep copying is guaranteed.
    */
   readonly value: TValue;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a map schema.
- *
- * @param key The key schema.
- * @param value The value schema.
- *
- * @returns A map schema.
+/** Start native Map key/value validation concurrently, then accumulate results in original insertion order. Construction does not parse input or authorize its source.
+ * @param {TKey} key - Borrowed explicit Map key schema; transformations can merge keys under native Map equality.
+ * @param {TValue} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @returns {MapSchemaAsync<TKey, TValue, undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function mapAsync<
   const TKey extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   const TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(key: TKey, value: TValue): MapSchemaAsync<TKey, TValue, undefined>;
 
-/**
- * Creates a map schema.
- *
- * @param key The key schema.
- * @param value The value schema.
- * @param message The error message.
- *
- * @returns A map schema.
+/** Start native Map key/value validation concurrently, then accumulate results in original insertion order. Construction does not parse input or authorize its source.
+ * @param {TKey} key - Borrowed explicit Map key schema; transformations can merge keys under native Map equality.
+ * @param {TValue} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {MapSchemaAsync<TKey, TValue, TMessage>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function mapAsync<
   const TKey extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   const TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   const TMessage extends ErrorMessage<MapIssue> | undefined,
 >(
   key: TKey,
@@ -94,6 +88,12 @@ export function mapAsync<
   message: TMessage
 ): MapSchemaAsync<TKey, TValue, TMessage>;
 
+/** Start native Map key/value validation concurrently, then accumulate results in original insertion order. Construction does not parse input or authorize its source.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>} key - Borrowed explicit Map key schema; transformations can merge keys under native Map equality.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @param {ErrorMessage<MapIssue>} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {MapSchemaAsync<BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>, BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>, ErrorMessage<MapIssue> | undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function mapAsync(
   key:
@@ -119,11 +119,20 @@ export function mapAsync(
     key,
     value,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Start native Map key/value validation concurrently, then accumulate results in original insertion order. Raw issues remain private and operational failures propagate.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; this schema does not grant permissions or sanitize output.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets, cancellation, abort flags and diagnostic policy.
+     * @returns {Promise<OutputDataset<unknown, BaseIssue<unknown>>>} Declared output or private issue dataset; child result identity follows its schema.
+     */
     async '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed candidate retained for child reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -134,6 +143,7 @@ export function mapAsync(
         dataset.value = new Map();
 
         // Parse schema of each map entry
+        /** Map key/value results started concurrently and retained in source insertion order. */
         const datasets = await Promise.all(
           [...input].map(([inputKey, inputValue]) =>
             Promise.all([
@@ -155,6 +165,7 @@ export function mapAsync(
           // If there are issues, capture them
           if (keyDataset.issues) {
             // Create map path item
+            /** Private parent path segment retaining original input/value; sanitize before client exposure. */
             const pathItem: MapPathItem = {
               type: 'map',
               origin: 'key',
@@ -189,6 +200,7 @@ export function mapAsync(
           // If there are issues, capture them
           if (valueDataset.issues) {
             // Create map path item
+            /** Private parent path segment retaining original input/value; sanitize before client exposure. */
             const pathItem: MapPathItem = {
               type: 'map',
               origin: 'value',

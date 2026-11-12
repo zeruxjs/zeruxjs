@@ -8,13 +8,13 @@ import type {
 import type { SafeParseResult } from './types/safeParse.js';
 
 /**
- * Parses an unknown input based on a schema.
+ * Return a typed validation outcome under per-call budgets; operational, cancellation, hook and budget failures still throw.
  *
- * @param schema The schema to be used.
- * @param input The input to be parsed.
- * @param config The parse configuration.
+ * @param {TSchema} schema - Trusted declared schema; callbacks are not sandboxed.
+ * @param {unknown} input - Candidate bounded input scanned before schema execution; structural output is not a guaranteed deep clone.
+ * @param {Config<InferIssue<TSchema>>} config - Optional per-call execution limits, cancellation and synchronous value-free hooks.
  *
- * @returns The parse result.
+ * @returns {SafeParseResult<TSchema>} Typed success/failure metadata; no partial success on budget exhaustion.
  */
 // @__NO_SIDE_EFFECTS__
 export function safeParse<
@@ -24,6 +24,7 @@ export function safeParse<
   input: unknown,
   config?: Config<InferIssue<TSchema>>
 ): SafeParseResult<TSchema> {
+  /** Per-call execution dataset; shared budgets and async cleanup complete before exposing a result. */
   const dataset = executeSchema(schema, input, config);
   return {
     typed: dataset.typed,

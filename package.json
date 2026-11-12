@@ -82,7 +82,11 @@
     "lint:css:fix": "npm run lint:css -- --fix",
     "lint:css:report": "npm run lint:css -- --formatter json --output-file reports/stylelint.json",
     "lint:html": "html-validate --config htmlvalidate.config.json \"**/*.html\"",
-    "lint:html:report": "node -e \"require('node:fs').mkdirSync('reports',{recursive:true})\" && html-validate --config htmlvalidate.config.json --formatter json \"**/*.html\" > reports/htmlvalidate.json"
+    "lint:html:report": "node -e \"require('node:fs').mkdirSync('reports',{recursive:true})\" && html-validate --config htmlvalidate.config.json --formatter json \"**/*.html\" > reports/htmlvalidate.json",
+    "format:check": "prettier --config prettier.config.mjs --ignore-path .prettierignore --check",
+    "format:write": "prettier --config prettier.config.mjs --ignore-path .prettierignore --write",
+    "quality:policy": "node --test scripts/quality-policy.test.mjs",
+    "format:reviewed": "node scripts/format-reviewed.mjs"
   },
   "workspaces": [
     "packages/@zenixjs/*",
@@ -98,10 +102,12 @@
     "@zeruxjs/typescript": "0.0.4",
     "better-sqlite3": "^12.6.2",
     "eslint": "9.39.4",
+    "eslint-plugin-jsdoc": "65.4.5",
     "globals": "17.5.0",
     "html-validate": "11.19.0",
     "postcss-media-query-parser": "file:vendor/zeruxjs-scss-media-parser-0.2.3.tgz",
     "postcss-scss": "4.0.9",
+    "prettier": "3.8.2",
     "stylelint": "17.16.0",
     "stylelint-config-standard": "40.0.0",
     "stylelint-config-standard-scss": "17.0.0",

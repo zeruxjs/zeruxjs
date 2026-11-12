@@ -5,7 +5,9 @@ import type { ErrorMessage } from './other.js';
 /**
  * Config interface.
  */
-export interface Config<TIssue extends BaseIssue<unknown>> extends ValidationOptions {
+export interface Config<
+  TIssue extends BaseIssue<unknown>,
+> extends ValidationOptions {
   /**
    * The selected language.
    */

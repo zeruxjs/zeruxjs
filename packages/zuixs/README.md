@@ -286,3 +286,24 @@ Compare IDs/integrity across manifest generations to replace only affected style
 Source maps are off by default. With `buildManifest: { ..., sourceMap: true }`, install optional `source-map-js@^1.2.1`. External V3 maps record **file-level ownership at source line 1**, not exact token locations. Reset, authored CSS, recipes and plugin-only rules stay unmapped. Relative source filenames are present only in explicitly enabled maps; source contents require the separate `includeSources: true` option and should remain development-only. Map JSON and CSS count toward `limits.maxOutputBytes`. Disabling maps removes previously generated maps identified by their generated CSS footer; use a fresh production output directory when switching from a source-bearing development build. Hosts must restrict source/map access as appropriate. Source map encoding/consumption follows the [source map format](https://tc39.es/ecma426/2024/); no fabricated fine-grained mappings or production source disclosure by default is claimed.
 
 Source-map generation remains opt-in and requires the patched optional `source-map-js` peer at version 1.2.2 or later within 1.x. It is a build tool dependency, not a browser runtime download.
+
+## Source and lifecycle ownership
+
+The browser-safe compiler path is `scanner` → `compiler` → `utilities`/`families`,
+with restricted utility syntax in `safety`. Trusted authored CSS composition lives
+in `stylesheet`/`recipes`; it is distinct from utility-value validation. Plugins
+execute explicitly registered application code and are not a sandbox.
+
+The Node path separates source-cache staging (`node-build`), complete output plans
+and compensating replacement (`outputs`), and subscription/config-loader ownership
+(`watch`). A failed scan cannot promote a partial source cache. Output rollback
+handles ordinary replacement failures but does not provide crash-atomic multi-file
+publication. `stop(); await stop.closed` drains actual owned watch work; cooperative
+loader cancellation is required for prompt teardown. Vite borrows the host graph
+and socket; its `closeBundle` hook clears adapter-owned state without closing them.
+Browser `injectZuix` returns a style-node disposer; pure compiler instances do not
+need an invented close method.
+
+`optimize` is retained in the public configuration type for compatibility but is
+currently not consumed. Exact duplicate generated rule strings are always removed;
+`minify` controls added section newlines and is not an AST minifier.

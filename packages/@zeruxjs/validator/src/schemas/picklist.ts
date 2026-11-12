@@ -22,15 +22,15 @@ export type PicklistOptions = MaybeReadonly<(string | number | bigint)[]>;
  */
 export interface PicklistIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed schema failure category; raw candidate values remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable discriminator for structured issue consumers.
    */
   readonly type: 'picklist';
   /**
-   * The expected property.
+   * Private diagnostic expectation; never sanitized output or a permission grant.
    */
   readonly expected: string;
 }
@@ -43,47 +43,46 @@ export interface PicklistSchema<
   TMessage extends ErrorMessage<PicklistIssue> | undefined,
 > extends BaseSchema<TOptions[number], TOptions[number], PicklistIssue> {
   /**
-   * The schema type.
+   * Stable schema discriminator used by structured issue consumers.
    */
   readonly type: 'picklist';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof picklist;
   /**
-   * The picklist options.
+   * Borrowed list whose runtime membership uses SameValueZero equality.
    */
   readonly options: TOptions;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a picklist schema.
- *
- * @param options The picklist options.
- *
- * @returns A picklist schema.
+/** Accept only native includes membership without coercion; SameValueZero comparison permits NaN and equates signed zero. Construction does not parse input or authorize its source.
+ * @param {TOptions} options - Borrowed permitted primitive list; mutation changes membership but does not recompute the captured diagnostic expectation.
+ * @returns {PicklistSchema<TOptions, undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function picklist<const TOptions extends PicklistOptions>(
   options: TOptions
 ): PicklistSchema<TOptions, undefined>;
 
-/**
- * Creates a picklist schema.
- *
- * @param options The picklist options.
- * @param message The error message.
- *
- * @returns A picklist schema.
+/** Accept only native includes membership without coercion; SameValueZero comparison permits NaN and equates signed zero. Construction does not parse input or authorize its source.
+ * @param {TOptions} options - Borrowed permitted primitive list; mutation changes membership but does not recompute the captured diagnostic expectation.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {PicklistSchema<TOptions, TMessage>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function picklist<
   const TOptions extends PicklistOptions,
   const TMessage extends ErrorMessage<PicklistIssue> | undefined,
 >(options: TOptions, message: TMessage): PicklistSchema<TOptions, TMessage>;
 
+/** Accept only native includes membership without coercion; SameValueZero comparison permits NaN and equates signed zero. Construction does not parse input or authorize its source.
+ * @param {PicklistOptions} options - Borrowed permitted primitive list; mutation changes membership but does not recompute the captured diagnostic expectation.
+ * @param {ErrorMessage<PicklistIssue>} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {PicklistSchema<PicklistOptions, ErrorMessage<PicklistIssue> | undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function picklist(
   options: PicklistOptions,
@@ -97,9 +96,17 @@ export function picklist(
     async: false,
     options,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Accept only native includes membership without coercion; SameValueZero comparison permits NaN and equates signed zero. Raw issues remain private and operational failures propagate.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; this schema does not grant permissions or sanitize output.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root budgets, cancellation, abort flags and diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Declared output or private issue dataset; child result identity follows its schema.
+     */
     '~run'(dataset, config) {
       // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       if (this.options.includes(dataset.value)) {

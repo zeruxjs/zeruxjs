@@ -4,4 +4,4 @@ export * from './runtime.js';
 export * from './campaign-delivery.js';
 export * from './campaign-reports.js';
 
-export * from "./definitions.js";
+export * from './definitions.js';

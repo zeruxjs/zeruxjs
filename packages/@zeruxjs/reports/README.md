@@ -1,6 +1,6 @@
 # @zeruxjs/reports — authenticated report studio
 
-A structured report/page/chart designer over **internal @zeruxjs/analytics events**. Routes: `/_reports` (studio), `/_reports/api` (versioned definition CRUD), `/_reports/query` (chart data). All routes require the host application's `authorize(request)` callback; missing auth disables the service.
+A structured report/page/chart designer over **internal @zeruxjs/analytics events**. Routes: `/_reports` (studio), `/_reports/api` (versioned definition CRUD), `/_reports/query` (chart data). All routes require the host application's `authorize(request)` callback; the standalone factory rejects a missing authorizer.
 
 ```ts
 export default {
@@ -16,7 +16,7 @@ export default {
 
 Reports contain pages; pages contain charts. Chart types: `bar`, `horizontal-bar`, `line`, `area`, `pie`, `doughnut`, `scatter`, `stacked-bar`, `table`, and `kpi`. Grouping supports event name, UTC day, source, site, pathname, or `property:<name>`; metrics include count, sum, average, minimum, maximum, distinct. Data is only internal analytics, never arbitrary SQL or JavaScript. The studio has page/chart controls and an advanced JSON editor; data and layouts are escaped in the browser and pages are not exposed anonymously. PUT requires same-origin request and optimistic versioning. Host access control decides which users may read, publish or both.
 
-**Important scope:** The built-in `analytics.events()` connector currently returns **at most 500 source rows**; charts report `sampledRows` and `truncated` when hitting their limit. Those charts must not be represented as global totals. For production-scale reporting, supply `source.events()` backed by your analytics warehouse/materialized aggregation, or extend the core analytics query layer with DB-native aggregate queries. The report document store is persisted in `analytics_report_documents` when the analytics connection implements conditional update and affectedCount; memory-only mode is for development. Cross-replica changes need a shared DB or atomic `store` adapter. Charts currently render client-side using Canvas (table/KPI use DOM) with a single value series; more advanced multi-series, sharing and scheduled exports remain future capabilities. Optional external sources below use a separate explicit table-query API.
+**Important scope:** The built-in `analytics.events()` connector currently returns **at most 500 source rows**; charts report `sampledRows` and `truncated` when hitting their limit. Those charts must not be represented as global totals. The Reports raw-event path keeps the same 500-row ceiling for custom `source.events()` implementations. For larger exact counts or indexed numeric projections, supply the supported `source.aggregate()` / `source.aggregateNumeric()` contracts backed by native bounded aggregation; returning more raw rows is rejected. The report document store is persisted in `analytics_report_documents` when the analytics connection implements conditional update and affectedCount; memory-only mode is for development. Cross-replica changes need a shared DB or atomic `store` adapter. Charts currently render client-side using Canvas (table/KPI use DOM) with a single value series; more advanced multi-series, sharing and scheduled exports remain future capabilities. Optional external sources below use a separate explicit table-query API.
 
 Admin sessions must be protected by your own secure cookies/session middleware; this package intentionally provides no default password, OAuth identity provider or anonymous editor. Never put raw analytics database credentials in a chart definition.
 
@@ -24,7 +24,7 @@ Admin sessions must be protected by your own secure cookies/session middleware; 
 
 For `metric:'count'` grouped by `event`, `source`, `site`, or `pathname`, Reports automatically calls the optional `source.aggregate()` / `analytics.aggregate()` endpoint rather than loading only 500 raw events. UTC `day` grouping also uses exact native counts when the chart specifies both `since` and `until` within a 366-day range. The backend returns exact `total` and bounded chart groups; the dashboard marks hidden groups distinctly from sampled events. Other metrics and `property:` dimensions still use the bounded sample fallback with explicit `queryMode:'sampled'`. A custom AnalyticsReportSource may implement `aggregate(query)` to cover other backends.
 
-`ReportsOptions.site` and ZeruxJS `reports.site` enforce an application-selected site filter that chart authors cannot override. Supply site from your authenticated tenant context, *not* a user-supplied query string. Protect reports with application auth and tenant authorization.
+`ReportsOptions.site` and ZeruxJS `reports.site` enforce an application-selected site filter that chart authors cannot override. Supply site from your authenticated tenant context, _not_ a user-supplied query string. Protect reports with application auth and tenant authorization.
 
 ## Indexed numerical metrics
 
@@ -102,7 +102,6 @@ Read-only report requests default to at most two attempts (maximum three), retry
 
 Focused fixtures exercise schema/tenant denial, fixed destinations, quota/outage, precision, cancellation, refresh and disposal. They do not certify live Google grants, property access, AdSense account eligibility or production quotas. Live acceptance requires enabled APIs, a dedicated authorized property/account/domain, tenant-isolated read-only OAuth grants and approved network access. No browser or live-provider test is implied.
 
-
 ## Versioned layouts and replaceable views
 
 `@zeruxjs/reports/definitions` is a DOM/Node-global-free-on-import entry for validated definitions and definition-only JSON codecs; `@zeruxjs/reports/view` exposes `mountReportChart(host,data,options)`. [The replaceable-view example](examples/replaceable-view.ts) uses public imports. Source execution remains in the existing authorized report runtime or opt-in source registry; neither browser entry fetches data, resolves credentials or grants permissions.
@@ -132,3 +131,9 @@ For a completely different studio, supply trusted `createReports({...,renderDash
 Built-in CSS exposes `--reports-gap`, `--reports-border`, `--reports-radius`, `--reports-focus` and `--reports-surface`; keep contrast and visible focus when overriding them. The headless view injects no global CSS, so host styles can target `.report-view` within their container. External provider/source registry contracts are unchanged; external table results are not automatically interpreted as internal ChartData or merged into the studio.
 
 Qualification includes jsdom keyboard-event/focus, table controls, stored-XSS text, component failure and teardown fixtures, plus existing authorization/export checks. This is DOM emulation, not live-browser or screen-reader certification. Native keyboard/assistive-technology checks still require a functioning browser and relevant AT; none was started for this task.
+
+## Disposal and maintained source boundaries
+
+The studio facade and memory definition store acquire no separate close owner. The external source registry owns accepted adapters and waits for actual unsettled queries before disposal; credentials stay borrowed and must be disposed separately by their host owner after registry close. Browser views own inserted nodes/listeners/components through `destroy()`. Definition codecs/layout helpers are inert and never authorize, fetch or persist by themselves.
+
+The authored dashboard script, stylesheet and markup remain readable source. Formatting is checked separately against JavaScript structure, CSS declarations and HTML/interpolation structure; the runtime still hashes the exact emitted script/style bytes for CSP. Test fixtures release held work, views, sources, credential helpers and DOM environments in dependency order, even after assertions fail. These checks use synthetic transports and DOM emulation, not live Google grants, browser/AT certification or cross-store transaction guarantees.

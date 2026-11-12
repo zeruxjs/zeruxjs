@@ -2,11 +2,11 @@ import type { BaseIssue } from '../types/index.js';
 import { getDotPath } from '../utils/index.js';
 
 /**
- * Summarize the error messages of issues in a pretty-printable multi-line string.
+ * Build a private multi-line diagnostic summary preserving raw messages and convertible paths. It is not an HTML encoder or public privacy boundary.
  *
- * @param issues The list of issues.
+ * @param {[BaseIssue<unknown>, ...BaseIssue<unknown>[]]} issues - Nonempty private raw issue list.
  *
- * @returns A summary of the issues.
+ * @returns {string} Private multi-line summary; escape for destination context and redact before public output.
  *
  * @beta
  */
@@ -28,6 +28,7 @@ export function summarize(
     summary += `× ${issue.message}`;
 
     // Get dot path from issue
+    /** Raw convertible path selected only for private diagnostic presentation. */
     const dotPath = getDotPath(issue);
 
     // If dot path is available, add it to summary

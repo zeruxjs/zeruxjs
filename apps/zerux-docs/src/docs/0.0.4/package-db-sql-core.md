@@ -74,29 +74,32 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### SqlDialectDefinition
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `kind` | `string` | No |
-| `quoteIdentifier` | `string` | No |
-| `placeholder` | `string` | No |
-| `functions` | `Partial<Record<DatabaseFunctionName, string>>` | No |
-| `supportsReturning` | `boolean` | Yes |
-| `supportsIfNotExistsIndex` | `boolean` | Yes |
-| `supportsFetch` | `boolean` | Yes |
-| `ilikeOperator` | `string` | Yes |
-| `autoIncrementKeyword` | `string` | No |
+| Field                      | Accepted type/value                             | Optional |
+| -------------------------- | ----------------------------------------------- | -------- |
+| `kind`                     | `string`                                        | No       |
+| `quoteIdentifier`          | `(identifier: string) => string`                | No       |
+| `placeholder`              | `(index: number) => string`                     | No       |
+| `functions`                | `Partial<Record<DatabaseFunctionName, string>>` | No       |
+| `supportsReturning`        | `boolean`                                       | Yes      |
+| `supportsDdl`              | `boolean`                                       | Yes      |
+| `supportsGeneratedKeys`    | `boolean`                                       | Yes      |
+| `supportsIfNotExistsIndex` | `boolean`                                       | Yes      |
+| `supportsFetch`            | `boolean`                                       | Yes      |
+| `ilikeOperator`            | `string`                                        | Yes      |
+| `autoIncrementKeyword`     | `string`                                        | No       |
 
 ### SqlConnectorOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `executor` | `(statement: string, params: unknown[], operation: QueryOperation) => MaybePromise<unknown>` | Yes |
-| `client` | `{ query?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; execute?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; }` | Yes |
-| `pool` | `{ query?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; execute?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; }` | Yes |
-| `database` | `string` | Yes |
-| `fixedDatabase` | `boolean` | Yes |
-| `lockDatabase` | `boolean` | Yes |
-| `locked` | `boolean` | Yes |
+| Field           | Accepted type/value                                                                                                                                         | Optional |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `synchronous`   | `boolean`                                                                                                                                                   | Yes      |
+| `executor`      | `(statement: string, params: unknown[], operation: QueryOperation) => MaybePromise<unknown>`                                                                | Yes      |
+| `client`        | `{ query?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; execute?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; }` | Yes      |
+| `pool`          | `{ query?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; execute?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; }` | Yes      |
+| `database`      | `string`                                                                                                                                                    | Yes      |
+| `fixedDatabase` | `boolean`                                                                                                                                                   | Yes      |
+| `lockDatabase`  | `boolean`                                                                                                                                                   | Yes      |
+| `locked`        | `boolean`                                                                                                                                                   | Yes      |
 
 ## Direct compilation and runtime guards
 
@@ -105,3 +108,7 @@ These tables list fields declared directly on the named public contract. Referen
 NULL equality uses explicit null predicates; empty IN/NOT IN is rejected. Multi-row shapes must match. Nested/subquery/keyset parameters retain lexical numbering. Structured CHECK predicates are supported through database-owned types; DDL literals are validated/encoded instead of losing placeholders. Raw CHECK text, subqueries and unsupported function semantics fail before execution.
 
 Unsupported index guards, RETURNING, DDL/generated-key policies, upsert/conflict clauses, join/order features and pagination combinations are rejected rather than dropped. The README lists the intentionally limited dialect matrix. Backend versions and permissions remain deployment prerequisites. Generated numeric IDs with lost precision fail; bigint SQLite IDs retain their string representation. The compiler owns no native clients, transactions or cleanup of borrowed pools. Native transaction and decimal/time precision acceptance require the actual driver/backend; mocked compilation is not live acceptance.
+
+## Source ownership
+
+The validation module owns bounded own-data snapshots and exact grammar fields; the compiler module owns lexical parameter buffers, supported dialect clauses, DDL literal mode and private native normalization. Each public compile call receives a fresh compiler, and borrowed executors remain host-owned. Neither facade construction nor compilation acquires a connection or supplies disconnect/transaction/cancellation. Trusted dialect callbacks are not sandboxed; SQL/params/results/causes require explicit response sanitization. The package README maps these owners and distinguishes native SQLite/injected-adapter checks from live backend acceptance.

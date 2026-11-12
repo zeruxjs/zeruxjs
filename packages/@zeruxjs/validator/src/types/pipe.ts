@@ -40,20 +40,20 @@ export type PipeItemAsync<TInput, TOutput, TIssue extends BaseIssue<unknown>> =
   | BaseSchemaAsync<TInput, TOutput, TIssue>
   | PipeActionAsync<TInput, TOutput, TIssue>;
 
-/**
- * Schema without pipe type.
- */
+/** Exclude an attached pipeline at the type level for structural copy helpers; no runtime inspection is performed. */
 export type SchemaWithoutPipe<
   TSchema extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
-> = TSchema & { pipe?: never };
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+> = TSchema & {
+  /** Type-only exclusion marker for structural helpers; no runtime pipeline is allocated. */
+  pipe?: never;
+};
 
 /**
  * Generic pipe action type.
  */
 export type GenericPipeAction<
-   
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,
@@ -63,7 +63,6 @@ export type GenericPipeAction<
  * Generic pipe action async type.
  */
 export type GenericPipeActionAsync<
-   
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,
@@ -73,7 +72,6 @@ export type GenericPipeActionAsync<
  * Generic pipe item type.
  */
 export type GenericPipeItem<
-   
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,
@@ -83,7 +81,6 @@ export type GenericPipeItem<
  * Generic pipe item async type.
  */
 export type GenericPipeItemAsync<
-   
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,

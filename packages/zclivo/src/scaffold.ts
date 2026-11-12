@@ -8,23 +8,35 @@ import {
   type ProjectWriteResult,
   type ResolvedProjectOptions,
 } from './generator.js';
+/** Minimal starter language contract shared with the safe generator engine. */
 export type StarterLanguage = ProjectLanguage;
+/** Explicit minimal-starter policy; no installer or execution flags exist. */
 export interface StarterOptions {
+  /** Supported authored source language, defaulting through the registered template. */
   language?: StarterLanguage;
+  /** Validate and return planned paths without writing anything. */
   dryRun?: boolean;
+  /** Optional validated display/package name independent of the destination spelling. */
   name?: string;
+  /** Optional integer public server port; generation never probes or reserves it. */
   port?: number;
+  /** Must match the minimal template none renderer; no UI runtime is installed. */
   renderer?: string;
+  /** Must match the minimal template mode; expanded creators own their own templates. */
   mode?: string;
+  /** Borrowed cancellation signal; async creator workflows are separate from this synchronous writer. */
   signal?: AbortSignal;
 }
+/** Exclusive-write/dry-run receipt from the shared engine. */
 export type StarterResult = ProjectWriteResult;
+/** Inspected starter runtime/tooling requirements; no release metadata or package installation is changed. */
 export const starterRuntimeVersions = Object.freeze({
   node: '>=24.15.0',
   zeruxjs: '0.0.4',
   typescript: '^5.9.3',
   nodeTypes: '^25.4.0',
 });
+/** Explicit minimal-only capability descriptor; no renderer/runtime is inferred. */
 export const zeruxMinimalTemplate: ProjectTemplate = Object.freeze({
   id: 'zerux-minimal',
   capabilities: Object.freeze([
@@ -35,12 +47,16 @@ export const zeruxMinimalTemplate: ProjectTemplate = Object.freeze({
     },
   ]),
   render(options: Readonly<ResolvedProjectOptions>) {
-    const ts = options.language === 'typescript',
-      name = options.name;
+    /** Whether the validated options select TypeScript source and type tooling. */
+    const ts = options.language === 'typescript';
+    /** Validated display name interpolated only into inert authored source/README text. */
+    const name = options.name;
+    /** Explicit server port configuration consumed by the generated minimal app. */
     const config = {
       type: 'fix',
       server: { port: options.port, devPort: options.port },
     };
+    /** Reviewable deterministic starter text map; shared engine validates paths and owns writes. */
     const files: Record<string, string> = {
       'package.json':
         JSON.stringify(
@@ -68,7 +84,7 @@ export const zeruxMinimalTemplate: ProjectTemplate = Object.freeze({
               : {}),
           },
           null,
-          2,
+          2
         ) + '\n',
       '.gitignore': 'node_modules/\ndist/\n.zerux/\n.env\n*.log\n',
       '.env.example':
@@ -81,7 +97,7 @@ export const zeruxMinimalTemplate: ProjectTemplate = Object.freeze({
       [ts ? 'src/index.ts' : 'src/index.mjs']:
         `// Add routes and lifecycle plugins using the ZeruxJS public APIs.\nexport const applicationName = ${JSON.stringify(name)};\n`,
     };
-    if (ts)
+    if (ts) {
       files['tsconfig.json'] =
         JSON.stringify(
           {
@@ -96,21 +112,28 @@ export const zeruxMinimalTemplate: ProjectTemplate = Object.freeze({
             include: ['src/**/*.ts', 'zerux.config.ts'],
           },
           null,
-          2,
+          2
         ) + '\n';
+    }
     return files;
   },
 });
+/** Inert default engine with one explicitly registered template. */
 export const minimalProjectGenerator = createProjectGenerator([
   zeruxMinimalTemplate,
 ]);
-/** Parent exists; target never exists, including dangling symlinks. Does not install/run anything. */
+/** Parent exists; target never exists, including dangling symlinks. Does not install/run anything.
+ * @param {string} target - New exclusive project destination under a trusted existing canonical parent.
+ * @param {StarterOptions} options - Explicit supported minimal choices and cancellation policy.
+ * @returns {StarterResult} Planned/written path receipt; generated source remains unexecuted.
+ */
 export function createZeruxProject(
   target: string,
-  options: StarterOptions = {},
+  options: StarterOptions = {}
 ): StarterResult {
-  if (typeof target !== 'string' || !target.trim())
+  if (typeof target !== 'string' || !target.trim()) {
     throw new TypeError('Project path is required');
+  }
   if (
     !options ||
     typeof options !== 'object' ||
@@ -125,11 +148,13 @@ export function createZeruxProject(
           'renderer',
           'mode',
           'signal',
-        ].includes(k),
+        ].includes(k)
     ) ||
     (options.dryRun !== undefined && typeof options.dryRun !== 'boolean')
-  )
+  ) {
     throw new TypeError('Invalid starter options');
+  }
+  /** Validated minimal starter plan; dry-run inspects it without claiming or writing a target. */
   const plan = minimalProjectGenerator.plan({
     destination: target,
     name: options.name ?? basename(resolve(target)),

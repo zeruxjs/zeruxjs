@@ -6,7 +6,11 @@
   "order": 9,
   "sources": [
     "packages/@zeruxjs/auth/README.md",
-    "packages/@zeruxjs/auth/package.json"
+    "packages/@zeruxjs/auth/package.json",
+    "packages/@zeruxjs/auth/src/core.ts",
+    "packages/@zeruxjs/auth/src/shared-auth.ts",
+    "packages/@zeruxjs/auth/src/passkeys.ts",
+    "packages/@zeruxjs/auth/src/provider-login.ts"
   ],
   "related": [
     "packages",
@@ -101,7 +105,7 @@ LinkedIn/X have separate reviewed protocol metadata and require explicit custom 
 npm install @zeruxjs/auth@0.0.4
 ```
 
-There is no automatic `auth` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
+There is no automatic `auth` startup service in `zerux.config.js` for this package. Import its public APIs and create the explicit server owner in the application that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
 
 ## A practical integration workflow
 
@@ -139,7 +143,7 @@ These tables list fields declared directly on the named public contract. Referen
 
 | Field | Accepted type/value | Optional |
 | --- | --- | --- |
-| `db` | `{ usersTable: string; rolesTable: string; usermetaTable: string; /** Set false on engines (e.g. MySQL) without INSERT .. RETURNING; inspect insertedIds instead. */ supportsReturning?: boolean; fields: { userId: string; email: string; passwordHash: string; role: string; }; }` | No |
+| `db` | `{ usersTable: string; rolesTable: string; usermetaTable: string; supportsReturning?: boolean; fields: { userId: string; email: string; passwordHash: string; role: string; }; }` | No |
 | `session` | `{ cookieName: string; expiresIn: number; }` | No |
 
 ### PasswordPolicy
@@ -183,3 +187,9 @@ Host must obtain this principal only after verifying an authenticated, unexpired
 | `tenantId` | `string \| number` | No |
 | `permissions` | `readonly string[]` | No |
 | `siteIds` | `readonly string[]` | Yes |
+
+## Readable source ownership
+
+The package README maps legacy primitives, shared state, verifier/store contracts and provider flow owners separately. Root runtime imports eagerly use Node crypto; no browser runtime entry is supplied. UI code may use erased types or sanitized authorized results, never raw user rows, credentials, PKCE attempts or private causes.
+
+`createSharedAuth`, `createPasskeyManager` and `createProviderLogin` own active operations and copied key material. Await their `close()` before releasing borrowed stores/transports. A timeout only bounds waiting; actual native/host settlement can delay shutdown. Process-local token/revocation/reference stores do not expose a manager close lifecycle or imply distributed persistence. Legacy wildcard role/token behavior remains compatible and does not weaken exact tenant/shared-scope checks.

@@ -35,7 +35,7 @@ createFontStylesheetHandler from @zeruxjs/font/http returns a Fetch handler with
 
 ## Browser loading
 
-loadFont requires a DOM. Keep server imports separate from actually invoking browser-only functions. Browser support and font loading behavior vary; include fallback fonts and test text visibility during slow loads.
+`loadFont` returns false when no DOM/FontFaceSet exists. Native failure, invalid options, cancellation and timeout reject. Keep imports separate from invoking DOM-only helpers such as `injectFontStyles`. Include explicit fallback families and test text visibility with actual fonts; fixtures do not certify rendering quality.
 
 ## Install and select the integration
 
@@ -104,3 +104,62 @@ These tables list fields declared directly on the named public contract. Referen
 | `display` | `'auto'\|'block'\|'swap'\|'fallback'\|'optional'` | Yes |
 | `format` | `string` | Yes |
 | `unicodeRange` | `string` | Yes |
+
+## Explicit build assets and provenance
+
+Use `buildFontAssets` from `@zeruxjs/font/build` before the host framework build,
+not during requests. It accepts only explicit licensed local files or an opt-in
+host-injected allowlisted remote transport. Outputs are content-addressed local
+font/SVG/CSS files plus a V1 attribution manifest. No files are acquired on import
+and production serving of vendored output requires no provider network access.
+Match `publicBase` to the actual mount, such as `/app/fonts/`; the framework copies
+configured public assets but does not invoke the pipeline or inject preloads.
+
+The host must declare redistribution permission and retain license notices. Font
+container headers are checked; actual axes/subset cmap coverage require an
+explicit maintained FontTools implementation. The optional supplied adapter uses
+a fixed bounded POSIX Python process with shell disabled, never model/request
+commands. It does not install FontTools. Synthetic header/tool fixtures do not
+prove decoding, shaping or live-provider compatibility.
+
+| Budget | Default / hard ceiling |
+| --- | --- |
+| Build faces / icons | 64 / 256 definitions |
+| One font | 8 MiB / 16 MiB |
+| Whole candidate | 64 MiB / 128 MiB |
+| Preload URLs / bytes | Two / 128 KiB; ceilings 16 / 16 MiB |
+| Remote redirects / deadline | Two / 15000 ms; ceilings five / 120000 ms |
+| Requested subset | Explicit finite Unicode scalars; at most 65536 |
+
+Each build owns an output lease and private sibling staging directory. Validation,
+acquisition and pre-promotion quota failures preserve the previous directory.
+Same-filesystem rename/rollback is not a crash-atomic deployment transaction;
+operators reconcile stale locks/backups, and post-promotion cleanup may fail after
+new output is committed. The host owns directory permissions, remote DNS/egress,
+license correctness and serving/caching. Cooperative transport cancellation must
+settle before its build resources can finish cleanup.
+
+## Zuixs selection and browser ownership
+
+`@zeruxjs/font/registry` supplies DOM-type-free face registration;
+`@zeruxjs/font/zuix` maps explicit matching registry/build records into theme
+values, a public compiler plugin and selected asset references. It imports no
+Zuixs runtime or downloader. Only selected faces appear in its CSS; caller-supplied
+route token lists union/deduplicate bounded preloads. User `extend.fontFamily` /
+`extend.fontWeight` overrides remain authoritative. Font icons return explicit
+glyph text; SVG icons remain separately licensed asset records. Neither generates
+an accessible name from arbitrary content.
+
+Use `@zeruxjs/font/browser` for native ESM browser imports without Node ambient
+types. `createFontLoadScope` owns per-mount observations (default eight, ceiling
+64); dispose it on teardown. Timeouts default to 10000 ms with a 120000 ms ceiling.
+Cancellation ends observation and releases timers/listeners; native
+FontFaceSet downloads may continue. `injectFontStyles` accepts trusted CSS under
+the host CSP and returns a disposer removing only its owned element. Prefer an
+external generated stylesheet when the host policy requires one. Registry values
+and FontTools factory configuration have no persistent close handle.
+
+The packed public-import examples in the package README cover local vendoring
+and actual Zuixs compilation at a non-root mount. Tests use injected FontFaceSet,
+remote Fetch and inspector results; native FontTools/font shaping and real
+browser/provider qualification remain separate prerequisites.

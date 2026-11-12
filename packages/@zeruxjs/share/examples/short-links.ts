@@ -2,22 +2,26 @@ import {
   createShortLinkService,
   type ShortLinkStore,
   type ShortLinkOptions,
-} from "@zeruxjs/share/server";
+} from '@zeruxjs/share/server';
 
-// Host implements atomic durable reservation/CAS and verifies fresh session permissions.
+/** Configure a service with host-owned persistence and fresh session authorization.
+ * @param {ShortLinkStore} store - Durable linearizable reservation/CAS store borrowed by the service.
+ * @param {ShortLinkOptions['authorize']} authorize - Trusted host verifier for each management invocation.
+ * @returns {object} Owned service; await close before releasing the borrowed store.
+ */
 export function configureLinks(
   store: ShortLinkStore,
-  authorize: ShortLinkOptions["authorize"],
+  authorize: ShortLinkOptions['authorize']
 ) {
   return createShortLinkService({
-    origin: "https://sho.example.com",
-    prefix: "/s/",
+    origin: 'https://sho.example.com',
+    prefix: '/s/',
     store,
     authorize,
-    allowedOrigins: ["https://www.example.com"],
+    allowedOrigins: ['https://www.example.com'],
     allowDestination: (destination) =>
-      !new URL(destination).searchParams.has("next"),
-    reservedPaths: ["/s/manage"],
+      !new URL(destination).searchParams.has('next'),
+    reservedPaths: ['/s/manage'],
     defaultTtlMs: 7 * 86400000,
   });
 }

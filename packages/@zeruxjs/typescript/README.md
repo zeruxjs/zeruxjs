@@ -10,7 +10,7 @@ await buildTypescript({ entryPoints: ['src/index.ts'], outdir: 'dist', bundle: t
 createTsConfig(process.cwd()); // leaves an existing config untouched
 ```
 
-`registerTypescript()` installs and returns a disposer for **CommonJS require** hooks only. ESM TypeScript loading uses `@zeruxjs/typescript/loader` with Node's custom ESM loader mechanism. Transpilation does *not* typecheck; call `checkTypes` separately. `buildTypescript` requires esbuild, which is an explicit package dependency.
+`registerTypescript()` installs and returns a disposer for **CommonJS require** hooks only. ESM TypeScript loading uses `@zeruxjs/typescript/loader` with Node's custom ESM loader mechanism. Transpilation does _not_ typecheck; call `checkTypes` separately. `buildTypescript` requires esbuild, which is an explicit package dependency.
 
 ## Browser production assets
 
@@ -44,11 +44,11 @@ win; invalid compiler options reject before writing. Configs are trusted local
 build inputs. Run `tsc -p tsconfig.json` in the owning package to emit its own
 JavaScript/declarations; `checkTypes` never emits and esbuild emits no declarations.
 
-| Preset | Resolution and conditions | Environment |
-| --- | --- | --- |
-| `node-server` | `module`/`moduleResolution: NodeNext`; TypeScript selects `types`, `node`, and per-import `import`/`require` conditions | ES2022, explicit `types:['node']`; install `@types/node` in the owner |
-| `browser-library` | `ESNext`/`Bundler`, extra `browser` condition; respects package exports | ES2022 + DOM/DOM.Iterable, `types:[]` |
-| `mixed-exports` | NodeNext as above, no extra conditions | ES2022 only, `types:[]`; portable shared code |
+| Preset            | Resolution and conditions                                                                                               | Environment                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `node-server`     | `module`/`moduleResolution: NodeNext`; TypeScript selects `types`, `node`, and per-import `import`/`require` conditions | ES2022, explicit `types:['node']`; install `@types/node` in the owner |
+| `browser-library` | `ESNext`/`Bundler`, extra `browser` condition; respects package exports                                                 | ES2022 + DOM/DOM.Iterable, `types:[]`                                 |
+| `mixed-exports`   | NodeNext as above, no extra conditions                                                                                  | ES2022 only, `types:[]`; portable shared code                         |
 
 All presets enable strict checking, declaration emission, `noEmitOnError`,
 `skipLibCheck:false`, `noUncheckedSideEffectImports:true`, `rootDir:'src'` and `outDir:'dist'`. They never rewrite a
@@ -114,3 +114,29 @@ including esbuild's platform binary; all temporary files/cache are removed.
 It does not start applications or exercise a live browser. Archive fixtures skip
 prepack because the package-local build has already run; this is not a release
 publication check.
+
+## Source maintenance
+
+The source files follow the root formatting policy. Keep transpilation and
+execution separate when extending these entry points:
+
+| File                                | Responsibility and boundary                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `src/transform.ts`                  | Text transpilation and synchronous diagnostic checks; never emits during typechecking.                               |
+| `src/dependencies.ts`               | Literal-import manifest diagnostics, with invocation-local caching and no imported-code execution.                   |
+| `src/build.ts`                      | esbuild output and owned cancellation/disposal; callers own staging and promotion.                                   |
+| `src/loader.ts` / `src/register.ts` | Trusted Node module loading and process-wide CommonJS hook ownership. Dispose nested registrations in reverse order. |
+| `src/tsconfig.ts`                   | Validated config generation and same-directory temporary-file cleanup; not a cross-process reservation.              |
+| `src/presets.ts`                    | Fresh environment configuration data, safe to import without Node tooling.                                           |
+| `src/validation.ts`                 | Shared input narrowing; not filesystem authorization or a compiler graph budget.                                     |
+
+Run formatting and ESLint from the repository root with this package as the
+explicit scope. Run builds and the focused tests from this directory. The
+installed-consumer fixture checks public exports offline; it does not start an
+application or establish live-browser compatibility.
+
+Public and internal function contracts use typed `@param` and `@returns` tags;
+public option/result fields explain defaults and ownership at their declarations.
+Local constants document provenance, constraints or ownership, and loop comments
+explain iteration bindings. The reviewed-scope ESLint gate checks missing/empty
+contracts as well as formatting; it does not establish runtime correctness.

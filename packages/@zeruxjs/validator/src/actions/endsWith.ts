@@ -13,19 +13,19 @@ export interface EndsWithIssue<
   TRequirement extends string,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed refinement category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'ends_with';
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expected: `"${TRequirement}"`;
   /**
-   * The received property.
+   * Private mismatch diagnostic that may include submitted content.
    */
   readonly received: `"${string}"`;
   /**
@@ -41,19 +41,19 @@ export interface EndsWithAction<
   TInput extends string,
   TRequirement extends string,
   TMessage extends
-  | ErrorMessage<EndsWithIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<EndsWithIssue<TInput, TRequirement>>
+    | undefined,
 > extends BaseValidation<TInput, TInput, EndsWithIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'ends_with';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof endsWith;
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expects: `"${TRequirement}"`;
   /**
@@ -61,42 +61,41 @@ export interface EndsWithAction<
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an ends with validation action.
- *
- * @param requirement The end string.
- *
- * @returns An ends with action.
+/** Use native case-sensitive string suffix matching without normalization or filename/host authorization. Construction captures trusted policy without evaluating candidate data.
+ * @param {TRequirement} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @returns {EndsWithAction<TInput, TRequirement, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function endsWith<
   TInput extends string,
   const TRequirement extends string,
 >(requirement: TRequirement): EndsWithAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates an ends with validation action.
- *
- * @param requirement The end string.
- * @param message The error message.
- *
- * @returns An ends with action.
+/** Use native case-sensitive string suffix matching without normalization or filename/host authorization. Construction captures trusted policy without evaluating candidate data.
+ * @param {TRequirement} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {EndsWithAction<TInput, TRequirement, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function endsWith<
   TInput extends string,
   const TRequirement extends string,
   const TMessage extends
-  | ErrorMessage<EndsWithIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<EndsWithIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): EndsWithAction<TInput, TRequirement, TMessage>;
 
+/** Use native case-sensitive string suffix matching without normalization or filename/host authorization. Construction captures trusted policy without evaluating candidate data.
+ * @param {string} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @param {ErrorMessage<EndsWithIssue<string, string>>} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {EndsWithAction<string, string, ErrorMessage<EndsWithIssue<string, string>> | undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function endsWith(
   requirement: string,
@@ -114,6 +113,11 @@ export function endsWith(
     expects: `"${requirement}"`,
     requirement,
     message,
+    /** Use native case-sensitive string suffix matching without normalization or filename/host authorization. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !dataset.value.endsWith(this.requirement)) {
         _addIssue(this, 'end', dataset, config, {

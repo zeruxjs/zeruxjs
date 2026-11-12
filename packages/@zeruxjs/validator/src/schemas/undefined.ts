@@ -11,15 +11,15 @@ import { _addIssue, _getStandardProps } from '../utils/index.js';
  */
 export interface UndefinedIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed schema issue category; raw inputs and messages remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable sentinel/terminal discriminator for structured issue codes.
    */
   readonly type: 'undefined';
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation, not a coercion or omission policy.
    */
   readonly expected: 'undefined';
 }
@@ -31,41 +31,45 @@ export interface UndefinedSchema<
   TMessage extends ErrorMessage<UndefinedIssue> | undefined,
 > extends BaseSchema<undefined, undefined, UndefinedIssue> {
   /**
-   * The schema type.
+   * Fixed undefined schema discriminator; object presence rules are handled separately.
    */
   readonly type: 'undefined';
   /**
-   * The schema reference.
+   * Authored base constructor reference, never a user-supplied module path.
    */
   readonly reference: typeof undefined_;
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation, not a coercion or omission policy.
    */
   readonly expects: 'undefined';
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback retained by reference.
    */
   readonly message: TMessage;
 }
 
 /**
- * Creates an undefined schema.
+ * Validate only an explicit undefined runtime value without coercing null. Root execution still checks budgets before dispatch.
  *
- * @returns An undefined schema.
+ * @returns {UndefinedSchema<undefined>} Inert schema with default diagnostic policy.
  */
 export function undefined_(): UndefinedSchema<undefined>;
 
 /**
- * Creates an undefined schema.
+ * Validate only an explicit undefined runtime value without coercing null. Root execution still checks budgets before dispatch.
  *
- * @param message The error message.
+ * @param {TMessage} message - Optional trusted private diagnostic policy.
  *
- * @returns An undefined schema.
+ * @returns {UndefinedSchema<TMessage>} Inert schema retaining the borrowed trusted message policy.
  */
 export function undefined_<
   const TMessage extends ErrorMessage<UndefinedIssue> | undefined,
 >(message: TMessage): UndefinedSchema<TMessage>;
 
+/** Build a sentinel/terminal validator without executing any input value.
+ * @param {ErrorMessage<UndefinedIssue>} message - Optional private trusted diagnostic text/callback.
+ * @returns {UndefinedSchema<ErrorMessage<UndefinedIssue> | undefined>} Inert schema validating only an explicit undefined runtime value without coercing null.
+ */
 // @__NO_SIDE_EFFECTS__
 export function undefined_(
   message?: ErrorMessage<UndefinedIssue>
@@ -77,9 +81,17 @@ export function undefined_(
     expects: 'undefined',
     async: false,
     message,
+    /** Adapt explicit validation to the shared bounded root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Apply this exact sentinel/terminal rule without coercion or permission inference.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private input dataset.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Root issue budget and private message policy.
+     * @returns {OutputDataset<undefined, UndefinedIssue>} Declared dataset; raw diagnostics require explicit public redaction.
+     */
     '~run'(dataset, config) {
       if (dataset.value === undefined) {
         // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.

@@ -23,3 +23,30 @@ After implementing private host policies, authenticate the separately provisione
 ## Qualification
 
 The generator's isolated workspace-linked consumer checks build, SQLite schema reload, denied unconfigured startup and resource cleanup. These are not clean registry, browser, production authentication, TLS or proxy acceptance. See the package README and generated instructions for exact prerequisites and supported limits.
+
+## Planning versus execution
+
+```js
+import { planZenixApp } from 'create-zenix-js';
+
+const plan = planZenixApp({
+  name: 'cms',
+  destination: './cms',
+  port: 3000,
+});
+console.log(Object.keys(plan.files));
+```
+
+This call reads fixed shipped template assets and validates a reviewable plan.
+It does not execute asset modules, open SQLite, install packages or run migrations.
+`runCreateZenix(argv, options)` is the explicit programmatic CLI entry; importing
+it registers no process listeners. The executable alone owns SIGINT/SIGTERM
+listeners and removes them in `finally`. Host-provided prompts transfer their
+cleanup to the shared generator command. Provider switches accept only SQLite
+and no binary storage, reject duplicates, and stop interpreting provider options
+after `--`. Other project flags retain the shared zclivo contract.
+
+Generated source is trusted authored server code. Review and implement the host
+policy before running it; no input content, saved CMS entry or browser role is
+executed as that policy. Startup cleanup attempts application, core and database
+shutdown in dependency order. It does not own or close host authentication stores.

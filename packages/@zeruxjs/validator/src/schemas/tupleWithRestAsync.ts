@@ -24,8 +24,8 @@ import type { TupleWithRestIssue } from './types/tupleWithRest.js';
 export interface TupleWithRestSchemaAsync<
   TItems extends TupleItemsAsync,
   TRest extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   TMessage extends ErrorMessage<TupleWithRestIssue> | undefined,
 > extends BaseSchemaAsync<
   [...InferTupleInput<TItems>, ...InferInput<TRest>[]],
@@ -33,63 +33,57 @@ export interface TupleWithRestSchemaAsync<
   TupleWithRestIssue | InferTupleIssue<TItems> | InferIssue<TRest>
 > {
   /**
-   * The schema type.
+   * Stable structural discriminator for issue and metadata consumers.
    */
   readonly type: 'tuple_with_rest';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof tupleWithRest | typeof tupleWithRestAsync;
   /**
-   * The expected property.
+   * Private root-type diagnostic, not an authorization or escaping policy.
    */
   readonly expects: 'Array';
   /**
-   * The items schema.
+   * Borrowed ordered child schemas; no deep isolation is introduced.
    */
   readonly items: TItems;
   /**
-   * The rest schema.
+   * Borrowed explicit schema for extra values; no implicit dynamic handler resolution.
    */
   readonly rest: TRest;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a tuple with rest schema.
- *
- * @param items The items schema.
- * @param rest The rest schema.
- *
- * @returns A tuple with rest schema.
+/** Validate the declared positional prefix and validate trailing values with the explicit rest schema. Construction captures trusted child references without parsing input.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; this API does not clone or freeze the tuple.
+ * @param {TRest} rest - Borrowed explicit schema used only for safe extra fields or trailing values; never resolved from input.
+ * @returns {TupleWithRestSchemaAsync<TItems, TRest, undefined>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
  */
 export function tupleWithRestAsync<
   const TItems extends TupleItemsAsync,
   const TRest extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(
   items: TItems,
   rest: TRest
 ): TupleWithRestSchemaAsync<TItems, TRest, undefined>;
 
-/**
- * Creates a tuple with rest schema.
- *
- * @param items The items schema.
- * @param rest The rest schema.
- * @param message The error message.
- *
- * @returns A tuple with rest schema.
+/** Validate the declared positional prefix and validate trailing values with the explicit rest schema. Construction captures trusted child references without parsing input.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; this API does not clone or freeze the tuple.
+ * @param {TRest} rest - Borrowed explicit schema used only for safe extra fields or trailing values; never resolved from input.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback, not sanitized client feedback.
+ * @returns {TupleWithRestSchemaAsync<TItems, TRest, TMessage>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
  */
 export function tupleWithRestAsync<
   const TItems extends TupleItemsAsync,
   const TRest extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   const TMessage extends ErrorMessage<TupleWithRestIssue> | undefined,
 >(
   items: TItems,
@@ -97,6 +91,12 @@ export function tupleWithRestAsync<
   message: TMessage
 ): TupleWithRestSchemaAsync<TItems, TRest, TMessage>;
 
+/** Validate the declared positional prefix and validate trailing values with the explicit rest schema. Construction captures trusted child references without parsing input.
+ * @param {TupleItemsAsync} items - Borrowed trusted ordered child schemas; this API does not clone or freeze the tuple.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>} rest - Borrowed explicit schema used only for safe extra fields or trailing values; never resolved from input.
+ * @param {ErrorMessage<TupleWithRestIssue>} message - Optional trusted private diagnostic text/callback, not sanitized client feedback.
+ * @returns {TupleWithRestSchemaAsync<TupleItemsAsync, BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>, ErrorMessage<TupleWithRestIssue> | undefined>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
+ */
 // @__NO_SIDE_EFFECTS__
 export function tupleWithRestAsync(
   items: TupleItemsAsync,
@@ -119,11 +119,20 @@ export function tupleWithRestAsync(
     items,
     rest,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Validate the declared positional prefix and validate trailing values with the explicit rest schema. Child parsing starts concurrently; abortEarly affects result accumulation after that work starts.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private candidate structural input; raw child issues retain its original values/paths.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root budgets, cancellation and private diagnostic policy.
+     * @returns {Promise<OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>>} Declared structural output or private issues; root execution drains owned started callbacks on operational failure.
+     */
     async '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed structural input retained for own-field reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -134,10 +143,12 @@ export function tupleWithRestAsync(
         dataset.value = [];
 
         // Parse each normal and rest item
+        /** Declared and extra child result groups started together; accumulation keeps normal values before rest values. */
         const [normalDatasets, restDatasets] = await Promise.all([
           // Parse schema of each normal item
           Promise.all(
             this.items.map(async (item, key) => {
+              /** Original field/position value, or undefined for a missing optional/defaulted input. */
               const value = input[key];
               return [
                 key,
@@ -164,6 +175,7 @@ export function tupleWithRestAsync(
           // If there are issues, capture them
           if (itemDataset.issues) {
             // Create tuple path item
+            /** Private parent path segment retaining original input/value; public feedback must sanitize it. */
             const pathItem: ArrayPathItem = {
               type: 'array',
               origin: 'value',
@@ -211,6 +223,7 @@ export function tupleWithRestAsync(
             // If there are issues, capture them
             if (itemDataset.issues) {
               // Create tuple path item
+              /** Private parent path segment retaining original input/value; public feedback must sanitize it. */
               const pathItem: ArrayPathItem = {
                 type: 'array',
                 origin: 'value',

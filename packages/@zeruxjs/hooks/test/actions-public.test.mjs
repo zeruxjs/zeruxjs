@@ -1,20 +1,56 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 test('packed root/actions exports and package-owned declarations compile and run', () => {
+  /** Owned isolated packed-consumer root, removed even when compile/runtime assertions fail. */
   const temporary = mkdtempSync(join(tmpdir(), 'hooks-public-'));
+  /** Source package root for packing; no user application is built or started. */
   const cwd = resolve(dirname(fileURLToPath(import.meta.url)), '..');
   try {
-    const result = JSON.parse(execFileSync('npm', ['pack', '--ignore-scripts', '--json', '--cache', join(temporary, 'cache'), '--pack-destination', temporary], { cwd, encoding: 'utf8' }));
+    /** Local npm-pack JSON, never a publication request. */
+    const result = JSON.parse(
+      execFileSync(
+        'npm',
+        [
+          'pack',
+          '--ignore-scripts',
+          '--json',
+          '--cache',
+          join(temporary, 'cache'),
+          '--pack-destination',
+          temporary,
+        ],
+        { cwd, encoding: 'utf8' }
+      )
+    );
+    /** Normalized package archive metadata supporting npm array/workspace-keyed output. */
     const packed = Array.isArray(result) ? result[0] : result['@zeruxjs/hooks'];
-    writeFileSync(join(temporary, 'package.json'), JSON.stringify({ type: 'module', private: true }));
-    execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', '--cache', join(temporary, 'cache'), join(temporary, packed.filename)], { cwd: temporary, stdio: 'pipe' });
-    writeFileSync(join(temporary, 'consumer.ts'), `import { createServerActions } from '@zeruxjs/hooks';
+    writeFileSync(
+      join(temporary, 'package.json'),
+      JSON.stringify({ type: 'module', private: true })
+    );
+    /** Extract the dependency-free archive directly; consumer checks need no install or registry access. */
+    const destination = join(temporary, 'node_modules/@zeruxjs/hooks');
+    mkdirSync(destination, { recursive: true });
+    execFileSync(
+      'tar',
+      [
+        '-xzf',
+        join(temporary, packed.filename),
+        '--strip-components=1',
+        '-C',
+        destination,
+      ],
+      { cwd: temporary, stdio: 'pipe' }
+    );
+    writeFileSync(
+      join(temporary, 'consumer.ts'),
+      `import { createServerActions } from '@zeruxjs/hooks';
 import { createServerFilters, createAsyncServerActions, createAsyncServerFilters } from '@zeruxjs/hooks/actions';
 import { createServerLifecycleHooks } from '@zeruxjs/hooks/lifecycle';
 const lifecycle = createServerLifecycleHooks();
@@ -52,11 +88,35 @@ if (false) {
  // @ts-expect-error invalid filter argument tuple
  filters.apply('title', 'Hello', [1]);
 }
-`);
+`
+    );
+    /** Installed repository TypeScript executable used only for this isolated consumer. */
     const compiler = resolve(cwd, '../../../node_modules/typescript/bin/tsc');
-    execFileSync(process.execPath, [compiler, '--strict', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--target', 'ES2022', '--skipLibCheck', 'consumer.ts'], { cwd: temporary, stdio: 'pipe' });
-    execFileSync(process.execPath, ['consumer.js'], { cwd: temporary, stdio: 'pipe' });
-    assert.ok(packed.files.some(file => file.path === 'dist/server-hooks.d.ts'));
-    assert.ok(!packed.files.some(file => file.path.startsWith('src/')));
-  } finally { rmSync(temporary, { recursive: true, force: true }); }
+    execFileSync(
+      process.execPath,
+      [
+        compiler,
+        '--strict',
+        '--module',
+        'NodeNext',
+        '--moduleResolution',
+        'NodeNext',
+        '--target',
+        'ES2022',
+        '--skipLibCheck',
+        'consumer.ts',
+      ],
+      { cwd: temporary, stdio: 'pipe' }
+    );
+    execFileSync(process.execPath, ['consumer.js'], {
+      cwd: temporary,
+      stdio: 'pipe',
+    });
+    assert.ok(
+      packed.files.some((file) => file.path === 'dist/server-hooks.d.ts')
+    );
+    assert.ok(!packed.files.some((file) => file.path.startsWith('src/')));
+  } finally {
+    rmSync(temporary, { recursive: true, force: true });
+  }
 });

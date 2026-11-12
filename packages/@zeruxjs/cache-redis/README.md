@@ -8,8 +8,10 @@ const cache = await createCacheManager({
   helper: '@zeruxjs/cache-redis', prefix: 'shop',
   options: {url: 'redis://127.0.0.1:6379'}
 });
-await cache.set('product:1', {stock: 5}, {ttlSeconds: 30});
-await cache.clear(); // SCAN + DEL only keys with literal prefix `shop:`
+try {
+  await cache.set('product:1', {stock: 5}, {ttlSeconds: 30});
+  await cache.clear(); // SCAN + DEL only keys with literal prefix `shop:`
+} finally { await cache.close(); }
 ```
 
 ## Operational safety
@@ -97,3 +99,14 @@ The hash/expiry index use one explicit {namespace} Cluster slot. Redis TIME owns
 Store close invalidates future claims; ownHelper defaults false. The helper continues to own/drain native commands, with unknown write outcomes on deadlines and no automatic replay. Use the security package's application-scoped limiter example for fail-open/closed policy, verified tenant/subject derivation and safe 429/Retry-After responses. Build security before cache-redis when compiling this workspace. The new exact @zeruxjs/security dependency supplies the public contract; its code does not start telemetry or Redis connections.
 
 Live multi-client/TTL checks require an isolated CACHE_RATE_LIMIT_REDIS_URL. Native Lua execution and distribution are not established by script-shape/mocked-client checks.
+
+## Implementation and ownership map
+
+- `src/index.ts` owns explicit driver selection, startup budgets and failure cleanup. `src/policy.ts` owns package limits, fixed diagnostic records and public errors.
+- `src/helper.ts` owns accepted native work, caller cancellation, bounded hooks, literal-prefix scanning and drain. `src/codec.ts` owns inert JSON, safe integer/TTL validation and glob escaping.
+- `src/ioredis.ts` translates structural commands, scans actual Cluster masters and separately creates BullMQ producer/worker options or owned Cluster connections. The option builder opens no connection; the Cluster factory returns two native owners requiring quit.
+- `src/rate-limit.ts` owns the optional security-store facade; `src/limiter-script.ts` holds the fixed two-key Lua strategy. Script text and claimed scope do not prove persistence/failover acceptance.
+
+The root runtime is Node-only. Credentials and injected-driver transport policy belong to trusted server configuration. A borrowed client may have its own replay/offline policy: the wrapper cannot repair that configuration, and unknown native writes are never retried by the wrapper. Prefixing alone grants no tenant authorization. Internal errors use fixed code-derived messages, but the public RedisCacheError constructor accepts host messages; hosts must redact those and keep causes private.
+
+Offline fixtures exercise both driver factories, borrowed ownership, late native settlement, atomic-store argument validation and synthetic multi-primary routing. Live Redis, Cluster, Lua atomicity, ACLs and TLS require the separately configured dedicated acceptance endpoints.

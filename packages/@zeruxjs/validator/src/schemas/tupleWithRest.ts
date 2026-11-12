@@ -29,52 +29,46 @@ export interface TupleWithRestSchema<
   TupleWithRestIssue | InferTupleIssue<TItems> | InferIssue<TRest>
 > {
   /**
-   * The schema type.
+   * Fixed structural discriminator used by issue and metadata consumers.
    */
   readonly type: 'tuple_with_rest';
   /**
-   * The schema reference.
+   * Authored constructor identity; no package discovery or source evaluation occurs.
    */
   readonly reference: typeof tupleWithRest;
   /**
-   * The expected property.
+   * Private root-type diagnostic, not an authorization or escaping policy.
    */
   readonly expects: 'Array';
   /**
-   * The items schema.
+   * Borrowed ordered child schemas; not a copied or frozen tuple.
    */
   readonly items: TItems;
   /**
-   * The rest schema.
+   * Borrowed explicit child schema for accepted extra values.
    */
   readonly rest: TRest;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback; raw issues can contain rejected values.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a tuple with rest schema.
- *
- * @param items The items schema.
- * @param rest The rest schema.
- *
- * @returns A tuple with rest schema.
+/** Validate the declared positional prefix and validate trailing items against the explicit rest schema. Construction captures trusted references; root parsing owns execution limits.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; missing positions are delegated as undefined.
+ * @param {TRest} rest - Borrowed explicit child schema for extra values; it receives the same root budget and private issue policy.
+ * @returns {TupleWithRestSchema<TItems, TRest, undefined>} Inert structured schema; no input is parsed, cloned or authorized during construction.
  */
 export function tupleWithRest<
   const TItems extends TupleItems,
   const TRest extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(items: TItems, rest: TRest): TupleWithRestSchema<TItems, TRest, undefined>;
 
-/**
- * Creates a tuple with rest schema.
- *
- * @param items The items schema.
- * @param rest The rest schema.
- * @param message The error message.
- *
- * @returns A tuple with rest schema.
+/** Validate the declared positional prefix and validate trailing items against the explicit rest schema. Construction captures trusted references; root parsing owns execution limits.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; missing positions are delegated as undefined.
+ * @param {TRest} rest - Borrowed explicit child schema for extra values; it receives the same root budget and private issue policy.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; not client-safe HTML.
+ * @returns {TupleWithRestSchema<TItems, TRest, TMessage>} Inert structured schema; no input is parsed, cloned or authorized during construction.
  */
 export function tupleWithRest<
   const TItems extends TupleItems,
@@ -86,6 +80,12 @@ export function tupleWithRest<
   message: TMessage
 ): TupleWithRestSchema<TItems, TRest, TMessage>;
 
+/** Validate the declared positional prefix and validate trailing items against the explicit rest schema. Construction captures trusted references; root parsing owns execution limits.
+ * @param {TupleItems} items - Borrowed trusted ordered child schemas; missing positions are delegated as undefined.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>>} rest - Borrowed explicit child schema for extra values; it receives the same root budget and private issue policy.
+ * @param {ErrorMessage<TupleWithRestIssue>} message - Optional trusted private diagnostic text/callback; not client-safe HTML.
+ * @returns {TupleWithRestSchema<TupleItems, BaseSchema<unknown, unknown, BaseIssue<unknown>>, ErrorMessage<TupleWithRestIssue> | undefined>} Inert structured schema; no input is parsed, cloned or authorized during construction.
+ */
 // @__NO_SIDE_EFFECTS__
 export function tupleWithRest(
   items: TupleItems,
@@ -105,11 +105,20 @@ export function tupleWithRest(
     items,
     rest,
     message,
+    /** Adapt explicit validation to the shared bounded root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Validate the declared positional prefix and validate trailing items against the explicit rest schema. Child transforms may return borrowed identities; output is not a deep clone.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; object keys are checked as own properties and tuple positions use array indices.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root work/issue budgets, abort flags and private message policy.
+     * @returns {OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Declared structural output or private nested issues; exceptions and budget failures propagate.
+     */
     '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed current input retained for own-field checks and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -121,12 +130,16 @@ export function tupleWithRest(
 
         // Parse schema of each tuple item
         for (let key = 0; key < this.items.length; key++) {
+          /** Current own field or positional value; missing input is delegated as undefined. */
           const value = input[key];
-          const itemDataset = _runSchema(this.items[key], { value }, config);
+          // The loop bounds select an existing item from the trusted schema tuple.
+          /** Current positional child result; issue rebasing and abort flags preserve source order. */
+          const itemDataset = _runSchema(this.items[key]!, { value }, config);
 
           // If there are issues, capture them
           if (itemDataset.issues) {
             // Create tuple path item
+            /** Private parent path segment retaining original input/value; public HTTP responses sanitize it. */
             const pathItem: ArrayPathItem = {
               type: 'array',
               origin: 'value',
@@ -171,12 +184,15 @@ export function tupleWithRest(
         // Parse rest with schema if necessary
         if (!dataset.issues || !config.abortEarly) {
           for (let key = this.items.length; key < input.length; key++) {
+            /** Current own field or positional value; missing input is delegated as undefined. */
             const value = input[key];
+            /** Current positional child result; issue rebasing and abort flags preserve source order. */
             const itemDataset = _runSchema(this.rest, { value }, config);
 
             // If there are issues, capture them
             if (itemDataset.issues) {
               // Create tuple path item
+              /** Private parent path segment retaining original input/value; public HTTP responses sanitize it. */
               const pathItem: ArrayPathItem = {
                 type: 'array',
                 origin: 'value',

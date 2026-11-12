@@ -7,7 +7,7 @@ import { createRssFeed, createAtomFeed, createJsonFeed, createFeedResponse } fro
 const config = {
   title: 'Updates', description: 'Product releases', siteUrl: 'https://example.com',
   feedUrl: 'https://example.com/feed.xml',
-  items: [{ id: 'release-1', title: 'Version 1', url: 'https://example.com/releases/1', date: new Date() }],
+  items: [{ id: 'release-1', title: 'Version 1', url: 'https://example.com/releases/1', date: '2025-01-02' }],
 };
 const xml = createRssFeed(config);
 const http = createFeedResponse('rss', config, 300); // { status, headers, body }
@@ -38,16 +38,16 @@ author URLs or enclosure files. The model is deliberately a subset of
 [Atom 1.0](https://www.rfc-editor.org/rfc/rfc4287) and
 [JSON Feed 1.1](https://www.jsonfeed.org/version/1.1/):
 
-| Field | RSS | Atom | JSON Feed |
-| --- | --- | --- | --- |
-| Identity | item.id as opaque guid, isPermaLink=false | feed id or siteUrl; item.atomId or item.id | item.id string |
-| Authors | repeated Dublin Core creator names; one item email also emits standard author | multiple name/uri/email, feed inheritance | multiple name/url/avatar, feed/item inheritance |
-| Categories | feed/item term, optional domain from scheme | feed/item term, scheme, label | item terms as tags; no feed taxonomy field |
-| Language | channel language; item dc:language extension | feed/entry xml:lang | feed/item language |
-| Attachments | one enclosure: URL, MIME, byte length | multiple enclosure links plus optional title | multiple attachments plus title/duration seconds |
-| Content | description/plain text, content:encoded HTML extension | summary; text or escaped HTML content | content_text/content_html |
-| Dates | pubDate and known-content lastBuildDate | updated/published | date_published/date_modified |
-| Images | channel image | feed logo | feed icon/item image and author avatars |
+| Field       | RSS                                                                           | Atom                                         | JSON Feed                                        |
+| ----------- | ----------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------ |
+| Identity    | item.id as opaque guid, isPermaLink=false                                     | feed id or siteUrl; item.atomId or item.id   | item.id string                                   |
+| Authors     | repeated Dublin Core creator names; one item email also emits standard author | multiple name/uri/email, feed inheritance    | multiple name/url/avatar, feed/item inheritance  |
+| Categories  | feed/item term, optional domain from scheme                                   | feed/item term, scheme, label                | item terms as tags; no feed taxonomy field       |
+| Language    | channel language; item dc:language extension                                  | feed/entry xml:lang                          | feed/item language                               |
+| Attachments | one enclosure: URL, MIME, byte length                                         | multiple enclosure links plus optional title | multiple attachments plus title/duration seconds |
+| Content     | description/plain text, content:encoded HTML extension                        | summary; text or escaped HTML content        | content_text/content_html                        |
+| Dates       | pubDate and known-content lastBuildDate                                       | updated/published                            | date_published/date_modified                     |
+| Images      | channel image                                                                 | feed logo                                    | feed icon/item image and author avatars          |
 
 Email has no JSON Feed author field; avatar has no Atom/RSS person field; category
 labels and attachment duration/title have only the mappings listed. Unsupported
@@ -146,3 +146,11 @@ partial Accept exclusions, outages and drain. XML parsing proves well-formedness
 not full schema validation or all-reader interoperability. No live feed reader,
 browser HTML sanitizer or remote enclosure service was exercised; the host must
 qualify those if used. Generation itself needs no live external prerequisite.
+
+## Reading the implementation and owning publication
+
+The public root is Node-oriented: `utils.ts` uses Node UTF-8 byte accounting for bounded normalization/output. The `/fetch` entry additionally uses Node cryptographic hashing and native Fetch/Abort APIs. No browser controller or automatic framework service is installed. `types.ts` documents content-owned fields and units; `content-type.ts` selects only declared media types. `rss.ts`, `atom.ts` and `json.ts` serialize the documented subset without downloading references. Generated XML literals intentionally retain their exact whitespace because representation bytes and ETags are observable.
+
+The root `authors`, `attachments` and `categories` helpers select/project values; they are not standalone validators or deep clones. `normalizeFeed` stages a detached candidate, while `validate` discards that candidate after checking it. String limits count UTF-16 code units; byte limits count UTF-8. Direct `escapeXml` encodes delimiters/whitespace and strips selected controls; full Unicode validation belongs to normalization. Neither helper is an HTML sanitizer or a sandbox for application Proxy/coercion code.
+
+`createFeedResponse` always returns public cache headers and does not inspect credentials or negotiate a request. The retained `/fetch` handler supplies conditional responses and defensive private headers for credential-bearing requests, but still has no principal/tenant authorization. Its timer bounds cooperative observation when the event loop runs; synchronous serialization and arbitrary producer JavaScript cannot be preempted. `close()` stops admission, aborts cooperative work and awaits actual producer settlement; it never closes a host database/client or revokes copies readers already cached.

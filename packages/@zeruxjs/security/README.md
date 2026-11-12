@@ -137,7 +137,7 @@ replicas. Random IV generation does not replace deployment-wide volume/rekey
 policies. Applications own durable key distribution and authorized record access.
 
 `destroy()` is idempotent, clears owned key buffers and makes further operations
-reject. Operations are synchronous and own no timer, listener, socket or worker.
+reject. Retain the returned keyring/authenticator owner even for synchronous use; dropping a temporary factory result bypasses its explicit cleanup. Operations are synchronous and own no timer, listener, socket or worker.
 Buffer clearing is best effort, not a guarantee that all VM/OpenSSL/caller copies
 have disappeared. Caller keys and returned plaintext remain caller-owned.
 

@@ -14,19 +14,19 @@ export interface NotSizeIssue<
   TRequirement extends number,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'not_size';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: `!${TRequirement}`;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `${TRequirement}`;
   /**
@@ -44,15 +44,15 @@ export interface NotSizeAction<
   TMessage extends ErrorMessage<NotSizeIssue<TInput, TRequirement>> | undefined,
 > extends BaseValidation<TInput, TInput, NotSizeIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'not_size';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof notSize;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: `!${TRequirement}`;
   /**
@@ -60,42 +60,41 @@ export interface NotSizeAction<
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a not size validation action.
- *
- * @param requirement The not required size.
- *
- * @returns A not size action.
+/** Reject exactly the configured native Blob byte size or Map/Set count without mutating the input. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted numeric threshold; this legacy constructor does not independently enforce finite, nonnegative or integer configuration.
+ * @returns {NotSizeAction<TInput, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function notSize<
   TInput extends SizeInput,
   const TRequirement extends number,
 >(requirement: TRequirement): NotSizeAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a not size validation action.
- *
- * @param requirement The not required size.
- * @param message The error message.
- *
- * @returns A not size action.
+/** Reject exactly the configured native Blob byte size or Map/Set count without mutating the input. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted numeric threshold; this legacy constructor does not independently enforce finite, nonnegative or integer configuration.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {NotSizeAction<TInput, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function notSize<
   TInput extends SizeInput,
   const TRequirement extends number,
   const TMessage extends
-  | ErrorMessage<NotSizeIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<NotSizeIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): NotSizeAction<TInput, TRequirement, TMessage>;
 
+/** Reject exactly the configured native Blob byte size or Map/Set count without mutating the input. This action neither establishes the input schema nor grants permissions.
+ * @param {number} requirement - Explicit trusted numeric threshold; this legacy constructor does not independently enforce finite, nonnegative or integer configuration.
+ * @param {ErrorMessage<NotSizeIssue<SizeInput, number>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {NotSizeAction<SizeInput, number, ErrorMessage<NotSizeIssue<SizeInput, number>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function notSize(
   requirement: number,
@@ -113,6 +112,11 @@ export function notSize(
     expects: `!${requirement}`,
     requirement,
     message,
+    /** Reject exactly the configured native Blob byte size or Map/Set count without mutating the input. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native property/getter exceptions propagate; diagnostic formatting can read length/size again.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && dataset.value.size === this.requirement) {
         _addIssue(this, 'size', dataset, config, {

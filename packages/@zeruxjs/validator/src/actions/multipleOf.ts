@@ -18,23 +18,23 @@ export interface MultipleOfIssue<
   TRequirement extends Input,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'multiple_of';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: `%${TRequirement}`;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `${TInput}`;
   /**
-   * The divisor.
+   * Explicit native divisor; number/bigint kinds must match and bigint zero retains native RangeError behavior.
    */
   readonly requirement: TRequirement;
 }
@@ -46,97 +46,90 @@ export interface MultipleOfAction<
   TInput extends Input,
   TRequirement extends Input,
   TMessage extends
-  | ErrorMessage<MultipleOfIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MultipleOfIssue<TInput, TRequirement>>
+    | undefined,
 > extends BaseValidation<
   TInput,
   TInput,
   MultipleOfIssue<TInput, TRequirement>
 > {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'multiple_of';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof multipleOf;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: `%${TRequirement}`;
   /**
-   * The divisor.
+   * Explicit native divisor; number/bigint kinds must match and bigint zero retains native RangeError behavior.
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a [multiple](https://en.wikipedia.org/wiki/Multiple_(mathematics)) of validation action.
- *
- * @param requirement The divisor.
- *
- * @returns A multiple of action.
+/** Use native remainder with explicit number/bigint zero checks. Number/bigint kinds must be compatible; bigint zero throws and floating-point arithmetic is not decimal rounding. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @returns {MultipleOfAction<TInput, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function multipleOf<
   TInput extends number,
   const TRequirement extends number,
 >(requirement: TRequirement): MultipleOfAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a [multiple](https://en.wikipedia.org/wiki/Multiple_(mathematics)) of validation action.
- *
- * @param requirement The divisor.
- *
- * @returns A multiple of action.
+/** Use native remainder with explicit number/bigint zero checks. Number/bigint kinds must be compatible; bigint zero throws and floating-point arithmetic is not decimal rounding. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @returns {MultipleOfAction<TInput, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function multipleOf<
   TInput extends bigint,
   const TRequirement extends bigint,
 >(requirement: TRequirement): MultipleOfAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a [multiple](https://en.wikipedia.org/wiki/Multiple_(mathematics)) of validation action.
- *
- * @param requirement The divisor.
- * @param message The error message.
- *
- * @returns A multiple of action.
+/** Use native remainder with explicit number/bigint zero checks. Number/bigint kinds must be compatible; bigint zero throws and floating-point arithmetic is not decimal rounding. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MultipleOfAction<TInput, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function multipleOf<
   TInput extends number,
   const TRequirement extends number,
   const TMessage extends
-  | ErrorMessage<MultipleOfIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MultipleOfIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): MultipleOfAction<TInput, TRequirement, TMessage>;
 
-/**
- * Creates a [multiple](https://en.wikipedia.org/wiki/Multiple_(mathematics)) of validation action.
- *
- * @param requirement The divisor.
- * @param message The error message.
- *
- * @returns A multiple of action.
+/** Use native remainder with explicit number/bigint zero checks. Number/bigint kinds must be compatible; bigint zero throws and floating-point arithmetic is not decimal rounding. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MultipleOfAction<TInput, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function multipleOf<
   TInput extends bigint,
   const TRequirement extends bigint,
   const TMessage extends
-  | ErrorMessage<MultipleOfIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MultipleOfIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): MultipleOfAction<TInput, TRequirement, TMessage>;
 
+/** Use native remainder with explicit number/bigint zero checks. Number/bigint kinds must be compatible; bigint zero throws and floating-point arithmetic is not decimal rounding. This action neither establishes the input schema nor grants permissions.
+ * @param {Input} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {ErrorMessage<MultipleOfIssue<Input, Input>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MultipleOfAction<Input, Input, ErrorMessage<MultipleOfIssue<Input, Input>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function multipleOf(
   requirement: Input,
@@ -154,10 +147,20 @@ export function multipleOf(
     expects: `%${requirement}`,
     requirement,
     message,
+    /** Use native remainder with explicit number/bigint zero checks. Number/bigint kinds must be compatible; bigint zero throws and floating-point arithmetic is not decimal rounding. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
-      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
-      if (dataset.typed && dataset.value % this.requirement != 0) {
-        _addIssue(this, 'multiple', dataset, config);
+      if (dataset.typed) {
+        /** Compute native arithmetic once; getters/coercion must not be replayed by separate zero checks. */
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
+        const remainder = dataset.value % this.requirement;
+        // Preserve both primitive zero results without loose equality or number/bigint conversion.
+        if (remainder !== 0 && remainder !== 0n) {
+          _addIssue(this, 'multiple', dataset, config);
+        }
       }
       return dataset;
     },

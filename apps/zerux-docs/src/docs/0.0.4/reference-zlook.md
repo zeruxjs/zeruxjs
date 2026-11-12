@@ -40,6 +40,7 @@ const watcher = watchDirectory('./src', event => console.log(event), {
 await watcher.ready;
 await watcher.flush();
 watcher.close();
+await watcher.closed;
 ```
 
 JavaScript can use the same runtime APIs without type-only statements. Enable JSDoc checking if editor validation is desired; a transpilation step alone does not typecheck the input.
@@ -74,10 +75,14 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 | Option | Accepted TypeScript value | Required | Meaning |
 | --- | --- | --- | --- |
-| `debounceMs` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `debounceMs` | `number` | No | Integer 0–600000ms trailing debounce; defaults to 60. |
 | `pollIntervalMs` | `number` | No | Fallback scan interval; also detects changes missed by native notifications. |
 | `ignored` | `(relativePath: string) => boolean` | No | Ignore paths relative to the watched root. |
-| `onError` | `(error: Error) => void` | No | Called when watching/scanning fails. |
+| `onError` | `(error: Error) => void` | No | Isolated handler for scan/native/callback failures; causes remain private. |
+| `maxEntries` | `number` | No | Integer 1–1000000 examined names per scan; defaults to 100000. |
+| `maxPendingEvents` | `number` | No | Integer 1–100000 retained changes per reconciliation; defaults to 4096. |
+| `pollingOnly` | `boolean` | No | Suppresses native allocation; periodic reconciliation remains active. |
+| `signal` | `AbortSignal` | No | Closes this subscription independently, including during startup. |
 
 ## Bounded reconciliation and subscriber isolation
 

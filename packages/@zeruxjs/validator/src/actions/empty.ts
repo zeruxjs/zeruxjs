@@ -9,14 +9,15 @@ import type { LengthInput } from './types.js';
 /**
  * Empty issue interface.
  */
-export interface EmptyIssue<TInput extends LengthInput>
-  extends BaseIssue<TInput> {
+export interface EmptyIssue<
+  TInput extends LengthInput,
+> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed refinement category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'empty';
   /**
@@ -37,45 +38,44 @@ export interface EmptyAction<
   TMessage extends ErrorMessage<EmptyIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, EmptyIssue<TInput>> {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'empty';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof empty;
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expects: '0';
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an empty validation action.
- *
- * @returns An empty action.
+/** Reject typed native lengths greater than zero; whitespace is not trimmed and this is not a nullish-value check. Construction captures trusted policy without evaluating candidate data.
+ * @returns {EmptyAction<TInput, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function empty<TInput extends LengthInput>(): EmptyAction<
   TInput,
   undefined
 >;
 
-/**
- * Creates an empty validation action.
- *
- * @param message The error message.
- *
- * @returns An empty action.
+/** Reject typed native lengths greater than zero; whitespace is not trimmed and this is not a nullish-value check. Construction captures trusted policy without evaluating candidate data.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {EmptyAction<TInput, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function empty<
   TInput extends LengthInput,
   const TMessage extends ErrorMessage<EmptyIssue<TInput>> | undefined,
 >(message: TMessage): EmptyAction<TInput, TMessage>;
 
+/** Reject typed native lengths greater than zero; whitespace is not trimmed and this is not a nullish-value check. Construction captures trusted policy without evaluating candidate data.
+ * @param {ErrorMessage<EmptyIssue<LengthInput>>} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {EmptyAction<LengthInput, ErrorMessage<EmptyIssue<LengthInput>> | undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function empty(
   message?: ErrorMessage<EmptyIssue<LengthInput>>
@@ -87,6 +87,11 @@ export function empty(
     async: false,
     expects: '0',
     message,
+    /** Reject typed native lengths greater than zero; whitespace is not trimmed and this is not a nullish-value check. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && dataset.value.length > 0) {
         _addIssue(this, 'length', dataset, config, {

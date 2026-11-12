@@ -18,8 +18,8 @@ import type { InferNullishOutput } from './types/nullish.js';
  */
 export interface NullishSchemaAsync<
   TWrapped extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   TDefault extends DefaultAsync<TWrapped, null | undefined>,
 > extends BaseSchemaAsync<
   InferInput<TWrapped> | null | undefined,
@@ -27,58 +27,63 @@ export interface NullishSchemaAsync<
   InferIssue<TWrapped>
 > {
   /**
-   * The schema type.
+   * Fixed nullish discriminator: only null or undefined selects this default/sentinel branch.
    */
   readonly type: 'nullish';
   /**
-   * The schema reference.
+   * Authored constructor reference; never loaded from user-controlled source text.
    */
   readonly reference: typeof nullish | typeof nullishAsync;
   /**
-   * The expected property.
+   * Diagnostic expectation combining wrapped input with null/undefined, not a callback.
    */
   readonly expects: `(${TWrapped['expects']} | null | undefined)`;
   /**
-   * The wrapped schema.
+   * Borrowed schema validating/transforming every non-sentinel replacement.
    */
   readonly wrapped: TWrapped;
   /**
-   * The default value.
+   * Trusted input literal/factory retained by reference; non-nullish results undergo wrapped validation.
    */
   readonly default: TDefault;
 }
 
 /**
- * Creates a nullish schema.
+ * Accept null/undefined or select a trusted input default before wrapped validation. A default returning null/undefined short-circuits without another factory call.
  *
- * @param wrapped The wrapped schema.
+ * @param {TWrapped} wrapped - Borrowed trusted input schema; construction starts no parsing or callback work.
  *
- * @returns A nullish schema.
+ * @returns {NullishSchemaAsync<TWrapped, undefined>} Inert nullish wrapper preserving null and undefined sentinel handling.
  */
 export function nullishAsync<
   const TWrapped extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(wrapped: TWrapped): NullishSchemaAsync<TWrapped, undefined>;
 
 /**
- * Creates a nullish schema.
+ * Accept null/undefined or select a trusted input default before wrapped validation. A default returning null/undefined short-circuits without another factory call.
  *
- * @param wrapped The wrapped schema.
- * @param default_ The default value.
+ * @param {TWrapped} wrapped - Borrowed trusted input schema; construction starts no parsing or callback work.
+ * @param {TDefault} default_ - Trusted input-compatible literal/factory; results are not deep-cloned.
  *
- * @returns A nullish schema.
+ * @returns {NullishSchemaAsync<TWrapped, TDefault>} Default-aware wrapper; non-sentinel replacements run through wrapped validation.
  */
 export function nullishAsync<
   const TWrapped extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   const TDefault extends DefaultAsync<TWrapped, null | undefined>,
 >(
   wrapped: TWrapped,
   default_: TDefault
 ): NullishSchemaAsync<TWrapped, TDefault>;
 
+/** Build a nullish wrapper without parsing or starting background work.
+ * @param {object} wrapped - Borrowed trusted schema; root execution owns budgets/cancellation.
+ * @param {unknown} default_ - Optional trusted input literal/factory; factory work remains host-owned.
+ * @returns {object} Inert nullish schema; sync wrappers reject async default misuse, async wrappers await settlement.
+ */
 // @__NO_SIDE_EFFECTS__
 export function nullishAsync(
   wrapped:
@@ -98,9 +103,17 @@ export function nullishAsync(
     async: true,
     wrapped,
     default: default_,
+    /** Adapt explicit validation calls to bounded root execution.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Apply the default once for null/undefined, then validate any non-sentinel replacement.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private input dataset.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Root-owned budgets/signal shared by nested work.
+     * @returns {unknown} Declared sync/async dataset; factory exceptions and hard limits still propagate.
+     */
     async '~run'(dataset, config) {
       // If value is `null` or `undefined`, override it with default or return
       // dataset

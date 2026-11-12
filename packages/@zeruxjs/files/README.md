@@ -57,7 +57,7 @@ return uploadFileRequest(files,addr,request,{
 
 File downloads use Fetch streams, ETags, conditional requests and single byte ranges where the storage backend supports them. Private files require an authorization callback in `createFileResponse`. Never expose a handler without authenticating uploads or checking write permission; `@zeruxjs/auth` may be used in these callbacks. For any file type, prefer attachment download unless a carefully allowlisted inline type is required. Encryption-aware local storage verifies AES-GCM authentication before emitting plaintext; encrypted local objects do not support byte ranges.
 
-Local S3-lite is S3-**style** object addressing; it is *not* an HTTP server implementing the entire AWS S3 wire API. If you need third-party S3 SDK clients connecting over HTTP, use MinIO/RustFS or another actual S3 server.
+Local S3-lite is S3-**style** object addressing; it is _not_ an HTTP server implementing the entire AWS S3 wire API. If you need third-party S3 SDK clients connecting over HTTP, use MinIO/RustFS or another actual S3 server.
 
 Install official AWS SDK modules including `@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@aws-sdk/credential-providers`, `@aws-sdk/s3-request-presigner`, and `@aws-sdk/cloudfront-signer`. The runtime imports them lazily. SDK integration tests use an injected client, not live cloud infrastructure.
 
@@ -158,3 +158,29 @@ Cleanup is never automatic. `previewCleanup({cursor?,limit?})` scans a bounded r
 There is no automatic stale-lease breaking: after a process crash, the operator must establish that its owner is dead before removing a `.lock` directory. A crash/lost response during native initiation may leave an unjournaled S3 upload ID; configure an S3 `AbortIncompleteMultipartUpload` lifecycle policy and reconcile provider inventory administratively. Session cleanup does not scan/delete arbitrary bucket uploads. Local commit/metadata failures or uncertain remote completion may likewise require operator reconciliation. Do not delete a potentially live session to resolve a retry.
 
 Focused checks exercise local restart/resume, rejected tenants and hashes, stream interruption, ordered completion, concurrent create-only winners, expiry/approval/revision cleanup, symlink rejection, draining close and SDK multipart failure/lost-response reconciliation. S3 fixtures exercise real SDK command objects, not a live S3 service. Disposable AWS/MinIO conditional completion, checksum interoperability, backend lifecycle cleanup and crash/power-loss behavior require separate live qualification.
+
+### Fetch client and ownership
+
+Import `createFilesClient` from `@zeruxjs/files/client` in browser code. This exact subpath has no Node/AWS imports; the storage root remains server-only. The client borrows Fetch and creates no persistent listeners, timers or close handle. `download` returns a Response whose body the caller must consume or cancel; `bytes` buffers small objects (16 MiB default) and releases an acquired reader. Pass a trusted positive finite byte ceiling. This client does not authenticate a tenant or validate JSON receipts independently; the server must authorize each operation.
+
+The token-authorizer factory borrows its verifier. Persistence, expiry, revocation and scope enforcement belong to that verifier; this factory does not imply an in-memory or durable auth store. The raw byte cache is process-local and policy-free. The file manager excludes private/encrypted objects from its cache, and cached byte arrays are copied on read and write.
+
+```ts
+import { createFilesClient } from '@zeruxjs/files/client';
+
+// Configure a host-authorized object route; the facade does not create that route.
+const client = createFilesClient({ baseUrl: 'https://files.example/public/' });
+const bytes = await client.bytes('manual.txt', 64 * 1024);
+console.log(bytes.byteLength);
+```
+
+Close a resumable coordinator before its manager. Manager `close()` calls each
+unique configured driver's optional close and clears local cached bytes; it does
+not track every in-flight manager operation. S3 close fences calls, awaits lazy
+client creation and destroys owned clients once, without claiming a command drain
+or terminating borrowed credential helpers. Local drivers retain no persistent
+file handle; opened read iterators must be consumed or returned by their caller.
+A local binary commit and its metadata sidecar update are separate filesystem
+operations, not a global crash-atomic transaction. Local listing currently scans
+and validates the bucket metadata before slicing its result page; it is not a
+constant-memory remote listing replacement.

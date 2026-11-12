@@ -19,8 +19,8 @@ import type { ArrayIssue } from './types/array.js';
  */
 export interface ArraySchemaAsync<
   TItem extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   TMessage extends ErrorMessage<ArrayIssue> | undefined,
 > extends BaseSchemaAsync<
   InferInput<TItem>[],
@@ -28,55 +28,54 @@ export interface ArraySchemaAsync<
   ArrayIssue | InferIssue<TItem>
 > {
   /**
-   * The schema type.
+   * Stable schema discriminator used by structured issue consumers.
    */
   readonly type: 'array';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof array | typeof arrayAsync;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not a coercion, escaping or authorization policy.
    */
   readonly expects: 'Array';
   /**
-   * The array item schema.
+   * Borrowed child schema; root execution owns its work limits.
    */
   readonly item: TItem;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an array schema.
- *
- * @param item The item schema.
- *
- * @returns An array schema.
+/** Parse dense array items concurrently under the shared root limiter, then accumulate results in input order. Construction does not parse input or authorize its source.
+ * @param {TItem} item - Borrowed explicit child schema; parsing shares root work/issue budgets.
+ * @returns {ArraySchemaAsync<TItem, undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function arrayAsync<
   const TItem extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(item: TItem): ArraySchemaAsync<TItem, undefined>;
 
-/**
- * Creates an array schema.
- *
- * @param item The item schema.
- * @param message The error message.
- *
- * @returns An array schema.
+/** Parse dense array items concurrently under the shared root limiter, then accumulate results in input order. Construction does not parse input or authorize its source.
+ * @param {TItem} item - Borrowed explicit child schema; parsing shares root work/issue budgets.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {ArraySchemaAsync<TItem, TMessage>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function arrayAsync<
   const TItem extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   const TMessage extends ErrorMessage<ArrayIssue> | undefined,
 >(item: TItem, message: TMessage): ArraySchemaAsync<TItem, TMessage>;
 
+/** Parse dense array items concurrently under the shared root limiter, then accumulate results in input order. Construction does not parse input or authorize its source.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>} item - Borrowed explicit child schema; parsing shares root work/issue budgets.
+ * @param {ErrorMessage<ArrayIssue>} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {ArraySchemaAsync<BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>, ErrorMessage<ArrayIssue> | undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function arrayAsync(
   item:
@@ -96,11 +95,20 @@ export function arrayAsync(
     async: true,
     item,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Parse dense array items concurrently under the shared root limiter, then accumulate results in input order. Raw issues remain private and operational failures propagate.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; this schema does not grant permissions or sanitize output.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets, cancellation, abort flags and diagnostic policy.
+     * @returns {Promise<OutputDataset<unknown, BaseIssue<unknown>>>} Declared output or private issue dataset; child result identity follows its schema.
+     */
     async '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed candidate retained for child reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -111,6 +119,7 @@ export function arrayAsync(
         dataset.value = [];
 
         // Parse schema of each item async
+        /** Child results for mapped positions; Promise.all rejection does not itself cancel already-started trusted callbacks. */
         const itemDatasets = await Promise.all(
           input.map((value) => _runSchema(this.item, { value }, config))
         );
@@ -118,11 +127,14 @@ export function arrayAsync(
         // Process each item dataset
         for (let key = 0; key < itemDatasets.length; key++) {
           // Get item dataset
-          const itemDataset = itemDatasets[key];
+          // Dense inputs yield one dataset per position; the legacy sparse-array path can still fail on an undefined dataset.
+          /** Dense-array positional result; legacy sparse inputs can fail here rather than produce a validation issue. */
+          const itemDataset = itemDatasets[key]!;
 
           // If there are issues, capture them
           if (itemDataset.issues) {
             // Create array path item
+            /** Private parent path segment retaining original input/value; sanitize before client exposure. */
             const pathItem: ArrayPathItem = {
               type: 'array',
               origin: 'value',

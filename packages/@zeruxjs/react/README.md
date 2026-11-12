@@ -6,12 +6,12 @@ remain structural adapters; actual HTML, mount and hydration use separate entrie
 
 ## Entry points and peer policy
 
-| Public entry | Implemented behavior |
-| --- | --- |
-| `@zeruxjs/react` | `createReactStore`, stable selectors, injected hooks, observable adapters; usable without React DOM |
-| `@zeruxjs/react/browser` | Lazy native `createRoot` / `hydrateRoot`, explicit update/unmount ownership |
-| `@zeruxjs/react/server` | Lazy native `renderToString` / `renderToStaticMarkup`; no DOM globals needed |
-| `@zeruxjs/react/hydration` | ESM-only, bounded public-state codec and request-owned pinned server snapshots |
+| Public entry               | Implemented behavior                                                                                |
+| -------------------------- | --------------------------------------------------------------------------------------------------- |
+| `@zeruxjs/react`           | `createReactStore`, stable selectors, injected hooks, observable adapters; usable without React DOM |
+| `@zeruxjs/react/browser`   | Lazy native `createRoot` / `hydrateRoot`, explicit update/unmount ownership                         |
+| `@zeruxjs/react/server`    | Lazy native `renderToString` / `renderToStaticMarkup`; no DOM globals needed                        |
+| `@zeruxjs/react/hydration` | ESM-only, bounded public-state codec and request-owned pinned server snapshots                      |
 
 Install matching host peers, for example the exercised versions:
 
@@ -220,3 +220,9 @@ React DOM, missing-peer diagnostics, installed public declarations and the examp
 Ephemeral local framework requests verify real output/isolation and close their
 server; no user-managed application is started. Live browser qualification needs
 a separately configured functioning browser and application bundle.
+
+## Ownership during parallel development
+
+Keep root, store and subscription owners distinct. `createReactBindings`, selectors and structural observable bridges borrow stores; they do not destroy them. `createReactStore` owns its listeners, `mountReact`/`hydrateReact` own accepted native roots, and hydration create/read helpers own a fresh public store through `dispose()`. Preflight rejection leaves resources with the caller. Native root acquisition is asynchronous and remains separate from commit.
+
+The focused DOM fixtures register successful root handles before assertions, unmount while their emulated window still exists, and restore original global descriptors afterward. Synthetic stores/subscriptions are released even when an assertion fails. These are React 19.3.1/jsdom checks, not browser layout, assistive-technology or all-peer-version certification.

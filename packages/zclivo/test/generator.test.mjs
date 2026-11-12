@@ -15,11 +15,20 @@ import {
   runGeneratorCli,
   createZeruxProject,
 } from 'zclivo';
+/** Allocate an owned synthetic project parent.
+ * @returns {string} Fresh temporary fixture directory.
+ */
 const temp = () => fs.mkdtempSync(join(tmpdir(), 'zx085-'));
+/** Remove only the explicit owned temporary fixture tree.
+ * @param {string} root - Directory allocated by temp.
+ * @returns {void} Completes fixture cleanup or throws its filesystem failure.
+ */
 const remove = (root) => fs.rmSync(root, { recursive: true, force: true });
 test('pure bounded plans/dry-run are deterministic, pin public versions and do not create or install', async () => {
+  /** Owned isolated fixture parent removed in finally. */
   const root = temp();
   try {
+    /** Explicit supported minimal project choices; no dependency is installed. */
     const options = {
       name: 'Demo',
       language: 'javascript',
@@ -27,28 +36,31 @@ test('pure bounded plans/dry-run are deterministic, pin public versions and do n
       mode: 'minimal',
       renderer: 'none',
     };
+    /** First deterministic plan without filesystem writes. */
     const a = minimalProjectGenerator.plan({
-        ...options,
-        destination: join(root, 'first'),
-      }),
-      b = minimalProjectGenerator.plan({
-        ...options,
-        destination: join(root, 'second'),
-      });
+      ...options,
+      destination: join(root, 'first'),
+    });
+    /** Equivalent plan at another new destination; content identity must match. */
+    const b = minimalProjectGenerator.plan({
+      ...options,
+      destination: join(root, 'second'),
+    });
     assert.equal(a.digest, b.digest);
     assert.deepEqual(a.files, b.files);
     assert.deepEqual(fs.readdirSync(root), []);
     assert.equal(
       JSON.parse(a.files['package.json']).dependencies.zeruxjs,
-      '0.0.4',
+      '0.0.4'
     );
     assert.equal(JSON.parse(a.files['package.json']).engines.node, '>=24.15.0');
     assert.match(a.files['zerux.config.mjs'], /4321/);
     assert.throws(() => writeProjectPlan({ ...a }), /Validated/);
     await writeProjectPlanAsync(a);
     assert.deepEqual(fs.readdirSync(root), ['first']);
-    for (const [path, body] of Object.entries(a.files))
+    for (const [path, body] of Object.entries(a.files)) {
       assert.equal(fs.readFileSync(join(root, 'first', path), 'utf8'), body);
+    }
     assert.equal(fs.existsSync(join(root, 'first/node_modules')), false);
     assert.equal(fs.existsSync(join(root, 'first/package-lock.json')), false);
   } finally {
@@ -56,6 +68,7 @@ test('pure bounded plans/dry-run are deterministic, pin public versions and do n
   }
 });
 test('reserved names, incompatible capabilities, invalid ports and unsafe template paths reject before writes', () => {
+  /** Owned isolated fixture parent removed in finally. */
   const root = temp();
   try {
     for (const name of [
@@ -67,10 +80,11 @@ test('reserved names, incompatible capabilities, invalid ports and unsafe templa
       'favicon.ico',
       'a..b',
       'bad;cmd',
-    ])
+    ]) {
       assert.throws(() =>
-        minimalProjectGenerator.plan({ destination: join(root, name) }),
+        minimalProjectGenerator.plan({ destination: join(root, name) })
       );
+    }
     for (const extra of [
       { port: 0 },
       { port: null },
@@ -80,13 +94,14 @@ test('reserved names, incompatible capabilities, invalid ports and unsafe templa
       { renderer: 'react' },
       { mode: 'static' },
       { language: 'ruby' },
-    ])
+    ]) {
       assert.throws(() =>
         minimalProjectGenerator.plan({
           destination: join(root, 'valid'),
           ...extra,
-        }),
+        })
       );
+    }
     for (const output of [
       { '../escape': 'x' },
       { '/absolute': 'x' },
@@ -95,6 +110,7 @@ test('reserved names, incompatible capabilities, invalid ports and unsafe templa
       { file: 'x', 'file/child': 'y' },
       { 'node_modules/x': 'x' },
     ]) {
+      /** Explicit custom template engine used only to prove invalid output rejection. */
       const engine = createProjectGenerator([
         {
           id: 'custom',
@@ -108,7 +124,7 @@ test('reserved names, incompatible capabilities, invalid ports and unsafe templa
         engine.plan({
           destination: join(root, 'valid'),
           language: 'javascript',
-        }),
+        })
       );
     }
     assert.deepEqual(fs.readdirSync(root), []);
@@ -117,24 +133,26 @@ test('reserved names, incompatible capabilities, invalid ports and unsafe templa
   }
 });
 test('occupied/dangling target and symlink parent are never followed', () => {
+  /** Owned isolated fixture parent removed in finally. */
   const root = temp();
   try {
+    /** Owned real parent directory used to test symlink parent denial. */
     const real = join(root, 'real');
     fs.mkdirSync(real);
     fs.symlinkSync(real, join(root, 'parent'));
     assert.throws(
       () => createZeruxProject(join(root, 'parent/new')),
-      /symlink/,
+      /symlink/
     );
     fs.symlinkSync(join(root, 'missing'), join(root, 'taken'));
     assert.throws(
       () => createZeruxProject(join(root, 'taken')),
-      /already exists/,
+      /already exists/
     );
     fs.writeFileSync(join(root, 'file'), 'keep');
     assert.throws(
       () => createZeruxProject(join(root, 'file')),
-      /already exists/,
+      /already exists/
     );
     assert.equal(fs.readFileSync(join(root, 'file'), 'utf8'), 'keep');
     assert.deepEqual(fs.readdirSync(real), []);
@@ -143,16 +161,22 @@ test('occupied/dangling target and symlink parent are never followed', () => {
   }
 });
 test('native staged-write and promotion failures roll back owned paths only', () => {
-  const root = temp(),
-    write = fs.writeFileSync,
-    copy = fs.copyFileSync;
+  /** Owned isolated fixture parent removed in finally. */
+  const root = temp();
+  /** Borrowed native write function restored in finally after fault injection. */
+  const write = fs.writeFileSync;
+  /** Borrowed native exclusive-copy function restored in finally after promotion fault injection. */
+  const copy = fs.copyFileSync;
   try {
+    /** Package-instance validated plan; only its owned target may be written. */
     const plan = minimalProjectGenerator.plan({
       destination: join(root, 'project'),
     });
     let writes = 0;
     fs.writeFileSync = (...args) => {
-      if (++writes === 3) throw Error('disk write fixture failure');
+      if (++writes === 3) {
+        throw Error('disk write fixture failure');
+      }
       return write(...args);
     };
     syncBuiltinESMExports();
@@ -162,7 +186,9 @@ test('native staged-write and promotion failures roll back owned paths only', ()
     assert.deepEqual(fs.readdirSync(root), []);
     let moves = 0;
     fs.copyFileSync = (...args) => {
-      if (++moves === 2) throw Error('promotion fixture failure');
+      if (++moves === 2) {
+        throw Error('promotion fixture failure');
+      }
       return copy(...args);
     };
     syncBuiltinESMExports();
@@ -176,9 +202,12 @@ test('native staged-write and promotion failures roll back owned paths only', ()
   }
 });
 test('template dependency failure and abort during async staging leave no partial project', async () => {
-  const root = temp(),
-    write = fs.writeFileSync;
+  /** Owned isolated fixture parent removed in finally. */
+  const root = temp();
+  /** Borrowed native write function restored in finally after fault injection. */
+  const write = fs.writeFileSync;
   try {
+    /** Trusted synthetic template intentionally failing before target ownership is acquired. */
     const broken = createProjectGenerator([
       {
         id: 'broken',
@@ -192,13 +221,16 @@ test('template dependency failure and abort during async staging leave no partia
     ]);
     assert.throws(
       () => broken.plan({ destination: join(root, 'new') }),
-      /dependency unavailable/,
+      /dependency unavailable/
     );
+    /** Package-instance validated plan; only its owned target may be written. */
     const plan = minimalProjectGenerator.plan({
       destination: join(root, 'new'),
     });
+    /** Owned cancellation controller triggered during synthetic file staging. */
     const controller = new AbortController();
     fs.writeFileSync = (...args) => {
+      /** Native fixture write result retained while signaling cooperative cancellation. */
       const result = write(...args);
       controller.abort();
       return result;
@@ -206,7 +238,7 @@ test('template dependency failure and abort during async staging leave no partia
     syncBuiltinESMExports();
     await assert.rejects(
       writeProjectPlanAsync(plan, { signal: controller.signal }),
-      (e) => e.name === 'AbortError',
+      (e) => e.name === 'AbortError'
     );
     assert.deepEqual(fs.readdirSync(root), []);
   } finally {
@@ -216,10 +248,14 @@ test('template dependency failure and abort during async staging leave no partia
   }
 });
 test('interactive answers equal noninteractive flags and help describes actual supported capabilities', async () => {
-  const root = temp(),
-    messages = [],
-    questions = [];
+  /** Owned isolated fixture parent removed in finally. */
+  const root = temp();
+  /** Captured public CLI plan/help text; never contains private environment values. */
+  const messages = [];
+  /** Explicit prompt questions recorded to verify capability-based choices. */
+  const questions = [];
   try {
+    /** Trusted fixed prompt answers for deterministic interactive/noninteractive equivalence. */
     const answers = {
       template: 'zerux-minimal',
       name: 'named',
@@ -230,6 +266,7 @@ test('interactive answers equal noninteractive flags and help describes actual s
       port: '4321',
     };
     let disposed = 0;
+    /** Fixed synthetic subprocess program or shared CLI completion status under test. */
     const code = await runGeneratorCli(
       ['create', '--interactive', '--dry-run'],
       {
@@ -245,12 +282,12 @@ test('interactive answers equal noninteractive flags and help describes actual s
             disposed++;
           },
         }),
-      },
+      }
     );
     assert.equal(code, 0);
     assert.equal(disposed, 1);
     assert.ok(
-      questions.find((q) => q.name === 'mode').choices.includes('minimal'),
+      questions.find((q) => q.name === 'mode').choices.includes('minimal')
     );
     assert.equal(
       await runGeneratorCli(
@@ -270,9 +307,9 @@ test('interactive answers equal noninteractive flags and help describes actual s
           '--yes',
           '--dry-run',
         ],
-        { cwd: root, out: (m) => messages.push(m), err: () => {} },
+        { cwd: root, out: (m) => messages.push(m), err: () => {} }
       ),
-      0,
+      0
     );
     assert.equal(messages[0], messages[1]);
     assert.deepEqual(fs.readdirSync(root), []);
@@ -280,7 +317,7 @@ test('interactive answers equal noninteractive flags and help describes actual s
       await runGeneratorCli(['create', '--help'], {
         out: (m) => messages.push(m),
       }),
-      0,
+      0
     );
     assert.match(messages.at(-1), /Supported modes: minimal/);
     assert.match(messages.at(-1), /Supported renderers: none/);
@@ -290,7 +327,7 @@ test('interactive answers equal noninteractive flags and help describes actual s
         out: () => {},
         err: () => {},
       }),
-      2,
+      2
     );
     assert.equal(
       await runGeneratorCli(['create', 'valid', '--install'], {
@@ -298,7 +335,7 @@ test('interactive answers equal noninteractive flags and help describes actual s
         out: () => {},
         err: () => {},
       }),
-      2,
+      2
     );
   } finally {
     remove(root);
@@ -308,43 +345,56 @@ test(
   'real SIGINT while prompting returns 130, disposes the prompt and writes no project',
   { timeout: 10000 },
   async () => {
+    /** Owned isolated fixture parent removed in finally. */
     const root = temp();
     try {
+      /** Explicit built public toolkit module URL used by the owned signal fixture. */
       const toolkit = pathToFileURL(
-        resolve('packages/zclivo/dist/index.js'),
+        resolve('packages/zclivo/dist/index.js')
       ).href;
+      /** Fixed synthetic subprocess program or shared CLI completion status under test. */
       const code = `import {runGeneratorCli} from ${JSON.stringify(toolkit)};import fs from 'node:fs';const c=new AbortController(),stop=()=>c.abort(),keepAlive=setInterval(()=>{},1000);process.once('SIGINT',stop);try{process.exitCode=await runGeneratorCli(['create','--interactive'],{cwd:process.argv[1],signal:c.signal,out:()=>{},err:()=>{},prompt:()=>({ask(_q,signal){console.log('READY');return new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(Error('interrupted')),{once:true}));},close(){fs.writeFileSync(process.argv[1]+'/disposed','yes');}})});}finally{clearInterval(keepAlive);process.off('SIGINT',stop);}`;
+      /** Owned synthetic CLI subprocess; tests signal only this child and bound its lifetime. */
       const child = spawn(
         process.execPath,
         ['--input-type=module', '-e', code, root],
-        { stdio: ['ignore', 'pipe', 'pipe'] },
+        { stdio: ['ignore', 'pipe', 'pipe'] }
       );
       try {
         await once(child.stdout, 'data');
+        /** Actual child-close settlement captured before sending the test interrupt. */
         const ended = once(child, 'close');
         child.kill('SIGINT');
+        /** Owned child exit status observed after actual process close. */
         const [status] = await ended;
         assert.equal(status, 130);
         assert.deepEqual(fs.readdirSync(root), ['disposed']);
       } finally {
-        if (child.exitCode === null) child.kill('SIGKILL');
+        if (child.exitCode === null) {
+          child.kill('SIGKILL');
+        }
       }
+      /** Finite CLI subprocess proving interactive mode rejects without a terminal. */
       const noninteractive = spawnSync(
         process.execPath,
         ['packages/zclivo/dist/bin.js', 'create', '--interactive'],
-        { encoding: 'utf8', timeout: 3000 },
+        { encoding: 'utf8', timeout: 3000 }
       );
       assert.equal(noninteractive.status, 2);
     } finally {
       remove(root);
     }
-  },
+  }
 );
 test('a target claimed by another writer during staging is preserved', () => {
-  const root = temp(),
-    write = fs.writeFileSync;
+  /** Owned isolated fixture parent removed in finally. */
+  const root = temp();
+  /** Borrowed native write function restored in finally after fault injection. */
+  const write = fs.writeFileSync;
+  /** Synthetic target claimed by a competing fixture writer; unrelated bytes must survive. */
   const destination = join(root, 'race');
   try {
+    /** Package-instance validated plan; only its owned target may be written. */
     const plan = minimalProjectGenerator.plan({ destination });
     let raced = false;
     fs.writeFileSync = (...args) => {
@@ -360,7 +410,7 @@ test('a target claimed by another writer during staging is preserved', () => {
     assert.deepEqual(fs.readdirSync(root), ['race']);
     assert.equal(
       fs.readFileSync(join(destination, 'unrelated'), 'utf8'),
-      'keep',
+      'keep'
     );
   } finally {
     fs.writeFileSync = write;
@@ -369,10 +419,15 @@ test('a target claimed by another writer during staging is preserved', () => {
   }
 });
 test('disposed terminal prompts cannot reopen and malformed CLI/plan input does not write', async () => {
+  /** Explicit native in-memory stream constructors for the disposed-prompt fixture. */
   const { PassThrough } = await import('node:stream');
+  /** Public prompt factory under test; import itself creates no terminal resources. */
   const { createTerminalGeneratorPrompt } = await import('zclivo');
-  const input = new PassThrough(),
-    output = new PassThrough();
+  /** Owned in-memory input stream destroyed in finally. */
+  const input = new PassThrough();
+  /** Owned in-memory output stream destroyed in finally. */
+  const output = new PassThrough();
+  /** Owned lazy terminal prompt deliberately closed before another ask. */
   const prompt = createTerminalGeneratorPrompt({
     input,
     output,
@@ -383,13 +438,13 @@ test('disposed terminal prompts cannot reopen and malformed CLI/plan input does 
     await assert.rejects(
       prompt.ask(
         { name: 'name', message: 'Name', defaultValue: 'app' },
-        new AbortController().signal,
+        new AbortController().signal
       ),
-      /closed/,
+      /closed/
     );
     assert.equal(
       await runGeneratorCli(null, { out: () => {}, err: () => {} }),
-      2,
+      2
     );
     await assert.rejects(writeProjectPlanAsync({}), /Validated/);
   } finally {

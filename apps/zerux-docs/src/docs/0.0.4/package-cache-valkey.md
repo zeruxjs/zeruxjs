@@ -54,3 +54,7 @@ Injected clients are borrowed unless `ownClient:true` and must meet the safe nat
 ## Verification scope
 
 Existing fixtures use an actual iovalkey client against a local RESP fixture and injected contracts; they do not qualify a real Valkey/TLS/ACL/Cluster deployment. No service is started by this documentation build. See the linked package README for exact limits and native deployment prerequisites.
+
+## Source ownership
+
+`types.ts` owns structural contracts; `index.ts` owns explicit connection/TLS policy, lazy driver selection and acquisition rollback. `helper.ts` owns bounded native work, shared inert JSON validation and separate close/settlement receipts. The public scoped example closes its manager before awaiting helper cleanup. No native handle, credential or arbitrary error cause belongs in browser configuration. Custom host-created error codes also require redaction.

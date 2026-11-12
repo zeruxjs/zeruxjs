@@ -6,7 +6,23 @@
   "order": 19,
   "sources": [
     "packages/@zeruxjs/analytics/README.md",
-    "packages/@zeruxjs/analytics/package.json"
+    "packages/@zeruxjs/analytics/package.json",
+    "packages/@zeruxjs/analytics/src/browser.ts",
+    "packages/@zeruxjs/analytics/src/http.ts",
+    "packages/@zeruxjs/analytics/src/aggregation.ts",
+    "packages/@zeruxjs/analytics/src/numeric.ts",
+    "packages/@zeruxjs/analytics/src/reconciliation.ts",
+    "packages/@zeruxjs/analytics/src/schemas.ts",
+    "packages/@zeruxjs/analytics/src/manager.ts",
+    "packages/@zeruxjs/analytics/src/analysis.ts",
+    "packages/@zeruxjs/analytics/src/durable.ts",
+    "packages/@zeruxjs/analytics/src/request-id.ts",
+    "packages/@zeruxjs/analytics/src/documents.ts",
+    "packages/@zeruxjs/analytics/src/jobs.ts",
+    "packages/@zeruxjs/analytics/src/retention.ts",
+    "packages/@zeruxjs/analytics/src/email-tracking.ts",
+    "packages/@zeruxjs/analytics/examples/versioned-events.ts",
+    "packages/@zeruxjs/analytics/examples/collection.ts"
   ],
   "related": [
     "analytics-reporting",
@@ -149,7 +165,7 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### AnalyticsNumericAggregateQuery
 
-Values cover successfully materialized numeric facts, not necessarily all historical events.
+Values cover successfully materialized numeric facts, not necessarily all historical events. Native reports reject storage failures rather than inventing zero totals. Totals and groups use separate reads and can differ under concurrent writes; they are not a shared transactional snapshot. Group limits default to 100 (maximum 500). Daily queries require explicit bounds spanning at most 366 UTC days, with at most six bucket reads per batch. The host owns authorization and tenant/site binding before calling these borrowed-connection helpers.
 
 | Field | Accepted type/value | Optional |
 | --- | --- | --- |
@@ -199,3 +215,14 @@ Bounded site-scoped, keyset-paged purge. Rerun from the beginning to catch late 
 | `reconcile` | `(query:NumericReconciliationQuery)=>Promise<NumericReconciliationResult>` | No |
 | `leaseMs` | `number` | Yes |
 | `now` | `()=>number` | Yes |
+
+
+## Browser and collector ownership
+
+Use `@zeruxjs/analytics/browser` for the Node-free runtime client. Root and `/http` exports eagerly load Node server helpers. The typed collection example accepts an explicit endpoint and borrowed Fetch transport and requires consent before sending; it opens no resource on import. Client consent state is not authentication or a server tenant grant.
+
+The collector separately bounds parsing waits and actually unsettled storage dispatches. A body timeout can stop waiting while a reader is still cancelling; a storage timeout can return 204 while its pending slot stays occupied. HTTP acceptance and request-ID reservation do not prove an analytics event committed. Hosts own route registration, tenant/site policy, stores and service shutdown.
+
+## Source and cleanup ownership
+
+The package README maps collection, schemas, native reporting, reconciliation, CAS documents, durable work and email observations to their source owners. Standalone `createAnalyticsAnalysis` and `/durable`'s `createDurableAnalytics` expose `close()`: stop admission and drain actual work before closing borrowed databases/stores. `createAnalytics`, browser clients, registries and email tracking do not expose that disposer. A wait timeout does not forcibly terminate a host callback. Reconciliation job callback errors must be sanitized by the host before their bounded internal messages are persisted or shown in authorized administrative views.

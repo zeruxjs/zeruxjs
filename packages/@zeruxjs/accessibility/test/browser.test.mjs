@@ -1,13 +1,96 @@
-import test from 'node:test';import assert from 'node:assert/strict';
-import fs from 'node:fs';import path from 'node:path';import {tmpdir} from 'node:os';import {spawn,spawnSync} from 'node:child_process';import {fileURLToPath,pathToFileURL} from 'node:url';import {build} from 'esbuild';
-const chrome=process.env.ZERUX_A11Y_CHROME??'google-chrome',version=spawnSync(chrome,['--version'],{encoding:'utf8',timeout:5000});
-const bounded=async(promise,ms,message)=>{let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms);})]);}finally{clearTimeout(timer);}};
-test('Chrome keyboard, media preferences, guarded speech simulation and owned cleanup',{skip:version.error?.code==='ENOENT'?'Chrome unavailable; configure ZERUX_A11Y_CHROME':false,timeout:30000},async()=>{
- const root=fs.mkdtempSync(path.join(tmpdir(),'zerux-a11y-browser-'));let child,ws,exit,sequence=0;const pending=new Map();
- const call=(method,params={},sessionId)=>new Promise((resolve,reject)=>{const id=++sequence,timer=setTimeout(()=>{pending.delete(id);reject(new Error('CDP deadline: '+method));},5000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params,...(sessionId?{sessionId}:{})}));});
- try{
-  const bundled=await build({stdin:{contents:"import * as a11y from '@zeruxjs/accessibility';window.a11y=a11y;",resolveDir:fileURLToPath(new URL('..',import.meta.url))},bundle:true,platform:'browser',format:'iife',write:false});
-  fs.writeFileSync(path.join(root,'index.html'),`<!doctype html><button id="open">Open</button><button id="fallback">Next</button><main id="app">App</main>
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
+import { spawn, spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { build } from 'esbuild';
+/** Trusted configured browser executable; spawned with an isolated owned profile. */
+const chrome = process.env.ZERUX_A11Y_CHROME ?? 'google-chrome';
+/** Bounded browser capability probe; missing executables are reported rather than invented. */
+const version = spawnSync(chrome, ['--version'], {
+  encoding: 'utf8',
+  timeout: 5000,
+});
+/** Await one fixture operation with an owned timeout, always cleared in finally.
+ * @param {Promise<unknown>} promise - Owned fixture operation awaited without changing its actual work lifetime.
+ * @param {number} ms - Fixture wait bound in milliseconds; timeout stops waiting, not arbitrary work.
+ * @param {string} message - Trusted fixed diagnostic label; never interpolate private application data.
+ * @returns {Promise<unknown>} Awaited fixture result; timeout rejects and its owned timer always clears.
+ */
+const bounded = async (promise, ms, message) => {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+test(
+  'Chrome keyboard, media preferences, guarded speech simulation and owned cleanup',
+  {
+    skip:
+      version.error?.code === 'ENOENT'
+        ? 'Chrome unavailable; configure ZERUX_A11Y_CHROME'
+        : false,
+    timeout: 30000,
+  },
+  async () => {
+    /** Owned temporary fixture prefix or resolved package source root. */
+    const root = fs.mkdtempSync(path.join(tmpdir(), 'zerux-a11y-browser-'));
+    let child,
+      ws,
+      exit,
+      sequence = 0;
+    /** Owned outstanding CDP requests, each with a bounded timer and explicit settlement. */
+    const pending = new Map();
+    /** Explicit CDP request adapter for the owned browser; it does not contact arbitrary destinations.
+     * @param {string} method - Explicit CDP command used only against the owned browser.
+     * @param {object} params - Literal protocol arguments from this fixture, not user-supplied endpoint data.
+     * @param {string} sessionId - Optional owned DevTools session ID for the isolated target.
+     * @returns {Promise<object>} Owned CDP reply; each request settles or times out with its exact timer cleared.
+     */
+    const call = (method, params = {}, sessionId) =>
+      new Promise((resolve, reject) => {
+        /** Monotonic fixture request ID used to correlate exactly one CDP response. */
+        const id = ++sequence;
+        /** Owned request deadline; cleared on response, close or teardown. */
+        const timer = setTimeout(() => {
+          pending.delete(id);
+          reject(new Error('CDP deadline: ' + method));
+        }, 5000);
+        pending.set(id, { resolve, reject, timer });
+        ws.send(
+          JSON.stringify({
+            id,
+            method,
+            params,
+            ...(sessionId ? { sessionId } : {}),
+          })
+        );
+      });
+    try {
+      /** Actual browser bundle built from public exports for this isolated native fixture. */
+      const bundled = await build({
+        stdin: {
+          contents:
+            "import * as a11y from '@zeruxjs/accessibility';window.a11y=a11y;",
+          resolveDir: fileURLToPath(new URL('..', import.meta.url)),
+        },
+        bundle: true,
+        platform: 'browser',
+        format: 'iife',
+        write: false,
+      });
+      fs.writeFileSync(
+        path.join(root, 'index.html'),
+        `<!doctype html><button id="open">Open</button><button id="fallback">Next</button><main id="app">App</main>
 <section id="outer" role="alertdialog" aria-labelledby="ot" hidden><h2 id="ot">Outer</h2><button id="of">First</button><button id="oi">Inner</button></section>
 <section id="inner" aria-labelledby="it" hidden><h2 id="it">Inner</h2><button id="if">First</button><button id="il">Last</button></section>
 <button id="disabled">Disabled</button><div id="custom" role="button" tabindex="0">Custom</div><div id="list" role="toolbar" aria-label="Options"><button id="r1">One</button><button id="r2" disabled>Two</button><button id="r3">Three</button><button id="r4">Four</button></div><button id="after">After</button>
@@ -25,41 +108,415 @@ window.SpeechSynthesisUtterance=class extends EventTarget{constructor(text){supe
 window.prefState=a11y.createPreferenceState({initial:{contrast:'system'}});window.prefSpeech=a11y.createSpeechController(window,{ownership:'exclusive',onError:code=>speechErrors.push(code)});window.prefPanel=a11y.createPreferencePanel(prefHost,prefState,{target:prefTarget,speech:prefSpeech,speechText:()=>probe.textContent,returnFocus:()=>by('after')});
 
 window.fixtureError='';window.addEventListener('error',event=>window.fixtureError=event.message);window.ready=true;
-</script>`);
-  child=spawn(chrome,['--headless','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--disable-background-networking','--disable-component-update','--disable-extensions','--disable-sync','--no-first-run','--remote-debugging-address=127.0.0.1','--remote-debugging-port=0','--user-data-dir='+path.join(root,'profile'),'about:blank'],{stdio:['ignore','ignore','pipe']});exit=new Promise(resolve=>child.once('exit',resolve));
-  const endpoint=await bounded(new Promise((resolve,reject)=>{let text='';child.stderr.on('data',data=>{text=(text+data).slice(-16384);const found=/DevTools listening on (ws:\/\/127\.0\.0\.1:[^\s]+)/.exec(text);if(found)resolve(found[1]);});child.once('error',reject);child.once('exit',()=>reject(new Error('Chrome startup failed')));}),7000,'Chrome startup deadline');
-  ws=new WebSocket(endpoint);await bounded(new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true});}),5000,'CDP connection deadline');
-  ws.addEventListener('message',event=>{const message=JSON.parse(event.data),request=pending.get(message.id);if(!request)return;pending.delete(message.id);clearTimeout(request.timer);message.error?request.reject(new Error(message.error.message)):request.resolve(message.result);});ws.addEventListener('close',()=>{for(const request of pending.values()){clearTimeout(request.timer);request.reject(new Error('CDP closed'));}pending.clear();});
-  const {targetId}=await call('Target.createTarget',{url:'about:blank'}),{sessionId}=await call('Target.attachToTarget',{targetId,flatten:true});
-  const evaluate=async expression=>{const result=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true},sessionId);if(result.exceptionDetails)throw new Error('Browser evaluation failed: '+result.exceptionDetails.text);return result.result.value;};
-  await call('Page.bringToFront',{},sessionId);
-  await call('Page.navigate',{url:pathToFileURL(path.join(root,'index.html')).href},sessionId);for(let attempt=0;!await evaluate('Boolean(window.ready)');attempt++){if(attempt>100)throw new Error('Browser fixture initialization failed');await new Promise(resolve=>setTimeout(resolve,20));}
-  const key=async(name,shift=false)=>{const code={Tab:9,Enter:13,Escape:27,ArrowLeft:37,ArrowDown:40,Home:36,End:35}[name],params={key:name,code:name,windowsVirtualKeyCode:code,nativeVirtualKeyCode:code,modifiers:shift?8:0};await call('Input.dispatchKeyEvent',{type:'keyDown',...params,...(name==='Enter'?{text:'\r',unmodifiedText:'\r'}:{})},sessionId);await call('Input.dispatchKeyEvent',{type:'keyUp',...params},sessionId);};const active=()=>evaluate('document.activeElement.id');
-  await evaluate("by('open').focus()");await key('Enter');assert.equal(await active(),'of',await evaluate('window.fixtureError'));await key('Tab');assert.equal(await active(),'oi');await key('Tab');assert.equal(await active(),'of');await key('Tab',true);assert.equal(await active(),'oi');
-  await key('Enter');assert.equal(await active(),'if');assert.equal(await evaluate("by('outer').inert&&by('app').inert&&!by('inner').inert"),true);await key('Tab',true);assert.equal(await active(),'il');await key('Tab');assert.equal(await active(),'if');await key('Escape');assert.equal(await active(),'oi');assert.equal(await evaluate('outer.open&&!inner.open'),true);await key('Escape');assert.equal(await active(),'open');assert.equal(await evaluate("by('app').inert"),false);
-  await key('Enter');await evaluate("by('open').remove()");await key('Escape');assert.equal(await active(),'fallback');await evaluate("by('disabled').focus()");assert.notEqual(await active(),'disabled');await evaluate("by('custom').focus()");await key('Enter');assert.equal(await evaluate('activations'),0);
-  await evaluate("by('r1').focus()");await key('ArrowLeft');assert.equal(await active(),'r3');await evaluate("by('r3').remove();roving.refresh()");assert.equal(await active(),'r4');await key('Home');assert.equal(await active(),'r1');await key('End');assert.equal(await active(),'r4');await key('Tab');assert.equal(await active(),'after');assert.equal(await evaluate("[...by('list').querySelectorAll('button')].filter(x=>x.tabIndex===0).length"),1);
-  await evaluate('inner.destroy();outer.destroy();roving.destroy();custom.destroy();disabled.destroy()');assert.equal(await evaluate('listenerCount()'),0);assert.equal(await evaluate("by('outer').getAttribute('role')"),'alertdialog');assert.equal(await evaluate("by('app').inert"),false);assert.equal(await evaluate("[...by('list').querySelectorAll('button')].every(x=>!x.hasAttribute('tabindex'))"),true);
+</script>`
+      );
+      child = spawn(
+        chrome,
+        [
+          '--headless',
+          '--no-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-background-networking',
+          '--disable-component-update',
+          '--disable-extensions',
+          '--disable-sync',
+          '--no-first-run',
+          '--remote-debugging-address=127.0.0.1',
+          '--remote-debugging-port=0',
+          '--user-data-dir=' + path.join(root, 'profile'),
+          'about:blank',
+        ],
+        { stdio: ['ignore', 'ignore', 'pipe'] }
+      );
+      exit = new Promise((resolve) => child.once('exit', resolve));
+      /** Loopback DevTools endpoint discovered from the owned child stderr, not user input. */
+      const endpoint = await bounded(
+        new Promise((resolve, reject) => {
+          let text = '';
+          child.stderr.on('data', (data) => {
+            text = (text + data).slice(-16384);
+            /** Bounded startup log match containing the owned browser endpoint. */
+            const found =
+              /DevTools listening on (ws:\/\/127\.0\.0\.1:[^\s]+)/.exec(text);
+            if (found) {
+              resolve(found[1]);
+            }
+          });
+          child.once('error', reject);
+          child.once('exit', () => reject(new Error('Chrome startup failed')));
+        }),
+        7000,
+        'Chrome startup deadline'
+      );
+      ws = new WebSocket(endpoint);
+      await bounded(
+        new Promise((resolve, reject) => {
+          ws.addEventListener('open', resolve, { once: true });
+          ws.addEventListener('error', reject, { once: true });
+        }),
+        5000,
+        'CDP connection deadline'
+      );
+      ws.addEventListener('message', (event) => {
+        /** Parsed native CDP response used only to settle its matching fixture request. */
+        const message = JSON.parse(event.data);
+        /** Owned pending request; completion removes its map entry and timer. */
+        const request = pending.get(message.id);
+        if (!request) {
+          return;
+        }
+        pending.delete(message.id);
+        clearTimeout(request.timer);
+        message.error
+          ? request.reject(new Error(message.error.message))
+          : request.resolve(message.result);
+      });
+      ws.addEventListener('close', () => {
+        // request is an outstanding owned CDP operation; teardown clears its timer and settles its promise.
+        for (const request of pending.values()) {
+          clearTimeout(request.timer);
+          request.reject(new Error('CDP closed'));
+        }
+        pending.clear();
+      });
+      /** Owned blank browser target created inside the isolated profile. */
+      const { targetId } = await call('Target.createTarget', {
+        url: 'about:blank',
+      });
+      /** Owned DevTools session used only for this fixture target. */
+      const { sessionId } = await call('Target.attachToTarget', {
+        targetId,
+        flatten: true,
+      });
+      /** Trusted fixture expression evaluator; never accepts application/request data.
+       * @param {string} expression - Trusted authored fixture code only; not a model/request execution facility.
+       * @returns {Promise<unknown>} Trusted fixture expression result from the owned browser, never arbitrary application input.
+       */
+      const evaluate = async (expression) => {
+        /** Actual native/browser result inspected for the expected fixture behavior. */
+        const result = await call(
+          'Runtime.evaluate',
+          { expression, returnByValue: true, awaitPromise: true },
+          sessionId
+        );
+        if (result.exceptionDetails) {
+          throw new Error(
+            'Browser evaluation failed: ' + result.exceptionDetails.text
+          );
+        }
+        return result.result.value;
+      };
+      await call('Page.bringToFront', {}, sessionId);
+      await call(
+        'Page.navigate',
+        { url: pathToFileURL(path.join(root, 'index.html')).href },
+        sessionId
+      );
+      for (
+        let attempt = 0;
+        !(await evaluate('Boolean(window.ready)'));
+        attempt++
+      ) {
+        if (attempt > 100) {
+          throw new Error('Browser fixture initialization failed');
+        }
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      /** Synthetic key event/dispatch helper; real default keyboard behavior is checked separately.
+       * @param {string} name - Fixed attribute/control/protocol name selected by the owning implementation.
+       * @param {boolean} shift - Whether native key injection holds Shift for this one fixture action.
+       * @returns {Promise<void>} Completion of explicit keydown/keyup injection into the isolated native fixture.
+       */
+      const key = async (name, shift = false) => {
+        /** Native virtual-key code for the selected deterministic keyboard action. */
+        const code = {
+          Tab: 9,
+          Enter: 13,
+          Escape: 27,
+          ArrowLeft: 37,
+          ArrowDown: 40,
+          Home: 36,
+          End: 35,
+        }[name];
+        /** Explicit owned CDP request parameters; no caller-supplied arbitrary endpoint is followed. */
+        const params = {
+          key: name,
+          code: name,
+          windowsVirtualKeyCode: code,
+          nativeVirtualKeyCode: code,
+          modifiers: shift ? 8 : 0,
+        };
+        await call(
+          'Input.dispatchKeyEvent',
+          {
+            type: 'keyDown',
+            ...params,
+            ...(name === 'Enter' ? { text: '\r', unmodifiedText: '\r' } : {}),
+          },
+          sessionId
+        );
+        await call(
+          'Input.dispatchKeyEvent',
+          { type: 'keyUp', ...params },
+          sessionId
+        );
+      };
+      /** Read the owned browser document focus for assertions.
+       * @returns {Promise<unknown>} Active element ID in the owned browser document.
+       */
+      const active = () => evaluate('document.activeElement.id');
+      await evaluate("by('open').focus()");
+      await key('Enter');
+      assert.equal(await active(), 'of', await evaluate('window.fixtureError'));
+      await key('Tab');
+      assert.equal(await active(), 'oi');
+      await key('Tab');
+      assert.equal(await active(), 'of');
+      await key('Tab', true);
+      assert.equal(await active(), 'oi');
+      await key('Enter');
+      assert.equal(await active(), 'if');
+      assert.equal(
+        await evaluate(
+          "by('outer').inert&&by('app').inert&&!by('inner').inert"
+        ),
+        true
+      );
+      await key('Tab', true);
+      assert.equal(await active(), 'il');
+      await key('Tab');
+      assert.equal(await active(), 'if');
+      await key('Escape');
+      assert.equal(await active(), 'oi');
+      assert.equal(await evaluate('outer.open&&!inner.open'), true);
+      await key('Escape');
+      assert.equal(await active(), 'open');
+      assert.equal(await evaluate("by('app').inert"), false);
+      await key('Enter');
+      await evaluate("by('open').remove()");
+      await key('Escape');
+      assert.equal(await active(), 'fallback');
+      await evaluate("by('disabled').focus()");
+      assert.notEqual(await active(), 'disabled');
+      await evaluate("by('custom').focus()");
+      await key('Enter');
+      assert.equal(await evaluate('activations'), 0);
+      await evaluate("by('r1').focus()");
+      await key('ArrowLeft');
+      assert.equal(await active(), 'r3');
+      await evaluate("by('r3').remove();roving.refresh()");
+      assert.equal(await active(), 'r4');
+      await key('Home');
+      assert.equal(await active(), 'r1');
+      await key('End');
+      assert.equal(await active(), 'r4');
+      await key('Tab');
+      assert.equal(await active(), 'after');
+      assert.equal(
+        await evaluate(
+          "[...by('list').querySelectorAll('button')].filter(x=>x.tabIndex===0).length"
+        ),
+        1
+      );
+      await evaluate(
+        'inner.destroy();outer.destroy();roving.destroy();custom.destroy();disabled.destroy()'
+      );
+      assert.equal(await evaluate('listenerCount()'), 0);
+      assert.equal(
+        await evaluate("by('outer').getAttribute('role')"),
+        'alertdialog'
+      );
+      assert.equal(await evaluate("by('app').inert"), false);
+      assert.equal(
+        await evaluate(
+          "[...by('list').querySelectorAll('button')].every(x=>!x.hasAttribute('tabindex'))"
+        ),
+        true
+      );
 
-  // Preference controls exercise browser default keyboard activation; speech engine is explicitly simulated.
-  assert.equal(await evaluate('unavailableSpeech'),false);assert.equal(await evaluate('mockEngine.spoke'),0);assert.equal(await evaluate('utterances'),0);
-  await evaluate('prefPanel.focus()');await key('ArrowDown');assert.equal(await evaluate('prefState.getSnapshot().values.textScale'),1.25);assert.equal(await evaluate("getComputedStyle(by('prefTarget')).fontSize"),'20px');assert.equal(await evaluate("getComputedStyle(by('outsidePref')).fontSize"),'16px');
-  await key('Tab');await key('ArrowDown');await key('ArrowDown');assert.equal(await evaluate('prefState.getSnapshot().values.contrast'),'dark');assert.equal(await evaluate("getComputedStyle(by('prefTarget')).backgroundColor"),'rgb(17, 17, 17)');assert.equal(await evaluate("getComputedStyle(by('prefTarget')).filter"),'none');
-  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'},{name:'forced-colors',value:'active'}]},sessionId);await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
-  assert.equal(await evaluate('prefState.getSnapshot().effective.reducedMotion'),true);assert.equal(await evaluate('prefState.getSnapshot().effective.contrast'),'forced');assert.equal(await evaluate("prefPanel.element.querySelectorAll('select')[1].disabled"),true);assert.ok(await evaluate("parseFloat(getComputedStyle(by('motionProbe')).transitionDuration)<.001"));
-  const focusButton=async index=>evaluate("prefPanel.element.querySelectorAll('button')["+index+"].focus()");
-  await evaluate('mockEngine.speaking=true');await focusButton(1);await key('Enter');assert.equal(await evaluate('mockEngine.spoke'),0);assert.equal(await evaluate('prefPanel.element.textContent.includes("already in use")'),true);await evaluate('prefSpeech.stop();mockEngine.speaking=false');assert.equal(await evaluate('mockEngine.cancelled'),0);
-  await focusButton(1);await key('Enter');assert.equal(await evaluate('mockEngine.spoke'),1);assert.equal(await evaluate('prefSpeech.getStatus().active'),true);
-  await focusButton(2);await key('Enter');assert.equal(await evaluate('prefSpeech.getStatus().paused'),true);await focusButton(3);await key('Enter');assert.equal(await evaluate('prefSpeech.getStatus().paused'),false);await focusButton(4);await key('Enter');assert.equal(await evaluate('prefSpeech.getStatus().active'),false);assert.equal(await evaluate('mockEngine.cancelled'),1);
-  await focusButton(1);await key('Enter');await focusButton(2);await key('Enter');await focusButton(4);await key('Enter');assert.equal(await evaluate('mockEngine.paused'),false);assert.equal(await evaluate('mockEngine.cancelled'),2);
-  assert.equal(await evaluate("prefSpeech.speak('public',new MouseEvent('click'))"),'denied');assert.equal(await evaluate('mockEngine.spoke'),2);await evaluate('mockEngine.fail=true');await focusButton(1);await key('Enter');assert.equal(await evaluate('speechErrors.join()'),'FAILED');assert.equal(await evaluate('prefPanel.element.textContent.includes("PRIVATE_SPEECH_SENTINEL")'),false);
-  await focusButton(0);await key('Enter');assert.equal(await evaluate('prefState.getSnapshot().values.textScale'),1);assert.equal(await evaluate('prefState.getSnapshot().effective.reducedMotion'),true);
-  await evaluate('window.lastSystem=JSON.stringify(prefState.getSnapshot().system);prefPanel.focus();prefPanel.destroy();prefSpeech.destroy()');assert.equal(await active(),'after');assert.equal(await evaluate("document.querySelectorAll('style[data-zx-preference-style]').length"),0);assert.equal(await evaluate("by('prefTarget').hasAttribute('data-zx-preferences')"),false);assert.equal(await evaluate('mockEngine.handlers.size'),0);
-  await call('Emulation.setEmulatedMedia',{features:[]},sessionId);await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');assert.equal(await evaluate('JSON.stringify(prefState.getSnapshot().system)===lastSystem'),true);await evaluate('prefState.destroy()');
-
- }finally{
-  if(ws?.readyState===WebSocket.OPEN)try{await call('Browser.close');}catch{/* Chrome can close its response channel before replying. */}ws?.close();
-  if(child)try{await bounded(exit,3000,'Browser cleanup deadline');}catch{child.kill('SIGKILL');await exit;}
-  for(const request of pending.values()){clearTimeout(request.timer);request.reject(new Error('Fixture closed'));}pending.clear();fs.rmSync(root,{recursive:true,force:true});
- }
-});
+      // Preference controls exercise browser default keyboard activation; speech engine is explicitly simulated.
+      assert.equal(await evaluate('unavailableSpeech'), false);
+      assert.equal(await evaluate('mockEngine.spoke'), 0);
+      assert.equal(await evaluate('utterances'), 0);
+      await evaluate('prefPanel.focus()');
+      await key('ArrowDown');
+      assert.equal(
+        await evaluate('prefState.getSnapshot().values.textScale'),
+        1.25
+      );
+      assert.equal(
+        await evaluate("getComputedStyle(by('prefTarget')).fontSize"),
+        '20px'
+      );
+      assert.equal(
+        await evaluate("getComputedStyle(by('outsidePref')).fontSize"),
+        '16px'
+      );
+      await key('Tab');
+      await key('ArrowDown');
+      await key('ArrowDown');
+      assert.equal(
+        await evaluate('prefState.getSnapshot().values.contrast'),
+        'dark'
+      );
+      assert.equal(
+        await evaluate("getComputedStyle(by('prefTarget')).backgroundColor"),
+        'rgb(17, 17, 17)'
+      );
+      assert.equal(
+        await evaluate("getComputedStyle(by('prefTarget')).filter"),
+        'none'
+      );
+      await call(
+        'Emulation.setEmulatedMedia',
+        {
+          features: [
+            { name: 'prefers-reduced-motion', value: 'reduce' },
+            { name: 'forced-colors', value: 'active' },
+          ],
+        },
+        sessionId
+      );
+      await evaluate(
+        'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))'
+      );
+      assert.equal(
+        await evaluate('prefState.getSnapshot().effective.reducedMotion'),
+        true
+      );
+      assert.equal(
+        await evaluate('prefState.getSnapshot().effective.contrast'),
+        'forced'
+      );
+      assert.equal(
+        await evaluate(
+          "prefPanel.element.querySelectorAll('select')[1].disabled"
+        ),
+        true
+      );
+      assert.ok(
+        await evaluate(
+          "parseFloat(getComputedStyle(by('motionProbe')).transitionDuration)<.001"
+        )
+      );
+      /** Explicitly focus one synthetic preference button before trusted keyboard activation.
+       * @param {number} index - Known synthetic button index; not an arbitrary selector.
+       * @returns {Promise<unknown>} Completion of focusing a known synthetic control before native keyboard activation.
+       */
+      const focusButton = async (index) =>
+        evaluate(
+          "prefPanel.element.querySelectorAll('button')[" + index + '].focus()'
+        );
+      await evaluate('mockEngine.speaking=true');
+      await focusButton(1);
+      await key('Enter');
+      assert.equal(await evaluate('mockEngine.spoke'), 0);
+      assert.equal(
+        await evaluate(
+          'prefPanel.element.textContent.includes("already in use")'
+        ),
+        true
+      );
+      await evaluate('prefSpeech.stop();mockEngine.speaking=false');
+      assert.equal(await evaluate('mockEngine.cancelled'), 0);
+      await focusButton(1);
+      await key('Enter');
+      assert.equal(await evaluate('mockEngine.spoke'), 1);
+      assert.equal(await evaluate('prefSpeech.getStatus().active'), true);
+      await focusButton(2);
+      await key('Enter');
+      assert.equal(await evaluate('prefSpeech.getStatus().paused'), true);
+      await focusButton(3);
+      await key('Enter');
+      assert.equal(await evaluate('prefSpeech.getStatus().paused'), false);
+      await focusButton(4);
+      await key('Enter');
+      assert.equal(await evaluate('prefSpeech.getStatus().active'), false);
+      assert.equal(await evaluate('mockEngine.cancelled'), 1);
+      await focusButton(1);
+      await key('Enter');
+      await focusButton(2);
+      await key('Enter');
+      await focusButton(4);
+      await key('Enter');
+      assert.equal(await evaluate('mockEngine.paused'), false);
+      assert.equal(await evaluate('mockEngine.cancelled'), 2);
+      assert.equal(
+        await evaluate("prefSpeech.speak('public',new MouseEvent('click'))"),
+        'denied'
+      );
+      assert.equal(await evaluate('mockEngine.spoke'), 2);
+      await evaluate('mockEngine.fail=true');
+      await focusButton(1);
+      await key('Enter');
+      assert.equal(await evaluate('speechErrors.join()'), 'FAILED');
+      assert.equal(
+        await evaluate(
+          'prefPanel.element.textContent.includes("PRIVATE_SPEECH_SENTINEL")'
+        ),
+        false
+      );
+      await focusButton(0);
+      await key('Enter');
+      assert.equal(
+        await evaluate('prefState.getSnapshot().values.textScale'),
+        1
+      );
+      assert.equal(
+        await evaluate('prefState.getSnapshot().effective.reducedMotion'),
+        true
+      );
+      await evaluate(
+        'window.lastSystem=JSON.stringify(prefState.getSnapshot().system);prefPanel.focus();prefPanel.destroy();prefSpeech.destroy()'
+      );
+      assert.equal(await active(), 'after');
+      assert.equal(
+        await evaluate(
+          "document.querySelectorAll('style[data-zx-preference-style]').length"
+        ),
+        0
+      );
+      assert.equal(
+        await evaluate("by('prefTarget').hasAttribute('data-zx-preferences')"),
+        false
+      );
+      assert.equal(await evaluate('mockEngine.handlers.size'), 0);
+      await call('Emulation.setEmulatedMedia', { features: [] }, sessionId);
+      await evaluate(
+        'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))'
+      );
+      assert.equal(
+        await evaluate(
+          'JSON.stringify(prefState.getSnapshot().system)===lastSystem'
+        ),
+        true
+      );
+      await evaluate('prefState.destroy()');
+    } finally {
+      if (ws?.readyState === WebSocket.OPEN) {
+        try {
+          await call('Browser.close');
+        } catch {
+          /* Chrome can close its response channel before replying. */
+        }
+      }
+      ws?.close();
+      if (child) {
+        try {
+          await bounded(exit, 3000, 'Browser cleanup deadline');
+        } catch {
+          child.kill('SIGKILL');
+          await exit;
+        }
+      }
+      // request is an outstanding owned CDP operation; teardown clears its timer and settles its promise.
+      for (const request of pending.values()) {
+        clearTimeout(request.timer);
+        request.reject(new Error('Fixture closed'));
+      }
+      pending.clear();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+);

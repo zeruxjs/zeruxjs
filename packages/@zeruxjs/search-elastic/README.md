@@ -45,7 +45,7 @@ and pool policy. Requests still carry zero retries, deadlines and cancellation.
 it closes only an owned client. Startup failures close owned resources too. A
 noncooperative injected client can delay direct calls and close; use the shared
 manager for an observation deadline while retaining actual pending ownership.
-Pending operations cap at 32 by default (configurable 1–128); deadlines default to
+The wrapper retains native work in its pending set through actual settlement: a shared-manager observation timeout does not release that capacity or prove rollback. Dispose the shared service before its host-owned dependencies. Pending operations cap at 32 by default (configurable 1–128); deadlines default to
 5 seconds (1–60000 ms). Response/compressed-response limits are 1 MiB for owned
 clients. Injected clients must enforce transport-level limits independently.
 Backend causes remain private in sanitized `SearchAdapterError.cause`; never expose

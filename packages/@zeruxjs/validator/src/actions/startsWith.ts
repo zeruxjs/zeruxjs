@@ -13,19 +13,19 @@ export interface StartsWithIssue<
   TRequirement extends string,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed refinement category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'starts_with';
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expected: `"${TRequirement}"`;
   /**
-   * The received property.
+   * Private mismatch diagnostic that may include submitted content.
    */
   readonly received: `"${string}"`;
   /**
@@ -41,23 +41,23 @@ export interface StartsWithAction<
   TInput extends string,
   TRequirement extends string,
   TMessage extends
-  | ErrorMessage<StartsWithIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<StartsWithIssue<TInput, TRequirement>>
+    | undefined,
 > extends BaseValidation<
   TInput,
   TInput,
   StartsWithIssue<TInput, TRequirement>
 > {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'starts_with';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof startsWith;
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expects: `"${TRequirement}"`;
   /**
@@ -65,42 +65,41 @@ export interface StartsWithAction<
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a starts with validation action.
- *
- * @param requirement The start string.
- *
- * @returns A starts with action.
+/** Use native case-sensitive string prefix matching without normalization, decoding or destination authorization. Construction captures trusted policy without evaluating candidate data.
+ * @param {TRequirement} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @returns {StartsWithAction<TInput, TRequirement, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function startsWith<
   TInput extends string,
   const TRequirement extends string,
 >(requirement: TRequirement): StartsWithAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a starts with validation action.
- *
- * @param requirement The start string.
- * @param message The error message.
- *
- * @returns A starts with action.
+/** Use native case-sensitive string prefix matching without normalization, decoding or destination authorization. Construction captures trusted policy without evaluating candidate data.
+ * @param {TRequirement} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {StartsWithAction<TInput, TRequirement, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function startsWith<
   TInput extends string,
   const TRequirement extends string,
   const TMessage extends
-  | ErrorMessage<StartsWithIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<StartsWithIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): StartsWithAction<TInput, TRequirement, TMessage>;
 
+/** Use native case-sensitive string prefix matching without normalization, decoding or destination authorization. Construction captures trusted policy without evaluating candidate data.
+ * @param {string} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @param {ErrorMessage<StartsWithIssue<string, string>>} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {StartsWithAction<string, string, ErrorMessage<StartsWithIssue<string, string>> | undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function startsWith(
   requirement: string,
@@ -118,6 +117,11 @@ export function startsWith(
     expects: `"${requirement}"`,
     requirement,
     message,
+    /** Use native case-sensitive string prefix matching without normalization, decoding or destination authorization. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !dataset.value.startsWith(this.requirement)) {
         _addIssue(this, 'start', dataset, config, {

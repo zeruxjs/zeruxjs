@@ -1,3 +1,38 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {createCacheHeaders,createETag,matchesETag,createResourceHints,rateWebVital,measureFunction,getNavigationTiming} from '../dist/index.js';
-test('safe cache and resource hint headers',()=>{assert.equal(createCacheHeaders({maxAge:30,staleIfError:90})['Cache-Control'],'public, max-age=30, stale-if-error=90');assert.throws(()=>createCacheHeaders({maxAge:Infinity}),RangeError);assert.deepEqual(createResourceHints(['https://example.org/a','https://example.org/a']),['<link rel="preconnect" href="https://example.org/a">']);assert.throws(()=>createResourceHints(['javascript:alert(1)']));const tag=createETag('hello');assert.equal(matchesETag(tag,tag),true)});
-test('vitals and timing are bounded',()=>{assert.equal(rateWebVital('LCP',1000),'good');assert.equal(rateWebVital('INP',800),'poor');const m=measureFunction('foo',()=>42);assert.equal(m.result,42);assert.ok(m.duration>=0);assert.ok(getNavigationTiming()===null||typeof getNavigationTiming().ttfb==='number')});
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  createCacheHeaders,
+  createETag,
+  matchesETag,
+  createResourceHints,
+  rateWebVital,
+  measureFunction,
+  getNavigationTiming,
+} from '../dist/index.js';
+test('safe cache and resource hint headers', () => {
+  assert.equal(
+    createCacheHeaders({ maxAge: 30, staleIfError: 90 })['Cache-Control'],
+    'public, max-age=30, stale-if-error=90'
+  );
+  assert.throws(() => createCacheHeaders({ maxAge: Infinity }), RangeError);
+  assert.deepEqual(
+    createResourceHints(['https://example.org/a', 'https://example.org/a']),
+    ['<link rel="preconnect" href="https://example.org/a">']
+  );
+  assert.throws(() => createResourceHints(['javascript:alert(1)']));
+  /** Compatible weak representation validator used for synthetic conditional matching. */
+  const tag = createETag('hello');
+  assert.equal(matchesETag(tag, tag), true);
+});
+test('vitals and timing are bounded', () => {
+  assert.equal(rateWebVital('LCP', 1000), 'good');
+  assert.equal(rateWebVital('INP', 800), 'poor');
+  /** Measured synchronous synthetic callback result and local elapsed time. */
+  const m = measureFunction('foo', () => 42);
+  assert.equal(m.result, 42);
+  assert.ok(m.duration >= 0);
+  assert.ok(
+    getNavigationTiming() === null ||
+      typeof getNavigationTiming().ttfb === 'number'
+  );
+});

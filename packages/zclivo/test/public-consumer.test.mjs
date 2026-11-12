@@ -1,24 +1,84 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
+import {
+  mkdtempSync,
+  writeFileSync,
+  mkdirSync,
+  rmSync,
+  existsSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createTsConfig, checkTypes } from '@zeruxjs/typescript';
-const require=createRequire(import.meta.url);
+/** Resolver for explicit installed declaration dependencies; no arbitrary packages are executed. */
+const require = createRequire(import.meta.url);
 
 test('offline installed exports own declarations and support legacy and cancellable consumers', () => {
-  const root=mkdtempSync(join(tmpdir(),'zclivo-consumer-'));
+  /** Owned isolated archive/consumer/cache directory removed in finally. */
+  const root = mkdtempSync(join(tmpdir(), 'zclivo-consumer-'));
   try {
-    const npm=args=>execFileSync('npm',[...args,'--cache',join(root,'cache')],{cwd:root,encoding:'utf8',timeout:30000});
-    const pack=directory=>{const [archive]=Object.values(JSON.parse(npm(['pack',directory,'--ignore-scripts','--json','--pack-destination',root])));return `file:${join(root,archive.filename)}`;};
-    const dependencies={zclivo:pack(fileURLToPath(new URL('..',import.meta.url)))};
-    for(const name of ['@types/node','undici-types'])dependencies[name]=pack(dirname(require.resolve(name+'/package.json')));
-    writeFileSync(join(root,'package.json'),JSON.stringify({name:'consumer',private:true,type:'module',dependencies}));
-    npm(['install','--offline','--ignore-scripts','--no-audit','--no-fund']);mkdirSync(join(root,'src'));
-    writeFileSync(join(root,'src/index.ts'),`import {CommandRegistry,ZeruxCLI,loadPlugins,type DispatchOptions,type PluginContext,type LoadedPlugin,type CommandResult,type OptionSchema} from 'zclivo';
+    /** Invoke explicit npm arguments without lifecycle scripts or network fallback.
+     * @param {string[]} args - Fixed trusted npm argument array.
+     * @returns {string} Captured UTF-8 process output.
+     */
+    const npm = (args) =>
+      execFileSync('npm', [...args, '--cache', join(root, 'cache')], {
+        cwd: root,
+        encoding: 'utf8',
+        timeout: 30000,
+      });
+    /** Archive one explicitly selected local package without lifecycle scripts.
+     * @param {string} directory - Trusted installed package root.
+     * @returns {string} Local file archive reference inside the owned fixture.
+     */
+    const pack = (directory) => {
+      /** Parsed npm archive receipt used only to locate the generated tarball. */
+      const [archive] = Object.values(
+        JSON.parse(
+          npm([
+            'pack',
+            directory,
+            '--ignore-scripts',
+            '--json',
+            '--pack-destination',
+            root,
+          ])
+        )
+      );
+      return `file:${join(root, archive.filename)}`;
+    };
+    /** Explicit package archives installed offline in the synthetic consumer. */
+    const dependencies = {
+      zclivo: pack(fileURLToPath(new URL('..', import.meta.url))),
+    };
+    for (const name of ['@types/node', 'undici-types']) {
+      dependencies[name] = pack(
+        dirname(require.resolve(name + '/package.json'))
+      );
+    }
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({
+        name: 'consumer',
+        private: true,
+        type: 'module',
+        dependencies,
+      })
+    );
+    npm([
+      'install',
+      '--offline',
+      '--ignore-scripts',
+      '--no-audit',
+      '--no-fund',
+    ]);
+    mkdirSync(join(root, 'src'));
+    writeFileSync(
+      join(root, 'src/index.ts'),
+      `import {CommandRegistry,ZeruxCLI,loadPlugins,type DispatchOptions,type PluginContext,type LoadedPlugin,type CommandResult,type OptionSchema} from 'zclivo';
 import {minimalProjectGenerator,createProjectGenerator,registerGeneratorCommand,type ProjectTemplate,type ProjectPlan} from 'zclivo';
 import {writeProjectPlanAsync} from 'zclivo/generator';
 const template:ProjectTemplate={id:'custom',capabilities:[{mode:'minimal',renderer:'none',languages:['javascript']}],render:options=>({'README.md':options.name})};
@@ -36,11 +96,33 @@ const register=({commands,signal,onDispose}:PluginContext)=>{commands.register('
 const loaded:LoadedPlugin[]=await loadPlugins([],commands,process.cwd(),options);for(const plugin of loaded)await plugin.dispose();void result;
 // @ts-expect-error option types are constrained
 const invalid:OptionSchema={flag:{type:'arbitrary'}};void invalid;
-`);
-    createTsConfig(root,{preset:'node-server'});
-    const checked=checkTypes({cwd:root,files:[],checkDependencies:true});
-    assert.equal(checked.ok,true,checked.diagnostics.map(item=>JSON.stringify(item.messageText)).join('\n'));
-    execFileSync(process.execPath,['--input-type=module','-e',`import {CommandRegistry} from 'zclivo';const registry=new CommandRegistry();registry.register('app','run',()=>0);if((await registry.dispatch('app',['run'])).exitCode!==0)throw new Error('failed');`],{cwd:root,timeout:3000});
-    assert.equal(existsSync(join(root,'node_modules/zclivo/src')),false);
-  } finally {rmSync(root,{recursive:true,force:true});}
+`
+    );
+    createTsConfig(root, { preset: 'node-server' });
+    /** Strict public declaration consumer result; no source alias hides missing exports. */
+    const checked = checkTypes({
+      cwd: root,
+      files: [],
+      checkDependencies: true,
+    });
+    assert.equal(
+      checked.ok,
+      true,
+      checked.diagnostics
+        .map((item) => JSON.stringify(item.messageText))
+        .join('\n')
+    );
+    execFileSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `import {CommandRegistry} from 'zclivo';const registry=new CommandRegistry();registry.register('app','run',()=>0);if((await registry.dispatch('app',['run'])).exitCode!==0)throw new Error('failed');`,
+      ],
+      { cwd: root, timeout: 3000 }
+    );
+    assert.equal(existsSync(join(root, 'node_modules/zclivo/src')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

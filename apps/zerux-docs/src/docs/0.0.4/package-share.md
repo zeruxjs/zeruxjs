@@ -136,3 +136,9 @@ The optional `@zeruxjs/share/sqlite` store borrows a native synchronous connecto
 requires explicit host persistent-file qualification and initializes its table only
 when requested. Create-only/CAS work uses the existing database transaction pin;
 there is no independent transaction engine or implicit connector ownership.
+
+Drain the short-link service before disconnecting its borrowed database or store.
+Caller timeout or cancellation stops waiting, but does not prove a storage rollback:
+unsettled native operations retain their capacity until actual completion. Optional
+analytics has separate bounded work and cannot block a valid redirect on failure.
+Browser sharing controllers own no listeners and need no invented teardown method.

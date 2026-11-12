@@ -85,6 +85,7 @@ These tables list fields declared directly on the named public contract. Referen
 | `store` | `TagContainerStore` | Yes |
 | `container` | `TagContainer` | Yes |
 | `prefix` | `string` | Yes |
+| `administration` | `TagAdminMount` | Yes |
 | `publicOrigin` | `string` | Yes |
 | `site` | `string` | Yes |
 | `allowedOrigins` | `string[]` | Yes |
@@ -102,6 +103,11 @@ These tables list fields declared directly on the named public contract. Referen
 | `defaultConsent` | `'granted'\|'denied'` | Yes |
 | `onDebug` | `(data:{requestId:string;event:string;matchedTriggers:string[];firedTags:string[];failures:string[]})=>void` | Yes |
 | `onWarning` | `(message:string)=>void` | Yes |
+| `providers` | `TagProviderRegistry` | Yes |
+| `ownProviders` | `boolean` | Yes |
+| `maxConcurrentDispatches` | `number` | Yes |
+| `dispatchTimeoutMs` | `number` | Yes |
+| `allowDispatch` | `(event: Readonly<TagEvent>) => boolean \| Promise<boolean>` | Yes |
 | `maxBodyBytes` | `number` | Yes |
 | `maxEventsPerMinute` | `number` | Yes |
 
@@ -123,7 +129,10 @@ These tables list fields declared directly on the named public contract. Referen
 | --- | --- | --- |
 | `id` | `string` | No |
 | `name` | `string` | No |
-| `type` | `'analytics'\|'ga4'\|'webhook'` | No |
+| `type` | `'analytics'\|'ga4'\|'webhook'\|'provider'` | No |
+| `providerRef` | `string` | Yes |
+| `providerVersion` | `number` | Yes |
+| `publicConfig` | `Values` | Yes |
 | `triggerIds` | `string[]` | No |
 | `enabled` | `boolean` | Yes |
 | `eventName` | `string` | Yes |
@@ -139,7 +148,9 @@ These tables list fields declared directly on the named public contract. Referen
 | --- | --- | --- |
 | `id` | `string` | No |
 | `name` | `string` | No |
-| `type` | `'event'\|'all'\|'pageview'\|'click'\|'form'\|'history'` | No |
+| `type` | `'event'\|'all'\|'pageview'\|'click'\|'form'\|'history'\|'group'` | No |
+| `schemaVersion` | `1` | Yes |
+| `composition` | `{mode: 'all' \| 'any' \| 'not'; triggerIds: string[]}` | Yes |
 | `event` | `string` | Yes |
 | `conditions` | `Condition[]` | Yes |
 | `enabled` | `boolean` | Yes |
@@ -151,5 +162,22 @@ These tables list fields declared directly on the named public contract. Referen
 | `id` | `string` | No |
 | `name` | `string` | No |
 | `type` | `'constant'\|'event'\|'dataLayer'\|'context'` | No |
+| `schemaVersion` | `1` | Yes |
 | `key` | `string` | Yes |
 | `value` | `Scalar` | Yes |
+
+## Explicit owners and public imports
+
+Use `createTagManager` and `createTagProviderRegistry` from `@zeruxjs/tags` on
+the server. Retain the manager and await `close()` before closing borrowed
+analytics, document and request-ID stores. A registry is borrowed unless
+`ownProviders:true`; close a shared registry only after every borrowing manager
+drains. Cancellation stops observation, not arbitrary JavaScript or a previously
+accepted external mutation. Saved drafts, preview and import never imply publish.
+
+For replaceable UI, import `createTagAdminClient` from
+`@zeruxjs/tags/admin-client` and `mountTagAdmin` from
+`@zeruxjs/tags/admin-view`. These browser-safe entries do no work on import.
+Explicitly load the view, destroy its owned subtree/listeners on unmount, then
+close any client you own. The host still verifies every session, tenant, origin,
+CSRF token and publisher grant; hiding a control grants no permission.

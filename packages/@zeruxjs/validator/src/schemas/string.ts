@@ -11,15 +11,15 @@ import { _addIssue, _getStandardProps } from '../utils/index.js';
  */
 export interface StringIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed schema issue kind; raw rejected input/messages remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable primitive-type discriminator for structured issue codes.
    */
   readonly type: 'string';
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation, not a coercion or escaping rule.
    */
   readonly expected: 'string';
 }
@@ -31,41 +31,45 @@ export interface StringSchema<
   TMessage extends ErrorMessage<StringIssue> | undefined,
 > extends BaseSchema<string, string, StringIssue> {
   /**
-   * The schema type.
+   * Fixed string discriminator used by metadata and issue generation.
    */
   readonly type: 'string';
   /**
-   * The schema reference.
+   * Authored base constructor reference; public compatibility aliases may add explicit action-array shorthand.
    */
   readonly reference: typeof string;
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation, not a coercion or escaping rule.
    */
   readonly expects: 'string';
   /**
-   * The error message.
+   * Borrowed trusted diagnostic text/callback, not untrusted source code or sanitized HTML.
    */
   readonly message: TMessage;
 }
 
 /**
- * Creates a string schema.
+ * Validate native strings without coercion; length bounds require explicit actions or HTTP byte limits. Construction is inert; root execution owns budgets and cancellation.
  *
- * @returns A string schema.
+ * @returns {StringSchema<undefined>} Inert primitive schema with the default private issue policy.
  */
 export function string(): StringSchema<undefined>;
 
 /**
- * Creates a string schema.
+ * Validate native strings without coercion; length bounds require explicit actions or HTTP byte limits. Construction is inert; root execution owns budgets and cancellation.
  *
- * @param message The error message.
+ * @param {TMessage} message - Optional trusted private diagnostic text or issue callback.
  *
- * @returns A string schema.
+ * @returns {StringSchema<TMessage>} Inert primitive schema retaining the supplied diagnostic policy.
  */
 export function string<
   const TMessage extends ErrorMessage<StringIssue> | undefined,
 >(message: TMessage): StringSchema<TMessage>;
 
+/** Build a primitive type validator without parsing or executing message callbacks.
+ * @param {ErrorMessage<StringIssue>} message - Optional trusted private diagnostic policy.
+ * @returns {StringSchema<ErrorMessage<StringIssue> | undefined>} Inert schema for native strings without coercion; length bounds require explicit actions or HTTP byte limits.
+ */
 // @__NO_SIDE_EFFECTS__
 export function string(
   message?: ErrorMessage<StringIssue>
@@ -77,9 +81,17 @@ export function string(
     expects: 'string',
     async: false,
     message,
+    /** Adapt explicit validation to the same bounded root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Check the native input type without coercion, then retain a private structured issue on mismatch.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private candidate input.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Root budgets and private message policy.
+     * @returns {OutputDataset<string, StringIssue>} Declared primitive dataset; raw issues require explicit public sanitization.
+     */
     '~run'(dataset, config) {
       if (typeof dataset.value === 'string') {
         // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.

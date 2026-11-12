@@ -25,51 +25,56 @@ export interface NonNullableSchema<
   NonNullableIssue | InferNonNullableIssue<TWrapped>
 > {
   /**
-   * The schema type.
+   * Fixed exclusion discriminator rejecting only null; undefined still follows the wrapped schema.
    */
   readonly type: 'non_nullable';
   /**
-   * The schema reference.
+   * Authored constructor reference; never supplied or loaded from untrusted source text.
    */
   readonly reference: typeof nonNullable;
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation for the excluded sentinel, not a callback.
    */
   readonly expects: '!null';
   /**
-   * The wrapped schema.
+   * Borrowed schema invoked only after the input sentinel guard; transformed output is checked again.
    */
   readonly wrapped: TWrapped;
   /**
-   * The error message.
+   * Optional private diagnostic text or trusted synchronous issue-message callback.
    */
   readonly message: TMessage;
 }
 
 /**
- * Creates a non nullable schema.
+ * Exclude null before wrapped execution and again after transformation. This is validation, not coercion or authorization.
  *
- * @param wrapped The wrapped schema.
+ * @param {TWrapped} wrapped - Trusted borrowed schema; excluded inputs never invoke its default/fallback path.
  *
- * @returns A non nullable schema.
+ * @returns {NonNullableSchema<TWrapped, undefined>} Inert exclusion wrapper; root execution still owns limits and cancellation.
  */
 export function nonNullable<
   const TWrapped extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(wrapped: TWrapped): NonNullableSchema<TWrapped, undefined>;
 
 /**
- * Creates a non nullable schema.
+ * Exclude null before wrapped execution and again after transformation. This is validation, not coercion or authorization.
  *
- * @param wrapped The wrapped schema.
- * @param message The error message.
+ * @param {TWrapped} wrapped - Trusted borrowed schema; excluded inputs never invoke its default/fallback path.
+ * @param {TMessage} message - Optional private diagnostic text/callback; escape/redact separately for public presentation.
  *
- * @returns A non nullable schema.
+ * @returns {NonNullableSchema<TWrapped, TMessage>} Inert wrapper retaining borrowed schema/message references without deep cloning.
  */
 export function nonNullable<
   const TWrapped extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
   const TMessage extends ErrorMessage<NonNullableIssue> | undefined,
 >(wrapped: TWrapped, message: TMessage): NonNullableSchema<TWrapped, TMessage>;
 
+/** Build an exclusion wrapper without invoking validation or message callbacks.
+ * @param {object} wrapped - Borrowed trusted schema; actual parsing remains root-owned.
+ * @param {ErrorMessage<NonNullableIssue>} message - Optional private issue message policy, never executable source text.
+ * @returns {object} Inert sync/async schema guarding null around wrapped execution.
+ */
 // @__NO_SIDE_EFFECTS__
 export function nonNullable(
   wrapped: BaseSchema<unknown, unknown, BaseIssue<unknown>>,
@@ -86,9 +91,17 @@ export function nonNullable(
     async: false,
     wrapped,
     message,
+    /** Adapt explicit validation to the same bounded root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Guard excluded input before invoking wrapped code, then reject any excluded transformed output.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private input dataset.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets and cooperative signal.
+     * @returns {unknown} Declared dataset or async settlement; raw issues and operational causes remain private.
+     */
     '~run'(dataset, config) {
       // If value is not `null`, run wrapped schema
       if (dataset.value !== null) {

@@ -31,6 +31,8 @@ crawler.invalidate();
 
 Supports 50,000-entry-per-sitemap maximum, bounded XML byte sizes, size-based splitting, deterministic sitemap indexes, and conditional ETag responses. Optional in-memory snapshot caching coalesces concurrent rebuilds and can be explicitly invalidated. By default no server-side snapshot cache is kept; use a fresh supplier function for changing content. URLs must be public HTTPS/HTTP URLs. The `robots.txt` route only points crawlers at your sitemap; it does not implement authentication or robots enforcement.
 
+The compatibility `/fetch` controller exposes `invalidate()` but no close/drain API. Its invalidation detaches the current pending slot without cancelling the supplier, so an earlier request can finish while a new generation builds. Use `/public` when cooperative cancellation, bounded source pages and actual-settlement shutdown are required; those stronger guarantees do not apply retroactively to the legacy helper.
+
 `createSitemap()` validates `changefreq` against the sitemap vocabulary at runtime, including untyped/JSON-fed calls.
 
 ## Route/layout metadata composition

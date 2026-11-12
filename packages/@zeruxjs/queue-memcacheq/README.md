@@ -9,7 +9,10 @@ try {
   await jobs.add('notifications', 'refresh', {recordId: '42'});
   const message = await jobs.take('notifications');
   if (message) console.log(message.name, message.data);
-} finally { jobs.close(); }
+} finally {
+  jobs.close();
+  await jobs.whenClosed();
+}
 ```
 
 `createMemcacheQ` connects lazily. `add(queue,name,data)` appends a JSON object; `take(queue)` returns `{name,data}` or undefined on an empty queue. The caller owns polling, backoff, cancellation and processing. Each call is bounded; no background worker starts. `capabilities` explicitly declares destructive reads and absence of acknowledgements, retry and delay. There are no schedulers, priority, deduplication or dashboard APIs.
@@ -60,3 +63,9 @@ Workers have 1–32 unique configured queues and 1–64 processing lanes (defaul
 Capabilities remain `destructiveRead:true`, `acknowledgement:false`, `retry:false`, `delay:false`; workers additionally expose `priority:false`/`push:true`. The neutral facade continues rejecting acknowledged-delivery requirements. Use a separate worker per tenant/authorized queue scope, protect server access, and keep payloads free of secrets. There is no automatic fallback from an acknowledged backend, no application restart, no reinsert-on-failure or crash-recovery claim.
 
 Focused tests use an ephemeral loopback FIFO protocol fixture, covering V1/legacy handling, byte limits, empty polling/jitter, blocked reads, cancellation, noncooperating handler drain, malformed popped messages, callback failures and capability denial. Packed consumers compile this public-import example and existing basic imports. A FIFO fixture is not a real MemcacheQ/Berkeley DB server. Live broker acceptance requires an isolated actual MemcacheQ instance with known record sizing/TLS configuration; no such server is configured here. Persistent crash/loss behavior, server forks and production network failures remain unqualified.
+
+## Cleanup and inspection
+
+The basic client owns socket requests and needs both `close()` and `whenClosed()` for a full teardown. The worker owns its basic client, polling timers and handler signals; retain its `closed` promise separately from the bounded `close()` receipt. Error hooks and noncooperating handlers can keep that actual-settlement barrier pending. Host handlers remain trusted application code: inert JSON validation is not a sandbox or authorization policy.
+
+The focused tests always release held synthetic handlers/error hooks and observe actual worker settlement during teardown. Their ephemeral FIFO fixture exercises protocol framing and cancellation only; no Berkeley DB persistence or crash recovery is certified.

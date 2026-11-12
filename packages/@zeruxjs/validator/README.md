@@ -9,7 +9,15 @@ import { object, string } from '@zeruxjs/validator/schemas';
 import { validatedJsonHandler } from '@zeruxjs/validator/http';
 const schema = object({ name: string() });
 const handler = validatedJsonHandler(schema, async (body) => ({ hello: body.name }));
-const response = await handler(new Request('https://example.test/api', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({name:'Maya'}) }));
+try {
+  const response = await handler(new Request('https://example.test/api', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Maya' })
+  }));
+  console.log(await response.json());
+} finally {
+  await handler.close();
+}
 ```
 
 `readJsonBody` streams up to 1 MiB by default, rejecting invalid media types, malformed JSON and oversized payloads; `parseJsonRequest` and `parseQuery` validate with both synchronous and asynchronous schemas. `HttpValidationError.toResponse()` emits bounded error details and `Cache-Control: no-store`. Do not disclose raw input in external API errors. Use `maxBytes`/`maxQueryFields` to set explicit caps. Body reads also have an absolute deadline and app-owned concurrency limit (below). This adapter works with the Web Fetch `Request` API and can be used by ZeruxJS route handlers or other framework integrations.
@@ -48,7 +56,9 @@ Public types remain owned by this package, not by `@zeruxjs/typescript`.
 
 Object schemas require a non-null object that is not an array. Declared fields
 read only own properties; inherited values cannot satisfy required fields. Unsafe
-schema keys (`__proto__`, `constructor`, `prototype`) reject. Collection limits
+schema keys (`__proto__`, `constructor`, `prototype`) are explicitly rejected by
+the synchronous object implementations. Async schema dictionaries remain trusted
+host configuration; the root input scan separately guards unsafe candidate keys. Collection limits
 apply before key stripping, including unknown keys. Non-array class instances can
 still be accepted by their own fields; this is not a plain-record guarantee.
 
@@ -59,6 +69,13 @@ undefined stays an own property. A missing field's default factory runs once.
 Defaults are validated/transformed by the wrapped schema. For async defaults use
 the async wrapper and async parse. A default that returns the sentinel again
 short-circuits to that sentinel instead of repeatedly invoking the factory.
+
+`undefinedable` accepts an explicit undefined value but does not mark an object key
+optional. `exactOptional` marks presence metadata while delegating supplied values
+to the wrapped schema; its stored default is currently introspection metadata, not
+a replacement branch in its run method. Use the implemented `optional`/`nullish`
+default handling when a missing value must be filled rather than relying on that
+metadata alone.
 
 Pipelines run left to right: wrapper defaults, wrapped schema, then actions in
 listed order. A transform before a refinement changes the value that refinement
@@ -162,6 +179,69 @@ use them for request/tenant-specific handlers. Global config never retains hooks
 or signals. Explicit signals or limit overrides bypass schema caches so controlled
 work cannot reuse a computation owned by another parse. Cached issues consume the receiving parse's issue budget. Default cache semantics
 (including output identity and stale mutable inputs) remain unchanged.
+
+
+Message registries use exact language keys, including a distinct `undefined` key;
+they provide no locale fallback, expiry, cardinality cap or tenant isolation.
+Configure trusted static messages at bootstrap. Getters return borrowed messages
+without invoking them; validation may invoke message callbacks with private issue
+data. Deleting a specific message leaves its constructor bucket allocated.
+
+`getDefaults`/`getFallbacks` recursively read declared object entries and tuple
+positions, not dynamic rest values. They may invoke trusted leaf factories without
+an input dataset or root parse budget. Async variants start sibling factories
+concurrently; rejection does not cancel independent factory work. These helpers
+do not validate replacements or deep-clone their results.
+
+`getTitle`/`getDescription` prefer the last matching metadata at the highest
+pipeline level. `getMetadata` instead shallowly merges in depth-first source
+order, with later keys winning. Metadata is host-owned, unvalidated and unescaped;
+reading record getters may execute host code. Escape text for its eventual output
+context and keep untrusted records outside this API.
+
+Native grapheme/word actions use the installed runtime’s `Intl.Segmenter` and
+ICU data. Word segmenters use a legacy unbounded cache keyed by exact locale value
+or locale-array identity; keep locale configuration static and bounded. Byte
+actions allocate a UTF-8 encoding and are separate from streaming HTTP limits.
+
+Map/Set schemas produce fresh native collections while child outputs may retain
+borrowed identity. Transformed duplicate Map keys use last assignment; Set values
+collapse under native equality. Async collection schemas start child work before
+ordered result accumulation, so `abortEarly` does not prevent every child from
+starting. Record schemas inspect own enumerable string fields; trusted key
+transforms must enforce permitted output names because the input-key filter does
+not revalidate transformed names. Custom predicates assert host-declared types;
+lazy getters select trusted schemas per parse and are not memoized or sandboxed.
+
+Intersection validation merges compatible branch outputs into the first result.
+That legacy recursive merge may mutate borrowed objects before a later conflict
+and has no standalone cycle/depth budget or rollback; trusted transforms must
+produce compatible finite output graphs. Root input budgets do not make arbitrary
+host callbacks or their output merge transactional.
+
+Format refinements check retained text patterns/checksums only: URL parsing is
+not a scheme/egress allowlist, IP checks do not deny private addresses, JWS shape
+does not verify signatures, and hash checks do not compute digests. ISO patterns
+are a syntax subset, not complete calendar validation. Native RegExp matching is
+synchronous; explicit custom patterns and candidate size remain host policy.
+
+Native array callback actions retain native synchronous behavior; their callbacks
+are not awaited. `sortItems` mutates its array in place. `readonly`, `brand` and
+`flavor` change TypeScript inference without freezing, cloning or authorizing
+runtime values; their declaration-only symbols are not runtime symbol exports.
+Function argument/result wrappers keep their captured configuration and call the
+borrowed function without preserving a method receiver. Create wrappers through
+`parseAsync` when their child schemas are async. Result validation happens after
+function side effects and cannot undo them.
+
+The local `ajvSafeParse` checker does not run functional transforms or the AJV
+engine. It ignores unsupported keywords, uses legacy inherited-key presence
+checks and slash-joined paths without full JSON Pointer escaping, and adds no
+independent scan/cycle/deadline budget. `toJsonSchema(schema, {strict:true})` selects the stricter converter policy.
+Strict mode
+throws for explicitly unsupported branches but still ignores some refinements
+and transformations; it does not certify full conversion coverage. Prefer the
+functional parse APIs when relying on their own-field and root-budget contracts.
 
 ## Compatibility and verification
 
@@ -330,7 +410,8 @@ The HTTP-input suite additionally checks slow/trickled/disconnected streams,
 reader overload/cleanup, duplicate/coercion/prototype policies, multipart/file
 handling, sanitized responses and feedback rollback using a DOM fixture. Its
 browser bundle check confirms the dependency graph excludes request parsers and
-Node globals. Installed archive checks cover the new public subpaths. These are
+checks executable syntax for Node references, including computed/module access.
+Comments and unrelated string data may name Node APIs without being executed. Installed archive checks cover the new public subpaths. These are
 Node Fetch/stream and DOM-fixture checks, not live-browser or deployed proxy tests.
 There are no credentials/live-service prerequisites; a real browser and a host's
 actual Fetch bridge/proxy are separate integration checks.

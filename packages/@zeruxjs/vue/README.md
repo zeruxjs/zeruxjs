@@ -231,3 +231,24 @@ No user-managed app is started. Real-browser layouts, other Vue versions and
 external SFC/compiler pipelines remain separate prerequisites. Read the official
 [application API](https://vuejs.org/api/application.html) and [SSR guide](https://vuejs.org/guide/scaling-up/ssr.html)
 for Vue's own semantics; no complete Nuxt/Vue feature parity is promised.
+
+## Ownership and compatibility details
+
+`toVueReadable`, `mapVueRef`, `combineVueRefs` and `observableToVueRef` own
+subscriptions and expose `stop()`. `bindVueRef` and `syncVueRef` return a function
+disposer. None destroys a borrowed source. `createVueRef` and `fromVueRef` alone
+create no native watcher. Keep manual owners even when a lint rule cannot prove
+eventual disposal; the rule detects immediately discarded handles only.
+
+The derived standalone refs retain their legacy writable TypeScript shape, but
+runtime writes throw. Readonly protection in injected bindings requires the
+runtime's `readonly` function; without it the returned type alone does not prevent
+runtime mutation. Callbacks run synchronously and are trusted application code.
+Legacy two-way/combined cleanup calls source disposers in order; a throwing
+source disposer can prevent later disposers from running. Native render leases
+instead attempt all registered cleanup callbacks and report aggregated failures.
+
+An update failure does not roll back native DOM changes. SSR checks its byte
+ceiling after native rendering has allocated the complete string, and cancellation
+waits for cooperative work to settle. These are output/lifecycle limits, not
+forced JavaScript cancellation or preallocation memory quotas.

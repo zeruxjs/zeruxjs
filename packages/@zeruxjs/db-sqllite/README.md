@@ -76,3 +76,13 @@ Prepared statements enable the driver's integer-safe mode when available (`setRe
 Backups retain native online copying, integrity_check verification and no-overwrite publication. The integrity-check handle closes before temporary main/WAL/SHM files are removed; cleanup failures retain the primary failure. Backup and restore tests use disposable file/WAL databases, verify rolled-back rows are absent and leave application paths untouched. Optional better-sqlite3 acceptance requires its installed working native binding; the package does not install or download it automatically. See [Node SQLite](https://nodejs.org/api/sqlite.html) and [better-sqlite3 transactions](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md) for driver-specific runtime behavior.
 
 Statement row metadata is preferred over SQL keyword matching, so a quoted column/default containing RETURNING cannot hide write counts. Older injected drivers without reader/column metadata reject ambiguous raw WITH statements; this helper is not a general SQL parser. Structured compiler output remains supported.
+
+## Source ownership map
+
+- `src/index.ts` owns transport selection, initialization rollback, readonly guards and connector shutdown.
+- `src/driver.ts` owns driver selection, explicit native policy and prepared-result precision. `openSqlite` returns a new handle requiring `close`; `createSqliteExecutor` borrows its handle and never closes it.
+- `src/sync-transaction.ts` owns BEGIN/COMMIT/ROLLBACK state, escaped-continuation guards and rollback-failure quarantine. Callbacks and captured native handles remain trusted application code.
+- `src/backup.ts` owns the online-copy verification handle and random temporary main/WAL/SHM paths. Publication uses a no-overwrite hard link; parent-directory trust, symlink ancestors, filesystem permissions and concurrent operators remain host responsibilities.
+- `src/dialect.ts` declares the supported shared compiler subset; it opens no database.
+
+Native errors and rows remain private application data. Redact them before returning HTTP responses or telemetry. These helpers do not provide a SQL sandbox, asynchronous pinned transactions or tenant authorization. Source comments describe synchronous cancellation checks; they do not promise interruption of blocking native work.

@@ -29,8 +29,8 @@ import type { ObjectWithRestIssue } from './types/objectWithRest.js';
 export interface ObjectWithRestSchemaAsync<
   TEntries extends ObjectEntriesAsync,
   TRest extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   TMessage extends ErrorMessage<ObjectWithRestIssue> | undefined,
 > extends BaseSchemaAsync<
   InferObjectInput<TEntries> & { [key: string]: InferInput<TRest> },
@@ -38,63 +38,57 @@ export interface ObjectWithRestSchemaAsync<
   ObjectWithRestIssue | InferObjectIssue<TEntries> | InferIssue<TRest>
 > {
   /**
-   * The schema type.
+   * Stable structural discriminator for issue and metadata consumers.
    */
   readonly type: 'object_with_rest';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof objectWithRest | typeof objectWithRestAsync;
   /**
-   * The expected property.
+   * Private root-type diagnostic, not an authorization or escaping policy.
    */
   readonly expects: 'Object';
   /**
-   * The entries schema.
+   * Borrowed declared child dictionary; mutation remains visible to subsequent parses.
    */
   readonly entries: TEntries;
   /**
-   * The rest schema.
+   * Borrowed explicit schema for extra values; no implicit dynamic handler resolution.
    */
   readonly rest: TRest;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an object with rest schema.
- *
- * @param entries The entries schema.
- * @param rest The rest schema.
- *
- * @returns An object with rest schema.
+/** Validate declared own fields and validate safe extra own fields with the explicit rest schema. Construction captures trusted child references without parsing input.
+ * @param {TEntries} entries - Borrowed trusted child dictionary; later caller mutation is not isolated.
+ * @param {TRest} rest - Borrowed explicit schema used only for safe extra fields or trailing values; never resolved from input.
+ * @returns {ObjectWithRestSchemaAsync<TEntries, TRest, undefined>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
  */
 export function objectWithRestAsync<
   const TEntries extends ObjectEntriesAsync,
   const TRest extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(
   entries: TEntries,
   rest: TRest
 ): ObjectWithRestSchemaAsync<TEntries, TRest, undefined>;
 
-/**
- * Creates an object with rest schema.
- *
- * @param entries The entries schema.
- * @param rest The rest schema.
- * @param message The error message.
- *
- * @returns An object with rest schema.
+/** Validate declared own fields and validate safe extra own fields with the explicit rest schema. Construction captures trusted child references without parsing input.
+ * @param {TEntries} entries - Borrowed trusted child dictionary; later caller mutation is not isolated.
+ * @param {TRest} rest - Borrowed explicit schema used only for safe extra fields or trailing values; never resolved from input.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback, not sanitized client feedback.
+ * @returns {ObjectWithRestSchemaAsync<TEntries, TRest, TMessage>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
  */
 export function objectWithRestAsync<
   const TEntries extends ObjectEntriesAsync,
   const TRest extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   const TMessage extends ErrorMessage<ObjectWithRestIssue> | undefined,
 >(
   entries: TEntries,
@@ -102,6 +96,12 @@ export function objectWithRestAsync<
   message: TMessage
 ): ObjectWithRestSchemaAsync<TEntries, TRest, TMessage>;
 
+/** Validate declared own fields and validate safe extra own fields with the explicit rest schema. Construction captures trusted child references without parsing input.
+ * @param {ObjectEntriesAsync} entries - Borrowed trusted child dictionary; later caller mutation is not isolated.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>} rest - Borrowed explicit schema used only for safe extra fields or trailing values; never resolved from input.
+ * @param {ErrorMessage<ObjectWithRestIssue>} message - Optional trusted private diagnostic text/callback, not sanitized client feedback.
+ * @returns {ObjectWithRestSchemaAsync<ObjectEntriesAsync, BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>, ErrorMessage<ObjectWithRestIssue> | undefined>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
+ */
 // @__NO_SIDE_EFFECTS__
 export function objectWithRestAsync(
   entries: ObjectEntriesAsync,
@@ -124,11 +124,20 @@ export function objectWithRestAsync(
     entries,
     rest,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Validate declared own fields and validate safe extra own fields with the explicit rest schema. Child parsing starts concurrently; abortEarly affects result accumulation after that work starts.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private candidate structural input; raw child issues retain its original values/paths.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root budgets, cancellation and private diagnostic policy.
+     * @returns {Promise<OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>>} Declared structural output or private issues; root execution drains owned started callbacks on operational failure.
+     */
     async '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed structural input retained for own-field reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -139,6 +148,7 @@ export function objectWithRestAsync(
         dataset.value = {};
 
         // Parse each normal and rest entry
+        /** Declared and extra child result groups started together; accumulation keeps normal values before rest values. */
         const [normalDatasets, restDatasets] = await Promise.all([
           // If key is present or its an optional schema with a default value,
           // parse input of key or default value asynchronously
@@ -152,11 +162,11 @@ export function objectWithRestAsync(
                   // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                   valueSchema.default !== undefined)
               ) {
-                const value: unknown =
-                  Object.hasOwn(input, key)
-                    ? // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
+                /** Original field/position value, or undefined for a missing optional/defaulted input. */
+                const value: unknown = Object.hasOwn(input, key)
+                  ? // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                     input[key]
-                    : undefined;
+                  : undefined;
                 return [
                   key,
                   value,
@@ -180,7 +190,8 @@ export function objectWithRestAsync(
             Object.entries(input)
               .filter(
                 ([key]) =>
-                  _isValidObjectKey(input, key) && !(Object.hasOwn(this.entries, key))
+                  _isValidObjectKey(input, key) &&
+                  !Object.hasOwn(this.entries, key)
               )
               .map(
                 async ([key, value]) =>
@@ -201,6 +212,7 @@ export function objectWithRestAsync(
             // If there are issues, capture them
             if (valueDataset.issues) {
               // Create object path item
+              /** Private parent path segment retaining original input/value; public feedback must sanitize it. */
               const pathItem: ObjectPathItem = {
                 type: 'object',
                 origin: 'value',
@@ -280,6 +292,7 @@ export function objectWithRestAsync(
             // If there are issues, capture them
             if (valueDataset.issues) {
               // Create object path item
+              /** Private parent path segment retaining original input/value; public feedback must sanitize it. */
               const pathItem: ObjectPathItem = {
                 type: 'object',
                 origin: 'value',

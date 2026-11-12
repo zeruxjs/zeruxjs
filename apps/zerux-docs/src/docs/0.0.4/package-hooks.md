@@ -92,7 +92,7 @@ Dispose component hooks when the render owner no longer needs them. Explicit cle
 npm install @zeruxjs/hooks@0.0.4
 ```
 
-There is no automatic `hooks` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
+There is no automatic `hooks` startup service in `zerux.config.js` for this package. Import its public APIs and create the explicit server-owned scope or registry in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
 
 ## A practical integration workflow
 
@@ -132,3 +132,31 @@ These tables list fields declared directly on the named public contract. Referen
 | --- | --- | --- |
 | `id` | `symbol` | No |
 | `defaultValue` | `T` | Yes |
+
+## Explicit lifetime and public entry boundaries
+
+Every public Hooks entry is Node-only. Root/state/context/actions/lifecycle use
+native async-local context; paths uses the private synchronous file registry.
+Use erased type imports where appropriate, rather than treating server state as a
+frontend dispatcher. Native AsyncLocalStorage remains valid for unrelated host
+context needs; no complete native API equivalence is claimed.
+
+Use `createRequestHookScope` when termination follows response finish/close,
+including streams. Standalone `runWithRequestHooks` does not install HTTP cleanup
+or automatically dispose every component. State setters do not schedule renders
+and must remain within their owning lifetime. Effects/cleanups are synchronous;
+failed renders do not undo earlier mutations or already-started effects.
+
+Context defaults, bound values and registry argument objects are borrowed
+references. Outer map/tuple copies do not deep-clone user data or authenticate a
+principal. Create isolated host-owned registries per intended application/tenant;
+event names and server correlation IDs grant no permissions. Disposal removes
+registration listeners and stops admission; `whenIdle` separately observes actual
+approved async handler settlement. Do not drain a registry inside its own handler.
+
+The path-registry facade has no persistent disposal handle: each operation closes
+its descriptor. Atomic rename prevents a partially written file but cannot
+serialize processes or constrain a trusted target to a sandbox. Legacy alias/path
+errors remain private host diagnostics, not safe HTTP response bodies. The
+package's isolated packed-consumer check extracts its local dependency-free
+archive without npm install or executing package discovery.

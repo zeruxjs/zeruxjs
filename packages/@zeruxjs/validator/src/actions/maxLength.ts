@@ -14,19 +14,19 @@ export interface MaxLengthIssue<
   TRequirement extends number,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'max_length';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: `<=${TRequirement}`;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `${number}`;
   /**
@@ -42,19 +42,19 @@ export interface MaxLengthAction<
   TInput extends LengthInput,
   TRequirement extends number,
   TMessage extends
-  | ErrorMessage<MaxLengthIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MaxLengthIssue<TInput, TRequirement>>
+    | undefined,
 > extends BaseValidation<TInput, TInput, MaxLengthIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'max_length';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof maxLength;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: `<=${TRequirement}`;
   /**
@@ -62,42 +62,41 @@ export interface MaxLengthAction<
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a max length validation action.
- *
- * @param requirement The maximum length.
- *
- * @returns A max length action.
+/** Require a native length at most the configured threshold; this post-parse refinement is not a streaming admission limit. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted numeric threshold; this legacy constructor does not independently enforce finite, nonnegative or integer configuration.
+ * @returns {MaxLengthAction<TInput, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function maxLength<
   TInput extends LengthInput,
   const TRequirement extends number,
 >(requirement: TRequirement): MaxLengthAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a max length validation action.
- *
- * @param requirement The maximum length.
- * @param message The error message.
- *
- * @returns A max length action.
+/** Require a native length at most the configured threshold; this post-parse refinement is not a streaming admission limit. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted numeric threshold; this legacy constructor does not independently enforce finite, nonnegative or integer configuration.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MaxLengthAction<TInput, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function maxLength<
   TInput extends LengthInput,
   const TRequirement extends number,
   const TMessage extends
-  | ErrorMessage<MaxLengthIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MaxLengthIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): MaxLengthAction<TInput, TRequirement, TMessage>;
 
+/** Require a native length at most the configured threshold; this post-parse refinement is not a streaming admission limit. This action neither establishes the input schema nor grants permissions.
+ * @param {number} requirement - Explicit trusted numeric threshold; this legacy constructor does not independently enforce finite, nonnegative or integer configuration.
+ * @param {ErrorMessage<MaxLengthIssue<LengthInput, number>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MaxLengthAction<LengthInput, number, ErrorMessage<MaxLengthIssue<LengthInput, number>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function maxLength(
   requirement: number,
@@ -115,6 +114,11 @@ export function maxLength(
     expects: `<=${requirement}`,
     requirement,
     message,
+    /** Require a native length at most the configured threshold; this post-parse refinement is not a streaming admission limit. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native property/getter exceptions propagate; diagnostic formatting can read length/size again.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && dataset.value.length > this.requirement) {
         _addIssue(this, 'length', dataset, config, {

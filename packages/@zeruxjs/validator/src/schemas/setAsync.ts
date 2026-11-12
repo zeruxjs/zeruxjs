@@ -17,8 +17,8 @@ import type { InferSetInput, InferSetOutput, SetIssue } from './types/set.js';
  */
 export interface SetSchemaAsync<
   TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   TMessage extends ErrorMessage<SetIssue> | undefined,
 > extends BaseSchemaAsync<
   InferSetInput<TValue>,
@@ -26,55 +26,54 @@ export interface SetSchemaAsync<
   SetIssue | InferIssue<TValue>
 > {
   /**
-   * The schema type.
+   * Stable schema discriminator used by structured issue consumers.
    */
   readonly type: 'set';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof set | typeof setAsync;
   /**
-   * The expected property.
+   * Private native-type diagnostic, not a permission or coercion policy.
    */
   readonly expects: 'Set';
   /**
-   * The set value schema.
+   * Borrowed explicit Set value schema; transformed duplicates use native equality.
    */
   readonly value: TValue;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a set schema.
- *
- * @param value The value schema.
- *
- * @returns A set schema.
+/** Start native Set value validation concurrently, then collect results in insertion order into a fresh Set. Construction does not parse input or authorize its source.
+ * @param {TValue} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @returns {SetSchemaAsync<TValue, undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function setAsync<
   const TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(value: TValue): SetSchemaAsync<TValue, undefined>;
 
-/**
- * Creates a set schema.
- *
- * @param value The value schema.
- * @param message The error message.
- *
- * @returns A set schema.
+/** Start native Set value validation concurrently, then collect results in insertion order into a fresh Set. Construction does not parse input or authorize its source.
+ * @param {TValue} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {SetSchemaAsync<TValue, TMessage>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function setAsync<
   const TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   const TMessage extends ErrorMessage<SetIssue> | undefined,
 >(value: TValue, message: TMessage): SetSchemaAsync<TValue, TMessage>;
 
+/** Start native Set value validation concurrently, then collect results in insertion order into a fresh Set. Construction does not parse input or authorize its source.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @param {ErrorMessage<SetIssue>} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {SetSchemaAsync<BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>, ErrorMessage<SetIssue> | undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function setAsync(
   value:
@@ -94,11 +93,20 @@ export function setAsync(
     async: true,
     value,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Start native Set value validation concurrently, then collect results in insertion order into a fresh Set. Raw issues remain private and operational failures propagate.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; this schema does not grant permissions or sanitize output.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets, cancellation, abort flags and diagnostic policy.
+     * @returns {Promise<OutputDataset<unknown, BaseIssue<unknown>>>} Declared output or private issue dataset; child result identity follows its schema.
+     */
     async '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed candidate retained for child reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -109,6 +117,7 @@ export function setAsync(
         dataset.value = new Set();
 
         // Parse schema of each set value
+        /** Set child results started concurrently but retained in source insertion order. */
         const valueDatasets = await Promise.all(
           [...input].map(
             async (inputValue) =>
@@ -124,6 +133,7 @@ export function setAsync(
           // If there are issues, capture them
           if (valueDataset.issues) {
             // Create set path item
+            /** Private parent path segment retaining original input/value; sanitize before client exposure. */
             const pathItem: SetPathItem = {
               type: 'set',
               origin: 'value',

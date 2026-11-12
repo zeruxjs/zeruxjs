@@ -7,6 +7,7 @@ import path from 'node:path';
 import { createCms, cmsRolePermissions } from '@zenixjs/core/cms';
 import { version, status, capabilities } from '@zenixjs/core';
 import { createConnector } from '@zeruxjs/db-sqlite';
+/** Synthetic tenant/site boundary shared only by these isolated fixtures. Synthetic verified identity; the resolver accepts only this exact fixture object. */
 const scope = { tenant: 'tenantA', site: 'siteA' },
   principal = {
     userId: 'operatorA',
@@ -14,6 +15,7 @@ const scope = { tenant: 'tenantA', site: 'siteA' },
     siteIds: ['siteA'],
     permissions: cmsRolePermissions.administrator,
   };
+/** Bounded synthetic content type covering text, numeric and media policies. */
 const schema = {
   id: 'article',
   version: 1,
@@ -23,13 +25,22 @@ const schema = {
     hero: { kind: 'media' },
   },
 };
+/** Create synthetic draft inputs without writing or evaluating them.
+ * @param {string} title - Synthetic fixture title; never evaluated or treated as trusted HTML.
+ * @returns {{type: string, typeVersion: number, values: {title: string}}} Fresh fixture payload for a single optimistic save.
+ */
 const draft = (title) => ({
   type: 'article',
   typeVersion: 1,
   values: { title },
 });
+/** Allocate an isolated file-backed SQLite fixture and explicit synthetic host policies.
+ * @returns {Promise<{filename: string, dir: string, options: object, clear: () => Promise<void>}>} Owned fixture; tests close active connectors/CMS instances before clear removes its files.
+ */
 async function fixture() {
+  /** Owned temporary SQLite directory removed by fixture cleanup. */
   const dir = await mkdtemp(path.join(os.tmpdir(), 'zx083-'));
+  /** Private file-backed SQLite path inside the owned temporary directory. */
   const filename = path.join(dir, 'cms.sqlite');
   return {
     filename,
@@ -41,29 +52,40 @@ async function fixture() {
       resolvePrincipal: (p) => (p === principal ? principal : null),
       authorizeMedia: () => false,
     },
+    /** Remove only the fixture-owned temporary SQLite directory after resources are closed.
+     * @returns {Promise<void>} Resolves after owned fixture files are removed.
+     */
     async clear() {
       await rm(dir, { recursive: true, force: true });
     },
   };
 }
+/** Create the synthetic site/schema through the real authorized domain API.
+ * @param {import("@zenixjs/core/cms").Cms} cms - Borrowed domain instance; this helper does not close it.
+ * @returns {Promise<void>} Resolves after two separate committed fixture operations; not one atomic batch.
+ * @throws {Error} Propagates the relevant authorization, validation, revision, native-store or cancellation failure; private causes remain restricted.
+ */
 async function initialize(cms) {
   await cms.createSite(scope, 'Test site', principal);
   await cms.registerContentType(scope, schema, principal);
 }
 test('draft conflicts, immutable publication/history, restore and file-backed durable reopen', async () => {
+  /** Owned fixture paths/configuration; finally closes resources before removing its files. */
   const f = await fixture();
   let cms;
   try {
     cms = await createCms(f.options);
     await initialize(cms);
+    /** First committed draft proving initial revision numbering and detached persisted state. */
     const first = await cms.saveDraft(
       scope,
       'hello',
       null,
       draft('First'),
-      principal,
+      principal
     );
     assert.equal(first.revision.revision, 1);
+    /** Concurrent revision contenders; exactly one may replace the expected head. */
     const attempts = await Promise.allSettled([
       cms.saveDraft(scope, 'hello', 1, draft('Second'), principal),
       cms.saveDraft(scope, 'hello', 1, draft('Concurrent'), principal),
@@ -71,24 +93,26 @@ test('draft conflicts, immutable publication/history, restore and file-backed du
     assert.equal(attempts.filter((r) => r.status === 'fulfilled').length, 1);
     assert.equal(
       attempts.filter((r) => r.status === 'rejected')[0].reason.code,
-      'REVISION_CONFLICT',
+      'REVISION_CONFLICT'
     );
+    /** Published commit receipt with a distinct immutable revision and pointer. */
     const published = await cms.publish(scope, 'hello', 2, principal);
     assert.equal(published.entry.publishedRevision, 3);
     await cms.restoreDraft(scope, 'hello', 3, 1, principal);
     assert.equal(
       (await cms.readEntry(scope, 'hello', principal)).revision.values.title,
-      'First',
+      'First'
     );
     assert.equal(
       (await cms.readPublished(scope, 'hello', principal)).revision,
-      3,
+      3
     );
     assert.equal(
       (await cms.readRevision(scope, 'hello', 1, principal)).values.title,
-      'First',
+      'First'
     );
     await cms.close();
+    /** Separate-process read result proving that the closed file-backed store reloads durably. */
     const head = execFileSync(
       process.execPath,
       [
@@ -97,18 +121,18 @@ test('draft conflicts, immutable publication/history, restore and file-backed du
         `import {createCms,cmsRolePermissions} from '@zenixjs/core/cms';const cms=await createCms({adapter:'sqlite',filename:process.argv[1],migrate:false,resolvePrincipal:p=>p,authorizeMedia:()=>false});try{const p={userId:'reader',tenantId:'tenantA',siteIds:['siteA'],permissions:cmsRolePermissions.reader};console.log((await cms.readEntry({tenant:'tenantA',site:'siteA'},'hello',p)).entry.head);}finally{await cms.close();}`,
         f.filename,
       ],
-      { encoding: 'utf8' },
+      { encoding: 'utf8' }
     ).trim();
     assert.equal(head, '4');
     cms = await createCms({ ...f.options, migrate: false });
     assert.equal(
       (await cms.readEntry(scope, 'hello', principal)).entry.head,
-      4,
+      4
     );
     assert.equal(
       (await cms.readContentType(scope, 'article', 1, principal)).fields.title
         .kind,
-      'text',
+      'text'
     );
     assert.equal((await cms.readSite(scope, principal)).name, 'Test site');
     assert.equal(version, '0.0.4');
@@ -120,6 +144,7 @@ test('draft conflicts, immutable publication/history, restore and file-backed du
   }
 });
 test('fresh identity/site permissions, malformed schemas/content and unowned media fail closed', async () => {
+  /** Owned fixture paths/configuration; finally closes resources before removing its files. */
   const f = await fixture();
   let cms;
   try {
@@ -127,15 +152,15 @@ test('fresh identity/site permissions, malformed schemas/content and unowned med
     await initialize(cms);
     await assert.rejects(
       cms.readSite({ tenant: 'tenantB', site: 'siteA' }, principal),
-      (e) => e.code === 'DENIED',
+      (e) => e.code === 'DENIED'
     );
     await assert.rejects(
       cms.readSite({ tenant: 'tenantA', site: 'siteB' }, principal),
-      (e) => e.code === 'DENIED',
+      (e) => e.code === 'DENIED'
     );
     await assert.rejects(
       cms.readSite(scope, { ...principal }),
-      (e) => e.code === 'DENIED',
+      (e) => e.code === 'DENIED'
     );
     await assert.rejects(
       cms.registerContentType(
@@ -145,9 +170,9 @@ test('fresh identity/site permissions, malformed schemas/content and unowned med
           version: 1,
           fields: { title: { kind: 'execute', source: 'eval' } },
         },
-        principal,
+        principal
       ),
-      (e) => e.code === 'INVALID_SCHEMA',
+      (e) => e.code === 'INVALID_SCHEMA'
     );
     await assert.rejects(
       cms.saveDraft(
@@ -155,9 +180,9 @@ test('fresh identity/site permissions, malformed schemas/content and unowned med
         'bad',
         null,
         { ...draft('A'), values: { count: 5 } },
-        principal,
+        principal
       ),
-      (e) => e.code === 'INVALID_CONTENT',
+      (e) => e.code === 'INVALID_CONTENT'
     );
     await assert.rejects(
       cms.saveDraft(
@@ -165,9 +190,9 @@ test('fresh identity/site permissions, malformed schemas/content and unowned med
         'bad',
         null,
         { ...draft('A'), values: { title: 'A', extra: 'X' } },
-        principal,
+        principal
       ),
-      (e) => e.code === 'INVALID_CONTENT',
+      (e) => e.code === 'INVALID_CONTENT'
     );
     await assert.rejects(
       cms.saveDraft(
@@ -186,18 +211,18 @@ test('fresh identity/site permissions, malformed schemas/content and unowned med
             },
           },
         },
-        principal,
+        principal
       ),
-      (e) => e.code === 'MEDIA_DENIED',
+      (e) => e.code === 'MEDIA_DENIED'
     );
     assert.equal(await cms.readEntry(scope, 'bad', principal), null);
     await assert.rejects(
       createCms({ ...f.options, adapter: 'postgres' }),
-      (e) => e.code === 'UNSUPPORTED_ADAPTER',
+      (e) => e.code === 'UNSUPPORTED_ADAPTER'
     );
     await assert.rejects(
       createCms({ ...f.options, filename: ':memory:' }),
-      (e) => e.code === 'DURABLE_FILENAME_REQUIRED',
+      (e) => e.code === 'DURABLE_FILENAME_REQUIRED'
     );
   } finally {
     await cms?.close();
@@ -205,10 +230,13 @@ test('fresh identity/site permissions, malformed schemas/content and unowned med
   }
 });
 test('real SQLite rollback removes an inserted revision when head update fails; borrowed connection stays open', async () => {
+  /** Owned fixture paths/configuration; finally closes resources before removing its files. */
   const f = await fixture();
+  /** Fixture-owned native SQLite connector; borrowed CMS instances must leave it open. */
   const db = await createConnector({ filename: f.filename, driver: 'node' });
   let cms,
     fail = false;
+  /** Injected connector wrapper simulating one native failure without replacing transaction ownership. */
   const connection = {
     ...db,
     transactionSync: (run) =>
@@ -216,10 +244,12 @@ test('real SQLite rollback removes an inserted revision when head update fails; 
         run({
           ...tx,
           update: (op) => {
-            if (fail) throw Error('private database credential');
+            if (fail) {
+              throw Error('private database credential');
+            }
             return tx.update(op);
           },
-        }),
+        })
       ),
   };
   try {
@@ -230,20 +260,20 @@ test('real SQLite rollback removes an inserted revision when head update fails; 
     await assert.rejects(
       cms.saveDraft(scope, 'hello', 1, draft('Never committed'), principal),
       (e) =>
-        e.code === 'DATABASE_UNAVAILABLE' && !e.message.includes('credential'),
+        e.code === 'DATABASE_UNAVAILABLE' && !e.message.includes('credential')
     );
     assert.equal(
       (await cms.readEntry(scope, 'hello', principal)).entry.head,
-      1,
+      1
     );
     await assert.rejects(
       cms.readRevision(scope, 'hello', 2, principal),
-      (e) => e.code === 'REVISION_NOT_FOUND',
+      (e) => e.code === 'REVISION_NOT_FOUND'
     );
     await cms.close();
     assert.equal(
       db.transactionSync((tx) => tx.select({ table: 'zenix_schema' })).ok,
-      true,
+      true
     );
   } finally {
     await cms?.close();
@@ -252,6 +282,7 @@ test('real SQLite rollback removes an inserted revision when head update fails; 
   }
 });
 test('plugin setup failure rolls back acquired resources, no routes; close drains resolver and closes admission', async () => {
+  /** Owned fixture paths/configuration; finally closes resources before removing its files. */
   const f = await fixture();
   let cleaned = 0,
     cms;
@@ -278,7 +309,7 @@ test('plugin setup failure rolls back acquired resources, no routes; close drain
         ],
       }),
       (e) =>
-        e.code === 'STARTUP_FAILED' && !e.message.includes('private startup'),
+        e.code === 'STARTUP_FAILED' && !e.message.includes('private startup')
     );
     assert.equal(cleaned, 1);
     cms = await createCms({
@@ -298,7 +329,7 @@ test('plugin setup failure rolls back acquired resources, no routes; close drain
     assert.equal(cleaned, 2);
     await assert.rejects(
       cms.readSite(scope, principal),
-      (e) => e.code === 'CLOSED',
+      (e) => e.code === 'CLOSED'
     );
   } finally {
     await cms?.close();
@@ -306,9 +337,12 @@ test('plugin setup failure rolls back acquired resources, no routes; close drain
   }
 });
 test('migration DDL and journal rollback together on dependency failure; future schemas reject', async () => {
+  /** Owned fixture paths/configuration; finally closes resources before removing its files. */
   const f = await fixture();
+  /** Fixture-owned native SQLite connector; borrowed CMS instances must leave it open. */
   const db = await createConnector({ filename: f.filename, driver: 'node' });
   try {
+    /** Injected connector wrapper simulating one native failure without replacing transaction ownership. */
     const connection = {
       ...db,
       transactionSync: (run) =>
@@ -316,24 +350,30 @@ test('migration DDL and journal rollback together on dependency failure; future 
           run({
             ...tx,
             execute: (op) => {
-              if (op.op === 'createIndex') throw Error('migration failure');
+              if (op.op === 'createIndex') {
+                throw Error('migration failure');
+              }
               return tx.execute(op);
             },
-          }),
+          })
         ),
     };
     await assert.rejects(
       createCms({ ...f.options, filename: undefined, connection }),
-      (e) => e.code === 'STARTUP_FAILED',
+      (e) => e.code === 'STARTUP_FAILED'
     );
     assert.throws(
       () =>
         db.transactionSync((tx) => {
+          /** Actual native result inspected for rollback or migration correctness. */
           const result = tx.select({ table: 'zenix_schema' });
-          if (!result.ok) throw Error('table absent');
+          if (!result.ok) {
+            throw Error('table absent');
+          }
         }),
-      /table absent|no such table/,
+      /table absent|no such table/
     );
+    /** Owned CMS instance closed before the fixture connector/files are removed. */
     const cms = await createCms({
       ...f.options,
       filename: undefined,
@@ -341,6 +381,7 @@ test('migration DDL and journal rollback together on dependency failure; future 
     });
     await cms.close();
     db.transactionSync((tx) => {
+      /** Actual native result inspected for rollback or migration correctness. */
       const result = tx.update({
         table: 'zenix_schema',
         values: { id: 2 },
@@ -350,7 +391,7 @@ test('migration DDL and journal rollback together on dependency failure; future 
     });
     await assert.rejects(
       createCms({ ...f.options, filename: undefined, connection: db }),
-      (e) => e.code === 'SCHEMA_VERSION',
+      (e) => e.code === 'SCHEMA_VERSION'
     );
   } finally {
     await db.disconnect();
@@ -358,8 +399,10 @@ test('migration DDL and journal rollback together on dependency failure; future 
   }
 });
 test('closing cancels and drains actual principal lookup before disposal', async () => {
+  /** Owned fixture paths/configuration; finally closes resources before removing its files. */
   const f = await fixture();
   let started, retained;
+  /** Synchronization barrier proving the principal resolver has started before close. */
   const begun = new Promise((r) => (started = r));
   let disposed = false,
     cms;
@@ -385,6 +428,7 @@ test('closing cancels and drains actual principal lookup before disposal', async
         },
       ],
     });
+    /** Admitted read promise; close must cancel/drain it before plugin cleanup. */
     const pending = cms.readSite(scope, principal);
     await begun;
     assert.equal(cms.status().pending, 1);
@@ -394,7 +438,7 @@ test('closing cancels and drains actual principal lookup before disposal', async
     assert.equal(disposed, true);
     assert.throws(
       () => retained(() => {}),
-      (e) => e.code === 'INVALID_CLEANUP',
+      (e) => e.code === 'INVALID_CLEANUP'
     );
   } finally {
     await cms?.close();
@@ -402,6 +446,7 @@ test('closing cancels and drains actual principal lookup before disposal', async
   }
 });
 test('media authorization is rechecked at publish and immutable content remains detached', async () => {
+  /** Owned fixture paths/configuration; finally closes resources before removing its files. */
   const f = await fixture();
   let allow = true,
     calls = 0,
@@ -415,6 +460,7 @@ test('media authorization is rechecked at publish and immutable content remains 
       },
     });
     await initialize(cms);
+    /** Commit receipt mutated only outside the store to verify detached revision data. */
     const saved = await cms.saveDraft(
       scope,
       'photo',
@@ -432,28 +478,28 @@ test('media authorization is rechecked at publish and immutable content remains 
           },
         },
       },
-      principal,
+      principal
     );
     saved.revision.values.title = 'Changed outside store';
     assert.equal(
       (await cms.readRevision(scope, 'photo', 1, principal)).values.title,
-      'Image',
+      'Image'
     );
     allow = false;
     await assert.rejects(
       cms.publish(scope, 'photo', 1, principal),
-      (e) => e.code === 'MEDIA_DENIED',
+      (e) => e.code === 'MEDIA_DENIED'
     );
     assert.equal(
       (await cms.readEntry(scope, 'photo', principal)).entry.head,
-      1,
+      1
     );
     allow = true;
     await cms.publish(scope, 'photo', 1, principal);
     assert.equal(
       (await cms.readPublished(scope, 'photo', principal)).values.hero
         .versionId,
-      'v1',
+      'v1'
     );
     assert.equal(calls, 3);
   } finally {

@@ -10,23 +10,23 @@ import { _addIssue } from '../utils/index.js';
  */
 export interface FiniteIssue<TInput extends number> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Validation refinement issue category; the primitive schema owns input typing.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable finite-refinement discriminator used by structured private issues.
    */
   readonly type: 'finite';
   /**
-   * The expected property.
+   * No separate expected literal; the native finite predicate defines the requirement.
    */
   readonly expected: null;
   /**
-   * The received property.
+   * Private numeric diagnostic representation, not a public response field.
    */
   readonly received: `${number}`;
   /**
-   * The validation function.
+   * Borrowed native Number.isFinite predicate; it does not coerce strings or invoke input code.
    */
   readonly requirement: (input: number) => boolean;
 }
@@ -39,31 +39,31 @@ export interface FiniteAction<
   TMessage extends ErrorMessage<FiniteIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, FiniteIssue<TInput>> {
   /**
-   * The action type.
+   * Fixed finite action discriminator; compose after a compatible numeric schema.
    */
   readonly type: 'finite';
   /**
-   * The action reference.
+   * Authored constructor reference; no runtime provider or module discovery.
    */
   readonly reference: typeof finite;
   /**
-   * The expected property.
+   * No separate expected literal; the native finite predicate defines the requirement.
    */
   readonly expects: null;
   /**
-   * The validation function.
+   * Borrowed native Number.isFinite predicate; it does not coerce strings or invoke input code.
    */
   readonly requirement: (input: number) => boolean;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback, not public HTML or source code.
    */
   readonly message: TMessage;
 }
 
 /**
- * Creates a [finite](https://en.wikipedia.org/wiki/Finite) validation action.
+ * Refine typed numeric input using Number.isFinite without coercion. Unlike the base number schema, this explicitly rejects infinite values.
  *
- * @returns A finite action.
+ * @returns {FiniteAction<TInput, undefined>} Inert refinement action; actual validation starts only in an explicit parse.
  */
 export function finite<TInput extends number>(): FiniteAction<
   TInput,
@@ -71,17 +71,21 @@ export function finite<TInput extends number>(): FiniteAction<
 >;
 
 /**
- * Creates a [finite](https://en.wikipedia.org/wiki/Finite) validation action.
+ * Refine typed numeric input using Number.isFinite without coercion. Unlike the base number schema, this explicitly rejects infinite values.
  *
- * @param message The error message.
+ * @param {TMessage} message - Optional trusted private diagnostic policy.
  *
- * @returns A finite action.
+ * @returns {FiniteAction<TInput, TMessage>} Inert action retaining the borrowed diagnostic policy.
  */
 export function finite<
   TInput extends number,
   const TMessage extends ErrorMessage<FiniteIssue<TInput>> | undefined,
 >(message: TMessage): FiniteAction<TInput, TMessage>;
 
+/** Build an inert native finite-number refinement.
+ * @param {ErrorMessage<FiniteIssue<number>>} message - Optional trusted private diagnostic text/callback.
+ * @returns {FiniteAction<number, ErrorMessage<FiniteIssue<number>> | undefined>} Native finite check embedded in the schema action contract, not an immediate Boolean predicate.
+ */
 // @__NO_SIDE_EFFECTS__
 export function finite(
   message?: ErrorMessage<FiniteIssue<number>>
@@ -94,6 +98,11 @@ export function finite(
     expects: null,
     requirement: Number.isFinite,
     message,
+    /** Refine only already-typed input without coercing or re-running an upstream schema.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private dataset and typed flag.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Root issue budget and private message policy.
+     * @returns {unknown} Same dataset with a private refinement issue only when the typed finite check fails.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement(dataset.value)) {
         _addIssue(this, 'finite', dataset, config);

@@ -184,3 +184,28 @@ Do not share private user-specific translations in a process-wide catalog. Trans
 ## License
 
 MIT OR Apache-2.0. No WordPress source is copied and no WordPress runtime dependency is required.
+
+## Catalog generations and lifetime details
+
+A locale-fixed translator captures its language/fallback chain, while reading the
+owner's current immutable catalog registry. Replacing/removing catalogs explicitly
+can therefore affect later reads through an existing fixed view. Loader invalidation
+alone does not install a new registry generation. If a request must pin an entire
+catalog generation across a rollout, the host must supply a separate preloaded
+catalog owner rather than mutate a shared registry mid-request.
+
+`createCatalogLoader` owns producer signals, deadlines, waiter listeners and bounded
+cache references. Controllers own only their locale-selection waiter; request
+facades own their AsyncLocalStorage, and reactive adapters own their subscription.
+Dispose these owners separately. `createI18n` has no invented destroy/close method;
+release subscriber registrations through their returned unsubscribe functions.
+`createSourceExtractor` retains bounded result metadata until invalidate/clear or
+owner release, starts no watcher and never executes source to discover strings.
+
+Catalog updates commit before synchronous subscriber notifications. A subscriber
+failure does not roll back the registry or a locale change. Keep subscribers
+nonthrowing and do not replay a mutation merely because notification failed.
+Extraction diagnostics contain codes/locations, but other runtime exceptions may
+include developer-selected placeholder names; hosts should select/redact diagnostics
+instead of exposing arbitrary errors to clients. Text remains inert and destination
+escaping does not grant permission to publish tenant-private catalogs.

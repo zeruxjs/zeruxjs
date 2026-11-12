@@ -24,9 +24,9 @@ export interface MetadataAction<
 /**
  * Creates a custom metadata action.
  *
- * @param metadata_ The metadata object.
+ * @param {TMetadata} metadata_ - Borrowed host-owned metadata record; no cloning, validation, serialization or source evaluation is performed.
  *
- * @returns A metadata action.
+ * @returns {MetadataAction<TInput, TMetadata>} Descriptor retaining the borrowed record; it is not a sanitizer or an authorization policy.
  */
 // @__NO_SIDE_EFFECTS__
 export function metadata<

@@ -37,7 +37,7 @@ Never use a shared response cache when applying user/tenant visibility filters. 
 
 ## Persistence
 
-The Node-only persistence export saves/loads snapshots with atomic replacement and symlink checks. The parent directory must already exist. A single-writer local snapshot is not distributed coordination or an authoritative database. Rebuild from source data when the index format/content changes.
+The Node-only persistence export saves/loads snapshots with atomic replacement and symlink checks. The parent directory must already exist. A single-writer local snapshot is not distributed coordination or an authoritative database. V1 snapshots use the receiving index configuration; opt-in V2 records analyzers, weights, fields and stopwords and rejects incompatible receivers. Import validates the entire candidate before replacing the current index. Metadata and snapshot containers must be inert plain JSON: class-based envelopes, array subclasses, accessors and serialization callbacks are rejected. This is ordinary-data validation, not a JavaScript proxy sandbox. Rebuild from source data when index policy/content changes.
 
 ## Install and select the integration
 
@@ -45,7 +45,7 @@ The Node-only persistence export saves/loads snapshots with atomic replacement a
 npm install @zeruxjs/search@0.0.4
 ```
 
-There is no automatic `search` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
+Standalone indexes are created explicitly. The optional `@zeruxjs/search/adapters` entry also exports `registerSearchService` for the framework’s private `search: { enabled: true, registration }` integration. Register trusted factories explicitly and verify the initiating principal/tenant on every invocation; setting arbitrary search options alone does not start an engine. `registration.start()` creates a generation whose owner must await `close()`; framework startup/shutdown owns that lifecycle when it consumes the registration. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
 
 ## A practical integration workflow
 
@@ -87,6 +87,12 @@ These tables list fields declared directly on the named public contract. Referen
 | `weights` | `Partial<Record<keyof T & string, number>>` | Yes |
 | `stopWords` | `Iterable<string>` | Yes |
 | `maxDocuments` | `number` | Yes |
+| `analyzer` / `analyzers` | Default / per-field `SearchAnalyzer` | Yes |
+| `maxDocumentBytes` / `maxBatchBytes` | Serialized byte budgets | Yes |
+| `maxBatchSize` / `maxVocabulary` | Staged document / posting-key caps | Yes |
+| `maxVocabularyScan` / `maxExpansions` | Prefix/fuzzy work caps | Yes |
+| `maxQueryTerms` / `maxQueryLength` | Analyzed clause / UTF-16 caps | Yes |
+| `maxSnapshotBytes` | Complete serialized snapshot byte cap | Yes |
 
 ### SearchOptions
 
@@ -97,6 +103,10 @@ These tables list fields declared directly on the named public contract. Referen
 | `mode` | `'all' \| 'any'` | Yes |
 | `prefix` | `boolean` | Yes |
 | `filter` | `(document: SearchDocument) => boolean` | Yes |
+| `filters` | Bounded structured scalar clauses | Yes |
+| `match` | `'exact' \| 'prefix' \| 'fuzzy'` | Yes |
+| `fuzzy` | Explicit distance and expansion caps | Yes |
+| `algorithm` | `'bm25' \| 'term-frequency'` | Yes |
 
 ### SearchDocument
 

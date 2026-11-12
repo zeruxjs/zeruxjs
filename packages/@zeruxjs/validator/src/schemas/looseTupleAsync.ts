@@ -26,51 +26,50 @@ export interface LooseTupleSchemaAsync<
   LooseTupleIssue | InferTupleIssue<TItems>
 > {
   /**
-   * The schema type.
+   * Stable structural discriminator for issue and metadata consumers.
    */
   readonly type: 'loose_tuple';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof looseTuple | typeof looseTupleAsync;
   /**
-   * The expected property.
+   * Private root-type diagnostic, not an authorization or escaping policy.
    */
   readonly expects: 'Array';
   /**
-   * The items schema.
+   * Borrowed ordered child schemas; no deep isolation is introduced.
    */
   readonly items: TItems;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a loose tuple schema.
- *
- * @param items The items schema.
- *
- * @returns A loose tuple schema.
+/** Validate the declared positional prefix and retain trailing values without validating them. Construction captures trusted child references without parsing input.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; this API does not clone or freeze the tuple.
+ * @returns {LooseTupleSchemaAsync<TItems, undefined>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
  */
 export function looseTupleAsync<const TItems extends TupleItemsAsync>(
   items: TItems
 ): LooseTupleSchemaAsync<TItems, undefined>;
 
-/**
- * Creates a loose tuple schema.
- *
- * @param items The items schema.
- * @param message The error message.
- *
- * @returns A loose tuple schema.
+/** Validate the declared positional prefix and retain trailing values without validating them. Construction captures trusted child references without parsing input.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; this API does not clone or freeze the tuple.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback, not sanitized client feedback.
+ * @returns {LooseTupleSchemaAsync<TItems, TMessage>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
  */
 export function looseTupleAsync<
   const TItems extends TupleItemsAsync,
   const TMessage extends ErrorMessage<LooseTupleIssue> | undefined,
 >(items: TItems, message: TMessage): LooseTupleSchemaAsync<TItems, TMessage>;
 
+/** Validate the declared positional prefix and retain trailing values without validating them. Construction captures trusted child references without parsing input.
+ * @param {TupleItemsAsync} items - Borrowed trusted ordered child schemas; this API does not clone or freeze the tuple.
+ * @param {ErrorMessage<LooseTupleIssue>} message - Optional trusted private diagnostic text/callback, not sanitized client feedback.
+ * @returns {LooseTupleSchemaAsync<TupleItemsAsync, ErrorMessage<LooseTupleIssue> | undefined>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
+ */
 // @__NO_SIDE_EFFECTS__
 export function looseTupleAsync(
   items: TupleItemsAsync,
@@ -87,11 +86,20 @@ export function looseTupleAsync(
     async: true,
     items,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Validate the declared positional prefix and retain trailing values without validating them. Child parsing starts concurrently; abortEarly affects result accumulation after that work starts.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private candidate structural input; raw child issues retain its original values/paths.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root budgets, cancellation and private diagnostic policy.
+     * @returns {Promise<OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>>} Declared structural output or private issues; root execution drains owned started callbacks on operational failure.
+     */
     async '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed structural input retained for own-field reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -102,10 +110,16 @@ export function looseTupleAsync(
         dataset.value = [];
 
         // Parse schema of each tuple item
+        /** Concurrent declared-position results retained in tuple order for issue accumulation. */
         const itemDatasets = await Promise.all(
           this.items.map(async (item, key) => {
+            /** Original field/position value, or undefined for a missing optional/defaulted input. */
             const value = input[key];
-            return [key, value, await _runSchema(item, { value }, config)] as const;
+            return [
+              key,
+              value,
+              await _runSchema(item, { value }, config),
+            ] as const;
           })
         );
 
@@ -114,6 +128,7 @@ export function looseTupleAsync(
           // If there are issues, capture them
           if (itemDataset.issues) {
             // Create tuple path item
+            /** Private parent path segment retaining original input/value; public feedback must sanitize it. */
             const pathItem: ArrayPathItem = {
               type: 'array',
               origin: 'value',

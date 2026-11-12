@@ -26,61 +26,50 @@ export interface ObjectSchemaAsync<
   ObjectIssue | InferObjectIssue<TEntries>
 > {
   /**
-   * The schema type.
+   * Stable structural discriminator for issue and metadata consumers.
    */
   readonly type: 'object';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof object | typeof objectAsync;
   /**
-   * The expected property.
+   * Private root-type diagnostic, not an authorization or escaping policy.
    */
   readonly expects: 'Object';
   /**
-   * The entries schema.
+   * Borrowed declared child dictionary; mutation remains visible to subsequent parses.
    */
   readonly entries: TEntries;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an object schema.
- *
- * Hint: This schema removes unknown entries. The output will only include the
- * entries you specify. To include unknown entries, use `looseObjectAsync`. To
- * return an issue for unknown entries, use `strictObjectAsync`. To include and
- * validate unknown entries, use `objectWithRestAsync`.
- *
- * @param entries The entries schema.
- *
- * @returns An object schema.
+/** Parse declared own fields and omit extra fields; missing required entries become private key issues. Construction captures trusted child references without parsing input.
+ * @param {TEntries} entries - Borrowed trusted child dictionary; later caller mutation is not isolated.
+ * @returns {ObjectSchemaAsync<TEntries, undefined>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
  */
 export function objectAsync<const TEntries extends ObjectEntriesAsync>(
   entries: TEntries
 ): ObjectSchemaAsync<TEntries, undefined>;
 
-/**
- * Creates an object schema.
- *
- * Hint: This schema removes unknown entries. The output will only include the
- * entries you specify. To include unknown entries, use `looseObjectAsync`. To
- * return an issue for unknown entries, use `strictObjectAsync`. To include and
- * validate unknown entries, use `objectWithRestAsync`.
- *
- * @param entries The entries schema.
- * @param message The error message.
- *
- * @returns An object schema.
+/** Parse declared own fields and omit extra fields; missing required entries become private key issues. Construction captures trusted child references without parsing input.
+ * @param {TEntries} entries - Borrowed trusted child dictionary; later caller mutation is not isolated.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback, not sanitized client feedback.
+ * @returns {ObjectSchemaAsync<TEntries, TMessage>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
  */
 export function objectAsync<
   const TEntries extends ObjectEntriesAsync,
   const TMessage extends ErrorMessage<ObjectIssue> | undefined,
 >(entries: TEntries, message: TMessage): ObjectSchemaAsync<TEntries, TMessage>;
 
+/** Parse declared own fields and omit extra fields; missing required entries become private key issues. Construction captures trusted child references without parsing input.
+ * @param {ObjectEntriesAsync} entries - Borrowed trusted child dictionary; later caller mutation is not isolated.
+ * @param {ErrorMessage<ObjectIssue>} message - Optional trusted private diagnostic text/callback, not sanitized client feedback.
+ * @returns {ObjectSchemaAsync<ObjectEntriesAsync, ErrorMessage<ObjectIssue> | undefined>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
+ */
 // @__NO_SIDE_EFFECTS__
 export function objectAsync(
   entries: ObjectEntriesAsync,
@@ -97,11 +86,20 @@ export function objectAsync(
     async: true,
     entries,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Parse declared own fields and omit extra fields; missing required entries become private key issues. Child parsing starts concurrently; abortEarly affects result accumulation after that work starts.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private candidate structural input; raw child issues retain its original values/paths.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root budgets, cancellation and private diagnostic policy.
+     * @returns {Promise<OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>>} Declared structural output or private issues; root execution drains owned started callbacks on operational failure.
+     */
     async '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed structural input retained for own-field reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -113,6 +111,7 @@ export function objectAsync(
 
         // If key is present or its an optional schema with a default value,
         // parse input of key or default value asynchronously
+        /** Concurrent child results in declared entry order; missing entries retain a null result sentinel. */
         const valueDatasets = await Promise.all(
           Object.entries(this.entries).map(async ([key, valueSchema]) => {
             if (
@@ -123,11 +122,11 @@ export function objectAsync(
                 // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 valueSchema.default !== undefined)
             ) {
-              const value: unknown =
-                Object.hasOwn(input, key)
-                  ? // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
+              /** Original field/position value, or undefined for a missing optional/defaulted input. */
+              const value: unknown = Object.hasOwn(input, key)
+                ? // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                   input[key]
-                  : undefined;
+                : undefined;
               return [
                 key,
                 value,
@@ -153,6 +152,7 @@ export function objectAsync(
             // If there are issues, capture them
             if (valueDataset.issues) {
               // Create object path item
+              /** Private parent path segment retaining original input/value; public feedback must sanitize it. */
               const pathItem: ObjectPathItem = {
                 type: 'object',
                 origin: 'value',

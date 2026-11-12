@@ -24,51 +24,50 @@ export interface ArraySchema<
   ArrayIssue | InferIssue<TItem>
 > {
   /**
-   * The schema type.
+   * Stable schema discriminator used by structured issue consumers.
    */
   readonly type: 'array';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof array;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not a coercion, escaping or authorization policy.
    */
   readonly expects: 'Array';
   /**
-   * The array item schema.
+   * Borrowed child schema; root execution owns its work limits.
    */
   readonly item: TItem;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an array schema.
- *
- * @param item The item schema.
- *
- * @returns An array schema.
+/** Parse each array position in source order; missing sparse positions are delegated to the child as undefined. Construction does not parse input or authorize its source.
+ * @param {TItem} item - Borrowed explicit child schema; parsing shares root work/issue budgets.
+ * @returns {ArraySchema<TItem, undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function array<
   const TItem extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(item: TItem): ArraySchema<TItem, undefined>;
 
-/**
- * Creates an array schema.
- *
- * @param item The item schema.
- * @param message The error message.
- *
- * @returns An array schema.
+/** Parse each array position in source order; missing sparse positions are delegated to the child as undefined. Construction does not parse input or authorize its source.
+ * @param {TItem} item - Borrowed explicit child schema; parsing shares root work/issue budgets.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {ArraySchema<TItem, TMessage>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function array<
   const TItem extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
   const TMessage extends ErrorMessage<ArrayIssue> | undefined,
 >(item: TItem, message: TMessage): ArraySchema<TItem, TMessage>;
 
+/** Parse each array position in source order; missing sparse positions are delegated to the child as undefined. Construction does not parse input or authorize its source.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>>} item - Borrowed explicit child schema; parsing shares root work/issue budgets.
+ * @param {ErrorMessage<ArrayIssue>} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {ArraySchema<BaseSchema<unknown, unknown, BaseIssue<unknown>>, ErrorMessage<ArrayIssue> | undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function array(
   item: BaseSchema<unknown, unknown, BaseIssue<unknown>>,
@@ -85,11 +84,20 @@ export function array(
     async: false,
     item,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Parse each array position in source order; missing sparse positions are delegated to the child as undefined. Raw issues remain private and operational failures propagate.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; this schema does not grant permissions or sanitize output.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets, cancellation, abort flags and diagnostic policy.
+     * @returns {OutputDataset<unknown, BaseIssue<unknown>>} Declared output or private issue dataset; child result identity follows its schema.
+     */
     '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed candidate retained for child reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -101,12 +109,15 @@ export function array(
 
         // Parse schema of each array item
         for (let key = 0; key < input.length; key++) {
+          /** Current array position, including undefined for a sparse hole; child schema validation remains authoritative. */
           const value = input[key];
+          /** Current positional child result; its own schema determines typing, output identity and private issues. */
           const itemDataset = _runSchema(this.item, { value }, config);
 
           // If there are issues, capture them
           if (itemDataset.issues) {
             // Create array path item
+            /** Private parent path segment retaining original input/value; sanitize before client exposure. */
             const pathItem: ArrayPathItem = {
               type: 'array',
               origin: 'value',

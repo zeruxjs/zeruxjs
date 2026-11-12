@@ -216,3 +216,28 @@ These tables list fields declared directly on the named public contract. Referen
 | `scopePrefix` | `string` | Yes |
 | `publicRead` | `boolean` | Yes |
 | `allow` | `(subject: string, address: FileAddress, action: 'read'\|'write'\|'delete', info?: FileInfo) => boolean \| Promise<boolean>` | Yes |
+
+### Fetch client and ownership
+
+Import `createFilesClient` from `@zeruxjs/files/client` in browser code. This exact subpath has no Node/AWS imports; the storage root remains server-only. The client borrows Fetch and creates no persistent listeners, timers or close handle. `download` returns a Response whose body the caller must consume or cancel; `bytes` buffers small objects (16 MiB default) and releases an acquired reader. Pass a trusted positive finite byte ceiling. This client does not authenticate a tenant or validate JSON receipts independently; the server must authorize each operation.
+
+The token-authorizer factory borrows its verifier. Persistence, expiry, revocation and scope enforcement belong to that verifier; this factory does not imply an in-memory or durable auth store. The raw byte cache is process-local and policy-free. The file manager excludes private/encrypted objects from its cache, and cached byte arrays are copied on read and write.
+
+### Resource limits and shutdown
+
+| Owner | Actual default/boundary |
+| --- | --- |
+| Manager `get` / client `bytes` | 16 MiB materialization ceiling; use streaming APIs for larger objects |
+| Public byte cache | Opt-in; 64 entries, 8 MiB, 15000 ms TTL; copied bytes, process-local only |
+| HTTP raw upload | 16 MiB default; exact declared length checked while streaming; create-only required |
+| Local/S3 list page | Default 100, permitted 1–1000; local implementation scans bucket sidecars before paging |
+| Resumable session | 1 GiB total, 8 MiB per part (64 MiB ceiling), 1000 parts |
+| Resumable admission | 100 sessions (10000 ceiling), 8 actual pending calls (64 ceiling), one-hour TTL (seven-day ceiling) |
+| Cleanup | Preview pages default 50 (100 ceiling), approved batches at most 100; revision/lease rechecked |
+
+Drain/close the resumable coordinator before its borrowed file manager. Manager
+close invokes distinct configured drivers and clears its cache, without tracking
+every active operation. S3 close awaits lazy construction and destroys only owned
+clients; local drivers own per-operation handles and returned read iterators must
+be consumed or returned. Binary and metadata files are separate promotions.
+Neither cooperative cancellation nor a failed acknowledgement proves rollback.

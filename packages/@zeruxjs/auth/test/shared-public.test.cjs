@@ -1,18 +1,63 @@
+/** Node test entry; no application server or live provider is started. */
 const { test } = require('node:test');
+/** Local assertions over synthetic cryptographic/persistence fixtures. */
 const assert = require('node:assert/strict');
+/** Local explicit-argument pack/compile runner; no shell interpolation. */
 const { execFileSync } = require('node:child_process');
+/** Owned temporary consumer helpers; cleanup never targets application paths. */
 const { mkdtempSync, writeFileSync, rmSync } = require('node:fs');
+/** Explicit native paths for the local packed consumer. */
 const { join, resolve } = require('node:path');
+/** Native temporary root used for owned synthetic fixtures. */
 const { tmpdir } = require('node:os');
 test('packed public declarations and imports run without source resolution', () => {
-    const directory = mkdtempSync(join(tmpdir(), 'auth-public-'));
-    const cwd = resolve(__dirname, '..');
-    try {
-        const packedResult = JSON.parse(execFileSync('npm', ['pack', '--ignore-scripts', '--json', '--cache', join(directory, 'cache'), '--pack-destination', directory], { cwd, encoding: 'utf8' }));
-        const packed = Array.isArray(packedResult) ? packedResult[0] : packedResult['@zeruxjs/auth'];
-        writeFileSync(join(directory, 'package.json'), JSON.stringify({ private: true, type: 'module' }));
-        execFileSync('npm', ['install', '--omit=optional', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false', '--cache', join(directory, 'cache'), join(directory, packed.filename)], { cwd: directory, stdio: 'pipe' });
-        writeFileSync(join(directory, 'consumer.ts'), `import { createMemoryAuthPersistence, createSharedAuth, type AuthPersistence, createPasskeyManager, createMemoryPasskeyStore, type PasskeyManagerOptions, type ClientCertificateIdentityAdapter, type EnterpriseSsoIdentityAdapter, createProviderLogin, createMemoryProviderLoginStore } from '@zeruxjs/auth';
+  /** Owned isolated public consumer directory, removed in finally. */
+  const directory = mkdtempSync(join(tmpdir(), 'auth-public-'));
+  /** Explicit package root for local npm archive creation. */
+  const cwd = resolve(__dirname, '..');
+  try {
+    /** Parsed local npm pack metadata, never evaluated as code. */
+    const packedResult = JSON.parse(
+      execFileSync(
+        'npm',
+        [
+          'pack',
+          '--ignore-scripts',
+          '--json',
+          '--cache',
+          join(directory, 'cache'),
+          '--pack-destination',
+          directory,
+        ],
+        { cwd, encoding: 'utf8' }
+      )
+    );
+    /** Selected local archive manifest used to verify public inputs. */
+    const packed = Array.isArray(packedResult)
+      ? packedResult[0]
+      : packedResult['@zeruxjs/auth'];
+    writeFileSync(
+      join(directory, 'package.json'),
+      JSON.stringify({ private: true, type: 'module' })
+    );
+    execFileSync(
+      'npm',
+      [
+        'install',
+        '--omit=optional',
+        '--ignore-scripts',
+        '--no-audit',
+        '--no-fund',
+        '--package-lock=false',
+        '--cache',
+        join(directory, 'cache'),
+        join(directory, packed.filename),
+      ],
+      { cwd: directory, stdio: 'pipe' }
+    );
+    writeFileSync(
+      join(directory, 'consumer.ts'),
+      `import { createMemoryAuthPersistence, createSharedAuth, type AuthPersistence, createPasskeyManager, createMemoryPasskeyStore, type PasskeyManagerOptions, type ClientCertificateIdentityAdapter, type EnterpriseSsoIdentityAdapter, createProviderLogin, createMemoryProviderLoginStore } from '@zeruxjs/auth';
 const store: AuthPersistence = createMemoryAuthPersistence();
 const auth = createSharedAuth({ store, indexKey: new Uint8Array(32), keys: [{ id: 'fixture', key: new Uint8Array(32) }], activeKeyId: 'fixture', authorizeFresh: async () => false });
 const account = {tenant: 'example', account: 'user-1'};
@@ -39,11 +84,35 @@ try {
  try {await login.complete('example',{tenant:'fixture',session:'session'},callback);throw Error('Optional JWT dependency unexpectedly present');}
  catch(error){if(!(error instanceof Error)||error.message!=='LOGIN_UNAVAILABLE')throw error;}
 }finally{await login.close();providerStore.clear();}
-`);
-        const compiler = resolve(cwd, '../../../node_modules/typescript/bin/tsc');
-        execFileSync(process.execPath, [compiler, '--strict', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--target', 'ES2022', '--skipLibCheck', 'consumer.ts'], { cwd: directory, stdio: 'pipe' });
-        execFileSync(process.execPath, ['consumer.js'], { cwd: directory, stdio: 'pipe' });
-        assert.ok(packed.files.some(file => file.path === 'dist/shared-auth.d.ts'));
-        assert.ok(!packed.files.some(file => file.path.startsWith('src/')));
-    } finally { rmSync(directory, { recursive: true, force: true }); }
+`
+    );
+    /** Explicit installed TypeScript compiler path, not an arbitrary package import. */
+    const compiler = resolve(cwd, '../../../node_modules/typescript/bin/tsc');
+    execFileSync(
+      process.execPath,
+      [
+        compiler,
+        '--strict',
+        '--module',
+        'NodeNext',
+        '--moduleResolution',
+        'NodeNext',
+        '--target',
+        'ES2022',
+        '--skipLibCheck',
+        'consumer.ts',
+      ],
+      { cwd: directory, stdio: 'pipe' }
+    );
+    execFileSync(process.execPath, ['consumer.js'], {
+      cwd: directory,
+      stdio: 'pipe',
+    });
+    assert.ok(
+      packed.files.some((file) => file.path === 'dist/shared-auth.d.ts')
+    );
+    assert.ok(!packed.files.some((file) => file.path.startsWith('src/')));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

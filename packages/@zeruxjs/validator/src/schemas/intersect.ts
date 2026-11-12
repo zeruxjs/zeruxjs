@@ -6,11 +6,7 @@ import type {
   InferIssue,
   OutputDataset,
 } from '../types/index.js';
-import {
-  _addIssue,
-  _getStandardProps,
-  _joinExpects,
-} from '../utils/index.js';
+import { _addIssue, _getStandardProps, _joinExpects } from '../utils/index.js';
 import type {
   InferIntersectInput,
   InferIntersectOutput,
@@ -31,11 +27,11 @@ export interface IntersectSchema<
   IntersectIssue | InferIssue<TOptions[number]>
 > {
   /**
-   * The schema type.
+   * Stable schema discriminator used by structured issue consumers.
    */
   readonly type: 'intersect';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof intersect;
   /**
@@ -43,35 +39,34 @@ export interface IntersectSchema<
    */
   readonly options: TOptions;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an intersect schema.
- *
- * @param options The intersect options.
- *
- * @returns An intersect schema.
+/** Validate every declared branch in order and merge compatible outputs into the first branch result; merge conflicts create a private issue. Construction does not parse input or authorize its source.
+ * @param {TOptions} options - Borrowed ordered trusted branch schemas; mutation after construction is not isolated.
+ * @returns {IntersectSchema<TOptions, undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function intersect<const TOptions extends IntersectOptions>(
   options: TOptions
 ): IntersectSchema<TOptions, undefined>;
 
-/**
- * Creates an intersect schema.
- *
- * @param options The intersect options.
- * @param message The error message.
- *
- * @returns An intersect schema.
+/** Validate every declared branch in order and merge compatible outputs into the first branch result; merge conflicts create a private issue. Construction does not parse input or authorize its source.
+ * @param {TOptions} options - Borrowed ordered trusted branch schemas; mutation after construction is not isolated.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {IntersectSchema<TOptions, TMessage>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function intersect<
   const TOptions extends IntersectOptions,
   const TMessage extends ErrorMessage<IntersectIssue> | undefined,
 >(options: TOptions, message: TMessage): IntersectSchema<TOptions, TMessage>;
 
+/** Validate every declared branch in order and merge compatible outputs into the first branch result; merge conflicts create a private issue. Construction does not parse input or authorize its source.
+ * @param {IntersectOptions} options - Borrowed ordered trusted branch schemas; mutation after construction is not isolated.
+ * @param {ErrorMessage<IntersectIssue>} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {IntersectSchema<IntersectOptions, ErrorMessage<IntersectIssue> | undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function intersect(
   options: IntersectOptions,
@@ -88,13 +83,22 @@ export function intersect(
     async: false,
     options,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Validate every declared branch in order and merge compatible outputs into the first branch result; merge conflicts create a private issue. Raw issues remain private and operational failures propagate.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; this schema does not grant permissions or sanitize output.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets, cancellation, abort flags and diagnostic policy.
+     * @returns {OutputDataset<unknown, BaseIssue<unknown>>} Declared output or private issue dataset; child result identity follows its schema.
+     */
     '~run'(dataset, config) {
       // Parse input with schema of options, if not empty
       if (this.options.length) {
         // Get input value from dataset
+        /** Borrowed candidate retained for child reads and private issue paths. */
         const input = dataset.value;
 
         // Create variable to store outputs
@@ -106,6 +110,7 @@ export function intersect(
 
         // Parse schema of each option and collect outputs
         for (const schema of this.options) {
+          /** Current attempted branch result sharing the root work and issue budget. */
           const optionDataset = _runSchema(schema, { value: input }, config);
 
           // If there are issues, capture them
@@ -147,6 +152,7 @@ export function intersect(
 
           // Merge outputs into one final output
           for (let index = 1; index < outputs!.length; index++) {
+            /** Legacy recursive merge result; earlier mutations to the first output are not rolled back on a later conflict. */
             const mergeDataset = _merge(dataset.value, outputs![index]);
 
             // If outputs can't be merged, add issue and break loop

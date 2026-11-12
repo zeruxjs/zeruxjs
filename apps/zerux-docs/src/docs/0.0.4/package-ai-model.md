@@ -22,7 +22,7 @@
 
 ## What the package does
 
-This is a local keyword retrieval/chunking layer, not model training, embeddings or a vector database. It ranks source documents, budgets excerpts and can pass evidence to a compatible chat provider.
+This is a local keyword retrieval/chunking layer. It does not train models, generate embeddings or own a vector database. It ranks source documents, budgets excerpts and can pass evidence to a compatible chat provider; the separate evidence API can explicitly borrow a host-qualified embedding ranker.
 
 ```ts
 import { createKnowledgeBase, chunkDocument, retrieveEvidence } from '@zeruxjs/ai-model';
@@ -43,7 +43,7 @@ createGroundedAssistant returns an answer and structured sources. Validate citat
 
 ## Access policy and scale
 
-Apply document authorization before populating/searching the knowledge base. Search is lexical and linear in corpus size; it is not semantic reranking. Avoid treating an answer as accurate or authorized simply because sources were attached.
+Apply document authorization before populating/searching the knowledge base. Default search is lexical and linear in corpus size; it is not semantic reranking. Avoid treating an answer as accurate or authorized simply because sources were attached.
 
 ## Install and select the integration
 
@@ -51,11 +51,11 @@ Apply document authorization before populating/searching the knowledge base. Sea
 npm install @zeruxjs/ai-model@0.0.4
 ```
 
-There is no automatic `ai-model` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
+There is no automatic `ai-model` startup service in `zerux.config.js` for this package. Import its public APIs and create the server-side object in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](configuration-reference.md) and [TypeScript](typescript.md).
 
 ## A practical integration workflow
 
-Build a knowledge base from documents the requesting principal is allowed to read. Use stable source IDs, deterministic chunks and an explicit overlap/context budget. Keyword ranking scans document text; it is not vector retrieval, training or fine-tuning. Pass the returned evidence separately from generated text so a UI can inspect source IDs instead of treating model prose as verified citations.
+Build a knowledge base from documents the requesting principal is allowed to read. Use stable source IDs, deterministic chunks and an explicit overlap/context budget. Default keyword ranking scans document text; it is not vector retrieval, training or fine-tuning. Pass the returned evidence separately from generated text so a UI can inspect source IDs instead of treating model prose as verified citations.
 
 ## TypeScript: inputs, results and ownership
 
@@ -145,3 +145,12 @@ the provider when evidence is insufficient. This validates IDs, not truth or
 prompt-injection safety. See README and evidence example for exact limits and the
 small reproducible ranking comparison; no live semantic-provider evaluation is
 claimed.
+
+
+## Ownership and source maintenance
+
+The root entry includes Node filesystem persistence, and `/corpus` and `/evidence` load Node filesystem/cryptography helpers. Keep their runtime imports on the server; erased type-only imports do not load those dependencies. The package does not automatically create a browser controller, scan sources or start an AI provider.
+
+The package README maps storage, Unicode chunking, legacy excerpts, corpus generation and ranked context packing to their source owners. Public examples document their input/return and disposal contracts. Retain/close corpus readers and await evidence-retriever close; assistants borrow those owners. Abort can stop caller waiting while an embedding adapter still holds its native slot. Permission/remote-consent changes after async ranking reject the whole stale result.
+
+Legacy ranking defaults and locale ties remain compatible. Explicit weighted ranking, code-point spans and complete-prompt token accounting are separate opt-in contracts. Local fixture comparisons and valid citation IDs do not establish factual entailment or live model grounding.

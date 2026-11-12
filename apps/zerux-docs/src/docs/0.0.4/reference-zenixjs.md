@@ -50,3 +50,31 @@ recovery, draft/public separation, stored XSS, CSRF/origin denial and cleanup. j
 checks authored labels, not browser or screen-reader conformance. Live identity,
 proxy/TLS/cookie deployment, browser keyboard and backup qualification remain host
 prerequisites. See the package README for exact routes, limits and ownership.
+
+## Explicit owners and inert metadata
+
+```js
+import { version, status, capabilities } from 'zenixjs';
+
+console.log({ version, status, capabilities });
+// Importing metadata opens no database, session service or HTTP listener.
+```
+
+Use the package's public `examples/application.mjs` to install the application
+from a trusted host plugin. Its database/core/application cleanup order is explicit;
+private authentication and CSRF implementations must be supplied separately.
+`createZenixApplication` owns request admission, readers, previews and its renderer.
+`createSqliteSetupStore` borrows the qualified connector and has no invented close
+method. Close the application before shutting down the borrowed core/store/database.
+
+The setup claim and CMS content writes are separate transactions. A failed or lost
+response after claiming setup does not authorize automatic retry or claim deletion.
+Use fresh operator proof and the original claim's recovery procedure. A preview
+nonce still requires fresh session/core authorization, expires locally and does not
+recall bytes already delivered. Keep private query tokens out of host access logs.
+
+Authorization and parsing are separate: strict form schemas require the authored
+fields, but only host/session/core policy authorizes a write. Rendered text and
+fixed response messages do not include submitted passwords, setup secrets or private
+causes. Metadata flags describe the current baseline, not a certification of production
+identity, browser accessibility, distributed atomicity or complete CMS capability.

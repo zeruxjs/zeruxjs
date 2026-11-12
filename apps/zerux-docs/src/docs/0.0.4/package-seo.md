@@ -35,7 +35,7 @@ createCrawlerService from @zeruxjs/seo/fetch supplies robots, sitemap and pagina
 
 ## Freshness
 
-Snapshot caching is opt-in and process-local. Call invalidate after a content deployment when using it. A fresh supplier is necessary for changing content; an old snapshot cannot discover database changes by itself.
+Snapshot caching is opt-in and process-local. Call invalidate after a content deployment when using it. A fresh supplier is necessary for changing content; an old snapshot cannot discover database changes by itself. The compatibility `/fetch` controller has no close/drain operation, and invalidation does not cancel its older supplier. Use the explicit `/public` service for paged cooperative loading and actual-settlement teardown; await its close before disposing a borrowed database/source.
 
 ## Security boundary
 

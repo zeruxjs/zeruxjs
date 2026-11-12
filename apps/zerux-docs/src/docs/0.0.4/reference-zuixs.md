@@ -71,21 +71,21 @@ Run the real owning application/tool with a normal input and a failure input. In
 | Option | Accepted TypeScript value | Required | Meaning |
 | --- | --- | --- | --- |
 | `limits` | `ZuixLimits` | No | Upper bounds for filesystem scanning and CSS token generation. |
-| `content` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `exclude` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `output` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `prefix` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `important` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `darkMode` | `'class' \| 'media'` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `preflight` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `minify` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `safelist` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `theme` | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `extend` | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `plugins` | `ZuixPlugin[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| `content` | `string[]` | No | Source globs; omitted values use the documented finite source-extension defaults. |
+| `exclude` | `string[]` | No | Additional source exclusion globs; built-in build/private directories remain pruned. |
+| `output` | `string` | No | Contained shared CSS destination; defaults to zuix.css. |
+| `prefix` | `string` | No | Literal prefix required before each base utility lookup. |
+| `important` | `boolean` | No | Apply !important to generated utility declarations. |
+| `darkMode` | `'class' \| 'media'` | No | Choose class selectors or prefers-color-scheme media conditions. |
+| `preflight` | `boolean` | No | Emit the built-in reset unless explicitly false. |
+| `minify` | `boolean` | No | Omit section-joining newlines; not a general CSS optimizer. |
+| `safelist` | `string[]` | No | Explicit literal tokens retained even when scanning cannot discover them. |
+| `theme` | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No | Scale values merged over copied default scales. |
+| `extend` | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No | Scale values merged after theme overrides. |
+| `plugins` | `ZuixPlugin[]` | No | Explicit trusted registration functions executed during compiler construction. |
 | `recipes` | `readonly ZuixRecipe[]` | No | Ordered utility recipes, emitted before scanned utility classes. |
 | `perFile` | `boolean \| {dir?: string; shared?: boolean}` | No | Emit CSS for each matching source file, with optional shared CSS. |
-| `optimize` | `boolean` | No | Remove unneeded spaces and group identical declaration blocks. |
+| `optimize` | `boolean` | No | Reserved compatibility field; currently not consumed. Exact duplicate rules are always removed. |
 | `keyframes` | `Record<string,string>` | No | Custom reusable animation keyframes (name -> CSS frames body). |
 
 ## CSS entry without configuration files
@@ -115,3 +115,14 @@ For Vite, register `zuixVite()` and import the stylesheet from the application e
 ## Source build dependency
 
 `zlook` remains an optional peer loaded only for watching, and is also a development dependency so source compilation receives its actual declarations first. The Pages tooling build uses the shared dependency planner; adding an independent parallel build command is not sufficient to establish that ordering. Core/compiler imports still do not start watchers.
+
+## Maintenance and cleanup boundaries
+
+The pure compiler has no external lifecycle. Dispose browser style injection with
+its returned callback. Watch owners use `stop(); await stop.closed`; actual loader
+settlement remains required, so AbortSignal does not force-cancel arbitrary code.
+Vite owns adapter cleanup through `closeBundle`; the host retains its graph/socket.
+Source-cache and output candidates are staged independently: a complete successful
+scan replaces cache records, then successful compilation prepares output. Ordinary
+replacement failures compensate already replaced files; this is not a crash-atomic
+multi-file deployment. Plugin/config functions remain trusted host code.

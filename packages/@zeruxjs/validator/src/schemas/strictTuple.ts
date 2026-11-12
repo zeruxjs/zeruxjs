@@ -25,51 +25,50 @@ export interface StrictTupleSchema<
   StrictTupleIssue | InferTupleIssue<TItems>
 > {
   /**
-   * The schema type.
+   * Fixed structural discriminator used by issue and metadata consumers.
    */
   readonly type: 'strict_tuple';
   /**
-   * The schema reference.
+   * Authored constructor identity; no package discovery or source evaluation occurs.
    */
   readonly reference: typeof strictTuple;
   /**
-   * The expected property.
+   * Private root-type diagnostic, not an authorization or escaping policy.
    */
   readonly expects: 'Array';
   /**
-   * The items schema.
+   * Borrowed ordered child schemas; not a copied or frozen tuple.
    */
   readonly items: TItems;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback; raw issues can contain rejected values.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a strict tuple schema.
- *
- * @param items The items schema.
- *
- * @returns A strict tuple schema.
+/** Validate the declared positional prefix and report only the first unknown trailing item. Construction captures trusted references; root parsing owns execution limits.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; missing positions are delegated as undefined.
+ * @returns {StrictTupleSchema<TItems, undefined>} Inert structured schema; no input is parsed, cloned or authorized during construction.
  */
 export function strictTuple<const TItems extends TupleItems>(
   items: TItems
 ): StrictTupleSchema<TItems, undefined>;
 
-/**
- * Creates a strict tuple schema.
- *
- * @param items The items schema.
- * @param message The error message.
- *
- * @returns A strict tuple schema.
+/** Validate the declared positional prefix and report only the first unknown trailing item. Construction captures trusted references; root parsing owns execution limits.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; missing positions are delegated as undefined.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; not client-safe HTML.
+ * @returns {StrictTupleSchema<TItems, TMessage>} Inert structured schema; no input is parsed, cloned or authorized during construction.
  */
 export function strictTuple<
   const TItems extends TupleItems,
   const TMessage extends ErrorMessage<StrictTupleIssue> | undefined,
 >(items: TItems, message: TMessage): StrictTupleSchema<TItems, TMessage>;
 
+/** Validate the declared positional prefix and report only the first unknown trailing item. Construction captures trusted references; root parsing owns execution limits.
+ * @param {TupleItems} items - Borrowed trusted ordered child schemas; missing positions are delegated as undefined.
+ * @param {ErrorMessage<StrictTupleIssue>} message - Optional trusted private diagnostic text/callback; not client-safe HTML.
+ * @returns {StrictTupleSchema<TupleItems, ErrorMessage<StrictTupleIssue> | undefined>} Inert structured schema; no input is parsed, cloned or authorized during construction.
+ */
 // @__NO_SIDE_EFFECTS__
 export function strictTuple(
   items: TupleItems,
@@ -83,11 +82,20 @@ export function strictTuple(
     async: false,
     items,
     message,
+    /** Adapt explicit validation to the shared bounded root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Validate the declared positional prefix and report only the first unknown trailing item. Child transforms may return borrowed identities; output is not a deep clone.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; object keys are checked as own properties and tuple positions use array indices.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root work/issue budgets, abort flags and private message policy.
+     * @returns {OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Declared structural output or private nested issues; exceptions and budget failures propagate.
+     */
     '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed current input retained for own-field checks and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -99,12 +107,16 @@ export function strictTuple(
 
         // Parse schema of each tuple item
         for (let key = 0; key < this.items.length; key++) {
+          /** Current own field or positional value; missing input is delegated as undefined. */
           const value = input[key];
-          const itemDataset = _runSchema(this.items[key], { value }, config);
+          // The loop bounds select an existing item from the trusted schema tuple.
+          /** Current positional child result; issue rebasing and abort flags preserve source order. */
+          const itemDataset = _runSchema(this.items[key]!, { value }, config);
 
           // If there are issues, capture them
           if (itemDataset.issues) {
             // Create tuple path item
+            /** Private parent path segment retaining original input/value; public HTTP responses sanitize it. */
             const pathItem: ArrayPathItem = {
               type: 'array',
               origin: 'value',

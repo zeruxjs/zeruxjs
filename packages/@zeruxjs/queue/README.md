@@ -115,7 +115,7 @@ await enqueueEmailById(service.queue('emails'),'mail_123',{delay:30_000});
 
 **Delivery contract:** `deliver()` must atomically claim an ID in a shared durable store, recheck consent at the send boundary via the email manager for marketing, and return `'sent'`, `'already-sent'` or `'suppressed'`. BullMQ is at-least-once; an SMTP acceptance followed by a crash before marking sent remains ambiguous, so neither BullMQ nor this adapter can promise exactly-once delivery. Provider idempotency where available, a transactional outbox, an explicit uncertain-delivery state, and manual reconciliation are recommended. Do not retry unknown SMTP outcomes blindly. Queue worker errors and operations callbacks do not govern optional email tracking.
 
-**Deployment status:** Unit tests use injected BullMQ classes. Live Redis/BullMQ and multi-worker recovery were not exercised without installed dependencies and `QUEUE_REDIS_URL`. Reinstall with network access and regenerate the npm lockfile before `npm ci` or production rollout.
+**Deployment qualification:** Injected BullMQ fixtures do not establish live Redis/BullMQ or multi-worker recovery. Use the committed npm lockfile and matching installed dependencies; explicitly configure an isolated `QUEUE_REDIS_URL` for live acceptance. Never point acceptance tests at production.
 
 ## Authenticated queue operations dashboard
 
@@ -152,7 +152,7 @@ State transitions:
 
 `pending -> claimed -> suppressed` (marketing opted out)
 
-`claimed -> pending` (consent store unavailable *before* SMTP begins; safe to retry)
+`claimed -> pending` (consent store unavailable _before_ SMTP begins; safe to retry)
 
 `sending -> uncertain` (SMTP error, timeout, crash, or expired sending lease; **never resend automatically**)
 
@@ -198,7 +198,7 @@ Server-internal `service.schedules(queue)` remains an explicitly trusted applica
 
 ### Opt-in live release gate
 
-Install dependencies with a repaired registry-backed lockfile, use isolated Redis and **explicitly** opt in:
+Install matching dependencies from the committed lockfile, use isolated Redis and **explicitly** opt in:
 
 ```bash
 # Real standalone, two BullMQ service instances, delayed/retry/concurrent workers:
@@ -240,11 +240,11 @@ export async function sendReference(url: string) {
 
 The example publishes/pulls a reference only; it does not implement that business side effect. URL credentials are private server configuration, never job payloads. Authorization, tenant-specific factory/queue allowlists, consent, durable idempotency and uncertain-result reconciliation remain host responsibilities. No API is automatically exposed over HTTP. A queue prefix/name is not permission. Native factory options retain the owning package's inferred types; unknown top-level and known nested backend options reject before startup. `selectQueueBackend` validates synchronously and the framework validates again before opening database/cache resources. Custom validators must be pure synchronous trusted code.
 
-| Adaptation | Publish completion | Neutral consumption | Delay/retry | Scheduler |
-| --- | --- | --- | --- | --- |
-| `bullMQBackend(['jobs'])` | Native BullMQ add completes | `push:true`; configure native `options.workers`, neutral `take` rejects | Native delay/attempts supported | Native typed extension only |
-| `rabbitMQBackend(createRabbitMQ, ['jobs'])` | Broker publisher confirmation | Manual-ack pull; settle `ack`, `discard`, `requeue` once locally | No delay/automatic retry; explicit requeue can repeat indefinitely | Unsupported |
-| `memcacheQBackend(createMemcacheQ, ['jobs'])` | Native append response | Destructive pull; disposition `consumed`, no settle method | Unsupported | Unsupported |
+| Adaptation                                    | Publish completion            | Neutral consumption                                                     | Delay/retry                                                        | Scheduler                   |
+| --------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------ | --------------------------- |
+| `bullMQBackend(['jobs'])`                     | Native BullMQ add completes   | `push:true`; configure native `options.workers`, neutral `take` rejects | Native delay/attempts supported                                    | Native typed extension only |
+| `rabbitMQBackend(createRabbitMQ, ['jobs'])`   | Broker publisher confirmation | Manual-ack pull; settle `ack`, `discard`, `requeue` once locally        | No delay/automatic retry; explicit requeue can repeat indefinitely | Unsupported                 |
+| `memcacheQBackend(createMemcacheQ, ['jobs'])` | Native append response        | Destructive pull; disposition `consumed`, no settle method              | Unsupported                                                        | Unsupported                 |
 
 `publish(queue,name,data,{delay?,attempts?})` rejects unsupported options even when delay is zero or attempts is one. No scheduling, automatic polling/worker loop or acknowledgement is emulated. `require(capability)` provides an explicit runtime guard. Scheduler requests must use the matching native extension; the neutral API has no fake scheduler. BullMQ `acknowledgement:false` means no **manual neutral settlement**; processor completion/failure still uses native BullMQ acknowledgement/retry. `publisherConfirms` specifically describes RabbitMQ broker confirms, not a generic persistence guarantee for every backend.
 
@@ -321,3 +321,18 @@ Bodies are plain JSON ≤64 KiB, nesting ≤16, visited values ≤8192. HTTP hea
 Close the workflow before its host-owned transport/store. `workflow.close()` rejects new work, aborts active HTTP signals and awaits actual in-flight work; `transport.close()` closes its own requests and awaits outstanding DNS/native settlement. Noncooperating host callbacks/DNS/database work can delay closure; slots remain occupied instead of starting unbounded replacement work. Abort does not prove remote rollback. The workflow borrows its store/transport/signing source and never closes the application's database, queue or credential vault.
 
 Qualification includes synthetic pinned commit/rollback, actual disposable SQLite rollback, CAS/replayed jobs, expired leases, signature rotation/replay-store claims, 429/5xx/permanent/redirect outcomes, total caps, SSRF/DNS/egress denial and HTTP cancellation/cleanup through an injected Node-request fixture. These are not live receiver, TLS/DNS infrastructure or broker/process-crash acceptance. That needs a dedicated acknowledged broker, production-quality durable CAS/journal/replay stores, qualified HTTPS receivers with idempotency, active credentials and deployment egress policy. See the official [Node HTTPS API](https://nodejs.org/docs/latest-v24.x/api/https.html), [DNS lookup API](https://nodejs.org/docs/latest-v24.x/api/dns.html#dnslookuphostname-options-callback) and [Retry-After semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-retry-after). Existing email outbox/recovery helpers stay unchanged and retain their own boundaries.
+
+## Ownership at each boundary
+
+| Public contract                                  | Owner and cleanup                                                                                                                   |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Legacy root `createQueueService`                 | BullMQ owns producer/worker/events/Cluster cleanup; await service close and inspect incomplete shutdown counters when relevant      |
+| Root or `/neutral` `createQueueBackend`          | Wrapper drains actual admitted calls, then invokes registered cleanup once in reverse order; native extensions share this lifecycle |
+| `/backends` descriptors and `selectQueueBackend` | Inert trusted configuration; no connection or cleanup handle until the selected factory opens                                       |
+| `/webhooks` workflow                             | Close before its borrowed transport/store; admitted HTTP work remains owned through actual settlement                               |
+| `/webhooks` HTTPS transport                      | Close requests and await outstanding DNS/native settlement; borrowed connector/resolver policy remains host-owned                   |
+| Publisher/processor/signing helpers              | Borrow existing owners or create short-lived key copies; no worker, scheduler or network loop starts                                |
+
+`prepare()` is asynchronous authorization/signing preparation. Await it before SQLite `transactionSync`, then insert the returned record and business mutation on that callback's exact synchronous pin without awaiting. The separate async `commit()` requires the existing negotiated pinned transaction contract. Neither API turns independent queue publication/HTTP effects into a database transaction.
+
+Native extension calls are trusted access and bypass the neutral wrapper's payload/pending policy. Manual acknowledgements stay on their original delivery channel; closing/replacing a connection cannot transfer them. A lost publish or receiver acknowledgement remains an uncertain external effect, not permission for an automatic replay. Runtime tenant authorization, consent, durable idempotency and reconciliation remain authoritative despite static lint ownership hints.

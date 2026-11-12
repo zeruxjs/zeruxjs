@@ -1,51 +1,92 @@
-import type {
-  BaseIssue,
-  BaseSchema,
-  BaseSchemaAsync,
-} from '../types/index.js';
+import type { BaseIssue, BaseSchema, BaseSchemaAsync } from '../types/index.js';
 import { ValidationError } from './ValidationError.js';
-import { toJsonSchema, type JsonSchema, type ToJsonSchemaOptions } from './jsonSchema.js';
+import {
+  toJsonSchema,
+  type JsonSchema,
+  type ToJsonSchemaOptions,
+} from './jsonSchema.js';
 
 export interface AjvIssue {
+  /** Private legacy slash-joined path label; keys are not escaped as JSON Pointer segments. */
   readonly instancePath: string;
+  /** Local supported-check discriminator, not a vendor feature/conformance assertion. */
   readonly keyword: string;
+  /** Private diagnostic text; do not return it without a host redaction policy. */
   readonly message: string;
+  /** Private rule parameters, which may retain allowed values or submitted key labels. */
   readonly params: Record<string, unknown>;
 }
 
 export interface AjvSafeParseSuccess<TData> {
+  /** Ordinary local compatibility outcome; conversion/native dependency failures still throw/reject. */
   readonly success: true;
+  /** Original borrowed input asserted as TData, without functional transforms or deep validation guarantees. */
   readonly data: TData;
+  /** Generated local subset for inspection; no remote schema reference is fetched. */
   readonly schema: JsonSchema;
 }
 
 export interface AjvSafeParseFailure {
+  /** Ordinary local compatibility outcome; conversion/native dependency failures still throw/reject. */
   readonly success: false;
+  /** Private ValidationError wrapper; not a sanitized HTTP response. */
   readonly error: ValidationError<any>;
+  /** Private compatibility issues; no implicit issue-count or payload redaction budget. */
   readonly issues: AjvIssue[];
+  /** Generated local subset for inspection; no remote schema reference is fetched. */
   readonly schema: JsonSchema;
 }
 
-type AjvSafeParseResult<TData> = AjvSafeParseSuccess<TData> | AjvSafeParseFailure;
+type AjvSafeParseResult<TData> =
+  | AjvSafeParseSuccess<TData>
+  | AjvSafeParseFailure;
 
+/** Build a legacy slash-joined private diagnostic label without JSON Pointer segment escaping.
+ * @param {Array<string | number>} path - Private current diagnostic segments; labels may contain submitted keys and are not routing addresses.
+ * @returns {string} Unescaped private slash label or the empty root label.
+ */
 function pointer(path: Array<string | number>) {
   return path.length ? `/${path.join('/')}` : '';
 }
 
+/** Check the local email-format compatibility subset using simple separator/whitespace checks; no mailbox/DNS verification occurs.
+ * @param {string} value - Private string candidate, never sent to a provider.
+ * @returns {boolean} Whether this limited local spelling check accepts the string.
+ */
 function emailLike(value: string) {
-  const at = value.indexOf('@'), dot = value.lastIndexOf('.');
-  return at > 0 && at === value.lastIndexOf('@') && dot > at + 1 && dot < value.length - 1 && !/\s/u.test(value);
+  /** First at-sign position for the retained local email separator check. */
+  const at = value.indexOf('@');
+  /** Last dot position for the retained local email separator check. */
+  const dot = value.lastIndexOf('.');
+  return (
+    at > 0 &&
+    at === value.lastIndexOf('@') &&
+    dot > at + 1 &&
+    dot < value.length - 1 &&
+    !/\s/u.test(value)
+  );
 }
 
+/** Run the limited local JSON Schema checker, not the AJV engine. Unknown keywords are ignored, object presence uses in, and no independent depth/node/issue budget or cancellation is imposed.
+ * @param {JsonSchema} schema - Borrowed trusted declared/generated schema; no untrusted remote schema loading occurs.
+ * @param {unknown} input - Private candidate data or explicit chain/schema wrapper; caller owns independent size/authorization policy.
+ * @param {Array<string | number>} path - Private current diagnostic segments; labels may contain submitted keys and are not routing addresses.
+ * @returns {AjvIssue[]} Private ordinary mismatches; ignored keywords never become proof of complete validation.
+ */
 function validateJsonSchema(
   schema: JsonSchema,
   input: unknown,
   path: Array<string | number> = []
 ): AjvIssue[] {
+  /** Local private mismatch accumulator; not independently bounded by the functional root parser. */
   const issues: AjvIssue[] = [];
 
   if (Array.isArray(schema.anyOf)) {
-    const matches = schema.anyOf.some((option) => validateJsonSchema(option as JsonSchema, input, path).length === 0);
+    /** Whether any local anyOf branch reports no supported-subset issues; unsupported keywords remain ignored. */
+    const matches = schema.anyOf.some(
+      (option) =>
+        validateJsonSchema(option as JsonSchema, input, path).length === 0
+    );
     if (!matches) {
       issues.push({
         instancePath: pointer(path),
@@ -88,7 +129,10 @@ function validateJsonSchema(
         });
         return issues;
       }
-      if (typeof schema.minLength === 'number' && input.length < schema.minLength) {
+      if (
+        typeof schema.minLength === 'number' &&
+        input.length < schema.minLength
+      ) {
         issues.push({
           instancePath: pointer(path),
           keyword: 'minLength',
@@ -96,7 +140,10 @@ function validateJsonSchema(
           params: { limit: schema.minLength },
         });
       }
-      if (typeof schema.maxLength === 'number' && input.length > schema.maxLength) {
+      if (
+        typeof schema.maxLength === 'number' &&
+        input.length > schema.maxLength
+      ) {
         issues.push({
           instancePath: pointer(path),
           keyword: 'maxLength',
@@ -181,7 +228,12 @@ function validateJsonSchema(
       }
       if (schema.items) {
         input.forEach((item, index) => {
-          issues.push(...validateJsonSchema(schema.items as JsonSchema, item, [...path, index]));
+          issues.push(
+            ...validateJsonSchema(schema.items as JsonSchema, item, [
+              ...path,
+              index,
+            ])
+          );
         });
       }
       return issues;
@@ -196,9 +248,17 @@ function validateJsonSchema(
         return issues;
       }
 
+      /** Borrowed native object candidate; the retained compatibility checker uses in rather than functional own-field semantics. */
       const objectInput = input as Record<string, unknown>;
-      const properties = (schema.properties ?? {}) as Record<string, JsonSchema>;
-      const required = Array.isArray(schema.required) ? (schema.required as string[]) : [];
+      /** Borrowed generated property schemas, or a fresh empty dictionary when absent. */
+      const properties = (schema.properties ?? {}) as Record<
+        string,
+        JsonSchema
+      >;
+      /** Generated required-key list; runtime presence uses legacy in semantics. */
+      const required = Array.isArray(schema.required)
+        ? (schema.required as string[])
+        : [];
 
       for (const key of required) {
         if (!(key in objectInput)) {
@@ -213,7 +273,9 @@ function validateJsonSchema(
 
       for (const [key, childSchema] of Object.entries(properties)) {
         if (key in objectInput) {
-          issues.push(...validateJsonSchema(childSchema, objectInput[key], [...path, key]));
+          issues.push(
+            ...validateJsonSchema(childSchema, objectInput[key], [...path, key])
+          );
         }
       }
 
@@ -237,7 +299,12 @@ function validateJsonSchema(
   }
 }
 
+/** Wrap local compatibility issues in the package private ValidationError representation; slash labels are split without a lossless pointer codec.
+ * @param {AjvIssue[]} issues - Private structured compatibility issues retaining policy/path values.
+ * @returns {ValidationError<any>} Declared local compatibility result; native/configuration failures propagate and no authorization is implied.
+ */
 function toValidationError(issues: AjvIssue[]): ValidationError<any> {
+  /** Private wrapper records derived from compatibility issues; no submitted body is included intentionally but labels/policy values remain private. */
   const normalized = issues.map((issue) => ({
     kind: 'validation' as const,
     type: `ajv_${issue.keyword}`,
@@ -264,15 +331,28 @@ function toValidationError(issues: AjvIssue[]): ValidationError<any> {
   return new ValidationError(normalized);
 }
 
+/** Convert then check the local subset without executing the original schema or transforms; TData is a caller assertion and successful data preserves the original input reference.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>> | { schema: BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>; }} schema - Borrowed trusted declared/generated schema; no untrusted remote schema loading occurs.
+ * @param {unknown} input - Private candidate data or explicit chain/schema wrapper; caller owns independent size/authorization policy.
+ * @param {ToJsonSchemaOptions} options - Optional strict converter policy; this does not make ignored keywords/transformations fully supported.
+ * @returns {Promise<AjvSafeParseResult<TData>>} Declared local compatibility result; native/configuration failures propagate and no authorization is implied.
+ */
 export async function ajvSafeParse<TData = unknown>(
   schema:
     | BaseSchema<unknown, unknown, BaseIssue<unknown>>
     | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
-    | { schema: BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>> },
+    | {
+        /** Generated local subset for inspection; no remote schema reference is fetched. */
+        schema:
+          | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+          | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>;
+      },
   input: unknown,
   options?: ToJsonSchemaOptions
 ): Promise<AjvSafeParseResult<TData>> {
+  /** Generated local schema subset, not an external AJV compilation or complete validation capability. */
   const jsonSchema = toJsonSchema(schema as any, options);
+  /** Local private mismatch accumulator; not independently bounded by the functional root parser. */
   const issues = validateJsonSchema(jsonSchema, input);
 
   if (issues.length === 0) {

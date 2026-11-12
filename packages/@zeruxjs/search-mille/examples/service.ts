@@ -1,29 +1,36 @@
-import { registerSearchService } from "@zeruxjs/search/adapters";
-import { createMilleSearchFactory } from "@zeruxjs/search-mille";
+import { registerSearchService } from '@zeruxjs/search/adapters';
+import { createMilleSearchFactory } from '@zeruxjs/search-mille';
 
 // This is trusted, private server configuration. No connection opens on import.
+/** Build an inert server registration with host-verified tenant authorization.
+ * @param {string} endpoint - Exact approved HTTPS engine endpoint.
+ * @param {string} apiKey - Private least-privilege server key.
+ * @param {Uint8Array} taskKey - Stable private 32-byte random host key, never browser config.
+ * @param {(context: unknown) => string | null} tenantFor - Host session/tenant/permission verifier.
+ * @returns {object} Inert registration; an explicitly started generation owns close.
+ */
 export function configureSearch(
   endpoint: string,
   apiKey: string,
   taskKey: Uint8Array,
-  tenantFor: (context: unknown) => string | null,
+  tenantFor: (context: unknown) => string | null
 ) {
   return registerSearchService({
     factories: {
       mille: createMilleSearchFactory({
-        index: "catalog",
-        fields: { category: "string", price: "number" },
-        searchable: ["text"],
-        filterable: ["category", "price"],
-        sortable: ["id", "price"],
-        taskScope: "production-search",
+        index: 'catalog',
+        fields: { category: 'string', price: 'number' },
+        searchable: ['text'],
+        filterable: ['category', 'price'],
+        sortable: ['id', 'price'],
+        taskScope: 'production-search',
         taskKey, // stable host key, distinct engine scope
       }),
     },
     connections: [
       {
-        name: "catalog",
-        backend: "mille",
+        name: 'catalog',
+        backend: 'mille',
         endpoint,
         allowedEndpoints: [endpoint],
         credentials: { apiKey },
@@ -31,6 +38,7 @@ export function configureSearch(
       },
     ],
     authorize(context) {
+      /** Host-verified tenant from the application callback; caller role strings are not proof. */
       const tenant = tenantFor(context);
       return tenant ? { tenant } : null;
     },

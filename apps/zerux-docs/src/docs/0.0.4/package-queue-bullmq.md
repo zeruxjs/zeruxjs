@@ -213,7 +213,7 @@ Server-internal `service.schedules(queue)` remains an explicitly trusted applica
 
 ### Opt-in live release gate
 
-Install dependencies with a repaired registry-backed lockfile, use isolated Redis and **explicitly** opt in:
+Install dependencies from the committed lockfile with `npm ci`, use isolated Redis and **explicitly** opt in:
 
 ```bash
 # Real standalone, two BullMQ service instances, delayed/retry/concurrent workers:
@@ -230,3 +230,12 @@ Use dedicated throwaway test Redis instances, correct authentication and TLS as 
 ## Compatibility and development
 
 This package owns the extracted BullMQ implementation. `@zeruxjs/queue` reexports its existing API for backward compatibility; there is no dependency back to the facade. Historical queue test paths remain in `packages/@zeruxjs/queue/test`. Build this package before the facade and run the focused existing facade tests to check compatibility. This package does not implement RabbitMQ or MemcacheQ.
+
+
+## Reporting and resource ownership
+
+Reporters, task registries, outbox dispatchers and journal wrappers borrow their supplied stores/queues. They do not start timers or own a database connection. Close the queue service before its dependent database/cache resources; inspect `shutdownStatus()` when a grace deadline expires. A force-close receipt does not cancel arbitrary processor JavaScript or prove that a side effect rolled back.
+
+The native trends reporter defaults to 92 days and accepts a configured `maxDays` from 1 to 366. The separate transition-history trends helper retains its 92-day limit. Current-state update days, recorded transition days and provider-reported event days measure different things. Separate queries are not a transactional snapshot. Private store/page APIs return internal records and require host authorization; aggregate reports omit recipients and message IDs. A missing activity summary remains incomplete coverage.
+
+Journal wrappers write history after a successful delivery insert/state-changing CAS. A history error can therefore follow a committed delivery change; reconcile it rather than blindly replaying SMTP. Gap ledgers record observed discrepancies and never reconstruct missing transitions. Durable publish intents acknowledge registration separately from Redis acceptance and still require an explicitly scheduled dispatcher.

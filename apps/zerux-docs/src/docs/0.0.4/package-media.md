@@ -84,45 +84,53 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### MediaRequestUploadOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `name` | `string` | Yes |
-| `maxBytes` | `number` | Yes |
-| `expiresInMs` | `number` | Yes |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `name`        | `string`            | Yes      |
+| `maxBytes`    | `number`            | Yes      |
+| `expiresInMs` | `number`            | Yes      |
 
 ### MediaResponseOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `request` | `Request` | Yes |
-| `downloadName` | `string` | Yes |
-| `inline` | `boolean` | Yes |
-| `cacheControl` | `string` | Yes |
+| Field          | Accepted type/value | Optional |
+| -------------- | ------------------- | -------- |
+| `request`      | `Request`           | Yes      |
+| `downloadName` | `string`            | Yes      |
+| `inline`       | `boolean`           | Yes      |
+| `cacheControl` | `string`            | Yes      |
 
 ### MediaFilesOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `storage` | `string` | Yes |
-| `bucket` | `string` | No |
-| `prefix` | `string` | Yes |
-| `maxUploadBytes` | `number` | Yes |
-| `visibility` | `'private'\|'public'` | Yes |
-| `authorize` | `(request: Request, address: FileAddress, action: 'read'\|'write'\|'delete', info?: FileInfo) => boolean\|Promise<boolean>` | Yes |
+| Field            | Accepted type/value                                                                                                         | Optional |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `storage`        | `string`                                                                                                                    | Yes      |
+| `bucket`         | `string`                                                                                                                    | No       |
+| `prefix`         | `string`                                                                                                                    | Yes      |
+| `maxUploadBytes` | `number`                                                                                                                    | Yes      |
+| `visibility`     | `'private'\|'public'`                                                                                                       | Yes      |
+| `authorize`      | `(request: Request, address: FileAddress, action: 'read'\|'write'\|'delete', info?: FileInfo) => boolean\|Promise<boolean>` | Yes      |
 
 ### UploadOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `name` | `string` | No |
-| `contentType` | `string` | No |
-| `expiresInMs` | `number` | Yes |
-| `maxBytes` | `number` | Yes |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `name`        | `string`            | No       |
+| `contentType` | `string`            | No       |
+| `expiresInMs` | `number`            | Yes      |
+| `maxBytes`    | `number`            | Yes      |
 
 ### ListOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `includeExpired` | `boolean` | Yes |
-| `limit` | `number` | Yes |
-| `offset` | `number` | Yes |
+| Field            | Accepted type/value | Optional |
+| ---------------- | ------------------- | -------- |
+| `includeExpired` | `boolean`           | Yes      |
+| `limit`          | `number`            | Yes      |
+| `offset`         | `number`            | Yes      |
+
+## Ownership and byte verification
+
+Root disk-store and files-service factories are inert configurations, not persistent close owners. Disk operations release their own handles; files-service borrows its manager. Request-facing metadata must use `statAuthorized`/`listAuthorized`; plain `stat`/`list` are trusted server operations. The disk list scans sidecars before paging, and binary/metadata files do not form a cross-file crash transaction.
+
+Await asset/resumable/transcode service `close()` before closing their borrowed dependencies. Transfer `close()` aborts active requests, revokes owned URLs and drains actual settlement; it never deletes persistent upload sessions implicitly. Destroy optional playback controls before the borrowed controller. Native capability probes and arbitrary JavaScript cannot be force-cancelled by a signal.
+
+Buffered disk downloads verify the complete SHA-256 before returning. Disk/Fetch streams count length and can expose bytes before a late failure; native playback performs no whole-file hash check. Explicit bounded Blob downloads support a trusted expected digest before exposing the Blob. Asset-backed HEAD performs full bounded verification, whereas disk HTTP HEAD/304 never open binary content. Default private caching and per-request host authorization remain separate from integrity hashes and signed access tokens.

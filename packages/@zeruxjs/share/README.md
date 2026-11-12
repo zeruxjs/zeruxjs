@@ -3,6 +3,8 @@
 Safe browser sharing, fallback handling, social share links and HTML metadata.
 
 ```ts
+import { createShareController, createShareMetadata } from '@zeruxjs/share';
+
 const controller = createShareController({
   share: data => navigator.share(data),
   writeText: text => navigator.clipboard.writeText(text)

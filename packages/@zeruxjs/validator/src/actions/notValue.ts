@@ -14,15 +14,15 @@ export interface NotValueIssue<
   TRequirement extends TInput,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'not_value';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: `!${string}`;
   /**
@@ -38,19 +38,19 @@ export interface NotValueAction<
   TInput extends ValueInput,
   TRequirement extends TInput,
   TMessage extends
-  | ErrorMessage<NotValueIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<NotValueIssue<TInput, TRequirement>>
+    | undefined,
 > extends BaseValidation<TInput, TInput, NotValueIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'not_value';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof notValue;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: `!${string}`;
   /**
@@ -58,42 +58,41 @@ export interface NotValueAction<
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a not value validation action.
- *
- * @param requirement The not required value.
- *
- * @returns A not value action.
+/** Reject values for which both native <= and >= comparisons hold; retain native Date/coercion semantics. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @returns {NotValueAction<TInput, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function notValue<
   TInput extends ValueInput,
   const TRequirement extends TInput,
 >(requirement: TRequirement): NotValueAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a not value validation action.
- *
- * @param requirement The not required value.
- * @param message The error message.
- *
- * @returns A not value action.
+/** Reject values for which both native <= and >= comparisons hold; retain native Date/coercion semantics. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {NotValueAction<TInput, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function notValue<
   TInput extends ValueInput,
   const TRequirement extends TInput,
   const TMessage extends
-  | ErrorMessage<NotValueIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<NotValueIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): NotValueAction<TInput, TRequirement, TMessage>;
 
+/** Reject values for which both native <= and >= comparisons hold; retain native Date/coercion semantics. This action neither establishes the input schema nor grants permissions.
+ * @param {ValueInput} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {ErrorMessage<NotValueIssue<ValueInput, ValueInput>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {NotValueAction<ValueInput, ValueInput, ErrorMessage<NotValueIssue<ValueInput, ValueInput>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function notValue(
   requirement: ValueInput,
@@ -114,6 +113,11 @@ export function notValue(
         : `!${_stringify(requirement)}`,
     requirement,
     message,
+    /** Reject values for which both native <= and >= comparisons hold; retain native Date/coercion semantics. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (
         dataset.typed &&

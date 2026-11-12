@@ -18,7 +18,7 @@
 
 ## Source and authorization
 
-Reports query internal analytics, not arbitrary SQL or executable chart code. A host authorize callback is required; missing authorization disables the service. Grant read, edit, export, sensitive-property and campaign access independently where needed.
+Reports query internal analytics, not arbitrary SQL or executable chart code. A host authorize callback is required; the standalone factory rejects a missing authorizer. Grant read, edit, export, sensitive-property and campaign access independently where needed.
 
 ## Definition ownership
 
@@ -26,7 +26,7 @@ Reports contain pages and charts. Definition updates use same-origin JSON writes
 
 ## Query modes
 
-Native count dimensions can query all persisted matching rows. Supported numeric fields use indexed-only materialized facts. Other queries can fall back to a bounded sample (commonly 500 raw rows). Display queryMode, truncation and coverage in every dashboard/export; sampled totals cannot be represented as all-time facts.
+Native count dimensions can query all persisted matching rows. Supported numeric fields use indexed-only materialized facts. Other queries can fall back to a bounded sample (at most 500 raw rows, including custom `source.events()` callbacks). Display queryMode, truncation and coverage in every dashboard/export; sampled totals cannot be represented as all-time facts.
 
 ## Exports and campaigns
 
@@ -110,7 +110,7 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### AnalyticsReportSource
 
-Custom aggregate adapters remove the built-in 500-row query limit.
+Native `aggregate`/`aggregateNumeric` adapters can count persisted facts beyond the raw sampling cap. Custom `events` callbacks still return at most 500 raw rows; display groups and provenance remain independently bounded.
 
 | Field | Accepted type/value | Optional |
 | --- | --- | --- |
@@ -125,3 +125,24 @@ Custom aggregate adapters remove the built-in 500-row query limit.
 | --- | --- | --- |
 | `load` | `Promise<ReportsDocument>` | No |
 | `save` | `Promise<boolean>` | No |
+
+
+## Explicit external sources and browser views
+
+The framework reports configuration above enables the internal studio. External `/sources`, `/ga4` and `/adsense` contracts are separately registered server APIs: no configuration label discovers providers, credentials or arbitrary endpoints. Registries require fresh host tenant/site/principal/credential-partition authorization for every query. GA4 and AdSense use distinct fixed read-only endpoints, explicit field/unit/timezone catalogs and honest quota/unavailable/coverage states. Their results are not automatically joined or converted into internal event charts.
+
+Use `/definitions` for bounded inert V1 definition transfer/layouts and `/view` for replaceable browser views. Imported definitions never contain rendering callbacks or bypass a current storage revision. A view receives an already authorized result and retains a labeled semantic table alongside supplementary charts:
+
+```ts
+import { mountReportChart } from '@zeruxjs/reports/view';
+import type { ChartData } from '@zeruxjs/reports/definitions';
+
+export function showAuthorizedChart(host: HTMLElement, data: ChartData) {
+  return mountReportChart(host, data, { pageSize: 20, timeZone: 'UTC' });
+}
+// The host retains the returned view and calls view.destroy() on replacement.
+```
+
+The studio facade borrows sources/stores. External registry `close()` drains actual work before disposing accepted adapters; host-owned credentials have a separate `dispose()`. `mountReportChart` owns only its inserted subtree/listeners/custom components, so destroy it before its DOM owner disappears. Filtering/sorting/paging affects returned groups only. UTC grouping is separate from display zones, and empty, unavailable, sampled, materialized and truncated states must stay distinguishable.
+
+Public source/view examples are included in the package. Focused checks use injected transports and jsdom; live Google grants, browser keyboard defaults and assistive-technology acceptance remain separate host prerequisites.

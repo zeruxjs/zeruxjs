@@ -14,9 +14,13 @@ const cache = await createCacheManager({
   options: { maxEntries: 2000 }
 });
 
-await cache.set('u:42', {name: 'Ada'}, {ttlSeconds: 30});
-const users = await cache.getMany(['u:42', 'u:43']); // logical/unprefixed keys
-await cache.clear(); // namespace only
+try {
+  await cache.set('u:42', {name: 'Ada'}, {ttlSeconds: 30});
+  const users = await cache.getMany(['u:42', 'u:43']); // logical/unprefixed keys
+  await cache.clear(); // namespace only
+} finally {
+  await cache.close();
+}
 ```
 
 `createCacheManagerWithHelper(adapter, config)` allows testing or injecting an existing adapter. `createMemoryCacheHelper({maxEntries, now})` implements LRU eviction, lazy TTL expiry, defensive JSON cloning, numeric counters, conditional `ifAbsent`/`ifPresent` writes, bulk methods, and stats.
@@ -24,7 +28,11 @@ await cache.clear(); // namespace only
 ## Cache stampede prevention
 
 ```ts
-const item = await cache.remember('catalog', async () => fetchCatalog(), {ttlSeconds: 60});
+import type { CacheManager, CacheValue } from '@zeruxjs/cache';
+
+export async function loadCatalog(cache: CacheManager, produce: () => Promise<CacheValue>) {
+  return await cache.remember('catalog', produce, {ttlSeconds: 60});
+}
 ```
 
 Concurrent misses for the same key **within one manager process** share one pending producer Promise. Failed producers are not cached. It is not a distributed lock and cannot prevent concurrent work across Redis clients or server instances.
@@ -75,3 +83,13 @@ The active `cache`, get/set/remember exports and configureCacheManager are a pro
 ### Valkey adapter and shared policy
 
 The explicit [`@zeruxjs/cache-valkey`](../cache-valkey/README.md) adapter uses iovalkey with bounded command ownership; select it by helper package name. The public `@zeruxjs/cache/policy` subpath exports the same key, JSON, bulk and condition validators used by the manager, so adapter authors can enforce these limits at direct boundaries. This export does not grant distributed atomicity.
+
+## Implementation and ownership map
+
+- `src/types.ts` owns public helper/manager contracts; `src/policy.ts` validates bounded keys, plain JSON values and capability requirements.
+- `src/memory.ts` owns each helper's LRU map, counters and lazy expiry. `src/manager.ts` owns namespace dispatch, producer coalescing and actual-settlement shutdown.
+- `src/utils.ts` normalizes trusted configuration and helper factory shapes. `src/index.ts` exports the scoped factories and legacy active-manager facade.
+
+The root entry uses Node module/path resolution; `/policy` uses Node Buffer for UTF-8 budgets. Neither entry is a browser bundle. A helper package name is executable, trusted host configuration: application-first resolution falls back to package-local import. Never derive it from a request or let untrusted administrators select arbitrary modules. `CacheError.details` retains caller-supplied details; hosts must redact private configuration before logging it.
+
+Memory reads/writes copy JSON, but a newly produced `remember` result is the producer's original value shared by joined callers; do not mutate it as though every subscriber received a separate clone. Keep manager shutdown outside its own producer to avoid waiting on itself.

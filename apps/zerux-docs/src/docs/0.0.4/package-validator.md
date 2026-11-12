@@ -29,6 +29,7 @@ import { object, string } from '@zeruxjs/validator/schemas';
 import { validatedJsonHandler } from '@zeruxjs/validator/http';
 const schema = object({ name: string() });
 const handler = validatedJsonHandler(schema, async body => ({ hello: body.name }));
+// The host mounts this handler explicitly and awaits handler.close() on teardown.
 ```
 
 Schema constructors and synchronous/asynchronous parsing actions are exported from `/schemas` and `/browser`; the root remains compatible. `/browser` also provides explicit DOM feedback and excludes request parsing. Choose a schema that represents the operation's allowed input, not an entire database object with private fields.
@@ -192,9 +193,35 @@ abort flags stop them. Callback exceptions propagate. Unions try branches in ord
 and return the first successful output, or structured branch issues on failure.
 Keep callbacks side-effect-free because failed union branches may run first.
 
+`undefinedable` permits an explicit undefined value without declaring the object
+key optional. `exactOptional` delegates supplied values to the wrapped schema and
+retains default metadata; its run method does not apply a default replacement.
+Do not treat that metadata as evidence that an absent field will be filled.
+
 Parsed structural containers are new, but leaves, loose extras, dates/instances,
 custom/unknown values and cache outputs may share identity. Parsing is not a deep
 clone and transforms can mutate their inputs.
+
+### Collections, callbacks and measurement units
+
+Map/Set schemas allocate new native collections but can retain borrowed child
+outputs. Transformed duplicate Map keys keep the last assignment; Set values
+collapse under native equality. Async collection work starts before ordered
+result accumulation, so abortEarly does not prevent every child from starting.
+Record input-key filtering does not revalidate trusted transformed output names.
+
+Custom predicates assert the host-declared generic type; they do not prove that
+type independently. Lazy getters select trusted child schemas per parse without
+memoization or source-text evaluation. Intersection merging can mutate its first
+branch result before a later conflict and has no independent cycle/depth budget or
+rollback; host transforms must produce compatible finite output graphs.
+
+Length actions measure UTF-16 code units or array-like positions. Size actions
+measure Blob bytes or Map/Set element counts. These refinements are separate from
+streaming HTTP admission, grapheme counts and root execution budgets. Their legacy
+numeric threshold constructors do not independently validate host configuration.
+Native remainder checks preserve distinct number/bigint arithmetic; bigint zero
+divisors and mixed numeric kinds throw, and floating-point values are not rounded.
 
 ## Parse budgets, cancellation and private notifications
 
@@ -265,6 +292,47 @@ limits, async misuse, concurrency, dependency failures, hook exceptions and clea
 Installed shared tooling/TypeScript are required. There are no live-service
 prerequisites, and no live-provider/browser behavior is claimed.
 
+
+### Message and metadata ownership
+
+Message registries use exact language keys, including a distinct `undefined` key;
+they provide no locale fallback, expiry, cardinality cap or tenant isolation.
+Configure trusted static messages at bootstrap. Getters return borrowed messages
+without invoking them; validation may invoke message callbacks with private issue
+data. Deleting a specific message leaves its constructor bucket allocated.
+
+`getDefaults`/`getFallbacks` recursively read declared object entries and tuple
+positions, not dynamic rest values. They may invoke trusted leaf factories without
+an input dataset or root parse budget. Async variants start sibling factories
+concurrently; rejection does not cancel independent factory work. These helpers
+do not validate replacements or deep-clone their results.
+
+`getTitle`/`getDescription` prefer the last matching metadata at the highest
+pipeline level. `getMetadata` instead shallowly merges in depth-first source
+order, with later keys winning. Metadata is host-owned, unvalidated and unescaped;
+reading record getters may execute host code. Escape text for its eventual output
+context and keep untrusted records outside this API.
+
+
+### Local compatibility boundaries
+
+Format/checksum matches do not establish mailbox/card/device ownership, JWS
+signatures, digest integrity, calendar existence or destination authorization.
+Native URL parsing accepts schemes the host may need to deny. Custom RegExp and
+input-size policy remain explicit because native matching cannot be force-stopped
+by a cooperative deadline.
+
+Native array callback conveniences do not await callbacks; sortItems mutates its
+array. Readonly/brand/flavor are type-level markers, not runtime freezing or
+permissions. Function wrappers retain configuration and do not preserve a method
+receiver; create them with parseAsync when their child schemas are async. Return
+validation cannot roll back effects of a function that already executed.
+
+The local JSON Schema checker is not AJV and does not run original transforms. It
+ignores unsupported keywords, retains inherited-key presence/slash-path behavior
+and has no independent cycle/work/deadline budget. Converter strict mode rejects
+only explicitly unsupported branches; it does not certify full coverage. Use the
+functional APIs for their documented own-field and root-budget behavior.
 
 ## Browser schemas and app-owned HTTP adapters
 
@@ -388,6 +456,8 @@ errors. No user-controlled selector interpolation or frontend framework is added
 Focused checks cover Node Fetch streams, reader cleanup, slow/trickled/oversized/
 disconnected bodies, duplicate/coercion/prototype policies, sanitized causes,
 multipart/file handling, a DOM feedback fixture and browser bundle dependencies.
-Installed archive consumers verify public subpaths and declarations. No live
+Installed archive consumers verify public subpaths and declarations. Browser
+checks trace actual imports and parse emitted executable identifiers/module
+references; documentation text is not mistaken for an executed Node API. No live
 browser/proxy/provider behavior is implied. No credentials are required; a real
 browser and deployment-specific Fetch bridge/proxy remain integration checks.

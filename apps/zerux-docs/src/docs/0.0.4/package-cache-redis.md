@@ -88,31 +88,31 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### RedisCacheHelperOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `client` | `RedisCacheClient` | Yes |
-| `allowFlushDb` | `boolean` | Yes |
-| `ownClient` | `boolean` | Yes |
+| Field          | Accepted type/value | Optional |
+| -------------- | ------------------- | -------- |
+| `client`       | `RedisCacheClient`  | Yes      |
+| `allowFlushDb` | `boolean`           | Yes      |
+| `ownClient`    | `boolean`           | Yes      |
 
 ### RedisConnectionSettings
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `url` | `string` | Yes |
-| `cluster` | `RedisClusterSettings` | Yes |
-| `host` | `string` | Yes |
-| `port` | `number` | Yes |
-| `username` | `string` | Yes |
-| `password` | `string` | Yes |
-| `db` | `number` | Yes |
-| `tls` | `Record<string, unknown>` | Yes |
-| `keyPrefix` | `never` | Yes |
+| Field       | Accepted type/value       | Optional |
+| ----------- | ------------------------- | -------- |
+| `url`       | `string`                  | Yes      |
+| `cluster`   | `RedisClusterSettings`    | Yes      |
+| `host`      | `string`                  | Yes      |
+| `port`      | `number`                  | Yes      |
+| `username`  | `string`                  | Yes      |
+| `password`  | `string`                  | Yes      |
+| `db`        | `number`                  | Yes      |
+| `tls`       | `Record<string, unknown>` | Yes      |
+| `keyPrefix` | `never`                   | Yes      |
 
 ### RedisClusterSettings
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `nodes` | `Array<{host:string;port:number}>` | No |
+| Field   | Accepted type/value                | Optional |
+| ------- | ---------------------------------- | -------- |
+| `nodes` | `Array<{host:string;port:number}>` | No       |
 
 ## Scoped cache command policy and diagnostics
 
@@ -123,3 +123,9 @@ Deadlines reject caller waits with unknown write outcomes when appropriate, reta
 RedisHelperConfig and RedisSetOptions remain owned by this package. The helper advertises supported conditions/counters/literal namespace clear and unsupported overall bulk atomicity. Counter numbers outside JS safe integers reject after potential mutation; JSON strings remain distinct from native numeric counters. Direct JSON/key/bulk boundaries are bounded, and actual ioredis Cluster masters use per-key batches instead of cross-slot assumptions. See the package README for exact defaults, lifecycle/migration limits and a packed public-import example.
 
 Live acceptance needs dedicated CACHE_REDIS_URL / CACHE_REDIS_CLUSTER_NODES, plus explicit outage/ACL/TLS endpoints through CACHE_REDIS_OUTAGE_URL, CACHE_REDIS_ACL_URL and CACHE_REDIS_TLS_URL. TLS requires trusted CA setup; ACL requires a host-configured denied identity. Tests never create credentials or restart services, and offline fixtures do not establish live failover/security acceptance.
+
+## Source and cleanup boundaries
+
+The factory owns startup and explicit driver loading; the scoped helper owns caller waits and native-settlement capacity. The codec validates inert JSON, while the ioredis bridge owns lowercase translation and actual master inventory. BullMQ options are inert; its Cluster factory acquires two separate native connections. The limiter store uses only the fixed Lua strategy and borrows its helper by default. Root runtime imports stay server-side.
+
+Close wrappers even for injected clients to remove listeners and drain accepted work. Borrowed native connections remain host-owned. Code-derived internal messages are redacted; host-created public error messages and private causes still require host review. Local fixture success is not live Redis/Cluster/TLS or durable quota certification.

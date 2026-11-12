@@ -94,6 +94,78 @@ The security workflow runs the same root report commands in separate jobs and
 retains reports even when lint finds errors. Review initial findings before making
 these checks mandatory in branch rules.
 
+## Readable source and incremental quality review
+
+Root `prettier.config.mjs` defines two-space indentation, semicolons, single
+quotes and an 80-column wrapping target. Prettier handles JS/TS, CSS/SCSS, HTML,
+JSON, Markdown and YAML; semantic checks remain in ESLint, Stylelint and
+HTML-validate. Embedded source strings are not automatically reformatted:
+whitespace-sensitive templates, protocol fixtures and generated code require
+manual review. Formatting cannot reconstruct meaningful names or comments from
+minified code.
+
+```sh
+# Select exactly the current package; never run a bulk write during this pass.
+npm run format:write -- packages/@zeruxjs/typescript
+npm run format:check -- packages/@zeruxjs/typescript
+npm run format:reviewed   # CI checks only completed scopes
+npm run quality:policy   # focused formatter/lint configuration regressions
+```
+
+`quality-scopes.json` records completed scopes, initially none. A completed
+scope receives mandatory brace, single-statement-per-line and no-nested-ternary
+ESLint checks, plus a read-only Prettier CI gate. Existing security errors remain
+mandatory across the repository throughout migration. CSS checks enforce readable
+comment spacing and rule separation; HTML checks enforce attribute quoting,
+spacing and trailing whitespace alongside the existing semantic/accessibility
+rules. No existing scanner is disabled to make the migration pass.
+
+Explain the purpose and contract of public/nontrivial functions and comment the
+reason for complex algorithms, state transitions, authorization, resource ownership
+and cleanup. Avoid line-by-line narration, repeated types and invented guarantees.
+Each function contract includes typed `@param` and `@returns` tags with meaningful
+descriptions; document optional defaults, failure/rejection behavior and each
+public option/result property. Every const declaration has an adjacent comment
+explaining its data or ownership. Loop bindings are documented at the loop; imports
+and anonymous callback parameters do not need artificial constant comments.
+`eslint-plugin-jsdoc` enforces these requirements in reviewed scopes and does not
+autogenerate empty documentation. A lint pass cannot establish that a comment is correct. Review module boundaries
+and extract coherent helpers only when doing so improves comprehension without
+changing supported APIs.
+
+The operator's local `notes/sprint.md` lists each real package, sample package,
+application and remaining repository scope. Complete one item per continuation
+and record its checks before marking it done. `notes/` remains ignored by Git;
+shared standards and the reviewed-scope gate are tracked here and in `AGENTS.md`.
+Generated/build output, dependencies, frozen reference snapshots and licensed
+vendor code are excluded. Preserve byte-sensitive fixtures and document necessary
+exceptions rather than weakening security rules or silently skipping authored code.
+
+### Readability rule matrix
+
+These are repository standards inspired by consistent review practices, not WPCS
+compatibility or a claim that static checks prove runtime correctness. They apply
+to completed scopes across libraries, framework code, CMS and applications.
+
+| Area | Enforcement and review boundary |
+| --- | --- |
+| Documentation | JSDoc presence for functions/classes, standalone constants and named interface fields; parameter names/types/descriptions, return types/descriptions, tag/type syntax and nonempty descriptions. Meaning, accuracy, throws and lifecycle coverage are reviewed manually. |
+| Control flow | Required braces, one statement per line, no nested ternaries, sequence expressions, labels or `with`. |
+| Values and language hazards | Strict equality, no `var`, prefer `const`, explicit parseInt radix, no primitive wrappers or prototype/iterator mutation. |
+| Security and ownership | Existing package preset rules remain errors: eval/dynamic functions, proven client/server import violations, unsafe public configuration and missing cleanup ownership. Authorization/tenant isolation remain runtime responsibilities. |
+| Complexity | Cyclomatic complexity above 25 and nesting beyond 4 produce review warnings. Validation-heavy APIs may need an explicit follow-up; do not hide findings or refactor without behavior checks. |
+| TypeScript | Keep signatures and docs consistent; typecheck/build in the owner. Do not add `any`, assertions or suppressions merely to silence quality checks. |
+| Node/browser boundaries | Preserve import maps and optional peers; no blanket bans on valid native APIs, DOM usage in browser entries, console in CLIs, or process lifecycle in owned entry points. Never infer server execution rights from documentation. |
+| CSS/HTML | Existing standard/SCSS/semantic/accessibility rules plus comment/attribute spacing and quoted attributes; Prettier owns wrapping. Embedded templates and dynamic DOM relationships need focused review. |
+| Runtime reliability | Review cancellation versus settlement, borrowed versus owned resources, structured errors, bounded queues, sensitive logs and cleanup. Static documentation rules cannot prove these guarantees. |
+| Tests and fixtures | Same readability and const-comment standards; preserve negative cases, exact protocol bytes, snapshots and public-import consumer coverage. |
+
+Do not enable every available rule indiscriminately: line-length/indent rules
+conflict with Prettier; mandatory comments on every anonymous callback add noise;
+universal Node bans break browser/CLI contracts; arbitrary function-size caps can
+obscure transactional ownership. Review the applicable rule options and add a
+positive and negative fixture when extending the enforced policy.
+
 ## Repository layout
 
 - `packages/`: framework, library and tooling workspaces.
@@ -114,3 +186,5 @@ Local builds and unit tests establish only the behavior they exercise. Consult p
 Read the [contribution guide](CONTRIBUTING.md), [development instructions](AGENTS.md), [code of conduct](CODE_OF_CONDUCT.md) and [security policy](SECURITY.md).
 
 The project is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE). Third-party dependencies retain their own licenses; see the [dependency inventory](assets/json/third-party.json) and [third-party notices](third-party-licenses/README.md).
+
+Reviewed parent scopes may name separately owned child manifests in `quality-scopes.json` under `deferred`. Those children stay out of that parent readability/format gate until their own checklist item; global security scanning is unchanged. The lint package also owns opt-in managed-package usage and explicit API-deprecation registries; see its package README for verified mappings, typed registration and native-integration exceptions.

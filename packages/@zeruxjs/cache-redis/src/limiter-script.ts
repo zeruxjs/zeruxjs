@@ -1,5 +1,5 @@
 /** Bounded fixed-window accounting. Only KEYS[1..2], same Cluster tag; server clock, no callbacks/retries. */
-export const fixedWindowScript=`
+export const fixedWindowScript = `
 redis.replicate_commands()
 local hashType=redis.call('TYPE',KEYS[1]).ok
 local expiryType=redis.call('TYPE',KEYS[2]).ok

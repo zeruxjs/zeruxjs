@@ -35,19 +35,19 @@ export type HashType = keyof typeof HASH_LENGTHS;
  */
 export interface HashIssue<TInput extends string> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'hash';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: null;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `"${string}"`;
   /**
@@ -64,15 +64,15 @@ export interface HashAction<
   TMessage extends ErrorMessage<HashIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, HashIssue<TInput>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'hash';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof hash;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: null;
   /**
@@ -80,29 +80,23 @@ export interface HashAction<
    */
   readonly requirement: RegExp;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a [hash](https://en.wikipedia.org/wiki/Hash_function) validation action.
- *
- * @param types The hash types.
- *
- * @returns A hash action.
+/** Check hexadecimal text length against explicitly selected legacy algorithm labels; no digest is computed and no integrity, authorship or algorithm security is proven. This action neither establishes the input schema nor grants permissions.
+ * @param {[ HashType, ...HashType[] ]} types - Trusted nonempty algorithm-label selection from HashType; this type list is not a cryptographic algorithm recommendation.
+ * @returns {HashAction<TInput, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function hash<TInput extends string>(
   types: [HashType, ...HashType[]]
 ): HashAction<TInput, undefined>;
 
-/**
- * Creates a [hash](https://en.wikipedia.org/wiki/Hash_function) validation action.
- *
- * @param types The hash types.
- * @param message The error message.
- *
- * @returns A hash action.
+/** Check hexadecimal text length against explicitly selected legacy algorithm labels; no digest is computed and no integrity, authorship or algorithm security is proven. This action neither establishes the input schema nor grants permissions.
+ * @param {[ HashType, ...HashType[] ]} types - Trusted nonempty algorithm-label selection from HashType; this type list is not a cryptographic algorithm recommendation.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {HashAction<TInput, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function hash<
   TInput extends string,
@@ -112,6 +106,11 @@ export function hash<
   message: TMessage
 ): HashAction<TInput, TMessage>;
 
+/** Check hexadecimal text length against explicitly selected legacy algorithm labels; no digest is computed and no integrity, authorship or algorithm security is proven. This action neither establishes the input schema nor grants permissions.
+ * @param {[ HashType, ...HashType[] ]} types - Trusted nonempty algorithm-label selection from HashType; this type list is not a cryptographic algorithm recommendation.
+ * @param {ErrorMessage<HashIssue<string>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {HashAction<string, ErrorMessage<HashIssue<string>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function hash(
   types: [HashType, ...HashType[]],
@@ -128,6 +127,11 @@ export function hash(
       'u'
     ),
     message,
+    /** Check hexadecimal text length against explicitly selected legacy algorithm labels; no digest is computed and no integrity, authorship or algorithm security is proven. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement.test(dataset.value)) {
         _addIssue(this, 'hash', dataset, config);

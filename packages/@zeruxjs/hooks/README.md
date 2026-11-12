@@ -45,12 +45,12 @@ try {
 
 The four factories are also root exports:
 
-| Factory | Execute | Handler result |
-| --- | --- | --- |
-| `createServerActions<Events>()` | `dispatch(name,args,options?)` | synchronous notification, ignored return value |
-| `createAsyncServerActions<Events>()` | `await dispatch(name,args,options?)` | serially awaited notification |
-| `createServerFilters<Filters>()` | `apply(name,value,args,options?)` | synchronous next value |
-| `createAsyncServerFilters<Filters>()` | `await apply(name,value,args,options?)` | serially awaited next value |
+| Factory                               | Execute                                 | Handler result                                 |
+| ------------------------------------- | --------------------------------------- | ---------------------------------------------- |
+| `createServerActions<Events>()`       | `dispatch(name,args,options?)`          | synchronous notification, ignored return value |
+| `createAsyncServerActions<Events>()`  | `await dispatch(name,args,options?)`    | serially awaited notification                  |
+| `createServerFilters<Filters>()`      | `apply(name,value,args,options?)`       | synchronous next value                         |
+| `createAsyncServerFilters<Filters>()` | `await apply(name,value,args,options?)` | serially awaited next value                    |
 
 An action map declares each event's argument tuple. A filter map declares a nonempty tuple: the first member is the value type, and the rest are unchanged extra arguments. Each handler receives `{signal}` first. Filters preserve the same declared value type through every stage, including a declared union; they do not form a pipeline of unrelated types. Always pass the extra-argument tuple, even when empty (`[]`). Types describe your application-owned payloads; JavaScript callers and handler return values still need domain-specific validation. Registries validate names/options/resource limits, not an arbitrary payload schema.
 
@@ -101,14 +101,14 @@ try {
 
 Actual request order, with at most one invocation of each phase:
 
-| Phase | Meaning / permitted changes |
-| --- | --- |
-| `request:before` | Before host validation, body parsing, middleware or routing. Register up to 128 synchronous `onDispose` callbacks; no HTTP request/response handle is exposed. |
-| `route:resolved` | After global middleware for an application route. `pattern` is the declared route pattern; null denotes static/protocol/early rejection or no resolved route. It fires before first commit/error/termination if routing was bypassed. Observation only. |
-| `response:before` | On the first final `writeHead`, including implicit commit by `write`/`end`. Sole mutation phase: bounded `setStatus(200..599)` and `setHeader`. No body, routing, credentials, raw headers or socket access. |
-| `request:error` | Once for a caught handler/phase exception or disconnect. Contains only `kind: 'handler'|'hook'|'disconnect'`; no raw error/payload/stack. Ordinary 404/403 statuses without exceptions do not imply this event. |
-| `response:after` | Native response finish/close/request abort, not handler promise completion. Observation snapshot: completed status or diagnostic 499 for disconnect. |
-| `request:after` | Once immediately after response observation, before scope/effect/disposer teardown. Observation only. |
+| Phase             | Meaning / permitted changes                                                                                                                                                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
+| `request:before`  | Before host validation, body parsing, middleware or routing. Register up to 128 synchronous `onDispose` callbacks; no HTTP request/response handle is exposed.                                                                                          |
+| `route:resolved`  | After global middleware for an application route. `pattern` is the declared route pattern; null denotes static/protocol/early rejection or no resolved route. It fires before first commit/error/termination if routing was bypassed. Observation only. |
+| `response:before` | On the first final `writeHead`, including implicit commit by `write`/`end`. Sole mutation phase: bounded `setStatus(200..599)` and `setHeader`. No body, routing, credentials, raw headers or socket access.                                            |
+| `request:error`   | Once for a caught handler/phase exception or disconnect. Contains only `kind: 'handler'                                                                                                                                                                 | 'hook' | 'disconnect'`; no raw error/payload/stack. Ordinary 404/403 statuses without exceptions do not imply this event. |
+| `response:after`  | Native response finish/close/request abort, not handler promise completion. Observation snapshot: completed status or diagnostic 499 for disconnect.                                                                                                    |
+| `request:after`   | Once immediately after response observation, before scope/effect/disposer teardown. Observation only.                                                                                                                                                   |
 
 Caught pre-commit errors run `route:resolved` (null if needed), `request:error`, then the single response commit and terminal phases. A stream can commit before a later error/disconnect; error then precedes its terminal phases. A disconnect before commit has no `response:before`. Requests rejected by the outer draining/closed-generation admission path are not admitted and have no request phases. Multiple native finish/close/error events cannot duplicate phases or teardown.
 
@@ -123,3 +123,33 @@ The framework enters one owned state/context scope per admitted request. Streams
 Generation order is `generation:prepare` → `generation:ready` → `generation:activate` → `generation:close` → `generation:closed`. Prepare follows core preflight and precedes schema/provider/runtime preparation; ready means a fully prepared runtime, not an HTTP listener. Activation is emitted once through `runtime.activateServices()` (managed application and CLI hosts use it). A failed candidate emits prepare → error → close → closed and never activates; the previous generation remains usable. Replacement activates the new generation before draining and closing the previous one. Shutdown drains responses before close; rollback does not pretend to have transactional external side effects. Failures during activation/service cleanup emit one generation error. Invalid config rejected before candidate creation has no generation event. Generation observations cannot veto activation or rollback and exceptions are logged generically.
 
 These are Node server lifecycle hooks. React/Vue hooks remain inside their respective frontend runtimes; no browser dispatcher or hydration lifecycle is executed here. Standalone `runWithRequestHooks` retains its original explicit lifetime semantics. Hosts outside ZeruxJS can explicitly own `createRequestHookScope().run(...)`/`.dispose()` and drive the typed bus, but must supply their own phase and HTTP ownership logic.
+
+## Readable ownership boundaries
+
+All published entries are Node server modules: state/context/actions/lifecycle
+use AsyncLocalStorage, and paths uses synchronous filesystem operations. Erased
+TypeScript imports do not create a browser implementation. Native AsyncLocalStorage
+remains valid for broader host use; these APIs are not a generic replacement for
+all native context or frontend hooks.
+
+Context maps and registry argument arrays isolate their outer containers, not
+borrowed value object graphs. Mutable context defaults remain shared references;
+do not put an unscoped user's mutable identity in a default. Symbols, correlation
+IDs and event names are not authorization. Host callbacks validate domain payloads
+and tenant permissions before using these primitives.
+
+`runWithRequestHooks` creates matching async-local maps but does not automatically
+dispose every component or attach an HTTP finish listener. Use the explicit
+`createRequestHookScope` owner when lifetime follows a streamed response. Dispose
+components/scopes and keep captured setters within their owner lifetime. Effects
+and their cleanups are synchronous contracts; arbitrary async work needs separate
+host ownership. Failed renders do not transactionally undo prior state mutations
+or already-started effects. Registry disposal stops admission and signals running
+handlers; async registries require a separate `whenIdle` drain after dispatch
+errors are handled.
+
+Path registry writes are private atomic file replacements, not locks or a target
+filesystem sandbox. The trusted host owns its directory and serializes competing
+writers. Each read/write closes its own descriptor; the inert registry facade has
+no persistent close handle. Legacy path errors may include aliases/targets, so do
+not expose their raw text as an untrusted HTTP error response.

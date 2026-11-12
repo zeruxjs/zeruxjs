@@ -16,27 +16,27 @@ type Schema =
   | BaseSchema<unknown, unknown, BaseIssue<unknown>>
   | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
   | SchemaWithPipe<
-    readonly [
-      BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-      ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>>  
-        | DescriptionAction<unknown, string>
-      )[],
-    ]
-  >
+      readonly [
+        BaseSchema<unknown, unknown, BaseIssue<unknown>>,
+        ...(
+          | PipeItem<any, unknown, BaseIssue<unknown>>
+          | DescriptionAction<unknown, string>
+        )[],
+      ]
+    >
   | SchemaWithPipeAsync<
-    readonly [
-      (
-        | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-        | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
-      ),
-      ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>>  
-        | PipeItemAsync<any, unknown, BaseIssue<unknown>>  
-        | DescriptionAction<unknown, string>
-      )[],
-    ]
-  >;
+      readonly [
+        (
+          | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+          | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
+        ),
+        ...(
+          | PipeItem<any, unknown, BaseIssue<unknown>>
+          | PipeItemAsync<any, unknown, BaseIssue<unknown>>
+          | DescriptionAction<unknown, string>
+        )[],
+      ]
+    >;
 
 /**
  * Returns the description of the schema.
@@ -44,9 +44,9 @@ type Schema =
  * If multiple descriptions are defined, the last one of the highest level is
  * returned. If no description is defined, `undefined` is returned.
  *
- * @param schema The schema to get the description from.
+ * @param {Schema} schema - Borrowed trusted schema graph; reads structured metadata without parsing input or executing validation actions.
  *
- * @returns The description, if any.
+ * @returns {string | undefined} Last matching description at the highest available level; returned text remains unescaped for its eventual rendering context.
  *
  * @beta
  */

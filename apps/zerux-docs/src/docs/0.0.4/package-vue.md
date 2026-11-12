@@ -22,11 +22,22 @@
 ## Prefer scoped bindings
 
 ```ts
-import { shallowRef, readonly, getCurrentScope, onScopeDispose, watch } from 'vue';
+import { shallowRef, readonly, getCurrentScope, onScopeDispose, watch, effectScope } from '@vue/runtime-dom';
 import { createVueBindings } from '@zeruxjs/vue';
 const bridge = createVueBindings({ shallowRef, readonly, getCurrentScope, onScopeDispose, watch });
-// Inside setup() or effectScope.run():
-const state = bridge.useStore(externalStore);
+const externalStore = {
+  getSnapshot: () => 42,
+  subscribe: (_notify: () => void) => () => {},
+};
+const scope = effectScope();
+try {
+  scope.run(() => {
+    const state = bridge.useStore(externalStore);
+    console.log(state.value);
+  });
+} finally {
+  scope.stop();
+}
 ```
 
 The caller supplies actual Vue functions. useStore rejects a missing scope rather than leaking a subscription. Outside setup, connect returns a ref plus stop function that the caller must invoke.
@@ -137,3 +148,24 @@ Core Vue runtime injection loads no UI runtime on import; optional native entrie
 | Field | Accepted type/value | Optional |
 | --- | --- | --- |
 | `subscribe` | `()=>void` | No |
+
+## Ownership and compatibility details
+
+`toVueReadable`, `mapVueRef`, `combineVueRefs` and `observableToVueRef` own
+subscriptions and expose `stop()`. `bindVueRef` and `syncVueRef` return a function
+disposer. None destroys a borrowed source. `createVueRef` and `fromVueRef` alone
+create no native watcher. Keep manual owners even when a lint rule cannot prove
+eventual disposal; the rule detects immediately discarded handles only.
+
+The derived standalone refs retain their legacy writable TypeScript shape, but
+runtime writes throw. Readonly protection in injected bindings requires the
+runtime's `readonly` function; without it the returned type alone does not prevent
+runtime mutation. Callbacks run synchronously and are trusted application code.
+Legacy two-way/combined cleanup calls source disposers in order; a throwing
+source disposer can prevent later disposers from running. Native render leases
+instead attempt all registered cleanup callbacks and report aggregated failures.
+
+An update failure does not roll back native DOM changes. SSR checks its byte
+ceiling after native rendering has allocated the complete string, and cancellation
+waits for cooperative work to settle. These are output/lifecycle limits, not
+forced JavaScript cancellation or preallocation memory quotas.

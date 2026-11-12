@@ -83,3 +83,7 @@ Only connector-owned pools are disconnected automatically. Use a pinned native c
 Owned pools enable FOUND_ROWS by default (`affectedRowsMode: 'matched'`), preserving zero CAS misses and separate changedRows. Choose `'changed'` to disable FOUND_ROWS; injected pools must declare their actual host-owned handshake policy. Owned BIGINT/DECIMAL values preserve strings; no parser can repair precision already lost by a borrowed transport. Generic RETURNING rejects before acquisition.
 
 `acquireTimeoutMs` (default 5000) and `maxPendingAcquires` (32) bound acquisition independently. Late acquisitions release once, failed transaction cleanup destroys uncertain connections, and disconnect waits before ending only owned pools. TLS objects enforce certificate/hostname verification; multiple statements and insecure TLS verification reject. See the package README for the runnable public-import claim example and exact limits. Live acceptance requires a dedicated `ZX_TEST_MYSQL_URL`; fixtures do not prove backend behavior.
+
+## Source ownership
+
+Pool policy/borrowed ownership lives in `pool.ts`; native placeholders and dialect support live in `dialect.ts`; queued acquisitions, precision/count checks and pinned cleanup live in `index.ts`. Late acquisitions retain capacity until actual settlement and release exactly once. Trusted injected functions and native results are not sandboxed/public data. See the package README source map and distinguish local scripted/lazy-pool checks from live InnoDB deployment acceptance.

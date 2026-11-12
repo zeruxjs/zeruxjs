@@ -1,12 +1,9 @@
+/** Lazily shared native encoder; it owns no timer, socket or explicit disposal handle. */
 let textEncoder: TextEncoder;
 
-/**
- * Returns the byte count of the input.
- *
- * @param input The input to be measured.
- *
- * @returns The byte count.
- *
+/** Count UTF-8 bytes with a lazily shared TextEncoder; encoding allocates bytes and is not a streaming body limit.
+ * @param {string} input - Candidate string; no remote fetch, HTML parsing or source execution occurs.
+ * @returns {number} UTF-8 encoded length, not JavaScript code units or a transport admission guarantee.
  * @internal
  */
 // @__NO_SIDE_EFFECTS__

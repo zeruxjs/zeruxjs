@@ -321,3 +321,26 @@ concurrent target appearance, dangling links/parent links, capability denial,
 interactive/flag equivalence, deterministic files and real SIGINT during a controlled
 prompt fixture. This is not live interactive-terminal or all-platform certification.
 No generated application server or external integration was started by the engine.
+
+## Resource handles and display boundaries
+
+`CommandRegistry` registration is inert. A returned transaction disposer owns only
+its staged additions; it does not unload modules or roll back arbitrary plugin
+side effects. `loadPlugins` and `loadConfiguredPlugins` return owned records, so
+retain the array and await each `dispose()` at the host lifecycle boundary.
+`createTerminalGeneratorPrompt` is a lazy close owner; shared command orchestration
+closes it when the invocation ends. Inert generators and parsed argument values
+have no invented close method.
+
+Terminal sanitization removes control sequences, not secrets. `color` deliberately
+emits ANSI styles and stringifies application values without sanitizing their
+contents. Keep raw error causes, input arguments and cleanup failures in private
+tool diagnostics. Help visibility is not authorization, and a command schema does
+not authorize the operation its trusted handler performs.
+
+Planning and snapshot digests describe bytes, not permission or authorship. A plan
+must come from this package instance before its writers accept it; importing a
+serialized review document does not authorize writes. Template code is explicit
+trusted server tooling, not a browser module or a safe place to evaluate saved
+content. The package's lint boundaries detect direct static misuse only; they do
+not prove eventual disposal, sandbox code or certify an authorization policy.

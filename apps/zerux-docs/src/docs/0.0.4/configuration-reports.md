@@ -87,3 +87,6 @@ The fields below come from the current source declarations. Optional is not a de
 | `campaigns` | `{report:(code:string,options:{cursor:string\|null;limit:number;site?:string})=>Promise<any>;performance?:(code:string,site?:string)=>Promise<unknown>;dailyTrends?:(code:string,from:string,to:string,site?:string)=>Promise<unknown>;activity?:(code:string,from:string,to:string,site?:string)=>Promise<unknown>}` | No | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
 | `maxSourceRows` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
 | `site` | `string` | No | Restrict every report query to one analytics site, independent of saved chart definitions. |
+
+
+The raw `source.events()` path rejects more than its configured maximum of 500 rows, even for custom warehouses. Use supported native aggregate contracts for larger persisted totals; indexed numeric facts still report indexed-only coverage. The external source registry is a separate explicit host integration, not an automatically selected framework `source` backend. Browser definition/view modules neither resolve credentials nor execute sources; keep their owner disposal separate from server stores and providers.

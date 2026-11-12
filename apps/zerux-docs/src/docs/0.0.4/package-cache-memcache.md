@@ -16,7 +16,6 @@
 }
 ---
 
-
 Memcached ASCII text-protocol adapter for `@zeruxjs/cache`, implemented using Node sockets. Requires Node 20+ and a reachable Memcached server. This is a cache, not MemcacheQ.
 
 ```ts
@@ -53,3 +52,7 @@ maxBytes counts exact serialized JSON UTF-8 bytes before connection, and maxDept
 Direct get/set and protocol request accept signal/deadline options. Helper close returns a Promise for actual socket cleanup; protocol close stays synchronous with whenClosed() and activeSocketCount for observation. Stable MemcacheError codes exclude raw key/payload/server text; internal causes remain private. Timeout/cancellation after a write is an unknown outcome, never an automatic replay. TTL rounding above 30 days still converts to absolute Unix expiry, add/replace are atomic per key, counter misses reject and decrement clamps at zero.
 
 See the package README for the packed public-import example and exact migration limits. Live acceptance requires a dedicated ZX_TEST_MEMCACHE_HOST (optional ZX_TEST_MEMCACHE_PORT); loopback fixtures do not certify Memcached/TLS/eviction or MemcacheQ delivery semantics.
+
+## Source ownership
+
+`index.ts` owns validated cache operations and preparation before sequential writes; `json.ts` owns bounded inert JSON. `protocol.ts` owns framing and actual socket-close tracking, shared through the public protocol entry with MemcacheQ. `errors.ts` produces fixed internal diagnostics. Host-created error messages and private causes still require redaction. Both runtime entries are Node-only, and raw commands/endpoints must come from trusted host configuration. No connection opens on import or construction.

@@ -23,51 +23,56 @@ export interface NullableSchema<
   InferIssue<TWrapped>
 > {
   /**
-   * The schema type.
+   * Fixed nullable discriminator: only null selects this default/sentinel branch.
    */
   readonly type: 'nullable';
   /**
-   * The schema reference.
+   * Authored constructor reference; never loaded from user-controlled source text.
    */
   readonly reference: typeof nullable;
   /**
-   * The expected property.
+   * Diagnostic expectation combining wrapped input with null, not a callback.
    */
   readonly expects: `(${TWrapped['expects']} | null)`;
   /**
-   * The wrapped schema.
+   * Borrowed schema validating/transforming every non-sentinel replacement.
    */
   readonly wrapped: TWrapped;
   /**
-   * The default value.
+   * Trusted input literal/factory retained by reference; non-null results undergo wrapped validation.
    */
   readonly default: TDefault;
 }
 
 /**
- * Creates a nullable schema.
+ * Accept null or select one trusted input default; non-null replacements still run wrapped validation.
  *
- * @param wrapped The wrapped schema.
+ * @param {TWrapped} wrapped - Borrowed trusted input schema; construction starts no parsing or callback work.
  *
- * @returns A nullable schema.
+ * @returns {NullableSchema<TWrapped, undefined>} Inert nullable wrapper; undefined is not automatically converted to null.
  */
 export function nullable<
   const TWrapped extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(wrapped: TWrapped): NullableSchema<TWrapped, undefined>;
 
 /**
- * Creates a nullable schema.
+ * Accept null or select one trusted input default; non-null replacements still run wrapped validation.
  *
- * @param wrapped The wrapped schema.
- * @param default_ The default value.
+ * @param {TWrapped} wrapped - Borrowed trusted input schema; construction starts no parsing or callback work.
+ * @param {TDefault} default_ - Trusted input-compatible literal/factory; results are not deep-cloned.
  *
- * @returns A nullable schema.
+ * @returns {NullableSchema<TWrapped, TDefault>} Default-aware nullable wrapper; a returned null short-circuits without another factory call.
  */
 export function nullable<
   const TWrapped extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
   const TDefault extends Default<TWrapped, null>,
 >(wrapped: TWrapped, default_: TDefault): NullableSchema<TWrapped, TDefault>;
 
+/** Build a nullable wrapper without parsing or starting background work.
+ * @param {object} wrapped - Borrowed trusted schema; root execution owns budgets/cancellation.
+ * @param {unknown} default_ - Optional trusted input literal/factory; factory work remains host-owned.
+ * @returns {object} Inert nullable schema; sync wrappers reject async default misuse, async wrappers await settlement.
+ */
 // @__NO_SIDE_EFFECTS__
 export function nullable(
   wrapped: BaseSchema<unknown, unknown, BaseIssue<unknown>>,
@@ -81,9 +86,17 @@ export function nullable(
     async: false,
     wrapped,
     default: default_,
+    /** Adapt explicit validation calls to bounded root execution.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Apply the default once for null, then validate any non-sentinel replacement.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private input dataset.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Root-owned budgets/signal shared by nested work.
+     * @returns {unknown} Declared sync/async dataset; factory exceptions and hard limits still propagate.
+     */
     '~run'(dataset, config) {
       // If value is `null`, override it with default or return dataset
       if (dataset.value === null) {

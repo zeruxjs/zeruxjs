@@ -5,15 +5,15 @@ import type { BaseIssue } from '../../types/index.js';
  */
 export interface ArrayIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed structural validation category; raw input and diagnostics remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable discriminator for issue code consumers.
    */
   readonly type: 'array';
   /**
-   * The expected property.
+   * Private diagnostic expectation, never proof of permission or safe rendered content.
    */
   readonly expected: 'Array';
 }

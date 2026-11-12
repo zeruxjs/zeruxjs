@@ -1,6 +1,32 @@
-/** No browser bundles/dependencies required: the generated bootstrap is self-contained. */
-export function browserScript(config:{endpoint:string;site:string;debug:boolean;autoEvents?:string[];defaultConsent?:'granted'|'denied'}):string{
-  const settings=JSON.stringify(config).replace(/</g,'\\u003c');
+/** Generate a self-contained document-lifetime bootstrap from explicit public collection settings. No script executes on the server and no provider code/credentials are included.
+ * @param {{
+  endpoint: string;
+  site: string;
+  debug: boolean;
+  autoEvents?: string[];
+  defaultConsent?: 'granted' | 'denied';
+}} config - Trusted public collector endpoint/site/debug/automatic trigger kinds and explicit initial consent.
+ * @param {string} config.endpoint - Explicit collection endpoint, not a destination credential.
+ * @param {string} config.site - Host-selected public site identifier.
+ * @param {boolean} config.debug - Explicit public diagnostic switch.
+ * @param {string[]} config.autoEvents - Optional published automatic trigger types.
+ * @param {'granted' | 'denied'} config.defaultConsent - Optional initial telemetry policy.
+ * @returns {string} Script-safe bootstrap text; generated native listeners belong to the document, not a mount/unmount scope.
+ */
+export function browserScript(config: {
+  /** Explicit public collection endpoint, never a destination-secret URL. */
+  endpoint: string;
+  /** Host-selected public site identity; collector still verifies origin/site binding. */
+  site: string;
+  /** Explicit fixed diagnostic switch; browser config cannot overwrite it. */
+  debug: boolean;
+  /** Published enabled automatic trigger kinds; absent does not enable tracking automatically. */
+  autoEvents?: string[];
+  /** Explicit telemetry state, fallback granted; host must establish its privacy/consent policy. */
+  defaultConsent?: 'granted' | 'denied';
+}): string {
+  /** JSON public settings escaped against HTML script termination; generated source bytes otherwise remain stable. */
+  const settings = JSON.stringify(config).replace(/</g, '\\u003c');
   return `(function(){'use strict';
 if(window.__zeruxTtagLoaded===true)return;window.__zeruxTtagLoaded=true;
 var cfg=${settings}, alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

@@ -25,11 +25,11 @@ import type {
  */
 export interface RecordSchemaAsync<
   TKey extends
-  | BaseSchema<string, string | number | symbol, BaseIssue<unknown>>
-  | BaseSchemaAsync<string, string | number | symbol, BaseIssue<unknown>>,
+    | BaseSchema<string, string | number | symbol, BaseIssue<unknown>>
+    | BaseSchemaAsync<string, string | number | symbol, BaseIssue<unknown>>,
   TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   TMessage extends ErrorMessage<RecordIssue> | undefined,
 > extends BaseSchemaAsync<
   InferRecordInput<TKey, TValue>,
@@ -37,64 +37,58 @@ export interface RecordSchemaAsync<
   RecordIssue | InferIssue<TKey> | InferIssue<TValue>
 > {
   /**
-   * The schema type.
+   * Stable schema discriminator used by structured issue consumers.
    */
   readonly type: 'record';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof record | typeof recordAsync;
   /**
-   * The expected property.
+   * Private native-type diagnostic, not a permission or coercion policy.
    */
   readonly expects: 'Object';
   /**
-   * The record key schema.
+   * Borrowed explicit key schema; transformed names are not automatically reauthorized.
    */
   readonly key: TKey;
   /**
-   * The record value schema.
+   * Borrowed explicit value schema; this does not deep-clone or sanitize accepted objects.
    */
   readonly value: TValue;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a record schema.
- *
- * @param key The key schema.
- * @param value The value schema.
- *
- * @returns A record schema.
+/** Start safe own enumerable string key/value validation concurrently, then accumulate in enumeration order into a fresh record. Construction does not parse input or authorize its source.
+ * @param {TKey} key - Borrowed explicit string-key schema; trusted transforms must preserve the host key policy.
+ * @param {TValue} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @returns {RecordSchemaAsync<TKey, TValue, undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function recordAsync<
   const TKey extends
-  | BaseSchema<string, string | number | symbol, BaseIssue<unknown>>
-  | BaseSchemaAsync<string, string | number | symbol, BaseIssue<unknown>>,
+    | BaseSchema<string, string | number | symbol, BaseIssue<unknown>>
+    | BaseSchemaAsync<string, string | number | symbol, BaseIssue<unknown>>,
   const TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(key: TKey, value: TValue): RecordSchemaAsync<TKey, TValue, undefined>;
 
-/**
- * Creates a record schema.
- *
- * @param key The key schema.
- * @param value The value schema.
- * @param message The error message.
- *
- * @returns A record schema.
+/** Start safe own enumerable string key/value validation concurrently, then accumulate in enumeration order into a fresh record. Construction does not parse input or authorize its source.
+ * @param {TKey} key - Borrowed explicit string-key schema; trusted transforms must preserve the host key policy.
+ * @param {TValue} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {RecordSchemaAsync<TKey, TValue, TMessage>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function recordAsync<
   const TKey extends
-  | BaseSchema<string, string | number | symbol, BaseIssue<unknown>>
-  | BaseSchemaAsync<string, string | number | symbol, BaseIssue<unknown>>,
+    | BaseSchema<string, string | number | symbol, BaseIssue<unknown>>
+    | BaseSchemaAsync<string, string | number | symbol, BaseIssue<unknown>>,
   const TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   const TMessage extends ErrorMessage<RecordIssue> | undefined,
 >(
   key: TKey,
@@ -102,6 +96,12 @@ export function recordAsync<
   message: TMessage
 ): RecordSchemaAsync<TKey, TValue, TMessage>;
 
+/** Start safe own enumerable string key/value validation concurrently, then accumulate in enumeration order into a fresh record. Construction does not parse input or authorize its source.
+ * @param {BaseSchema<string, string | number | symbol, BaseIssue<unknown>> | BaseSchemaAsync<string, string | number | symbol, BaseIssue<unknown>>} key - Borrowed explicit string-key schema; trusted transforms must preserve the host key policy.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @param {ErrorMessage<RecordIssue>} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {RecordSchemaAsync<BaseSchema<string, string | number | symbol, BaseIssue<unknown>> | BaseSchemaAsync<string, string | number | symbol, BaseIssue<unknown>>, BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>, ErrorMessage<RecordIssue> | undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function recordAsync(
   key:
@@ -127,11 +127,20 @@ export function recordAsync(
     key,
     value,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Start safe own enumerable string key/value validation concurrently, then accumulate in enumeration order into a fresh record. Raw issues remain private and operational failures propagate.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; this schema does not grant permissions or sanitize output.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets, cancellation, abort flags and diagnostic policy.
+     * @returns {Promise<OutputDataset<unknown, BaseIssue<unknown>>>} Declared output or private issue dataset; child result identity follows its schema.
+     */
     async '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed candidate retained for child reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -144,6 +153,7 @@ export function recordAsync(
         // Parse schema of each record entry
         // Hint: `Object.entries(…)` always returns keys as strings
         // Hint: We exclude specific keys for security reasons
+        /** Record key/value results started concurrently and retained in source insertion order. */
         const datasets = await Promise.all(
           Object.entries(input)
             .filter(([key]) => _isValidObjectKey(input, key))
@@ -167,6 +177,7 @@ export function recordAsync(
           // If there are issues, capture them
           if (keyDataset.issues) {
             // Create record path item
+            /** Private parent path segment retaining original input/value; sanitize before client exposure. */
             const pathItem: ObjectPathItem = {
               type: 'object',
               origin: 'key',
@@ -197,6 +208,7 @@ export function recordAsync(
           // If there are issues, capture them
           if (valueDataset.issues) {
             // Create record path item
+            /** Private parent path segment retaining original input/value; sanitize before client exposure. */
             const pathItem: ObjectPathItem = {
               type: 'object',
               origin: 'value',

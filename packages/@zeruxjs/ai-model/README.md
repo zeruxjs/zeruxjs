@@ -3,18 +3,33 @@
 A local dependency-light **retrieval knowledge base**, not a model-training or embedding runtime. It offers keyword-based ranking, chunking, source-addressable excerpts, context budgeting, snapshots and optional filesystem persistence.
 
 ```ts
-import {createKnowledgeBase, chunkDocument, retrieveEvidence, createGroundedAssistant,
-        saveKnowledgeBase, loadKnowledgeBase} from '@zeruxjs/ai-model';
-import {createOpenAICompatibleProvider} from '@zeruxjs/ai';
+import {
+  createKnowledgeBase,
+  chunkDocument,
+  retrieveEvidence,
+} from '@zeruxjs/ai-model';
 
-const kb = createKnowledgeBase({maxDocuments:5000,maxDocumentCharacters:100_000});
-kb.addMany(chunkDocument({id:'guide/routing',title:'Routing guide',text:manualText},
-  {maxCharacters:1200,overlapCharacters:150}));
-const sources = retrieveEvidence(kb,'How does routing work?',{limit:4,maxTotalCharacters:4000});
-const assistant = createGroundedAssistant(kb, provider); // any compatible chat provider
-const {answer,sources:citations} = await assistant.answer('How does routing work?');
-await saveKnowledgeBase(kb,'./private/knowledge.json');
-const restored = await loadKnowledgeBase('./private/knowledge.json');
+// This base contains public sample text; private sources need host authorization first.
+const kb = createKnowledgeBase({
+  maxDocuments: 5000,
+  maxDocumentCharacters: 100_000,
+});
+kb.addMany(
+  chunkDocument(
+    {
+      id: 'guide/routing',
+      title: 'Routing guide',
+      text: 'Register explicit request handlers for application routes.',
+    },
+    { maxCharacters: 1200, overlapCharacters: 150 }
+  )
+);
+// Return source records for presentation without calling any external provider.
+const sources = retrieveEvidence(kb, 'request handlers', {
+  limit: 4,
+  maxTotalCharacters: 4000,
+});
+console.log(sources.map((source) => source.sourceId));
 ```
 
 Chunk IDs are deterministic (`originalId#0`, etc.). Chunk metadata contains `sourceId` and chunk number. The assistant returns citations as structured source data, allowing consumers to display evidence separately from generated text. `createGroundedPrompt` and `DocumentKnowledgeBase.search()` remain available. Document and snapshot sizes are bounded; snapshots use atomic replacement and reject symlink targets.
@@ -241,13 +256,13 @@ notes, Chinese route text, accented French café text, duplicate chunks and a lo
 repeated-keyword distractor. A hidden fixture is excluded for both rankings.
 The same five queries/expected top source are:
 
-| Query | Expected source |
-| --- | --- |
-| routing | routing.md |
-| cache | cache.md |
-| session | session.md |
-| 路由 | unicode.md |
-| cafe | drinks.md |
+| Query   | Expected source |
+| ------- | --------------- |
+| routing | routing.md      |
+| cache   | cache.md        |
+| session | session.md      |
+| 路由    | unicode.md      |
+| cafe    | drinks.md       |
 
 On this deliberately adversarial fixture, legacy top-1 was 0/5 and configured
 weighted top-1 was 5/5 (8/1/4, NFKC, diacritic folding, Han bigrams). The test records
@@ -257,3 +272,15 @@ weight, a representative retrieval evaluation, statistical significance or
 production latency. Lexical and injected embedding fixtures qualify authorization,
 budgets, Unicode spans, duplicate removal, cancellation and citation rejection;
 no live embedding/model provider or semantic grounding evaluation was performed.
+
+## Source ownership and maintenance
+
+- `knowledge-base.ts`, `tokenizer.ts` and `ranking.ts` retain separate legacy and explicit weighted ranking. Legacy locale folding/ties stay unchanged; opt-in ranking uses its documented binary ID tie order. Bulk adds and restores validate a complete staged replacement first.
+- `chunking.ts` uses Unicode code points for chunks/overlap. `retrieval.ts` and `context.ts` preserve legacy UTF-16 excerpt/context budgets. `evidence.ts` separately owns code-point spans and budgets the entire serialized prompt, including question/provenance overhead.
+- `snapshot-io.ts` owns file descriptors and private temporary siblings. `persistence.ts` preserves legacy V1 loading/saving. Parents and concurrent-writer coordination remain trusted host responsibilities; atomic rename is not a distributed transaction.
+- `corpus.ts` owns explicit source selection, bounded Git/filesystem reads, public manifest projection and source/hash/overlap validation. A successful candidate is not automatically saved. Missing selections remove stale chunks; source text is never imported or executed.
+- `evidence.ts` owns query admission, authorization before lexical IDF/embedding inputs, post-embedding permission/consent rechecks, deduplication and native settlement. Its close drains jobs and closes only an explicitly owned embedding adapter. The returned assistant borrows both dependencies and makes no provider call when evidence is insufficient.
+
+The root entry eagerly exports Node filesystem persistence; `/corpus` and `/evidence` also load Node filesystem/cryptography helpers. These entries are server-side modules. Erased type-only imports do not load runtime dependencies. This package does not install a browser controller or framework service automatically.
+
+Public examples document parameters, returns and cleanup ownership. Fixed prompt strings and embedded source fixtures retain their contents during formatting. Local deterministic retrieval/citation checks are separate from live embedding/model acceptance, factual entailment and prompt-injection resistance. The strict readability gate retains visible complexity advisories for the large validation and packing paths; no security or ownership rules are disabled to remove those warnings.

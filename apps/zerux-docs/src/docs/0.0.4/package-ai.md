@@ -42,7 +42,7 @@ This is an OpenAI-compatible Chat Completions transport, not a complete provider
 
 ## Streaming
 
-SSE text is decoded across network and UTF-8 boundaries with total/frame size bounds. Streams emit text only, not complete tool/multimodal event structures. Stop iteration or abort to cancel and release concurrency slots.
+SSE text is decoded across network and UTF-8 boundaries with total/frame size bounds. Streams emit text only, not complete tool/multimodal event structures. Stop iteration to close the reader, or abort to request cancellation. Admission remains owned until the injected provider/reader actually settles; cancellation alone does not prove a slot is free.
 
 ## Retry and fallback
 
@@ -200,3 +200,10 @@ metrics separately from truthfulness/quality (unmeasured). It uses deterministic
 local providers, no external requests and no private repository evidence. Live
 model evaluations need separate explicit data-disclosure authorization and actual
 model/configuration reporting.
+
+
+## Maintaining the transport and execution boundaries
+
+The package README maps each source owner. Native adapters build only their declared wire envelopes; content encoding treats filenames, source code, JSON and opaque media bytes as data. Structured generation owns its separate cumulative attempt/output/token/cost ledger and independent validator. Tool execution remains an explicitly registered, authenticated server boundary with uncertain outcomes after a possible side-effect commit.
+
+Public examples in `packages/@zeruxjs/ai/examples/` document each parameter and cleanup owner. They start no requests on import. Provider registries borrow instances, structured clients drain their native jobs, and tool sessions/executors own their cancellation listeners and unsettled work. A host must qualify credentials, model/version, consent and deployment egress separately; local fixtures do not certify provider behavior.

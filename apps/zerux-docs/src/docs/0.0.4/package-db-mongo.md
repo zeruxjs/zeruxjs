@@ -83,19 +83,24 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### MongoConnectorOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `db` | `MongoDbLike` | Yes |
-| `client` | `MongoClientLike` | Yes |
-| `database` | `string` | Yes |
-| `uri` | `string` | Yes |
-| `url` | `string` | Yes |
-| `clientOptions` | `Record<string, unknown>` | Yes |
-| `allowUnfilteredWrites` | `boolean` | Yes |
-| `executor` | `(operation: QueryOperation) => Promise<unknown> \| unknown` | Yes |
-| `fixedDatabase` | `boolean` | Yes |
-| `locked` | `boolean` | Yes |
-| `lockDatabase` | `boolean` | Yes |
+| Field                   | Accepted type/value                                          | Optional |
+| ----------------------- | ------------------------------------------------------------ | -------- |
+| `db`                    | `MongoDbLike`                                                | Yes      |
+| `client`                | `MongoClientLike`                                            | Yes      |
+| `transactions`          | `boolean`                                                    | Yes      |
+| `maxCommitAttempts`     | `number`                                                     | Yes      |
+| `maxCommitTimeMS`       | `number`                                                     | Yes      |
+| `maxSessions`           | `number`                                                     | Yes      |
+| `probeTimeoutMS`        | `number`                                                     | Yes      |
+| `database`              | `string`                                                     | Yes      |
+| `uri`                   | `string`                                                     | Yes      |
+| `url`                   | `string`                                                     | Yes      |
+| `clientOptions`         | `Record<string, unknown>`                                    | Yes      |
+| `allowUnfilteredWrites` | `boolean`                                                    | Yes      |
+| `executor`              | `(operation: QueryOperation) => Promise<unknown> \| unknown` | Yes      |
+| `fixedDatabase`         | `boolean`                                                    | Yes      |
+| `locked`                | `boolean`                                                    | Yes      |
+| `lockDatabase`          | `boolean`                                                    | Yes      |
 
 ## Opt-in pinned session lifecycle
 
@@ -106,3 +111,7 @@ The shared transaction facade passes one session through CRUD/find/aggregation a
 `maxSessions` defaults to 32; `maxCommitTimeMS` to 10000 and `probeTimeoutMS` to 5000. Cooperative deadlines drain native work before abort/endSession and may exceed their duration. Disconnect waits for accepted work/sessions and only closes URI-created clients; initialization failure rolls back owned acquisition. Injected clients retain host ownership.
 
 Projection/group literals are wrapped in $literal; executable expression objects and unsafe fields reject. Index definitions validate before namespace creation. Unfiltered-write protection applies to executors too: supply a predicate or explicitly enable the trusted bulk policy. Existing matched/modified counts and narrow analytics aggregation shapes are preserved. BSON parser behavior remains driver-owned; no lossless JSON-number conversion is claimed. Live checks require a disposable replica-set/sharded `ZX_TEST_MONGO_URI`; offline fixtures do not prove engine/failover/precision behavior.
+
+## Source ownership
+
+The connector owns explicit acquisition, pre-mutation policy, normalized counts and drain. Query helpers generate only the supported structured operators and literal projections. Session ownership is separate: the deployment probe, exact native argument injection and endSession barrier live together. The root index preserves public exports without starting a connection. Trusted executors/native accessors are not sandboxed; native records/pipelines/causes still require response sanitization. The package README maps these boundaries to source files and separates injected checks from live deployment qualification.

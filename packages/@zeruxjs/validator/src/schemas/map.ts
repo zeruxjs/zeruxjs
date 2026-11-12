@@ -23,52 +23,46 @@ export interface MapSchema<
   MapIssue | InferIssue<TKey> | InferIssue<TValue>
 > {
   /**
-   * The schema type.
+   * Stable schema discriminator used by structured issue consumers.
    */
   readonly type: 'map';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof map;
   /**
-   * The expected property.
+   * Private native-type diagnostic, not a permission or coercion policy.
    */
   readonly expects: 'Map';
   /**
-   * The map key schema.
+   * Borrowed explicit Map key schema; no automatic key serialization or tenant scoping.
    */
   readonly key: TKey;
   /**
-   * The map value schema.
+   * Borrowed explicit Map value schema; no deep copying is guaranteed.
    */
   readonly value: TValue;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a map schema.
- *
- * @param key The key schema.
- * @param value The value schema.
- *
- * @returns A map schema.
+/** Validate native Map keys before values in insertion order; transformed duplicate keys retain the last assigned value. Construction does not parse input or authorize its source.
+ * @param {TKey} key - Borrowed explicit Map key schema; transformations can merge keys under native Map equality.
+ * @param {TValue} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @returns {MapSchema<TKey, TValue, undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function map<
   const TKey extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
   const TValue extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(key: TKey, value: TValue): MapSchema<TKey, TValue, undefined>;
 
-/**
- * Creates a map schema.
- *
- * @param key The key schema.
- * @param value The value schema.
- * @param message The error message.
- *
- * @returns A map schema.
+/** Validate native Map keys before values in insertion order; transformed duplicate keys retain the last assigned value. Construction does not parse input or authorize its source.
+ * @param {TKey} key - Borrowed explicit Map key schema; transformations can merge keys under native Map equality.
+ * @param {TValue} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {MapSchema<TKey, TValue, TMessage>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function map<
   const TKey extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
@@ -80,6 +74,12 @@ export function map<
   message: TMessage
 ): MapSchema<TKey, TValue, TMessage>;
 
+/** Validate native Map keys before values in insertion order; transformed duplicate keys retain the last assigned value. Construction does not parse input or authorize its source.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>>} key - Borrowed explicit Map key schema; transformations can merge keys under native Map equality.
+ * @param {BaseSchema<unknown, unknown, BaseIssue<unknown>>} value - Borrowed explicit value schema; accepted nested objects may retain caller-owned identity.
+ * @param {ErrorMessage<MapIssue>} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {MapSchema<BaseSchema<unknown, unknown, BaseIssue<unknown>>, BaseSchema<unknown, unknown, BaseIssue<unknown>>, ErrorMessage<MapIssue> | undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function map(
   key: BaseSchema<unknown, unknown, BaseIssue<unknown>>,
@@ -99,11 +99,20 @@ export function map(
     key,
     value,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Validate native Map keys before values in insertion order; transformed duplicate keys retain the last assigned value. Raw issues remain private and operational failures propagate.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; this schema does not grant permissions or sanitize output.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets, cancellation, abort flags and diagnostic policy.
+     * @returns {OutputDataset<unknown, BaseIssue<unknown>>} Declared output or private issue dataset; child result identity follows its schema.
+     */
     '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed candidate retained for child reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -116,11 +125,13 @@ export function map(
         // Parse schema of each map entry
         for (const [inputKey, inputValue] of input) {
           // Get dataset of key schema
+          /** Current Map key result; transformed keys, not source keys, determine output identity. */
           const keyDataset = _runSchema(this.key, { value: inputKey }, config);
 
           // If there are issues, capture them
           if (keyDataset.issues) {
             // Create map path item
+            /** Private parent path segment retaining original input/value; sanitize before client exposure. */
             const pathItem: MapPathItem = {
               type: 'map',
               origin: 'key',
@@ -153,7 +164,9 @@ export function map(
           }
 
           // Get dataset of value schema
-          const valueDataset = _runSchema(this.value,
+          /** Current child value result sharing the root execution policy; raw issues remain private. */
+          const valueDataset = _runSchema(
+            this.value,
             { value: inputValue },
             config
           );
@@ -161,6 +174,7 @@ export function map(
           // If there are issues, capture them
           if (valueDataset.issues) {
             // Create map path item
+            /** Private parent path segment retaining original input/value; sanitize before client exposure. */
             const pathItem: MapPathItem = {
               type: 'map',
               origin: 'value',

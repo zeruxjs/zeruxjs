@@ -25,15 +25,21 @@
 ```tsx
 import { createReactBindings, createReactStore } from '@zeruxjs/react';
 import { useMemo, useSyncExternalStore, useCallback } from 'react';
+
 const bindings = createReactBindings({ useMemo, useSyncExternalStore });
-const store = createReactStore({ count: 0 });
-/** Render counter state. @returns A button. Reads the explicitly owned store. */
-function Counter() {
-  const selector = useCallback((state: { count: number }) => state.count, []);
-  const count = bindings.useSelector(store, selector);
-  return <button onClick={() => store.update(s => ({ count: s.count + 1 }))}>{count}</button>;
+
+export function createCounterOwner() {
+  const store = createReactStore({ count: 0 });
+  function Counter() {
+    const selector = useCallback((state: { count: number }) => state.count, []);
+    const count = bindings.useSelector(store, selector);
+    return <button onClick={() => store.update(s => ({ count: s.count + 1 }))}>{count}</button>;
+  }
+  return { Counter, store, destroy: () => store.destroy() };
 }
 ```
+
+Create one counter owner per host scope and call `destroy()` on teardown. Server request state must have a fresh owner for every request; hook bindings can stay shared because they do not retain that state.
 
 Use the real React hooks inside components. Stable selectors and equality prevent accidental snapshot churn. Core imports do not load React DOM or register an application renderer. Optional native entries use matching host peers.
 
@@ -133,3 +139,6 @@ These tables list fields declared directly on the named public contract. Referen
 | `getSnapshot` | `T` | No |
 | `subscribe` | `() => void` | No |
 | `getServerSnapshot` | `T` | Yes |
+
+
+Root teardown must run before its DOM/container owner disappears. A store is borrowed by native hooks unless the host explicitly transfers cleanup using `onDispose`. Hydration state uses `dispose()`, and ordinary subscriptions return independent unsubscribe callbacks; none of these operations implies forced cancellation of synchronous component code. See the package README for the separately checked server/client examples and fixed peer/error budgets.

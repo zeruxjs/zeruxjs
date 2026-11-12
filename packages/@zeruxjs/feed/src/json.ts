@@ -1,4 +1,4 @@
-import type { FeedOptions } from "./types.js";
+import type { FeedOptions } from './types.js';
 import {
   normalizeFeed,
   finishFeed,
@@ -6,18 +6,30 @@ import {
   authors,
   attachments,
   categories,
-} from "./utils.js";
+} from './utils.js';
+/** Serialize a bounded JSON Feed 1.1 subset, preserving ordered facts without fetching any referenced resource. XML/JSON encoding never sanitizes HTML a reader later renders.
+ * @param {FeedOptions} input - Public content-owned facts and finite budgets; generator normalization rejects invalid records before returning output.
+ * @returns {string} Deterministic representation bytes for stable input/order; host must sanitize untrusted HTML and avoid signed/private URLs.
+ * @throws {TypeError | RangeError} When normalization or serialized UTF-8 output limits fail.
+ */
 export function createJsonFeed(input: FeedOptions): string {
-  const o = normalizeFeed(input),
-    person = (a: ReturnType<typeof authors>[number]) => ({
-      name: a.name,
-      url: a.url,
-      avatar: a.avatar,
-    });
+  /** Detached validated public publication; JSON fields map only documented format coverage. */
+  const o = normalizeFeed(input);
+  /**
+   * Project only JSON Feed author fields supported by this generator.
+   *
+   * @param {ReturnType<typeof authors>[number]} a - Already validated authored metadata; no network or executable content.
+   * @returns {object} Name/URL/avatar projection; undefined fields disappear during JSON serialization.
+   */
+  const person = (a: ReturnType<typeof authors>[number]) => ({
+    name: a.name,
+    url: a.url,
+    avatar: a.avatar,
+  });
   return finishFeed(
     JSON.stringify(
       {
-        version: "https://jsonfeed.org/version/1.1",
+        version: 'https://jsonfeed.org/version/1.1',
         title: o.title,
         home_page_url: o.siteUrl,
         feed_url: o.feedUrl,
@@ -36,12 +48,15 @@ export function createJsonFeed(input: FeedOptions): string {
           content_html: i.contentHtml,
           date_published: date(i.date),
           date_modified: date(i.updated),
-          authors:
-            i.authors !== undefined
-              ? i.authors.map(person)
-              : i.author
-                ? [{ name: i.author }]
-                : undefined,
+          authors: (() => {
+            if (i.authors !== undefined) {
+              return i.authors.map(person);
+            }
+            if (i.author) {
+              return [{ name: i.author }];
+            }
+            return undefined;
+          })(),
           tags: categories(i).length
             ? categories(i).map((c) => c.term)
             : undefined,
@@ -59,8 +74,8 @@ export function createJsonFeed(input: FeedOptions): string {
         })),
       },
       null,
-      2,
+      2
     ),
-    o,
+    o
   );
 }

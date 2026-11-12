@@ -52,3 +52,13 @@ Owned pools set supportBigNumbers/bigNumberStrings true and decimalNumbers false
 Multiple statements are always disabled; requesting them rejects before pool creation. TLS is explicit through an ssl object (for example `{ ca: process.env.DB_CA }`); certificate and hostname verification are enabled for owned pools. Insecure verification flags and deprecated string profiles reject. Omitted ssl retains local/plain transport compatibility; configure TLS for remote hosts. Injected transports retain host-owned TLS, parser, engine and multi-statement policies. Driver errors/SQL/native results are trusted internal data: sanitize at your HTTP boundary, never serialize them to clients.
 
 See the official [pool ownership](https://sidorares.github.io/node-mysql2/docs/examples/connections/create-pool) and [TLS configuration](https://sidorares.github.io/node-mysql2/docs/documentation/ssl) documentation. Offline fixtures prove orchestration only. Opt-in live acceptance requires `ZX_TEST_MYSQL_URL` pointing to a disposable MySQL database; no application database or server is started automatically.
+
+## Implementation and ownership map
+
+- `src/pool.ts` validates trusted connection/precision/TLS policy and separates lazy owned pools from borrowed pool/client/executor transports. Injected client tuple handling retains its existing compatibility heuristic.
+- `src/dialect.ts` owns MySQL quoting/placeholders and the explicit SQL-core support subset. It never interpolates parameter values.
+- `src/index.ts` owns queued acquisitions, late-lease release, accepted native work, exact count/precision checks and transaction-control/session cleanup. A failed transaction-control statement poisons reuse; uncertain connections are destroyed rather than returned as healthy.
+
+Root runtime imports require Node. Native executors/pools/options are trusted host configuration and are not sandboxed. Borrowed transports retain handshake/TLS/parser policy; declaring affectedRowsMode does not change their native handshake. Native results/errors/SQL/parameters remain private until the host sanitizes them. The wrapper cannot recover an already rounded injected number or force-cancel native JavaScript.
+
+Offline fixtures use scripted leases and a lazily configured owned pool without issuing network requests. Packed public imports and the borrowed-pool example check the actual declarations. Live InnoDB rollback/precision/TLS/server semantics require the separately configured dedicated MySQL acceptance endpoint.

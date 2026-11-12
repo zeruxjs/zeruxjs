@@ -2,16 +2,24 @@
  * Merge dataset type.
  */
 type MergeDataset =
-  | { value: unknown; issue?: undefined }
-  | { value?: undefined; issue: true };
+  | {
+      /** Borrowed merged value on success; absent on conflict. */
+      value: unknown; /** True marks incompatible outputs; absent on success and never a private input payload. */
+      issue?: undefined;
+    }
+  | {
+      /** Borrowed merged value on success; absent on conflict. */
+      value?: undefined; /** True marks incompatible outputs; absent on success and never a private input payload. */
+      issue: true;
+    };
 
 /**
- * Merges two values into one single output.
+ * Recursively merge compatible trusted branch outputs by mutating the first value. This legacy helper has no independent cycle/depth budget or rollback; callbacks must produce compatible finite graphs.
  *
- * @param value1 First value.
- * @param value2 Second value.
+ * @param {unknown} value1 - First trusted branch result; object/array contents may be mutated even if a later conflict rejects the merge.
+ * @param {unknown} value2 - Second trusted result; native Date equality uses numeric coercion and host getters remain trusted code.
  *
- * @returns The merge dataset.
+ * @returns {MergeDataset} First result with compatible values merged, or a conflict marker; this does not sanitize keys, authorize values or deep-clone inputs.
  *
  * @internal
  */
@@ -38,6 +46,7 @@ export function _merge(value1: unknown, value2: unknown): MergeDataset {
       for (const key in value2) {
         // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         if (key in value1) {
+          /** Recursive child merge result; failure returns immediately without undoing previously merged siblings. */
           // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           const dataset = _merge(value1[key], value2[key]);
 
@@ -67,6 +76,7 @@ export function _merge(value1: unknown, value2: unknown): MergeDataset {
       if (value1.length === value2.length) {
         // Merge item of `value2` into `value1`
         for (let index = 0; index < value1.length; index++) {
+          /** Recursive child merge result; failure returns immediately without undoing previously merged siblings. */
           const dataset = _merge(value1[index], value2[index]);
 
           // If dataset has issue, return it

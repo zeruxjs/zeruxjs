@@ -71,15 +71,15 @@ Native buffered APIs and a maintained source can report earlier page timing afte
 
 `createVitalReporter` now supports either its existing explicit `url`/fetch transport or a trusted `send(metrics,{signal})` callback. It serializes only approved scalar `PerformanceMetric` fields. Endpoint URLs reject credentials, queries and fragments; fetch defaults to omitted credentials, no-store, redirect error and keepalive. Keepalive is a browser hint, not proof of delivery after page exit. Fetch response bodies are canceled and native work remains owned until cancellation settles. Host callbacks own authentication, destination policy and actual persistence; `true` means that transport reported success, not a database commit.
 
-| Bound | Default / allowed range |
-| --- | --- |
-| maxBatch | 50 / 1–500 observations per explicit flush |
-| maxQueue | maxBatch / 1–2000 observations |
-| maxBatchBytes | 32768 / 256–60000 UTF-8 JSON bytes |
-| maxRetries | 3 / 0–20 **additional** attempts |
-| maxAgeMs | 60000 / 1–3600000 ms from queue admission |
+| Bound                    | Default / allowed range                        |
+| ------------------------ | ---------------------------------------------- |
+| maxBatch                 | 50 / 1–500 observations per explicit flush     |
+| maxQueue                 | maxBatch / 1–2000 observations                 |
+| maxBatchBytes            | 32768 / 256–60000 UTF-8 JSON bytes             |
+| maxRetries               | 3 / 0–20 **additional** attempts               |
+| maxAgeMs                 | 60000 / 1–3600000 ms from queue admission      |
 | retryBaseMs / retryMaxMs | legacy 0 / 60000; each 0–60000 and max >= base |
-| timeoutMs | 3000 / 1–60000 ms observation deadline |
+| timeoutMs                | 3000 / 1–60000 ms observation deadline         |
 
 Analytics/operational adapters opt into a 1000ms base by default; legacy reporter explicit immediate-flush retries remain compatible. No timer automatically retries or starts a network loop. `flush()` sends only due items, returns 0 during backoff, and preserves the bounded exponential retry/age budget. HTTP 408/429/5xx, network failure or callback false may retry; permanent HTTP denials drop. Retry-After is not interpreted. Queue overflow drops oldest pending observations and increments diagnostics, preserving the legacy newest-sample behavior. Expired/exhausted observations are discarded visibly. Server-side storage loss or lost acknowledgements can still duplicate observations on retry: there are no durable idempotency receipts, exact-delivery guarantees or automatic marketing conversions.
 
@@ -169,3 +169,17 @@ bytes/elapsed milliseconds with the Node version. These measurements describe
 that workload only, not a speed gain, production capacity, CDN behavior or browser
 qualification. Deployment TLS/CDN/HTTP2 and real slow-client capacity need separate
 qualification; none is started by this package.
+
+## Ownership checklist
+
+| API                                              | Lifetime and teardown                                                                                            |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Cache/header/hint/schema builders and collector  | Inert data helpers; collector `clear()` releases retained samples                                                |
+| `observePerformance`, `observeWebVitals`         | Invoke the returned disconnect function; no observation starts on import                                         |
+| `installNavigationPrefetch`                      | One explicit public-page scope; `destroy()` removes owned hints/listeners/timer, not browser caches              |
+| Reporter, browser analytics, operational adapter | `destroy()` stops admission/signals transport; await `whenClosed()` for actual settlement                        |
+| Optional maintained INP source                   | One host-owned source per document; bridge detach cannot disconnect web-vitals 5 library observers               |
+| `forwardPerformanceResponse`                     | Borrows one native hosting owner; host stops admission then closes that owner                                    |
+| Lighthouse                                       | Explicit audit against an existing private Chrome port; host controls target/egress and borrowed runner lifetime |
+
+The lightweight `createETag` is a compatible weak length/FNV-1a validator, not a cryptographic content-integrity digest. Resource hints escape attributes but their typed relation/credential modes are trusted host configuration, not an arbitrary JavaScript input-validation or destination-authorization boundary. Measurement helpers invoke the callback once and return its result/duration; their compatible `name` argument does not emit telemetry.

@@ -63,3 +63,14 @@ Each bulk call accepts at most 1000 keys; setMany validates and encodes all entr
 Errors expose a fixed code through MemcacheError.code and details.code, with fixed messages and no key/payload/server text. Codes include MEMCACHE_INVALID_OPTIONS, MEMCACHE_INVALID_KEY, MEMCACHE_INVALID_JSON, MEMCACHE_DEPTH_LIMIT, MEMCACHE_PAYLOAD_LIMIT, MEMCACHE_BULK_LIMIT, MEMCACHE_COUNTER_MISSING, MEMCACHE_COUNTER_RANGE, MEMCACHE_NAMESPACE_CLEAR_UNSUPPORTED, MEMCACHE_GLOBAL_CLEAR_DISABLED, MEMCACHE_CONDITION_CONFLICT, MEMCACHE_CONNECTION_FAILED, MEMCACHE_DISCONNECTED, MEMCACHE_SERVER_ERROR, MEMCACHE_PROTOCOL_ERROR, MEMCACHE_DEADLINE, MEMCACHE_CANCELLED, MEMCACHE_CONCURRENCY_LIMIT and MEMCACHE_CLOSED. Internal causes may retain parser/network detail; never serialize them to clients.
 
 Protocol close() remains synchronous/idempotent for existing consumers; await whenClosed() to observe actual handle release. activeSocketCount counts sockets until their close event, so overload cannot bypass the limit while destroyed sockets are still pending cleanup. Abort listeners and timers are removed exactly once. No request opens a socket on import/construction. Live acceptance uses ZX_TEST_MEMCACHE_HOST and optional ZX_TEST_MEMCACHE_PORT against a dedicated test server; no service is started automatically. The default suite exercises local byte-level fixtures, not live Memcached, MemcacheQ, TLS or server-eviction acceptance.
+
+## Implementation and ownership map
+
+- `src/index.ts` owns validated cache operations, TTL conversion, per-key native conditions, sequential bulk preparation and helper shutdown.
+- `src/json.ts` owns exact UTF-8 serialization and bounded descriptor traversal. It never invokes getters/toJSON or evaluates data.
+- `src/protocol.ts` owns raw framing, lazy verified-TLS/TCP connections, request limits and socket-close observation. `queue-memcacheq` consumes this public transport entry; its destructive-pop policy belongs to the queue package.
+- `src/errors.ts` supplies fixed code-derived internal diagnostics. The public MemcacheError constructor accepts a host message; a host-created message still requires redaction. Never serialize internal causes.
+
+Root and `/protocol` imports require Node. Construction is inert; dispatch opens a socket only after validation. Endpoint configuration and raw protocol commands are trusted host inputs, not request fields. The helpers do not supply authentication or tenant authorization. Manager prefixes need host-verified tenant binding, and raw native access bypasses helper JSON/key guarantees.
+
+The offline suite owns ephemeral loopback fixtures and destroys accepted sockets on cleanup. These fixtures cover fragmented bytes, cancellation, redacted failures and the real MemcacheQ transport consumer; they do not prove live broker, verified TLS or server-eviction behavior.

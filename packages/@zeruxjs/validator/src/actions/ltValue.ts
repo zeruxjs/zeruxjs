@@ -14,15 +14,15 @@ export interface LtValueIssue<
   TRequirement extends TInput,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'lt_value';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: `<${string}`;
   /**
@@ -40,15 +40,15 @@ export interface LtValueAction<
   TMessage extends ErrorMessage<LtValueIssue<TInput, TRequirement>> | undefined,
 > extends BaseValidation<TInput, TInput, LtValueIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'lt_value';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof ltValue;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: `<${string}`;
   /**
@@ -56,42 +56,41 @@ export interface LtValueAction<
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a less than value validation action.
- *
- * @param requirement The less than value.
- *
- * @returns A less than value action.
+/** Require the native exclusive < relation; Date/primitive coercion and invalid comparisons retain native semantics. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted measurement/comparison requirement; this constructor does not independently validate every threshold or clone Date references.
+ * @returns {LtValueAction<TInput, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function ltValue<
   TInput extends ValueInput,
   const TRequirement extends TInput,
 >(requirement: TRequirement): LtValueAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a less than value validation action.
- *
- * @param requirement The less than value.
- * @param message The error message.
- *
- * @returns A less than value action.
+/** Require the native exclusive < relation; Date/primitive coercion and invalid comparisons retain native semantics. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted measurement/comparison requirement; this constructor does not independently validate every threshold or clone Date references.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {LtValueAction<TInput, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function ltValue<
   TInput extends ValueInput,
   const TRequirement extends TInput,
   const TMessage extends
-  | ErrorMessage<LtValueIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<LtValueIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): LtValueAction<TInput, TRequirement, TMessage>;
 
+/** Require the native exclusive < relation; Date/primitive coercion and invalid comparisons retain native semantics. This action neither establishes the input schema nor grants permissions.
+ * @param {ValueInput} requirement - Explicit trusted measurement/comparison requirement; this constructor does not independently validate every threshold or clone Date references.
+ * @param {ErrorMessage<LtValueIssue<ValueInput, ValueInput>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {LtValueAction<ValueInput, ValueInput, ErrorMessage<LtValueIssue<ValueInput, ValueInput>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function ltValue(
   requirement: ValueInput,
@@ -106,12 +105,18 @@ export function ltValue(
     type: 'lt_value',
     reference: ltValue,
     async: false,
-    expects: `<${requirement instanceof Date
-      ? requirement.toJSON()
-      : _stringify(requirement)
-      }`,
+    expects: `<${
+      requirement instanceof Date
+        ? requirement.toJSON()
+        : _stringify(requirement)
+    }`,
     requirement,
     message,
+    /** Require the native exclusive < relation; Date/primitive coercion and invalid comparisons retain native semantics. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !(dataset.value < this.requirement)) {
         _addIssue(this, 'value', dataset, config, {

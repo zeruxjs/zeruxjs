@@ -35,6 +35,8 @@ const cors = evaluateCors(request.headers.origin, {
 const headers = createSecurityHeaders({ hsts: true }, true);
 ```
 
+Keyring/authenticator owners require `destroy()`; JWT/JWKS and asynchronous limiter owners require their documented `close()`/drain. The existing CSRF manager and inert structural policy composer have no public disposer; do not invent one. Retaining a handle is a static lint hint, not proof that cleanup ran.
+
 The request, sessionId and response integration are application-provided. Supply a sufficiently strong server-held CSRF secret. A helper returns a policy result; ensure the actual response/handler enforces it.
 
 ## CORS versus authorization

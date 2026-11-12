@@ -3,22 +3,23 @@ import type { BaseIssue } from '../../types/index.js';
 /**
  * Union issue interface.
  */
-export interface UnionIssue<TSubIssue extends BaseIssue<unknown>>
-  extends BaseIssue<unknown> {
+export interface UnionIssue<
+  TSubIssue extends BaseIssue<unknown>,
+> extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed structural validation category; raw input and diagnostics remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable discriminator for issue code consumers.
    */
   readonly type: 'union';
   /**
-   * The expected property.
+   * Private diagnostic expectation, never proof of permission or safe rendered content.
    */
   readonly expected: string;
   /**
-   * The sub issues.
+   * Borrowed failed-branch issue records; may retain submitted values and original paths.
    */
   readonly issues?: [TSubIssue, ...TSubIssue[]];
 }

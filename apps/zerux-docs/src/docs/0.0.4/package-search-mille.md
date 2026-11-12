@@ -47,7 +47,7 @@ Index creation, settings changes, document upserts and deletes enqueue native
 tasks. An accepted receipt does not mean the data is searchable. Direct adapters
 expose createIndex/configureIndex plus taskStatus/waitForTask. Wait for setup tasks
 to succeed before ingestion, and inspect terminal state: failed/canceled are
-terminal outcomes too. Task references are tenant/index/scope-bound HMACs;
+terminal outcomes too. Polling has one shared operation slot/deadline, a 10–1000 ms interval and at most 100 polls; it does not create unbounded background polling after the caller stops waiting. Task references are tenant/index/scope-bound HMACs;
 raw numeric UIDs and foreign references reject before requests.
 
 Keep receipts in application-owned storage if status must survive request loss.

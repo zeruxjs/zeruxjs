@@ -179,6 +179,10 @@ jobs:
         run: npm run lint:prepare
       - name: Check source using root flat config
         run: npm run lint:js:report
+      - name: Check repository quality policy fixtures
+        run: npm run quality:policy
+      - name: Check formatting of reviewed package scopes
+        run: npm run format:reviewed
       - name: Save ESLint results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

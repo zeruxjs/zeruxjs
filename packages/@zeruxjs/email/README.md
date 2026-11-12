@@ -13,11 +13,11 @@ const mail=createEmailManager({
   accounts:[
     {name:'transactional',smtp:{host:'smtp.example.com',port:587,requireTLS:true,
       auth:{type:'password',user:'sender@example.com',pass:process.env.SMTP_PASSWORD!}},
-      defaults:{from:'Sender <sender@example.com>'}},
+      defaults:{from:{ name: 'Sender', address: 'sender@example.com' }}},
     {name:'notifications',smtp:{host:'smtp.example.com',port:465,secure:true,
       auth:{type:'oauth2',user:'alerts@example.com',clientId:process.env.OAUTH_CLIENT_ID!,
         clientSecret:process.env.OAUTH_CLIENT_SECRET!,refreshToken:process.env.OAUTH_REFRESH_TOKEN!}},
-      defaults:{from:'Alerts <alerts@example.com>'}}
+      defaults:{from:{ name: 'Alerts', address: 'alerts@example.com' }}}
   ],
   tracking,files // optional named Files manager for attachment streaming
 });
@@ -44,13 +44,13 @@ For file attachments supply `files` when creating the manager and set `attachmen
 
 ## Marketing permission is separate from activity tracking
 
-`purpose:'marketing'` requires one recipient and an affirmative subscribed record in an injected `preferences` service. Marketing unsubscribe endpoints are hosted by ZeruxJS and require a POST to modify preference state. `purpose:'transactional'` remains independent of the marketing permission store. Neither an opt-in subscription nor an unsubscribe silently changes `tracking` for any message. Tracking is still off unless explicitly requested *on the send*, and can be overridden by `{tracking:false}`.
+`purpose:'marketing'` requires one recipient and an affirmative subscribed record in an injected `preferences` service. Marketing unsubscribe endpoints are hosted by ZeruxJS and require a POST to modify preference state. `purpose:'transactional'` remains independent of the marketing permission store. Neither an opt-in subscription nor an unsubscribe silently changes `tracking` for any message. Tracking is still off unless explicitly requested _on the send_, and can be overridden by `{tracking:false}`.
 
 For tracked deliveries, `EmailResult.trackingId` identifies activity reports (an opaque UUID), but is only supplied when tracking is requested and a tracking service is injected. `message.tracking` accepts `opens`, `clicks`, `downloads`, and a list of exact HTTPS `downloadLinks`. For per-email first/last timestamps and counts call `tracking.getActivity(result.trackingId)` in `@zeruxjs/analytics`. A link click is **not** a proven completed download. Attachments are not trackable after delivery.
 
 ## Marketing campaigns
 
-Use `createCampaignPlanner` for persistent, segmented recipient paging and stage-before-enqueue checkpoints, `createDatabaseCampaignStore` for atomic multi-node document CAS, `createMarketingSuppressionService` with a shared store for hard/soft bounce and complaint handling, and `createCampaignDashboard`/`createMarketingFeedbackEndpoint` for *opt-in* authenticated routes. `createCampaignAnalyticsReporter` can emit best-effort operational events for internal Reports. Never assume memory stores provide restart/multi-server safety; provider webhooks must verify raw-body signatures.
+Use `createCampaignPlanner` for persistent, segmented recipient paging and stage-before-enqueue checkpoints, `createDatabaseCampaignStore` for atomic multi-node document CAS, `createMarketingSuppressionService` with a shared store for hard/soft bounce and complaint handling, and `createCampaignDashboard`/`createMarketingFeedbackEndpoint` for _opt-in_ authenticated routes. `createCampaignAnalyticsReporter` can emit best-effort operational events for internal Reports. Never assume memory stores provide restart/multi-server safety; provider webhooks must verify raw-body signatures.
 
 See the [durable email guide](../../../apps/zerux-docs/src/docs/0.0.4/durable-email.md) for queue integration and delivery controls.
 
@@ -105,7 +105,6 @@ Marketing checks fresh boolean subscription/suppression state again at the SMTP 
 
 Qualification uses injected transports, streams and local HTTP preference fixtures. It does not certify live SMTP/TLS delivery, IMAP/POP3 servers, broker crash recovery or production durable stores.
 
-
 ## Authenticated feedback and local sender visibility
 
 `createSenderFeedbackService` is an opt-in correlated ledger alongside the unchanged `createEmailReputationService` policy API. [The public-import example](examples/sender-visibility.ts) binds one tenant/site/account/provider and wires authenticated feedback, suppression and a report endpoint. No collectors, provider polling, remote requests or analytics start on import.
@@ -147,3 +146,23 @@ executing markup. These lexical warnings are advisory, not an HTML sanitizer,
 complete browser parser, authentication result or malware certification.
 
 The dependency floor now selects Nodemailer 10.4+ and Mailparser 3.14.2+ to avoid the earlier address-parser advisories. Transport acceptance, ambiguous outcomes and MIME limits retain the contracts above; injected transport and MIME fixtures are not live SMTP qualification.
+
+## Reading the sending and consent implementation
+
+`src/manager.ts` owns lazy native transports, actual unsettled send/verification slots, caller observation, explicit tracking policy and process-local idempotency fences. `src/smtp-outcomes.ts` classifies intended envelope recipients and projects address-free counters. Neither a fulfilled send nor a tracking observation proves inbox delivery. The historical internal `redactResult` helper normalizes private native fields; it is not a public response sanitizer.
+
+`src/attachments.ts` owns lazy Node wrappers, exact recorded lengths, concurrent reader slots and iterator/close settlement. Files managers remain borrowed. `src/queue.ts` owns a separate process-local FIFO/retry loop: `close()` without `drain:true` rejects queued jobs without cancelling or awaiting active borrowed sends. `flush()` observes actual local drain. A draining close waits before stopping admission, so hosts should stop producers first. This is distinct from manager close and durable outbox delivery.
+
+`src/validation.ts`, `src/filters.ts`, `src/templates.ts` and `src/html.ts` separate envelope policy, local recipient rules, inert placeholder substitution and maintained sanitization/inlining. Authored table/cell HTML remains trusted input to layout helpers. Templates and fingerprinting do not sandbox getters, `toJSON` or scalar conversion on trusted application objects. Filter `setRules` retains its sequential replacement behavior; it is not a staged transaction.
+
+`src/persistence.ts` stage-validates a bounded V1 snapshot before applying it. Loading merges templates and suppressions while replacing rules; an absent imported template/suppression does not delete an existing one. Trusted directory ancestry and concurrent filesystem operators remain host responsibilities. Snapshot contents contain private recipient values, even though SMTP credentials are excluded.
+
+`src/preferences.ts` keeps committed subscription state separate from tracking. GET/HEAD confirmation cannot unsubscribe; the encrypted capability plus exact bounded POST body commits the change. The default memory consent store is development-only, its inspection snapshots copy the outer map rather than deep-freezing records, and production requires a shared committed store. Host code must authorize management/status access and independently verify opt-in evidence.
+
+`src/campaigns.ts` is the paged planner: its completed state means planning finished and still permits delivery of queued messages. `src/marketing.ts` is the separate function-first service: finalization checks registered terminal delivery records and its completed state blocks further sends. Campaign, recipient, durable delivery and queue writes are separate commits. Stable job IDs do not provide exactly-once SMTP delivery; pending redrive requires explicit queue-absence evidence and never replays sending/uncertain outcomes. Its five-minute CAS operation lease is private management state, not a browser capability.
+
+`src/marketing-import.ts` parses bounded inert CSV without evaluating source. `src/marketing-import-jobs.ts` checkpoints aggregate progress against an immutable host-asserted source revision. Changed input needs a new job identity/revision; append must reconcile identical replays because a crash can occur after append and before checkpoint. Lease loss/cancellation fences later checkpoints but cannot recall an already started native append.
+
+`src/inbound.ts` owns native per-operation IMAP locks/logout and POP3 completion, while injected drivers and stores remain borrowed. Receiver `close()` only stops admission: it does not cancel or drain active polls. Attachment persistence can precede message metadata, so hosts own idempotence and orphan repair. `src/inbound-sync.ts` fences durable folder cursors with lease epochs; `src/inbox-api.ts` requires literal per-call authorization and exposes private untrusted summaries. Remote unread/flag changes are distinct from local erasure. Retention previews do not delete; actual deletion needs explicit host policy, and related stores are not erased atomically.
+
+`src/campaign-dashboard.ts` and `src/marketing-dashboard.ts` return explicit host-registerable routes, never a listener. Every page, asset and API request requires a verified principal; writes also require exact origin, host CSRF and scoped action approval. Body readers own five-second read deadlines (12 KiB planner, 128 KiB marketing), not arbitrary callback deadlines. The browser assets use text-only result rendering; rendered email HTML remains untrusted data. The [sender visibility example](examples/sender-visibility.ts) shows public imports with durable stores and host signature/report authorization callbacks. HTTP/parser fixtures are not live browser or provider qualification.

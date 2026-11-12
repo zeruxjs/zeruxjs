@@ -88,81 +88,91 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### QueueJobOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `jobId` | `string` | Yes |
-| `delay` | `number` | Yes |
-| `priority` | `number` | Yes |
-| `attempts` | `number` | Yes |
-| `backoff` | `number \| {type:'fixed'\|'exponential';delay:number}` | Yes |
-| `removeOnComplete` | `boolean \| number \| {age?:number;count?:number}` | Yes |
-| `removeOnFail` | `boolean \| number \| {age?:number;count?:number}` | Yes |
-| `repeat` | `{every?:number;pattern?:string;limit?:number;immediately?:boolean}` | Yes |
-| `deduplication` | `{id:string;ttl?:number}` | Yes |
+| Field              | Accepted type/value                                                  | Optional |
+| ------------------ | -------------------------------------------------------------------- | -------- |
+| `jobId`            | `string`                                                             | Yes      |
+| `delay`            | `number`                                                             | Yes      |
+| `priority`         | `number`                                                             | Yes      |
+| `attempts`         | `number`                                                             | Yes      |
+| `backoff`          | `number \| {type:'fixed'\|'exponential';delay:number}`               | Yes      |
+| `removeOnComplete` | `boolean \| number \| {age?:number;count?:number}`                   | Yes      |
+| `removeOnFail`     | `boolean \| number \| {age?:number;count?:number}`                   | Yes      |
+| `repeat`           | `{every?:number;pattern?:string;limit?:number;immediately?:boolean}` | Yes      |
+| `deduplication`    | `{id:string;ttl?:number}`                                            | Yes      |
 
 ### QueueWorkerOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `concurrency` | `number` | Yes |
-| `autorun` | `boolean` | Yes |
-| `lockDuration` | `number` | Yes |
-| `limiter` | `{max:number;duration:number}` | Yes |
+| Field          | Accepted type/value            | Optional |
+| -------------- | ------------------------------ | -------- |
+| `concurrency`  | `number`                       | Yes      |
+| `autorun`      | `boolean`                      | Yes      |
+| `lockDuration` | `number`                       | Yes      |
+| `limiter`      | `{max:number;duration:number}` | Yes      |
 
 ### QueueDashboardOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `authorize` | `(request:Request)=>unknown\|Promise<unknown>` | No |
-| `verifyCsrf` | `(request:Request,principal:unknown)=>boolean\|Promise<boolean>` | No |
-| `csrfToken` | `(request:Request,principal:unknown)=>string\|Promise<string>` | No |
-| `prefix` | `string` | Yes |
-| `publicOrigin` | `string` | Yes |
+| Field          | Accepted type/value                                              | Optional |
+| -------------- | ---------------------------------------------------------------- | -------- |
+| `authorize`    | `(request:Request)=>unknown\|Promise<unknown>`                   | No       |
+| `verifyCsrf`   | `(request:Request,principal:unknown)=>boolean\|Promise<boolean>` | No       |
+| `csrfToken`    | `(request:Request,principal:unknown)=>string\|Promise<string>`   | No       |
+| `prefix`       | `string`                                                         | Yes      |
+| `publicOrigin` | `string`                                                         | Yes      |
 
 ### DurableEmailDeliveryOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `store` | `DurableEmailDeliveryStore` | No |
-| `isSubscribed` | `(email:string)=>Promise<boolean>` | No |
-| `isSuppressed` | `(email:string)=>Promise<boolean>` | Yes |
-| `campaignGate` | `(record:Readonly<DurableEmailDeliveryRecord>)=>Promise<'allow'\|'defer'\|'suppress'>` | Yes |
-| `send` | `(messageId:string,record:Readonly<DurableEmailDeliveryRecord>)=>Promise<unknown>` | No |
-| `onUncertain` | `(messageId:string)=>void\|Promise<void>` | Yes |
-| `leaseMs` | `number` | Yes |
-| `now` | `()=>number` | Yes |
+| Field          | Accepted type/value                                                                    | Optional |
+| -------------- | -------------------------------------------------------------------------------------- | -------- |
+| `store`        | `DurableEmailDeliveryStore`                                                            | No       |
+| `isSubscribed` | `(email:string)=>Promise<boolean>`                                                     | No       |
+| `isSuppressed` | `(email:string)=>Promise<boolean>`                                                     | Yes      |
+| `campaignGate` | `(record:Readonly<DurableEmailDeliveryRecord>)=>Promise<'allow'\|'defer'\|'suppress'>` | Yes      |
+| `send`         | `(messageId:string,record:Readonly<DurableEmailDeliveryRecord>)=>Promise<unknown>`     | No       |
+| `onUncertain`  | `(messageId:string)=>void\|Promise<void>`                                              | Yes      |
+| `leaseMs`      | `number`                                                                               | Yes      |
+| `now`          | `()=>number`                                                                           | Yes      |
 
 ### TaskScheduleOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `attempts` | `number` | Yes |
-| `backoffMs` | `number` | Yes |
-| `startDate` | `string\|number\|Date` | Yes |
-| `endDate` | `string\|number\|Date` | Yes |
-| `limit` | `number` | Yes |
-| `timezone` | `string` | Yes |
+| Field       | Accepted type/value    | Optional |
+| ----------- | ---------------------- | -------- |
+| `attempts`  | `number`               | Yes      |
+| `backoffMs` | `number`               | Yes      |
+| `startDate` | `string\|number\|Date` | Yes      |
+| `endDate`   | `string\|number\|Date` | Yes      |
+| `limit`     | `number`               | Yes      |
+| `timezone`  | `string`               | Yes      |
 
 ### QueueServiceConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `enabled` | `boolean` | Yes |
-| `redis` | `RedisConnectionSettings` | No |
-| `prefix` | `string` | Yes |
-| `queues` | `Array<string \| QueueDefinition>` | No |
-| `workers` | `Record<string, {processor:JobProcessor} & QueueWorkerOptions>` | Yes |
-| `readyTimeoutMs` | `number` | Yes |
-| `shutdownGraceMs` | `number` | Yes |
-| `onWorkerError` | `(queue:string, error:unknown)=>void` | Yes |
-| `events` | `{enabled:true;onEvent?:(event:QueueEventNotice)=>void;onError?:(queue:string,error:unknown)=>void}` | Yes |
-| `administration` | `QueueAdministrationPolicy` | Yes |
-| `dashboard` | `QueueDashboardOptions` | Yes |
+| Field             | Accepted type/value                                                                                  | Optional |
+| ----------------- | ---------------------------------------------------------------------------------------------------- | -------- |
+| `enabled`         | `boolean`                                                                                            | Yes      |
+| `redis`           | `RedisConnectionSettings`                                                                            | No       |
+| `prefix`          | `string`                                                                                             | Yes      |
+| `queues`          | `Array<string \| QueueDefinition>`                                                                   | No       |
+| `workers`         | `Record<string, {processor:JobProcessor} & QueueWorkerOptions>`                                      | Yes      |
+| `readyTimeoutMs`  | `number`                                                                                             | Yes      |
+| `shutdownGraceMs` | `number`                                                                                             | Yes      |
+| `onWorkerError`   | `(queue:string, error:unknown)=>void`                                                                | Yes      |
+| `events`          | `{enabled:true;onEvent?:(event:QueueEventNotice)=>void;onError?:(queue:string,error:unknown)=>void}` | Yes      |
+| `administration`  | `QueueAdministrationPolicy`                                                                          | Yes      |
+| `dashboard`       | `QueueDashboardOptions`                                                                              | Yes      |
 
 ### QueueAdministrationPolicy
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `authorize` | `(action:QueueAdminAction,queue:string,context:unknown)=>boolean\|Promise<boolean>` | No |
-| `onAudit` | `(entry:{action:QueueAdminAction;queue:string;jobId?:string;success:boolean;at:string})=>void\|Promise<void>` | Yes |
-| `maxPageSize` | `number` | Yes |
+| Field         | Accepted type/value                                                                                           | Optional |
+| ------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
+| `authorize`   | `(action:QueueAdminAction,queue:string,context:unknown)=>boolean\|Promise<boolean>`                           | No       |
+| `onAudit`     | `(entry:{action:QueueAdminAction;queue:string;jobId?:string;success:boolean;at:string})=>void\|Promise<void>` | Yes      |
+| `maxPageSize` | `number`                                                                                                      | Yes      |
+
+## Explicit neutral backends and durable webhooks
+
+The root retains the BullMQ compatibility API. `/neutral` accepts an explicit trusted factory selection and `/backends` supplies inert adapters for injected standalone basics. Required capabilities reject before startup; destructive MemcacheQ cannot satisfy manual acknowledgement. Native BullMQ push workers/schedulers remain on the typed exact-factory extension, while RabbitMQ pull acknowledgements stay on the original channel. No automatic package discovery, fallback worker loop or exactly-once business processing is provided.
+
+Await neutral `close()` through actual pending calls before reverse registered cleanup; do not separately close its borrowed native extension. The wrapper bounds plain JSON and pending work, but trusted native extension calls retain their own owning package policy. Static cleanup diagnostics cannot authorize a tenant or prove teardown occurred.
+
+`/webhooks` is an opt-in host-durable CAS workflow. The application supplies storage, verified principals, destination registry, rotating signing keys and approved HTTPS egress. Queue jobs contain only tenant/delivery references; inspection omits bodies, keys and URLs. Expired sending leases and lost acknowledgements become uncertain rather than automatic retries. Explicit redrive rechecks permissions, destination, credentials and original age/attempt caps.
+
+Await `prepare()` before a SQLite synchronous transaction, then insert the prepared outbox record and business change on its exact synchronous pin without awaits. Async `commit()` requires the existing real pinned transaction contract. Close workflow before its borrowed HTTPS transport/store; HTTPS close also awaits actual DNS settlement. Built-in address denial, TLS and redirect rejection still require deployment egress controls and receiver idempotency. See the package README's public-import examples and exact limits; fixtures do not certify a live broker, receiver or crash-recovery deployment.

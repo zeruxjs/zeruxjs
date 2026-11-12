@@ -11,15 +11,15 @@ import { _addIssue } from '../utils/index.js';
  */
 export interface ToDateIssue<TInput> extends BaseIssue<TInput | Date> {
   /**
-   * The issue kind.
+   * Fixed refinement category; raw rejected values remain private.
    */
   readonly kind: 'transformation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'to_date';
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expected: null;
 }
@@ -32,35 +32,28 @@ export interface ToDateAction<
   TMessage extends ErrorMessage<ToDateIssue<TInput>> | undefined,
 > extends BaseTransformation<TInput, Date, ToDateIssue<TInput>> {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'to_date';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof toDate;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a to date transformation action.
- *
- * @returns A to date action.
- *
+/** Construct a native Date and reject Invalid Date/conversion failures; this is not strict ISO parsing or explicit timezone policy. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @returns {ToDateAction<TInput, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  * @beta
  */
 export function toDate<TInput>(): ToDateAction<TInput, undefined>;
 
-/**
- * Creates a to date transformation action.
- *
- * @param message The error message.
- *
- * @returns A to date action.
- *
+/** Construct a native Date and reject Invalid Date/conversion failures; this is not strict ISO parsing or explicit timezone policy. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {ToDateAction<TInput, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  * @beta
  */
 export function toDate<
@@ -68,6 +61,10 @@ export function toDate<
   const TMessage extends ErrorMessage<ToDateIssue<TInput>> | undefined,
 >(message: TMessage): ToDateAction<TInput, TMessage>;
 
+/** Construct a native Date and reject Invalid Date/conversion failures; this is not strict ISO parsing or explicit timezone policy. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {ErrorMessage<ToDateIssue<unknown>>} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {ToDateAction<unknown, ErrorMessage<ToDateIssue<unknown>> | undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function toDate(
   message?: ErrorMessage<ToDateIssue<unknown>>
@@ -78,6 +75,11 @@ export function toDate(
     reference: toDate,
     async: false,
     message,
+    /** Construct a native Date and reject Invalid Date/conversion failures; this is not strict ISO parsing or explicit timezone policy. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     '~run'(dataset, config) {
       try {
         // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.

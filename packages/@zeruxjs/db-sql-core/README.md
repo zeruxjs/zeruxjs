@@ -4,7 +4,7 @@ Shared parameterized SQL compiler and connector executor for PostgreSQL, MySQL a
 
 `createSqlConnector(dialect, options)` compiles the normalized JSON operation into dialect-specific SQL and normalizes returned row counts and insert IDs. Insert IDs are emitted only for actual `insert` operations, not DDL or updates; SQLite bigint IDs are converted to strings where necessary to preserve precision.
 
-**Trust boundary:** Query *values* are parameterized. Column/table identifiers are validated upstream by `@zeruxjs/db` and quoted by the dialect. Do not expose unrestricted schema operations or raw SQL to untrusted callers, and use database credentials with least privilege. Each SQL operation executes separately unless the application explicitly manages a native transaction.
+**Trust boundary:** Query _values_ are parameterized. Column/table identifiers are validated upstream by `@zeruxjs/db` and quoted by the dialect. Do not expose unrestricted schema operations or raw SQL to untrusted callers, and use database credentials with least privilege. Each SQL operation executes separately unless the application explicitly manages a native transaction.
 
 **Safety contract:** compiler validates identifiers and runtime operator/function/join/order/index enums independently of TypeScript; SQL CHECK text strings are **rejected**, use a validated structured expression. Column lengths, integer limits and INSERT row shapes are checked. Unsupported RETURNING (notably MySQL) throws rather than being silently ignored. PostgreSQL write results expose `affectedCount` from driver `rowCount`, including zero-row CAS misses. MySQL and SQLite index/drop syntax and SQLite integer primary key autoincrement use engine-specific rules.
 
@@ -61,3 +61,11 @@ Focused checks include direct compiler failures, executor outage, injected pool 
 Migration note: callers that relied on MySQL silently discarding index guards must choose an explicit owning migration policy. Analytics already fails closed for numeric backfill when its unique index cannot be verified; its existing `indexes:false,numericUniqueIndexManagedExternally:true` policy is appropriate only after the operator provisions that unique constraint. Optional read-index failures retain their existing degraded status. The compiler never automatically retries with an unguarded CREATE INDEX.
 
 `SqlConnectorOptions.synchronous:true` is an explicit owner contract for synchronous executors. Single- and multi-statement execution rejects thenables without creating an async continuation that could issue later DDL outside a native transaction. SQLite uses this path for its separate `transactionSync` API; it does not enable the shared async transaction capability.
+
+## Implementation and ownership map
+
+`src/validation.ts` owns bounded own-data snapshots and exact clause/list/flag validation. It rejects accessors before reading values and never invokes toJSON. `src/index.ts` owns a fresh per-operation compiler, lexical parameter allocation, explicit DDL literal mode, dialect support guards and native result normalization. Shared operation/count types remain in `@zeruxjs/db`; concrete adapters own pool/session/cancellation behavior.
+
+The compiler snapshots dialect metadata, but quoting/placeholders and executor functions remain trusted executable host code. Root runtime imports require Node. `compileSql` opens nothing, and `createSqlConnector` borrows its native executor without supplying disconnect, transaction or cancellation ownership. Do not add a fake close path or treat it as a tenant authorization boundary. Native results, generated SQL, parameters and original causes remain private until the host sanitizes a response.
+
+The focused suite preserves exact SQL/parameter fixtures and uses disposable native in-memory SQLite for CHECK/RETURNING/keyset/delete behavior. PostgreSQL/MySQL consumers also exercise their injected pinned contracts. These checks do not qualify live engine versions, transactional DDL across dialects or application-specific parser/precision policy.
