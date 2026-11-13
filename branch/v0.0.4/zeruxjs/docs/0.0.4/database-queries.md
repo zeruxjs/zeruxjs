@@ -50,14 +50,14 @@ const result = await select({
 
 Operations are JSON data, with explicit table, columns, conditions, ordering and limits. SQL adapters compile values into parameters and validate identifiers. Do not accept an arbitrary client-supplied operation tree as authorization: choose tables, allowed fields and tenant filters in trusted code.
 
-| Facade operations | Purpose |
-| --- | --- |
-| `select`, `insert`, `update`, `delete` | Data access |
+| Facade operations                                          | Purpose                                                                      |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `select`, `insert`, `update`, `delete`                     | Data access                                                                  |
 | `createTable`, `alterTable`, `dropTable`, `turcunateTable` | Schema/table operations; the truncate method retains its historical spelling |
-| `createIndex`, `dropIndex` | Index management |
-| `createDb`, `dropDb`, `switchDB` | Database administration |
-| `query` | A structured operation or array of operations |
-| `dbAccess(slug)` / native access | Trusted connector-specific operations |
+| `createIndex`, `dropIndex`                                 | Index management                                                             |
+| `createDb`, `dropDb`, `switchDB`                           | Database administration                                                      |
+| `query`                                                    | A structured operation or array of operations                                |
+| `dbAccess(slug)` / native access                           | Trusted connector-specific operations                                        |
 
 ## Batch dependencies and atomicity
 

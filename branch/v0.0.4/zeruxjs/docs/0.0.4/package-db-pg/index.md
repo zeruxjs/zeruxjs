@@ -63,7 +63,6 @@ Close only resources owned by this instance. A transaction requires one native c
 - Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
 - Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
 
-
 ## Pinned clients, budgets and cleanup
 
 Native-compatible pools now expose the shared pinned transaction adapter. A callback owns one client through BEGIN, all statements, COMMIT/ROLLBACK and verified restoration of statement/lock timeout settings. Callback SQL uses that client, not pool.query. Query-only injected clients/executors preserve the legacy interface and remain caller-owned, without transaction/native cancellation capability. Nested transactions and automatic retries are unsupported.
@@ -71,6 +70,10 @@ Native-compatible pools now expose the shared pinned transaction adapter. A call
 Acquisition and execution have separate bounded phases and connector-local saturation counters. Cancelled/timed-out acquisitions retain their slot until connect settles; late clients are destroyed. Server statement_timeout/lock_timeout and an independent client watchdog bound query work. In-flight AbortSignal cancellation uses public client.end destructively, waits for native settlement and discards the client; no unsupported pg signal option/private protocol is assumed. Failed rollback/reset cannot return a healthy client. Write outcome and rollback confirmation can be indeterminate after disconnect/COMMIT failure.
 
 The package README contains a public-import example, exact limits, redacted pool status fields and owned/injected lifecycle rules. No credentials or SQL values enter pool metrics, and global pg type parsers are unchanged. Live acceptance requires ZX_TEST_PG_URL pointing to a dedicated disposable database; injected fixtures do not prove native transaction, cancellation or numeric/time precision behavior.
+
+## Source ownership
+
+Pool policy and owned/borrowed transport selection live in `pool.ts`; native dialect/placeholders live in `dialect.ts`. `session.ts` owns actual client settlement, destructive cancellation and verified settings restoration; `index.ts` binds structured compiler operations and pins to that owner. Trusted native/executor access is not sandboxed and returned records/errors remain private until sanitized. The package README source map separates deterministic cleanup fixtures, lazy-pool checks and configured live deployment acceptance.
 
 
 ## Public entry points
@@ -147,15 +150,15 @@ Authorize tenant/resource access before this callback. A successful transaction 
 
 The connector validates configuration and compiles direct operations before acquiring resources. Native-compatible pool operations lease one client per complete structured operation, including multi-statement DDL. Acquisition and execution are separate bounded phases:
 
-| Option | Default | Allowed | Meaning |
-| --- | --- | --- | --- |
-| acquireTimeoutMs | 5000 | 1–60000 ms | Wait for pool.connect independently of statement work |
-| maxPendingAcquires | 32 | 1–1024 | Bound this connector's combined native acquisitions/leases, or legacy in-flight waits |
-| statementTimeoutMs | 10000 | 1–600000 ms | Server statement_timeout, shortened by request deadlines |
-| queryTimeoutMs | 15000 | 1–600000 ms | Client watchdog; ordinary operation execution also shares this phase budget |
-| lockTimeoutMs | 5000 | 0–600000 ms | Server lock_timeout; zero disables only the lock-specific limit |
-| shutdownTimeoutMs | 5000 | 1–60000 ms | Bound waiting for wrapper cleanup/owned pool shutdown |
-| max | 10 | 1–1024 | Owned pg pool size; injected pool sizing remains host-owned |
+| Option             | Default | Allowed     | Meaning                                                                               |
+| ------------------ | ------- | ----------- | ------------------------------------------------------------------------------------- |
+| acquireTimeoutMs   | 5000    | 1–60000 ms  | Wait for pool.connect independently of statement work                                 |
+| maxPendingAcquires | 32      | 1–1024      | Bound this connector's combined native acquisitions/leases, or legacy in-flight waits |
+| statementTimeoutMs | 10000   | 1–600000 ms | Server statement_timeout, shortened by request deadlines                              |
+| queryTimeoutMs     | 15000   | 1–600000 ms | Client watchdog; ordinary operation execution also shares this phase budget           |
+| lockTimeoutMs      | 5000    | 0–600000 ms | Server lock_timeout; zero disables only the lock-specific limit                       |
+| shutdownTimeoutMs  | 5000    | 1–60000 ms  | Bound waiting for wrapper cleanup/owned pool shutdown                                 |
+| max                | 10      | 1–1024      | Owned pg pool size; injected pool sizing remains host-owned                           |
 
 Owned pools also use pg's documented connectionTimeoutMillis. Early wrapper timeout/abort cannot remove an arbitrary pg queued acquisition, so its slot remains occupied until connect actually settles; a late client is discarded with release(true), never handed to a cancelled request. Caller-owned pools are never ended by this connector. Shutdown aborts its leases and rejects new work; cleanup may continue after a shutdown-timeout rejection if an injected adapter ignores termination. No arbitrary Promise is forcibly cancelled, and no user-managed application is restarted.
 
@@ -172,6 +175,17 @@ Query-only injected transports receive a bounded caller wait, but no native sett
 `getPoolStatus()` returns only owned/closed state, safe total/idle/waiting counters when supplied by pg, pending acquisitions, legacy waits, active leases, discarded/late-client counts, acquisition timeouts and failure counters. No connection URLs, credentials, tenant labels, SQL, parameters or backend identifiers are returned. Counters describe this wrapper and optional shared-pool totals, not a distributed utilization guarantee; idle pool/client errors are consumed for lifecycle safety and reflected without payloads.
 
 Affected counts continue to come from rowCount, including zero-row CAS misses; rows/RETURNING and PostgreSQL placeholder ordering are still normalized by SQL-core. NUMERIC/DECIMAL and int8 retain pg's configured parser behavior, commonly strings; timestamp/timezone interpretation is still a driver/application policy. No global type parsers are installed. Tests use injected pool clients for deterministic failure/cleanup checks. `test/pg-live.test.mjs` is opt-in through ZX_TEST_PG_URL for a dedicated disposable database and uses random table names; without that prerequisite native transaction, cancellation and numeric precision acceptance is explicitly skipped.
+
+## Implementation and ownership map
+
+- `src/pool.ts` validates independent phase budgets and explicitly separates lazy owned native pools from borrowed pool/client/executor transports. Native TLS/parser policy remains host configuration.
+- `src/dialect.ts` owns numbered placeholders, identifier quoting and the selected SQL-core subset. No parameter value is interpolated as SQL.
+- `src/session.ts` owns acquisition admission, late-client discard, exact native error listeners, destructive end settlement, timeout snapshots and verified reset before healthy release. Its legacy path bounds caller observation without mutating or forcibly cancelling a borrowed query-only resource.
+- `src/index.ts` binds structured operations and native pins to those owners, validating compiler input before acquisition. Shared transaction settlement remains in the database package.
+
+Root runtime imports require Node. Native handles and injected executors are privileged trusted code, not a sandbox or tenant authorization API. Private native errors, SQL/parameters and returned records require host sanitization. No generic result-byte cap or lossless parser conversion is invented by the connector.
+
+Offline fixtures script client settings, failures, cancellation and reentrant cleanup, with assertion-independent wrapper teardown. A lazily created owned pg pool is closed without querying a server. Live native acceptance remains a separate explicitly configured disposable PostgreSQL check.
 
 
 ## Implementation sources

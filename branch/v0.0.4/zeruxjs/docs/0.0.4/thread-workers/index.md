@@ -5,10 +5,10 @@ Register CPU work, bound concurrency and deploy the actual worker module.
 
 ## Which worker model?
 
-| Model | Use |
-| --- | --- |
-| Startup worker | Start/stop background resources with the runtime |
-| Thread pool | CPU-bound work isolated in worker_threads |
+| Model           | Use                                                      |
+| --------------- | -------------------------------------------------------- |
+| Startup worker  | Start/stop background resources with the runtime         |
+| Thread pool     | CPU-bound work isolated in worker_threads                |
 | Redis job queue | Durable scheduling/retries across processes and restarts |
 
 A thread pool has no durable job journal. A startup interval has no cross-replica election. Select the model by the delivery and ownership contract, not only by whether a task runs in the background.

@@ -5,12 +5,12 @@ Predict URL mapping, method selection and module discovery from source files.
 
 ## Route files
 
-| File | Inferred route |
-| --- | --- |
-| app/page.ts | / |
-| app/about/page.ts | /about |
-| app/api/health/route.ts | /api/health |
-| app/blog/[slug]/page.ts | /blog/:slug |
+| File                         | Inferred route                   |
+| ---------------------------- | -------------------------------- |
+| app/page.ts                  | /                                |
+| app/about/page.ts            | /about                           |
+| app/api/health/route.ts      | /api/health                      |
+| app/blog/[slug]/page.ts      | /blog/:slug                      |
 | app/files/[...path]/route.ts | Catch-all parameter below /files |
 
 index, page and route path segments are removed during inference. Dynamic bracket segments become named params. Static segments sort ahead of competing dynamic segments. Query strings do not define a separate route; inspect context.query.

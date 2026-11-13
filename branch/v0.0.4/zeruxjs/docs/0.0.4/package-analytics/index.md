@@ -22,11 +22,11 @@ Use explicit origins, bounded body readers, timeouts and concurrency. Browser co
 
 ## Query coverage
 
-| Query | Meaning |
-| --- | --- |
-| Bounded raw events | A limited event page, not a global total |
-| Native aggregate/count | Exact for persisted matching event rows |
-| Numeric materialization | Indexed-only facts; historical/failed writes can be missing |
+| Query                     | Meaning                                                          |
+| ------------------------- | ---------------------------------------------------------------- |
+| Bounded raw events        | A limited event page, not a global total                         |
+| Native aggregate/count    | Exact for persisted matching event rows                          |
+| Numeric materialization   | Indexed-only facts; historical/failed writes can be missing      |
 | Reconciliation completion | A bounded scan exhausted, not a transactional completeness proof |
 
 ## Request IDs and control-plane storage
@@ -79,112 +79,122 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### AnalyticsConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `analytics` | `string` | Yes |
-| `database` | `DatabaseManagerLike` | Yes |
-| `enabled` | `boolean` | Yes |
-| `onWarning` | `(message:string)=>void` | Yes |
-| `table` | `string` | Yes |
-| `indexes` | `boolean` | Yes |
-| `numericFields` | `string[]` | Yes |
-| `numericUniqueIndexManagedExternally` | `boolean` | Yes |
-| `webConsent` | `'optional'\|'required'` | Yes |
-| `eventSchemas` | `Record<string,{properties:Record<string,'string'\|'number'\|'boolean'\|'null'>;allowAdditionalProperties?:boolean}>` | Yes |
-| `approveRetention` | `(scope:{site:string;before:number})=>boolean\|Promise<boolean>` | Yes |
-| `filter` | `(input:Readonly<AnalyticsEventInput>)=>AnalyticsEventInput\|null\|Promise<AnalyticsEventInput\|null>` | Yes |
+| Field                                 | Accepted type/value                                                                                                   | Optional |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| `analytics`                           | `string`                                                                                                              | Yes      |
+| `database`                            | `DatabaseManagerLike`                                                                                                 | Yes      |
+| `enabled`                             | `boolean`                                                                                                             | Yes      |
+| `onWarning`                           | `(message:string)=>void`                                                                                              | Yes      |
+| `table`                               | `string`                                                                                                              | Yes      |
+| `indexes`                             | `boolean`                                                                                                             | Yes      |
+| `numericFields`                       | `string[]`                                                                                                            | Yes      |
+| `numericUniqueIndexManagedExternally` | `boolean`                                                                                                             | Yes      |
+| `webConsent`                          | `'optional'\|'required'`                                                                                              | Yes      |
+| `eventSchemas`                        | `Record<string,{properties:Record<string,'string'\|'number'\|'boolean'\|'null'>;allowAdditionalProperties?:boolean}>` | Yes      |
+| `approveRetention`                    | `(scope:{site:string;before:number})=>boolean\|Promise<boolean>`                                                      | Yes      |
+| `filter`                              | `(input:Readonly<AnalyticsEventInput>)=>AnalyticsEventInput\|null\|Promise<AnalyticsEventInput\|null>`                | Yes      |
 
 ### CollectorOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `analytics` | `AnalyticsManager` | No |
-| `requestIdStore` | `RequestIdStore` | Yes |
-| `requireRequestId` | `boolean` | Yes |
-| `allowTextPlainBeacon` | `boolean` | Yes |
-| `dispatch` | `(input:AnalyticsEventInput,context:{requestId:string;utcDay:string;origin?:string})=>Promise<unknown>` | Yes |
-| `prefix` | `string` | Yes |
-| `allowedOrigins` | `readonly string[]` | Yes |
-| `serverToken` | `string` | Yes |
-| `maxBodyBytes` | `number` | Yes |
-| `bodyTimeoutMs` | `number` | Yes |
-| `maxConcurrentReads` | `number` | Yes |
-| `maxEventsPerMinute` | `number` | Yes |
-| `storageTimeoutMs` | `number` | Yes |
-| `maxPendingEvents` | `number` | Yes |
-| `siteByOrigin` | `Record<string,string>` | Yes |
-| `requireBrowserConsent` | `boolean` | Yes |
-| `botPolicy` | `'allow'\|'drop-known'` | Yes |
+| Field                   | Accepted type/value                                                                                     | Optional |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- | -------- |
+| `analytics`             | `AnalyticsManager`                                                                                      | No       |
+| `requestIdStore`        | `RequestIdStore`                                                                                        | Yes      |
+| `requireRequestId`      | `boolean`                                                                                               | Yes      |
+| `allowTextPlainBeacon`  | `boolean`                                                                                               | Yes      |
+| `dispatch`              | `(input:AnalyticsEventInput,context:{requestId:string;utcDay:string;origin?:string})=>Promise<unknown>` | Yes      |
+| `prefix`                | `string`                                                                                                | Yes      |
+| `allowedOrigins`        | `readonly string[]`                                                                                     | Yes      |
+| `serverToken`           | `string`                                                                                                | Yes      |
+| `maxBodyBytes`          | `number`                                                                                                | Yes      |
+| `bodyTimeoutMs`         | `number`                                                                                                | Yes      |
+| `maxConcurrentReads`    | `number`                                                                                                | Yes      |
+| `maxEventsPerMinute`    | `number`                                                                                                | Yes      |
+| `storageTimeoutMs`      | `number`                                                                                                | Yes      |
+| `maxPendingEvents`      | `number`                                                                                                | Yes      |
+| `siteByOrigin`          | `Record<string,string>`                                                                                 | Yes      |
+| `requireBrowserConsent` | `boolean`                                                                                               | Yes      |
+| `botPolicy`             | `'allow'\|'drop-known'`                                                                                 | Yes      |
 
 ### AnalyticsSummaryQuery
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `name` | `string` | Yes |
-| `source` | `string` | Yes |
-| `site` | `string` | Yes |
-| `since` | `number` | Yes |
-| `until` | `number` | Yes |
-| `limit` | `number` | Yes |
+| Field    | Accepted type/value | Optional |
+| -------- | ------------------- | -------- |
+| `name`   | `string`            | Yes      |
+| `source` | `string`            | Yes      |
+| `site`   | `string`            | Yes      |
+| `since`  | `number`            | Yes      |
+| `until`  | `number`            | Yes      |
+| `limit`  | `number`            | Yes      |
 
 ### AnalyticsAggregateQuery
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `groupBy` | `'event'\|'source'\|'site'\|'pathname'\|'day'` | No |
+| Field     | Accepted type/value                            | Optional |
+| --------- | ---------------------------------------------- | -------- |
+| `groupBy` | `'event'\|'source'\|'site'\|'pathname'\|'day'` | No       |
 
 ### AnalyticsNumericAggregateQuery
 
-Values cover successfully materialized numeric facts, not necessarily all historical events.
+Values cover successfully materialized numeric facts, not necessarily all historical events. Native reports reject storage failures rather than inventing zero totals. Totals and groups use separate reads and can differ under concurrent writes; they are not a shared transactional snapshot. Group limits default to 100 (maximum 500). Daily queries require explicit bounds spanning at most 366 UTC days, with at most six bucket reads per batch. The host owns authorization and tenant/site binding before calling these borrowed-connection helpers.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `metric` | `'sum'\|'average'\|'min'\|'max'` | No |
-| `valueField` | `string` | No |
+| Field        | Accepted type/value              | Optional |
+| ------------ | -------------------------------- | -------- |
+| `metric`     | `'sum'\|'average'\|'min'\|'max'` | No       |
+| `valueField` | `string`                         | No       |
 
 ### AnalyticsRetentionQuery
 
 Bounded site-scoped, keyset-paged purge. Rerun from the beginning to catch late historical writes.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `site` | `string` | No |
-| `before` | `number` | No |
-| `cursor` | `string` | Yes |
-| `limit` | `number` | Yes |
-| `dryRun` | `boolean` | Yes |
-| `numericSidecar` | `'present'\|'absent'` | Yes |
+| Field            | Accepted type/value   | Optional |
+| ---------------- | --------------------- | -------- |
+| `site`           | `string`              | No       |
+| `before`         | `number`              | No       |
+| `cursor`         | `string`              | Yes      |
+| `limit`          | `number`              | Yes      |
+| `dryRun`         | `boolean`             | Yes      |
+| `numericSidecar` | `'present'\|'absent'` | Yes      |
 
 ### EmailTrackingOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `analytics` | `AnalyticsManager` | No |
-| `baseUrl` | `string` | No |
-| `secret` | `string` | Yes |
-| `keyRing` | `EmailTrackingKeyRing` | Yes |
-| `acceptLegacyHmac` | `boolean` | Yes |
-| `path` | `string` | Yes |
-| `ttlMs` | `number` | Yes |
-| `allowedLinkHosts` | `readonly string[]` | Yes |
-| `activityStore` | `EmailActivityStore` | Yes |
-| `onEvent` | `(event:EmailActivityEvent)=>void\|Promise<void>` | Yes |
-| `enabled` | `boolean` | Yes |
-| `telemetryTimeoutMs` | `number` | Yes |
-| `maxPendingTelemetry` | `number` | Yes |
-| `onWarning` | `(message:string)=>void` | Yes |
+| Field                 | Accepted type/value                               | Optional |
+| --------------------- | ------------------------------------------------- | -------- |
+| `analytics`           | `AnalyticsManager`                                | No       |
+| `baseUrl`             | `string`                                          | No       |
+| `secret`              | `string`                                          | Yes      |
+| `keyRing`             | `EmailTrackingKeyRing`                            | Yes      |
+| `acceptLegacyHmac`    | `boolean`                                         | Yes      |
+| `path`                | `string`                                          | Yes      |
+| `ttlMs`               | `number`                                          | Yes      |
+| `allowedLinkHosts`    | `readonly string[]`                               | Yes      |
+| `activityStore`       | `EmailActivityStore`                              | Yes      |
+| `onEvent`             | `(event:EmailActivityEvent)=>void\|Promise<void>` | Yes      |
+| `enabled`             | `boolean`                                         | Yes      |
+| `telemetryTimeoutMs`  | `number`                                          | Yes      |
+| `maxPendingTelemetry` | `number`                                          | Yes      |
+| `onWarning`           | `(message:string)=>void`                          | Yes      |
 
 ### NumericReconciliationJobOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `query` | `NumericReconciliationQuery` | No |
-| `store` | `VersionedStore<NumericReconciliationJobDocument>` | No |
-| `projectionKey` | `string` | Yes |
-| `reconcile` | `(query:NumericReconciliationQuery)=>Promise<NumericReconciliationResult>` | No |
-| `leaseMs` | `number` | Yes |
-| `now` | `()=>number` | Yes |
+| Field           | Accepted type/value                                                        | Optional |
+| --------------- | -------------------------------------------------------------------------- | -------- |
+| `id`            | `string`                                                                   | No       |
+| `query`         | `NumericReconciliationQuery`                                               | No       |
+| `store`         | `VersionedStore<NumericReconciliationJobDocument>`                         | No       |
+| `projectionKey` | `string`                                                                   | Yes      |
+| `reconcile`     | `(query:NumericReconciliationQuery)=>Promise<NumericReconciliationResult>` | No       |
+| `leaseMs`       | `number`                                                                   | Yes      |
+| `now`           | `()=>number`                                                               | Yes      |
+
+## Browser and collector ownership
+
+Use `@zeruxjs/analytics/browser` for the Node-free runtime client. Root and `/http` exports eagerly load Node server helpers. The typed collection example accepts an explicit endpoint and borrowed Fetch transport and requires consent before sending; it opens no resource on import. Client consent state is not authentication or a server tenant grant.
+
+The collector separately bounds parsing waits and actually unsettled storage dispatches. A body timeout can stop waiting while a reader is still cancelling; a storage timeout can return 204 while its pending slot stays occupied. HTTP acceptance and request-ID reservation do not prove an analytics event committed. Hosts own route registration, tenant/site policy, stores and service shutdown.
+
+## Source and cleanup ownership
+
+The package README maps collection, schemas, native reporting, reconciliation, CAS documents, durable work and email observations to their source owners. Standalone `createAnalyticsAnalysis` and `/durable`'s `createDurableAnalytics` expose `close()`: stop admission and drain actual work before closing borrowed databases/stores. `createAnalytics`, browser clients, registries and email tracking do not expose that disposer. A wait timeout does not forcibly terminate a host callback. Reconciliation job callback errors must be sanitized by the host before their bounded internal messages are persisted or shown in authorized administrative views.
 
 
 ## Public entry points
@@ -299,7 +309,7 @@ const tracking = createEmailTrackingService({
 
 New links use `v3.<key-id>.<encrypted-payload>` with AES-256-GCM authentication, and the key ID itself is authenticated. Old `v2.` links are tried against the **bounded ring** (the active key plus up to four previous keys); legacy signed HMAC links can be verified during migration unless `acceptLegacyHmac:false`. Prior keys **never sign** new links. Unknown or retired key IDs, malformed tokens, wrong keys, and tampering are rejected. Key identifiers are public metadata; do not put credentials or customer identifiers into them.
 
-**Rollout:** Give all live replicas the same key ring *before* switching the active key. During any overlap between deployments, every replica must have the verification keys needed for every active signing key; otherwise users can intermittently see 404s. A safe two-phase rollout introduces the new key as a previous/verification key everywhere, then activates it everywhere, and retains the retired signing key in `previous` until all its links expire (at most the 30-day configured token lifetime). Removing a previous key intentionally revokes its old links. `acceptLegacyHmac:false` invalidates all original readable HMAC links but does **not** invalidate encrypted v2/v3 links. Never commit secrets to source, log token contents, or put them in browser configuration. Ingestion, email send, and tracking remain opt-in and best-effort.
+**Rollout:** Give all live replicas the same key ring _before_ switching the active key. During any overlap between deployments, every replica must have the verification keys needed for every active signing key; otherwise users can intermittently see 404s. A safe two-phase rollout introduces the new key as a previous/verification key everywhere, then activates it everywhere, and retains the retired signing key in `previous` until all its links expire (at most the 30-day configured token lifetime). Removing a previous key intentionally revokes its old links. `acceptLegacyHmac:false` invalidates all original readable HMAC links but does **not** invalidate encrypted v2/v3 links. Never commit secrets to source, log token contents, or put them in browser configuration. Ingestion, email send, and tracking remain opt-in and best-effort.
 
 ## Independent email activity reports
 
@@ -376,11 +386,11 @@ await analytics.track(schemaRegistry.event('page.view', {
 
 The standalone [typed example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/examples/versioned-events.ts) accepts a host-owned database and opens no resources when imported. `registry.event()` infers literal dimension values, required properties and numeric metrics, validates its authored input and pins the latest registered schema version. Network input remains untrusted and is validated again at ingestion. Unknown event names/properties/versions reject rather than being dropped from query groups. The collector returns generic 422 for registered-schema violations **before request-ID reservation**; DB outages remain best-effort 204. Direct `track()` returns `undefined` on rejection/unavailability and keeps fixed, value-free warnings. Its existing filter runs before final schema validation; trusted filters do not grant tenant authorization.
 
-| Property kind | Contract |
-| --- | --- |
-| `dimension` | Explicit string/number/boolean finite `values`, with `maxCardinality` 1–256; no dynamic distinct-value registry or eviction race |
-| `metric` | Finite numeric value, unit and optional min/max; units are `count`, `milliseconds`, `seconds`, `bytes`, `ratio`, `percent` |
-| `parameter` | Number, boolean or null; these are not groupable dimensions |
+| Property kind | Contract                                                                                                                         |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `dimension`   | Explicit string/number/boolean finite `values`, with `maxCardinality` 1–256; no dynamic distinct-value registry or eviction race |
+| `metric`      | Finite numeric value, unit and optional min/max; units are `count`, `milliseconds`, `seconds`, `bytes`, `ratio`, `percent`       |
+| `parameter`   | Number, boolean or null; these are not groupable dimensions                                                                      |
 
 Count/byte metrics require nonnegative safe integers; ratios are 0–1 and percentages 0–100. Other numeric values must be finite, and integer values must fit the safe JavaScript domain. No currency/unit conversion or arbitrary precision is implied. String dimensions are at most 128 UTF-8 bytes and reject controls and email-like `@` values. Free text, arbitrary nested values, unsafe prototype keys and common sensitive property names are unavailable in the versioned API. This minimizes raw personal data by default; it cannot prove that a host-declared enum or number is nonpersonal. Do not register personal identifiers as dimensions. Legacy unregistered string properties retain their earlier behavior and need host minimization policies.
 
@@ -400,12 +410,12 @@ Numeric indexing is still explicit through `numericFields`; schema declaration a
 
 The schema format is an additive **JSON payload change**, not a table migration. Existing event tables keep their columns, primary IDs and indexes; no application data is rewritten or dropped. Numeric sidecars, unique `(event_id,property_name)` enforcement and explicit reconciliation remain unchanged. Initialize still attempts the existing `id` uniqueness, `occurred_at`, `(event_name,occurred_at)` and `(site,occurred_at)` indexes; no JSON/expression index is silently installed for arbitrary registered dimensions.
 
-| Driver | Existing structured storage/index plan and rollout limit |
-| --- | --- |
-| SQLite | Existing text JSON and ordinary indexes; native disposable SQLite checked. Synchronous transactions remain a distinct connector API; event/fact writes are not promoted to atomic ingestion. |
-| PostgreSQL | Existing text JSON and structured indexes, no automatic JSONB conversion/expression index or pin around ingestion. Dedicated live DB required for deployment acceptance. |
-| MySQL | Existing text JSON and structured indexes, duplicate-index responses handled as before; no generated-column conversion or assumption of transactional DDL. Dedicated live DB required. |
-| MongoDB | Existing document fields with JSON properties string and explicit `id` uniqueness; no arbitrary `$` selectors, wildcard indexing or implicit shard-key selection. Host migration must accommodate deployment shard-key constraints. Dedicated live DB required. |
+| Driver     | Existing structured storage/index plan and rollout limit                                                                                                                                                                                                        |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SQLite     | Existing text JSON and ordinary indexes; native disposable SQLite checked. Synchronous transactions remain a distinct connector API; event/fact writes are not promoted to atomic ingestion.                                                                    |
+| PostgreSQL | Existing text JSON and structured indexes, no automatic JSONB conversion/expression index or pin around ingestion. Dedicated live DB required for deployment acceptance.                                                                                        |
+| MySQL      | Existing text JSON and structured indexes, duplicate-index responses handled as before; no generated-column conversion or assumption of transactional DDL. Dedicated live DB required.                                                                          |
+| MongoDB    | Existing document fields with JSON properties string and explicit `id` uniqueness; no arbitrary `$` selectors, wildcard indexing or implicit shard-key selection. Host migration must accommodate deployment shard-key constraints. Dedicated live DB required. |
 
 With `indexes:false`, provision these existing indexes externally before enabling reconciliation's external-unique assertion; never infer an installed definition solely from an existing index name. See [SQLite index semantics](https://www.sqlite.org/lang_createindex.html) and [MongoDB unique index/shard restrictions](https://www.mongodb.com/docs/manual/core/index-unique/). Keep catalog upgrades in host configuration, retain old catalogs and use forward-only deployment review; this API neither owns cross-process migration locks nor reverses production schemas. Ingestion stays best effort, including possible partial numeric materialization; no durable mode/queue is added by schema registration.
 
@@ -437,16 +447,16 @@ The [public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0
 
 These methods implement `plan:'bounded'` only. Site/time filters and an initial native `COUNT(id)` execute inside the connector; ordered calculations then consume bounded ID-keyset pages, sort by **event timestamp then ID**, and never issue an unbounded select. Unsupported COUNT/filter/order/index operations reject; there is no raw-SQL or unbounded fallback. A requested native-only session/window plan rejects because the current shared DSL has no portable contract for it. The database's coarse `nativeAggregation` capability refers to native pipeline support and is not treated as proof of SQL window-function support. No connector capability claims were expanded.
 
-| Limit | Default / maximum |
-| --- | --- |
-| Query interval | Explicit half-open `[since,until)`, at most 31 days, ending no later than now |
-| Retained/scanned events | `maxEvents`: 5000 / 10000 |
-| Page size | `pageSize`: 200 / 200, plus one lookahead row |
-| Accepted row data | `maxBytes`: 8 MiB / 32 MiB, minimum 1024; each properties JSON at most 8192 bytes |
-| Concurrent native scopes | `maxConcurrent`: 2 / 16 |
-| Observation deadline | `timeoutMs`: 10000 / 60000 ms; per-call absolute `deadline` can shorten it |
-| Funnel | 2–10 steps; conversion interval at most 7 days and no longer than the query interval |
-| Cohort | At most 31 entry days plus 0–30 retention days |
+| Limit                    | Default / maximum                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| Query interval           | Explicit half-open `[since,until)`, at most 31 days, ending no later than now        |
+| Retained/scanned events  | `maxEvents`: 5000 / 10000                                                            |
+| Page size                | `pageSize`: 200 / 200, plus one lookahead row                                        |
+| Accepted row data        | `maxBytes`: 8 MiB / 32 MiB, minimum 1024; each properties JSON at most 8192 bytes    |
+| Concurrent native scopes | `maxConcurrent`: 2 / 16                                                              |
+| Observation deadline     | `timeoutMs`: 10000 / 60000 ms; per-call absolute `deadline` can shorten it           |
+| Funnel                   | 2–10 steps; conversion interval at most 7 days and no longer than the query interval |
+| Cohort                   | At most 31 entry days plus 0–30 retention days                                       |
 
 Budgets reject invalid configuration and byte exhaustion; reaching the event ceiling returns `mode:'sampled-page'`, `truncated:true`. Pages scan in ID order, so a truncated result is **not** a chronological or representative sample. Connection methods receive `{signal,deadline}` separately from query JSON. Cancelled/timed-out callers retain their concurrency slot until the actual native operation settles; subsequent pages do not start. These caps bound application work, not database rows examined or synchronous native CPU time. The SQLite thread cannot be forcibly interrupted by a JS timer.
 
@@ -496,13 +506,13 @@ The [minimal public-import example](https://github.com/zeruxjs/zeruxjs/blob/vers
 
 ### Acknowledgements and uniqueness
 
-| State | Meaning |
-| --- | --- |
-| `accepted` | The unique validated record is committed to the application ledger; event/facts may not yet exist |
-| `persisted` | A journal transaction reported commit of event, configured facts and terminal ledger status together |
+| State       | Meaning                                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `accepted`  | The unique validated record is committed to the application ledger; event/facts may not yet exist                        |
+| `persisted` | A journal transaction reported commit of event, configured facts and terminal ledger status together                     |
 | `uncertain` | Materialization/commit acknowledgement is unavailable; inspect/reconcile the ledger before concluding success or failure |
-| `dead` | Permanent/age/attempt policy stopped automatic processing; private payload remains subject to approved retention |
-| `purged` | Approved coordinated deletion removed event/facts/private ledger payload; dedup tombstone remains |
+| `dead`      | Permanent/age/attempt policy stopped automatic processing; private payload remains subject to approved retention         |
+| `purged`    | Approved coordinated deletion removed event/facts/private ledger payload; dedup tombstone remains                        |
 
 Acceptance insert failures throw `ACCEPTANCE_UNCERTAIN`: the caller must retain its original key and payload and reconcile, not assign a fresh key. `commit` failures throw `COMMIT_UNCERTAIN` because native commit/cleanup can itself be ambiguous. `confirm` rechecks durable state after fresh inspection authorization; processing state is reported uncertain there. A lost response after commit is not proof of failure, and native fsync/replication/durability remain deployment policies.
 
@@ -540,8 +550,70 @@ Every manager sharing these event tables must set `createAnalytics({durableReten
 
 Validation uses a disposable real SQLite/WAL ledger fixture for reopen/recovery, event/fact rollback, simultaneous duplicate acceptance, consent/site denial, bounded failures, approved purge and sidecar deletion. The shared async pinned executor is separately exercised for connection identity, business rollback and lost commit acknowledgement. The fixture is reference test code, not a shipped production ledger adapter. Dedicated durable-store/journal qualification, live acknowledged broker/crash tests and actual database HA/persistence settings remain prerequisites; no live PostgreSQL/MySQL/Mongo/broker acceptance is claimed. Store/queue/database handles remain host-owned; `close()` rejects new work, asks active pins to cancel and drains actual settlement, which can exceed deadlines for noncooperative callbacks.
 
+## Collection source ownership
+
+`browser.ts` is the explicit Node-free runtime entry; import browser helpers from `@zeruxjs/analytics/browser`, not the root entry that also exports Node collection/storage helpers. The [typed browser example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/examples/collection.ts) requires an explicit endpoint and borrowed transport, starts no request on import/construction, and requires granted consent before sending. The host owns actual consent verification and identifier persistence; `.setConsent()` is an input switch, not authentication.
+
+`types.ts` defines the structural borrowed database facade and public event/query fields. `validation.ts` constructs bounded scalar/identity rows and optional registered provenance without inserting them. `http.ts` separately owns method/origin/site checks, request-body admission, correlation reservation and best-effort dispatch. Allowlisted origins permit public collection, never administration or confidential tenant authorization.
+
+The collector's body timeout releases its parsing wait; a noncooperative underlying reader may still be cancelling. Storage wait deadlines have a different owner: the pending dispatch counter remains occupied until the actual storage/pipeline promise settles, even after returning 204. No collector close handle, forced JavaScript cancellation, retry or durability guarantee is added by these helpers. Database, request-ID stores, route registration and service shutdown remain host-owned.
+
+The packed browser regression check parses executable syntax rather than treating words in comments/string literals as imports. It still rejects actual module loading and Node-global references, then imports the extracted public entry in an isolated consumer. These local checks do not certify deployed browsers, proxies or live database/broker behavior.
+
+## Reporting source ownership
+
+`aggregation.ts` owns persisted event counts; `numeric.ts` owns native metrics over the opt-in numeric sidecar. Both borrow the supplied connection and use structured database expressions. They neither close it nor authorize a caller. The host must bind tenant/site filters before exposing reports; an omitted `site` deliberately queries all sites accessible through that connection.
+
+Group limits default to 100 and accept 1–500. Daily grouping requires explicit bounds covering at most 366 UTC days and schedules at most six bucket reads per batch. Returned groups can be truncated while the total still covers the full query. Totals and groups are separate reads, so concurrent writes may make them differ; these helpers do not acquire a shared transactional snapshot. A failed or malformed database response rejects instead of returning a fabricated zero. Numeric results retain `coverage:'indexed-only'` and `matchedFacts`, including when an earlier sidecar write failed.
+
+`reconciliation.ts` repairs one bounded historical source page using stable event/property IDs. Its low-level public function borrows the connection and requires the host to validate tables/fields, authorize the site and provision the unique event/property index; the manager checks index readiness before delegating. A failed page can leave earlier facts committed. An ambiguous insert is read back and accepted only when all dimensions and values match, including compatible legacy IDs; this helper does not blindly replay the insert. Callers own durable cursor checkpoints. `windowExhausted` describes the source read, not a global completeness guarantee.
+
+## Schema registry source ownership
+
+`schemas.ts` owns detached, deeply frozen catalog definitions, canonical hashes and validation before persistence. Versions start at one and remain contiguous. Existing properties cannot be removed or changed; additions must be optional in every scope. Finite dimension values enforce cardinality at ingestion without a shared mutable counter. User/session properties still require granted consent plus their respective opaque identifier, and catalog membership is not tenant authorization.
+
+The registry creates no timer, network connection or durable storage handle. Keep one explicitly configured registry per application generation. Its identity hashes describe definitions and budgets, not authorship, permission or evidence that a historical row contains later fields. The [versioned event example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/examples/versioned-events.ts) uses public imports and borrowed database ownership; the host must verify real site/consent inputs before collection. Error messages contain fixed validation codes rather than submitted property values.
+
+## Manager source ownership
+
+`manager.ts` validates configuration before resolving the explicitly named borrowed database. Invalid table/schema/consent policy cannot be bypassed by calling `setEnabled(true)`. `initialize()` coalesces current migration work and releases the in-flight promise after settlement so a later explicit call can retry a failure. Core table readiness, optional indexes and numeric sidecar readiness are separate status fields.
+
+`track()` and legacy recent-page reads absorb failures; native aggregation, reconciliation and retention can reject. A returned event ID confirms the core insert, not an atomic event/sidecar transaction. `countsWithCoverage()` preserves its compatibility label based on connection lookup availability; that label alone cannot distinguish an empty successful read from a later storage failure. Use native reports when failures must be explicit. This manager has no close method: the host owns database shutdown and any separately created analysis scope. Reporting/retention APIs still require host authorization and trusted site binding.
+
+## Readable source map and lifecycle limits
+
+| Owner                                    | Responsibility and limit                                                                                                                                                                                      |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `request-id.ts`                          | Atomic shared day/ID reservation contract; memory stays process-local. Optional old-day cleanup is opportunistic and does not establish event persistence.                                                    |
+| `documents.ts`                           | Borrowed CAS document adapter; correctness requires atomic conditional updates with affected-row counts. Domain owners validate their own payload schema.                                                     |
+| `jobs.ts`                                | Revision/lease-fenced scan checkpoints with an active-run heartbeat. The internal bounded `lastError` can contain a callback message: sanitize host callback errors and authorize administrative reads.       |
+| `retention.ts`                           | Preview-first site/cutoff pages, numeric-first deletion and explicit partial-failure receipts. No transaction across deletes or global erasure certificate is implied.                                        |
+| `analysis.ts`                            | Disposable authorized bounded count/keyset scans and consented identity analysis. Cancellation stops waiting cooperatively; `close()` drains actual work and never closes the borrowed DB.                    |
+| `durable.ts`                             | Separate disposable acceptance/materialization workflow. Real pinned journal operations are required for atomic business/event/fact work; queues carry opaque references only.                                |
+| `email-activity.ts`, `email-tracking.ts` | Observed per-message activity plus explicitly opted-in encrypted links/pixels. Existing key derivations/wire formats remain compatible; there is no human-engagement certification or HTML sanitization here. |
+
+The public [analysis example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/examples/analysis.ts) owns `close()` in `finally`; the [durable example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/examples/durable.ts) returns a coordinator that the host must close during shutdown. Database/store and HTTP route lifetimes remain with the host. The email tracking facade has no close handle; timed-out callbacks can remain unresolved and keep consuming its finite pending budget. Production hosts must provide bounded cooperative callbacks and own their shared stores.
+
+Offline regression checks exercise injected failures and synthetic SQLite state. The dedicated `live-databases.test.mjs` is a separate opt-in acceptance path requiring disposable PostgreSQL/MySQL/MongoDB installations; an offline pass does not qualify those engines or live multi-process recovery.
+
 
 ## Implementation sources
 
 - [packages/@zeruxjs/analytics/README.md](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/README.md)
 - [packages/@zeruxjs/analytics/package.json](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/package.json)
+- [packages/@zeruxjs/analytics/src/browser.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/browser.ts)
+- [packages/@zeruxjs/analytics/src/http.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/http.ts)
+- [packages/@zeruxjs/analytics/src/aggregation.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/aggregation.ts)
+- [packages/@zeruxjs/analytics/src/numeric.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/numeric.ts)
+- [packages/@zeruxjs/analytics/src/reconciliation.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/reconciliation.ts)
+- [packages/@zeruxjs/analytics/src/schemas.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/schemas.ts)
+- [packages/@zeruxjs/analytics/src/manager.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/manager.ts)
+- [packages/@zeruxjs/analytics/src/analysis.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/analysis.ts)
+- [packages/@zeruxjs/analytics/src/durable.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/durable.ts)
+- [packages/@zeruxjs/analytics/src/request-id.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/request-id.ts)
+- [packages/@zeruxjs/analytics/src/documents.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/documents.ts)
+- [packages/@zeruxjs/analytics/src/jobs.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/jobs.ts)
+- [packages/@zeruxjs/analytics/src/retention.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/retention.ts)
+- [packages/@zeruxjs/analytics/src/email-tracking.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/src/email-tracking.ts)
+- [packages/@zeruxjs/analytics/examples/versioned-events.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/examples/versioned-events.ts)
+- [packages/@zeruxjs/analytics/examples/collection.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/examples/collection.ts)

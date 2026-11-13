@@ -20,7 +20,7 @@ createCrawlerService from @zeruxjs/seo/fetch supplies robots, sitemap and pagina
 
 ## Freshness
 
-Snapshot caching is opt-in and process-local. Call invalidate after a content deployment when using it. A fresh supplier is necessary for changing content; an old snapshot cannot discover database changes by itself.
+Snapshot caching is opt-in and process-local. Call invalidate after a content deployment when using it. A fresh supplier is necessary for changing content; an old snapshot cannot discover database changes by itself. The compatibility `/fetch` controller has no close/drain operation, and invalidation does not cancel its older supplier. Use the explicit `/public` service for paged cooperative loading and actual-settlement teardown; await its close before disposing a borrowed database/source.
 
 ## Security boundary
 
@@ -68,32 +68,31 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### SitemapEntry
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `loc` | `string` | No |
-| `lastmod` | `string \| Date` | Yes |
-| `changefreq` | `'always'\|'hourly'\|'daily'\|'weekly'\|'monthly'\|'yearly'\|'never'` | Yes |
-| `priority` | `number` | Yes |
-| `alternates` | `Record<string,string>` | Yes |
-| `images` | `string[]` | Yes |
+| Field        | Accepted type/value                                                   | Optional |
+| ------------ | --------------------------------------------------------------------- | -------- |
+| `loc`        | `string`                                                              | No       |
+| `lastmod`    | `string \| Date`                                                      | Yes      |
+| `changefreq` | `'always'\|'hourly'\|'daily'\|'weekly'\|'monthly'\|'yearly'\|'never'` | Yes      |
+| `priority`   | `number`                                                              | Yes      |
+| `alternates` | `Record<string,string>`                                               | Yes      |
+| `images`     | `string[]`                                                            | Yes      |
 
 ### SeoConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `title` | `string` | No |
-| `description` | `string` | Yes |
-| `canonical` | `string` | Yes |
-| `image` | `string` | Yes |
-| `robots` | `string` | Yes |
-| `locale` | `string` | Yes |
-| `type` | `string` | Yes |
-| `siteName` | `string` | Yes |
-| `keywords` | `string[]` | Yes |
-| `twitterSite` | `string` | Yes |
-| `alternates` | `Record<string,string>` | Yes |
-| `jsonLd` | `unknown \| unknown[]` | Yes |
-
+| Field         | Accepted type/value     | Optional |
+| ------------- | ----------------------- | -------- |
+| `title`       | `string`                | No       |
+| `description` | `string`                | Yes      |
+| `canonical`   | `string`                | Yes      |
+| `image`       | `string`                | Yes      |
+| `robots`      | `string`                | Yes      |
+| `locale`      | `string`                | Yes      |
+| `type`        | `string`                | Yes      |
+| `siteName`    | `string`                | Yes      |
+| `keywords`    | `string[]`              | Yes      |
+| `twitterSite` | `string`                | Yes      |
+| `alternates`  | `Record<string,string>` | Yes      |
+| `jsonLd`      | `unknown \| unknown[]`  | Yes      |
 
 ## Compose route/layout metadata explicitly
 
@@ -224,6 +223,8 @@ crawler.invalidate();
 ```
 
 Supports 50,000-entry-per-sitemap maximum, bounded XML byte sizes, size-based splitting, deterministic sitemap indexes, and conditional ETag responses. Optional in-memory snapshot caching coalesces concurrent rebuilds and can be explicitly invalidated. By default no server-side snapshot cache is kept; use a fresh supplier function for changing content. URLs must be public HTTPS/HTTP URLs. The `robots.txt` route only points crawlers at your sitemap; it does not implement authentication or robots enforcement.
+
+The compatibility `/fetch` controller exposes `invalidate()` but no close/drain API. Its invalidation detaches the current pending slot without cancelling the supplier, so an earlier request can finish while a new generation builds. Use `/public` when cooperative cancellation, bounded source pages and actual-settlement shutdown are required; those stronger guarantees do not apply retroactively to the legacy helper.
 
 `createSitemap()` validates `changefreq` against the sitemap vocabulary at runtime, including untyped/JSON-fed calls.
 
@@ -369,7 +370,7 @@ is escaped, and lastmod is emitted only when the source provides a valid content
 modification date. Neither page nor sitemap-index dates are stamped at build time.
 
 Request URL origin and an explicit Host header must match configured public
-settings. Host, Forwarded and X-Forwarded-* **never derive output URLs**. If a
+settings. Host, Forwarded and X-Forwarded-\* **never derive output URLs**. If a
 reverse proxy supplies internal Request URLs, explicitly configure
 `trustedProxy:{peers:['127.0.0.1'],internalOrigins:['http://internal.example']}` and
 pass `{peerAddress}` from the trusted host's **direct socket**, not a request header.
@@ -393,18 +394,18 @@ createSitemapIndex now bound iteration and bytes too, including iterator cleanup
 on failure. They remain general serializers; their legacy query-URL support is
 not the strict public-source privacy policy. New service settings are:
 
-| Setting | Default | Maximum |
-| --- | --- | --- |
-| pageSize | 500 | 1000 records per source call |
-| maxSourcePages | 1000 | 10000 |
-| maxEntries | 100000 | 500000 |
-| maxUrlsPerFile | 10000 | 50000 |
-| maxXmlBytes | 45000000 | 52428800 per file/index |
-| maxSnapshotBytes | 33554432 | 134217728 combined XML bytes |
-| timeoutMs | 5000 | 60000 |
-| maxWaiters | 32 | 256 |
-| snapshotTtlMs | 0 (fresh per settled request) | 86400000 |
-| cacheSeconds | 600 | 31536000 |
+| Setting          | Default                       | Maximum                      |
+| ---------------- | ----------------------------- | ---------------------------- |
+| pageSize         | 500                           | 1000 records per source call |
+| maxSourcePages   | 1000                          | 10000                        |
+| maxEntries       | 100000                        | 500000                       |
+| maxUrlsPerFile   | 10000                         | 50000                        |
+| maxXmlBytes      | 45000000                      | 52428800 per file/index      |
+| maxSnapshotBytes | 33554432                      | 134217728 combined XML bytes |
+| timeoutMs        | 5000                          | 60000                        |
+| maxWaiters       | 32                            | 256                          |
+| snapshotTtlMs    | 0 (fresh per settled request) | 86400000                     |
+| cacheSeconds     | 600                           | 31536000                     |
 
 Repeated/oversized cursors, over-limit pages, single entries that cannot fit,
 private data or dependency failures return a body-free no-store 503. Snapshot

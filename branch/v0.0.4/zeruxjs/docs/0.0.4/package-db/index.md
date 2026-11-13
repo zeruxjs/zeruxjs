@@ -79,46 +79,50 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### DatabaseManagerConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `default` | `string` | Yes |
-| `connections` | `DatabaseConnectionConfig[]` | Yes |
-| `connection` | `DatabaseConnectionConfig[]` | Yes |
+| Field         | Accepted type/value          | Optional |
+| ------------- | ---------------------------- | -------- |
+| `execution`   | `DatabaseExecutionPolicy`    | Yes      |
+| `default`     | `string`                     | Yes      |
+| `connections` | `DatabaseConnectionConfig[]` | Yes      |
+| `connection`  | `DatabaseConnectionConfig[]` | Yes      |
 
 ### DatabaseResult
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `ok` | `boolean` | No |
-| `connection` | `string` | No |
-| `connector` | `string` | No |
-| `operation` | `DatabaseOperationName` | No |
-| `rows` | `T[]` | Yes |
-| `rowCount` | `number` | Yes |
-| `affectedCount` | `number` | Yes |
-| `insertedIds` | `Array<number \| string>` | Yes |
-| `value` | `unknown` | Yes |
-| `native` | `unknown` | Yes |
-| `query` | `string` | Yes |
-| `params` | `unknown[]` | Yes |
-| `pipeline` | `unknown[]` | Yes |
-| `warnings` | `string[]` | Yes |
-| `error` | `DatabaseErrorShape` | Yes |
+| Field           | Accepted type/value       | Optional |
+| --------------- | ------------------------- | -------- |
+| `ok`            | `boolean`                 | No       |
+| `connection`    | `string`                  | No       |
+| `connector`     | `string`                  | No       |
+| `operation`     | `DatabaseOperationName`   | No       |
+| `rows`          | `T[]`                     | Yes      |
+| `rowCount`      | `number`                  | Yes      |
+| `affectedCount` | `number`                  | Yes      |
+| `matchedCount`  | `number`                  | Yes      |
+| `changedCount`  | `number`                  | Yes      |
+| `counts`        | `DatabaseCountMetadata`   | Yes      |
+| `insertedIds`   | `Array<number \| string>` | Yes      |
+| `value`         | `unknown`                 | Yes      |
+| `native`        | `unknown`                 | Yes      |
+| `query`         | `string`                  | Yes      |
+| `params`        | `unknown[]`               | Yes      |
+| `pipeline`      | `unknown[]`               | Yes      |
+| `warnings`      | `string[]`                | Yes      |
+| `error`         | `DatabaseErrorShape`      | Yes      |
 
 ### TenantDatabaseOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `tenantId` | `string \| number` | No |
-| `tables` | `Record<string, string>` | No |
-| `tenantColumn` | `string` | Yes |
+| Field          | Accepted type/value      | Optional |
+| -------------- | ------------------------ | -------- |
+| `tenantId`     | `string \| number`       | No       |
+| `tables`       | `Record<string, string>` | No       |
+| `tenantColumn` | `string`                 | Yes      |
 
 ### MigrationRunnerOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `transaction` | `ExclusiveMigrationTransaction` | No |
-| `now` | `() => Date` | Yes |
+| Field         | Accepted type/value             | Optional |
+| ------------- | ------------------------------- | -------- |
+| `transaction` | `ExclusiveMigrationTransaction` | No       |
+| `now`         | `() => Date`                    | Yes      |
 
 ## Capabilities, bounded execution and continuation
 
@@ -130,7 +134,6 @@ Metrics contain only operation, safe table identifier, duration, optional count 
 
 `createKeysetPage` builds bounded lexicographic pages with stable order declarations and a final unique tie-breaker. It validates structured continuations against the table/order and rejects null/missing/oversized keys. The host owns actual uniqueness, collation, filter/tenant binding and cursor signing if needed. A continuation is not an authorization token or a snapshot. See the package README for a runnable public-import SQLite example and driver count references.
 
-
 ## Pinned transactions and migration ownership
 
 `transaction(fn, options)` is a shared extension point. Managers reject it unless the connector advertises transactions and supplies a `PinnedTransactionAdapter`. PostgreSQL native-compatible pools, MySQL pools and explicitly enabled deployment-probed MongoDB clients implement the pinned adapter; MySQL excludes transactional DDL and native query cancellation. Synthetic and injected fixtures verify the contract without claiming live engine acceptance. Isolation and cooperative timeout are explicitly negotiated before acquiring a lease. Savepoints/nesting are unsupported.
@@ -138,6 +141,12 @@ Metrics contain only operation, safe table identifier, duration, optional count 
 The callback receives only a scoped pinned facade. Every operation, commit, rollback and release must target the acquired connection/session. Queries run FIFO, accepted work drains before finalization, and any query failure makes the scope rollback-only. Callback/commit/rollback failures still attempt release once. Commit/release failures may follow a real commit: do not retry automatically. Cancellation is cooperative; cleanup and outstanding native work must finish before the transaction settles. Transactional DDL must be declared honestly by the owning adapter, not inferred from SQL syntax.
 
 `createPinnedMigrationTransaction` constructs the journal from that same pinned facade and holds a host-provided owned migration lock through transaction cleanup. The host supplies cross-process exclusion, ownership assertions, owner-fenced release and optional ownership-loss cancellation. There is no production in-memory lock implementation or automatic journal provisioning. Checksums, contiguous history and collection limits are checked before applying changes. Reverse migrations require an explicit authorizer returning exactly true. The package README includes public imports, adapter responsibilities, error behavior and native prerequisites.
+
+## Implementation boundaries
+
+The manager owns explicit connector acquisition/admission/shutdown; execution policy and shared types remain database-owned. Tenant projection and keyset construction are inert borrowed consumers. Native pin cleanup and migration lock/journal coordination have separate owners and must settle in order. Use the package README source map to find these boundaries.
+
+The root is Node-only. Connector package names are executable trusted host configuration, and private error details/native results must not be serialized blindly. Legacy JSON validation uses serialization before traversal, so host getters/toJSON are not sandboxed. Known connection-field redaction cannot discover arbitrary custom secret names. Validate data-only HTTP input and authorization before invoking this API.
 
 
 ## Public entry points
@@ -174,7 +183,7 @@ Import `createDatabaseManager` for an explicit manager, or `configureDatabaseMan
 
 ## Tenant and migration APIs
 
-`createTenantDatabaseFacade(base, {tenantId, tables: {logical:physical}, tenantColumn?})` exposes only tenant-bound select/insert/update/delete. It rejects joins, unions, subqueries, cross-database routes, nonallowlisted tables and tenant-field changes. Construct it **only** from a server-verified principal, never a query parameter. `createDatabaseMigrationRunner(migrations,{transaction})` requires an actual exclusive and transaction-pinned host implementation for both journal and operations. It checks ordered IDs and SHA-256 drift and requires approval for reverse migrations.  This contract does not automatically provide native transactions for any driver.
+`createTenantDatabaseFacade(base, {tenantId, tables: {logical:physical}, tenantColumn?})` exposes only tenant-bound select/insert/update/delete. It rejects joins, unions, subqueries, cross-database routes, nonallowlisted tables and tenant-field changes. Construct it **only** from a server-verified principal, never a query parameter. `createDatabaseMigrationRunner(migrations,{transaction})` requires an actual exclusive and transaction-pinned host implementation for both journal and operations. It checks ordered IDs and SHA-256 drift and requires approval for reverse migrations. This contract does not automatically provide native transactions for any driver.
 
 ## Execution capabilities and limits
 
@@ -226,10 +235,9 @@ try {
 
 Install the SQLite connector explicitly; the example requires a Node version providing `node:sqlite`. The helper creates lexicographic predicates for 1–4 flat ascending/descending keys and a limit in 1–1000, without offsets. The last key must equal the declared unique tie-breaker. The host must enforce uniqueness, non-null keys, stable collation and ordering, and include sort keys in selected rows. Null/nonfinite/missing/oversized continuation values, mismatched table/order and offset options are rejected. Only scalar string/number/boolean cursor values are supported; opaque objects such as Mongo ObjectIds require an owner-defined scalar representation or a separate native API. Continuations are structured data, not signed credentials or authorization. Bind filter/tenant context server-side when accepting a cursor; never trust its table/order to choose an allowlist. Passing the generated operation through a tenant facade retains that facade's tenant predicate and table allowlist. Concurrent writes can move rows between pages; this is not a snapshot transaction.
 
-
 ## Pinned transaction extension
 
-`manager.transaction(fn, options)` and its connection-bound facade equivalent negotiate before acquiring a lease. The methods are optional in the structural interfaces to preserve legacy implementations; managers created here implement them and reject unsupported connectors with `UNSUPPORTED_TRANSACTION`. A connector must both advertise `capabilities.transactions: 'supported'` and provide `transactionAdapter`. PostgreSQL native-compatible pools implement this contract; query-only PostgreSQL injection and the other bundled async adapters still reject. `db.transaction` delegates to the active default facade; a batch array still has no transaction semantics.
+`manager.transaction(fn, options)` and its connection-bound facade equivalent negotiate before acquiring a lease. The methods are optional in the structural interfaces to preserve legacy implementations; managers created here implement them and reject unsupported connectors with `UNSUPPORTED_TRANSACTION`. A connector must both advertise `capabilities.transactions: 'supported'` and provide `transactionAdapter`. PostgreSQL native-compatible pools, supported MySQL pools and explicitly enabled deployment-probed MongoDB clients implement the native pin extension. Query-only transports and SQLite shared async transactions remain unsupported; inspect the adapter-specific guarantees above. `db.transaction` delegates to the active default facade; a batch array still has no transaction semantics.
 
 `PinnedTransactionAdapter` declares `isolationLevels`, `timeout: 'cooperative' | 'unsupported'`, `savepoints: false` and `transactionalDdl`. `transactionCapabilities()` reports these choices without acquiring a connection. `TransactionOptions` accepts an explicit isolation level, `timeoutMs` (1–600000), Unix-ms `deadline` and `signal`. Unsupported isolation/timeout fails before acquisition; omitted isolation is the adapter's documented native default. There is no implicit downgrade or automatic retry. Nested `tx.transaction(...)` and reentering the same manager/runner reject with `NESTED_TRANSACTION_UNSUPPORTED`; savepoints are deliberately not implemented in this phase. Engines' native [savepoints](https://www.postgresql.org/docs/current/sql-savepoint.html) are not an emulated nested transaction API.
 
@@ -267,6 +275,18 @@ Existing host-provided `ExclusiveMigrationTransaction` callbacks remain compatib
 `MigrationLock.acquire({name, owner, signal})` must return a lease with the exact generated owner, `assertOwned()`, and owner-fenced `release(owner)`. An optional lease signal must abort on ownership loss. The lock name identifies the database/journal domain across all processes and runners. The host must supply real cross-process exclusion, fencing/renewal and bounded acquisition; no in-memory production lock is supplied. Lock acquisition receives a cooperative deadline (default 30000 ms; configurable 1–60000). Ownership is checked before the transaction, for journal operations and before committing callback results. Locks remain held through transaction cleanup and are released in finally with the generated owner; mismatch/release errors never silently pass. A lease implementation must never release another owner's lock, including when acquisition returns malformed ownership. Hold native advisory locks or provide equivalent database-safe fencing; a stale lease must not permit writes. These callbacks do not themselves prove distributed coordination.
 
 The migration runner bounds definitions/journal records to 4096 and total up/down operations to 4096. Checksum drift reports a private reason/id and expected/actual SHA-256 checksums without SQL/operation values. Unknown/duplicate/malformed records and noncontiguous history fail closed. Reverse migration requires an authorizer returning exactly `true`; truthy strings/objects are denied. The authorizer must verify a real operator approval and deployment policy. A request parameter is not approval, and reverse migrations may destroy data. Failed journal work or lost lock ownership rolls back through the same pin.
+
+## Implementation and ownership map
+
+- `src/types.ts` owns structured operations, native counts, capability and execution contracts. `src/index.ts` retains compatibility exports, including the historical `turcunateTable` spelling; the active manager is process-global and replacement does not disconnect a previous owner.
+- `src/manager.ts` owns explicit connector package resolution, startup rollback, admission, result normalization, fixed-shape metrics and reverse shutdown. `src/execution.ts` validates separate cancellation/deadline/capability policy before dispatch.
+- `src/utils.ts` owns compatible configuration normalization, result references and JSON cloning. This legacy validator serializes before traversal: trusted host getters/toJSON can execute, so it is not an inert-object sandbox. Raw network input must first pass the application's data-only validation and authorization.
+- `src/tenant.ts` owns a detached logical-table allowlist and mandatory tenant predicates. Construct it from verified identity; a caller-supplied tenant string proves nothing. `src/pagination.ts` binds continuations to explicit table/order, leaving uniqueness, collation and filter authorization with the host.
+- `src/transactions.ts` owns FIFO native pins and rollback/release settlement. `src/migration-coordination.ts` keeps the host-fenced lock through that same cleanup; `src/migrations.ts` checks ordered definitions/journal drift and exact rollback approval.
+
+Root runtime imports require Node. Connector package names are trusted executable host configuration; a valid package specifier is not an allowlist or authorization grant. Public Error.details/native results can retain private values or causes. Known connection-field redaction is a compatibility summary, not discovery of every custom secret name; review custom fields before exposing them. Input budgets do not bound returned row bytes, and cooperative cancellation never establishes that a native write rolled back.
+
+The package-local checks use explicitly injected connectors, synthetic lock/pin state, locally packed declarations and disposable in-memory SQLite. They do not qualify live PostgreSQL/MySQL/MongoDB, distributed migration exclusion or crash recovery.
 
 
 ## Implementation sources

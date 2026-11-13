@@ -79,129 +79,154 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### StorageManagerOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `stores` | `StorageDefinition[]` | No |
-| `defaultStorage` | `string` | Yes |
-| `cache` | `{ maxEntries?: number; maxBytes?: number; ttlMs?: number }` | Yes |
+| Field            | Accepted type/value                                          | Optional |
+| ---------------- | ------------------------------------------------------------ | -------- |
+| `stores`         | `StorageDefinition[]`                                        | No       |
+| `defaultStorage` | `string`                                                     | Yes      |
+| `cache`          | `{ maxEntries?: number; maxBytes?: number; ttlMs?: number }` | Yes      |
 
 ### StorageDefinition
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `name` | `string` | No |
-| `driver` | `StorageDriver` | No |
-| `readonly` | `boolean` | Yes |
-| `allowedTypes` | `string[]` | Yes |
-| `allowedBuckets` | `string[]` | Yes |
-| `keyPrefix` | `string` | Yes |
-| `maxBytes` | `number` | Yes |
+| Field            | Accepted type/value | Optional |
+| ---------------- | ------------------- | -------- |
+| `name`           | `string`            | No       |
+| `driver`         | `StorageDriver`     | No       |
+| `readonly`       | `boolean`           | Yes      |
+| `allowedTypes`   | `string[]`          | Yes      |
+| `allowedBuckets` | `string[]`          | Yes      |
+| `keyPrefix`      | `string`            | Yes      |
+| `maxBytes`       | `number`            | Yes      |
 
 ### LocalStorageOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `root` | `string` | No |
-| `encryptionKey` | `Uint8Array \| string` | Yes |
+| Field           | Accepted type/value    | Optional |
+| --------------- | ---------------------- | -------- |
+| `root`          | `string`               | No       |
+| `encryptionKey` | `Uint8Array \| string` | Yes      |
 
 ### S3StorageOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `region` | `string` | Yes |
-| `endpoint` | `string` | Yes |
-| `forcePathStyle` | `boolean` | Yes |
-| `allowInsecureHttp` | `boolean` | Yes |
-| `useArnRegion` | `boolean` | Yes |
-| `maxAttempts` | `number` | Yes |
-| `encryption` | `S3Encryption` | Yes |
-| `publicBaseUrl` | `string` | Yes |
-| `cloudFrontSigning` | `{ keyPairId: string; privateKey: string }` | Yes |
-| `publicPathStyle` | `'bucket-key'\|'key-only'` | Yes |
-| `client` | `{ send(command: any): Promise<any>; destroy?(): void }` | Yes |
-| `ownClient` | `boolean` | Yes |
-| `multipart` | `{ partSize?: number; queueSize?: number }` | Yes |
+| Field               | Accepted type/value                                      | Optional |
+| ------------------- | -------------------------------------------------------- | -------- |
+| `region`            | `string`                                                 | Yes      |
+| `endpoint`          | `string`                                                 | Yes      |
+| `forcePathStyle`    | `boolean`                                                | Yes      |
+| `allowInsecureHttp` | `boolean`                                                | Yes      |
+| `useArnRegion`      | `boolean`                                                | Yes      |
+| `maxAttempts`       | `number`                                                 | Yes      |
+| `encryption`        | `S3Encryption`                                           | Yes      |
+| `publicBaseUrl`     | `string`                                                 | Yes      |
+| `cloudFrontSigning` | `{ keyPairId: string; privateKey: string }`              | Yes      |
+| `publicPathStyle`   | `'bucket-key'\|'key-only'`                               | Yes      |
+| `client`            | `{ send(command: any): Promise<any>; destroy?(): void }` | Yes      |
+| `ownClient`         | `boolean`                                                | Yes      |
+| `multipart`         | `{ partSize?: number; queueSize?: number }`              | Yes      |
 
 ### PutFileOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `contentType` | `string` | Yes |
-| `contentDisposition` | `string` | Yes |
-| `visibility` | `FileVisibility` | Yes |
-| `cacheControl` | `string` | Yes |
-| `metadata` | `Record<string,string>` | Yes |
-| `maxBytes` | `number` | Yes |
-| `ifNoneMatch` | `boolean` | Yes |
-| `expiresAt` | `string` | Yes |
-| `signal` | `AbortSignal` | Yes |
+| Field                | Accepted type/value     | Optional |
+| -------------------- | ----------------------- | -------- |
+| `contentType`        | `string`                | Yes      |
+| `contentDisposition` | `string`                | Yes      |
+| `visibility`         | `FileVisibility`        | Yes      |
+| `cacheControl`       | `string`                | Yes      |
+| `metadata`           | `Record<string,string>` | Yes      |
+| `maxBytes`           | `number`                | Yes      |
+| `ifNoneMatch`        | `boolean`               | Yes      |
+| `expiresAt`          | `string`                | Yes      |
+| `signal`             | `AbortSignal`           | Yes      |
 
 ### FileHttpOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `authorize` | `(request:Request,address:FileAddress,operation:'read'\|'write'\|'delete',info?:FileInfo) => boolean\|Promise<boolean>` | Yes |
-| `storage` | `string` | Yes |
-| `bucket` | `string` | No |
-| `prefix` | `string` | Yes |
-| `maxUploadBytes` | `number` | Yes |
-| `cacheControl` | `string` | Yes |
-| `allowDelete` | `boolean` | Yes |
+| Field            | Accepted type/value                                                                                                     | Optional |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- | -------- |
+| `authorize`      | `(request:Request,address:FileAddress,operation:'read'\|'write'\|'delete',info?:FileInfo) => boolean\|Promise<boolean>` | Yes      |
+| `storage`        | `string`                                                                                                                | Yes      |
+| `bucket`         | `string`                                                                                                                | No       |
+| `prefix`         | `string`                                                                                                                | Yes      |
+| `maxUploadBytes` | `number`                                                                                                                | Yes      |
+| `cacheControl`   | `string`                                                                                                                | Yes      |
+| `allowDelete`    | `boolean`                                                                                                               | Yes      |
 
 ### ReadFileOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `start` | `number` | Yes |
-| `end` | `number` | Yes |
-| `signal` | `AbortSignal` | Yes |
+| Field    | Accepted type/value | Optional |
+| -------- | ------------------- | -------- |
+| `start`  | `number`            | Yes      |
+| `end`    | `number`            | Yes      |
+| `signal` | `AbortSignal`       | Yes      |
 
 ### ListFileOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `prefix` | `string` | Yes |
-| `limit` | `number` | Yes |
-| `cursor` | `string` | Yes |
+| Field    | Accepted type/value | Optional |
+| -------- | ------------------- | -------- |
+| `prefix` | `string`            | Yes      |
+| `limit`  | `number`            | Yes      |
+| `cursor` | `string`            | Yes      |
 
 ### AssumeRoleOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `roleArn` | `string` | No |
-| `sessionName` | `string` | Yes |
-| `externalId` | `string` | Yes |
-| `durationSeconds` | `number` | Yes |
-| `mfa` | `{ serial: string; tokenCode: string }` | Yes |
-| `sourceCredentials` | `AwsKeyCredentials \| AwsCredentialProvider` | Yes |
-| `sourceProfile` | `string` | Yes |
-| `stsRegion` | `string` | Yes |
+| Field               | Accepted type/value                          | Optional |
+| ------------------- | -------------------------------------------- | -------- |
+| `roleArn`           | `string`                                     | No       |
+| `sessionName`       | `string`                                     | Yes      |
+| `externalId`        | `string`                                     | Yes      |
+| `durationSeconds`   | `number`                                     | Yes      |
+| `mfa`               | `{ serial: string; tokenCode: string }`      | Yes      |
+| `sourceCredentials` | `AwsKeyCredentials \| AwsCredentialProvider` | Yes      |
+| `sourceProfile`     | `string`                                     | Yes      |
+| `stsRegion`         | `string`                                     | Yes      |
 
 ### WebIdentityOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `roleArn` | `string` | No |
-| `tokenFile` | `string` | No |
-| `sessionName` | `string` | Yes |
-| `stsRegion` | `string` | Yes |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `roleArn`     | `string`            | No       |
+| `tokenFile`   | `string`            | No       |
+| `sessionName` | `string`            | Yes      |
+| `stsRegion`   | `string`            | Yes      |
 
 ### AwsCredentialOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `credentials` | `AwsKeyCredentials \| AwsCredentialProvider` | Yes |
-| `profile` | `string` | Yes |
-| `assumeRole` | `AssumeRoleOptions` | Yes |
-| `webIdentity` | `WebIdentityOptions` | Yes |
+| Field         | Accepted type/value                          | Optional |
+| ------------- | -------------------------------------------- | -------- |
+| `credentials` | `AwsKeyCredentials \| AwsCredentialProvider` | Yes      |
+| `profile`     | `string`                                     | Yes      |
+| `assumeRole`  | `AssumeRoleOptions`                          | Yes      |
+| `webIdentity` | `WebIdentityOptions`                         | Yes      |
 
 ### StorageTokenAuthOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `scopePrefix` | `string` | Yes |
-| `publicRead` | `boolean` | Yes |
-| `allow` | `(subject: string, address: FileAddress, action: 'read'\|'write'\|'delete', info?: FileInfo) => boolean \| Promise<boolean>` | Yes |
+| Field         | Accepted type/value                                                                                                          | Optional |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `scopePrefix` | `string`                                                                                                                     | Yes      |
+| `publicRead`  | `boolean`                                                                                                                    | Yes      |
+| `allow`       | `(subject: string, address: FileAddress, action: 'read'\|'write'\|'delete', info?: FileInfo) => boolean \| Promise<boolean>` | Yes      |
+
+### Fetch client and ownership
+
+Import `createFilesClient` from `@zeruxjs/files/client` in browser code. This exact subpath has no Node/AWS imports; the storage root remains server-only. The client borrows Fetch and creates no persistent listeners, timers or close handle. `download` returns a Response whose body the caller must consume or cancel; `bytes` buffers small objects (16 MiB default) and releases an acquired reader. Pass a trusted positive finite byte ceiling. This client does not authenticate a tenant or validate JSON receipts independently; the server must authorize each operation.
+
+The token-authorizer factory borrows its verifier. Persistence, expiry, revocation and scope enforcement belong to that verifier; this factory does not imply an in-memory or durable auth store. The raw byte cache is process-local and policy-free. The file manager excludes private/encrypted objects from its cache, and cached byte arrays are copied on read and write.
+
+### Resource limits and shutdown
+
+| Owner                          | Actual default/boundary                                                                             |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Manager `get` / client `bytes` | 16 MiB materialization ceiling; use streaming APIs for larger objects                               |
+| Public byte cache              | Opt-in; 64 entries, 8 MiB, 15000 ms TTL; copied bytes, process-local only                           |
+| HTTP raw upload                | 16 MiB default; exact declared length checked while streaming; create-only required                 |
+| Local/S3 list page             | Default 100, permitted 1–1000; local implementation scans bucket sidecars before paging             |
+| Resumable session              | 1 GiB total, 8 MiB per part (64 MiB ceiling), 1000 parts                                            |
+| Resumable admission            | 100 sessions (10000 ceiling), 8 actual pending calls (64 ceiling), one-hour TTL (seven-day ceiling) |
+| Cleanup                        | Preview pages default 50 (100 ceiling), approved batches at most 100; revision/lease rechecked      |
+
+Drain/close the resumable coordinator before its borrowed file manager. Manager
+close invokes distinct configured drivers and clears its cache, without tracking
+every active operation. S3 close awaits lazy construction and destroys only owned
+clients; local drivers own per-operation handles and returned read iterators must
+be consumed or returned. Binary and metadata files are separate promotions.
+Neither cooperative cancellation nor a failed acknowledgement proves rollback.
 
 
 ## Public entry points
@@ -295,7 +320,7 @@ return uploadFileRequest(files,addr,request,{
 
 File downloads use Fetch streams, ETags, conditional requests and single byte ranges where the storage backend supports them. Private files require an authorization callback in `createFileResponse`. Never expose a handler without authenticating uploads or checking write permission; `@zeruxjs/auth` may be used in these callbacks. For any file type, prefer attachment download unless a carefully allowlisted inline type is required. Encryption-aware local storage verifies AES-GCM authentication before emitting plaintext; encrypted local objects do not support byte ranges.
 
-Local S3-lite is S3-**style** object addressing; it is *not* an HTTP server implementing the entire AWS S3 wire API. If you need third-party S3 SDK clients connecting over HTTP, use MinIO/RustFS or another actual S3 server.
+Local S3-lite is S3-**style** object addressing; it is _not_ an HTTP server implementing the entire AWS S3 wire API. If you need third-party S3 SDK clients connecting over HTTP, use MinIO/RustFS or another actual S3 server.
 
 Install official AWS SDK modules including `@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@aws-sdk/credential-providers`, `@aws-sdk/s3-request-presigner`, and `@aws-sdk/cloudfront-signer`. The runtime imports them lazily. SDK integration tests use an injected client, not live cloud infrastructure.
 
@@ -396,6 +421,32 @@ Cleanup is never automatic. `previewCleanup({cursor?,limit?})` scans a bounded r
 There is no automatic stale-lease breaking: after a process crash, the operator must establish that its owner is dead before removing a `.lock` directory. A crash/lost response during native initiation may leave an unjournaled S3 upload ID; configure an S3 `AbortIncompleteMultipartUpload` lifecycle policy and reconcile provider inventory administratively. Session cleanup does not scan/delete arbitrary bucket uploads. Local commit/metadata failures or uncertain remote completion may likewise require operator reconciliation. Do not delete a potentially live session to resolve a retry.
 
 Focused checks exercise local restart/resume, rejected tenants and hashes, stream interruption, ordered completion, concurrent create-only winners, expiry/approval/revision cleanup, symlink rejection, draining close and SDK multipart failure/lost-response reconciliation. S3 fixtures exercise real SDK command objects, not a live S3 service. Disposable AWS/MinIO conditional completion, checksum interoperability, backend lifecycle cleanup and crash/power-loss behavior require separate live qualification.
+
+### Fetch client and ownership
+
+Import `createFilesClient` from `@zeruxjs/files/client` in browser code. This exact subpath has no Node/AWS imports; the storage root remains server-only. The client borrows Fetch and creates no persistent listeners, timers or close handle. `download` returns a Response whose body the caller must consume or cancel; `bytes` buffers small objects (16 MiB default) and releases an acquired reader. Pass a trusted positive finite byte ceiling. This client does not authenticate a tenant or validate JSON receipts independently; the server must authorize each operation.
+
+The token-authorizer factory borrows its verifier. Persistence, expiry, revocation and scope enforcement belong to that verifier; this factory does not imply an in-memory or durable auth store. The raw byte cache is process-local and policy-free. The file manager excludes private/encrypted objects from its cache, and cached byte arrays are copied on read and write.
+
+```ts
+import { createFilesClient } from '@zeruxjs/files/client';
+
+// Configure a host-authorized object route; the facade does not create that route.
+const client = createFilesClient({ baseUrl: 'https://files.example/public/' });
+const bytes = await client.bytes('manual.txt', 64 * 1024);
+console.log(bytes.byteLength);
+```
+
+Close a resumable coordinator before its manager. Manager `close()` calls each
+unique configured driver's optional close and clears local cached bytes; it does
+not track every in-flight manager operation. S3 close fences calls, awaits lazy
+client creation and destroys owned clients once, without claiming a command drain
+or terminating borrowed credential helpers. Local drivers retain no persistent
+file handle; opened read iterators must be consumed or returned by their caller.
+A local binary commit and its metadata sidecar update are separate filesystem
+operations, not a global crash-atomic transaction. Local listing currently scans
+and validates the bucket metadata before slicing its result page; it is not a
+constant-memory remote listing replacement.
 
 
 ## Implementation sources

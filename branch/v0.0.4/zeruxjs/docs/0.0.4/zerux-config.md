@@ -90,16 +90,16 @@ Database initialization runs before cache initialization. A configured database 
 
 ## Other managed settings
 
-| Setting | Runtime responsibility |
-| --- | --- |
-| `files` | Named file stores; available before email initialization |
-| `email` | Email service and explicitly configured tracking/preferences |
-| `analytics`, `tags`, `reports` | Analytics and its dependent integrations |
-| `queue` | Explicitly enabled Redis/BullMQ integration and workers |
-| `auth`, `security` | Application authentication and security configuration |
-| `worker`, `protocols`, `websocket` | Worker and protocol configuration |
-| `server`, `allowedDomains` | Listener and host restrictions |
-| `structure`, `entryPoint`, `outDir` | Discovery and runtime output paths |
+| Setting                             | Runtime responsibility                                       |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `files`                             | Named file stores; available before email initialization     |
+| `email`                             | Email service and explicitly configured tracking/preferences |
+| `analytics`, `tags`, `reports`      | Analytics and its dependent integrations                     |
+| `queue`                             | Explicitly enabled Redis/BullMQ integration and workers      |
+| `auth`, `security`                  | Application authentication and security configuration        |
+| `worker`, `protocols`, `websocket`  | Worker and protocol configuration                            |
+| `server`, `allowedDomains`          | Listener and host restrictions                               |
+| `structure`, `entryPoint`, `outDir` | Discovery and runtime output paths                           |
 
 These settings are not automatically interchangeable with the standalone package factory APIs. Services have different enablement, dependency and failure policies; the [configuration reference](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reference.md) and individual guides describe them. Raw database, cache and service settings are removed from the public runtime configuration during service bootstrap. This is not permission to serialize the original config object or expose it to the browser.
 

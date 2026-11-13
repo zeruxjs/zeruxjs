@@ -3,7 +3,6 @@
 Set up @zeruxjs/queue-bullmq with explicit lifecycle and capability boundaries.
 
 
-
 BullMQ-backed named job queues, durable Redis storage, optional worker processors, delayed/retried/repeatable jobs, and generation-scoped ZeruxJS startup/shutdown. This is a **Redis-backed queue** and does not use the SQL/Mongo analytics storage as a queue backend.
 
 ## Dependencies
@@ -154,7 +153,7 @@ State transitions:
 
 `pending -> claimed -> suppressed` (marketing opted out)
 
-`claimed -> pending` (consent store unavailable *before* SMTP begins; safe to retry)
+`claimed -> pending` (consent store unavailable _before_ SMTP begins; safe to retry)
 
 `sending -> uncertain` (SMTP error, timeout, crash, or expired sending lease; **never resend automatically**)
 
@@ -200,7 +199,7 @@ Server-internal `service.schedules(queue)` remains an explicitly trusted applica
 
 ### Opt-in live release gate
 
-Install dependencies with a repaired registry-backed lockfile, use isolated Redis and **explicitly** opt in:
+Install dependencies from the committed lockfile with `npm ci`, use isolated Redis and **explicitly** opt in:
 
 ```bash
 # Real standalone, two BullMQ service instances, delayed/retry/concurrent workers:
@@ -217,6 +216,14 @@ Use dedicated throwaway test Redis instances, correct authentication and TLS as 
 ## Compatibility and development
 
 This package owns the extracted BullMQ implementation. `@zeruxjs/queue` reexports its existing API for backward compatibility; there is no dependency back to the facade. Historical queue test paths remain in `packages/@zeruxjs/queue/test`. Build this package before the facade and run the focused existing facade tests to check compatibility. This package does not implement RabbitMQ or MemcacheQ.
+
+## Reporting and resource ownership
+
+Reporters, task registries, outbox dispatchers and journal wrappers borrow their supplied stores/queues. They do not start timers or own a database connection. Close the queue service before its dependent database/cache resources; inspect `shutdownStatus()` when a grace deadline expires. A force-close receipt does not cancel arbitrary processor JavaScript or prove that a side effect rolled back.
+
+The native trends reporter defaults to 92 days and accepts a configured `maxDays` from 1 to 366. The separate transition-history trends helper retains its 92-day limit. Current-state update days, recorded transition days and provider-reported event days measure different things. Separate queries are not a transactional snapshot. Private store/page APIs return internal records and require host authorization; aggregate reports omit recipients and message IDs. A missing activity summary remains incomplete coverage.
+
+Journal wrappers write history after a successful delivery insert/state-changing CAS. A history error can therefore follow a committed delivery change; reconcile it rather than blindly replaying SMTP. Gap ledgers record observed discrepancies and never reconstruct missing transitions. Durable publish intents acknowledge registration separately from Redis acceptance and still require an explicitly scheduled dispatcher.
 
 
 ## Public entry points
@@ -443,7 +450,7 @@ State transitions:
 
 `pending -> claimed -> suppressed` (marketing opted out)
 
-`claimed -> pending` (consent store unavailable *before* SMTP begins; safe to retry)
+`claimed -> pending` (consent store unavailable _before_ SMTP begins; safe to retry)
 
 `sending -> uncertain` (SMTP error, timeout, crash, or expired sending lease; **never resend automatically**)
 
@@ -489,7 +496,7 @@ Server-internal `service.schedules(queue)` remains an explicitly trusted applica
 
 ### Opt-in live release gate
 
-Install dependencies with a repaired registry-backed lockfile, use isolated Redis and **explicitly** opt in:
+Install dependencies from the committed lockfile with `npm ci`, use isolated Redis and **explicitly** opt in:
 
 ```bash
 # Real standalone, two BullMQ service instances, delayed/retry/concurrent workers:
@@ -542,6 +549,14 @@ The existing per-worker grace (default 30 seconds, 1–300000 ms) and native for
 The extraction keeps a one-way dependency: queue facade → queue-bullmq → cache-redis. All twelve extracted modules were inspected for their imports/public contracts. Reporting, history, recovery and ledger logic use local types; cross-module references to the root Job/queue interfaces are erased type imports. Existing public subpaths already let consumers import these utilities without importing the facade. They remain in their owning package to preserve imports; moving them into the facade would introduce a reverse edge. No backend-independent outbox system or new transaction mechanism is introduced. Archive qualification checks every declared root/subpath JS/declaration target and packaged licenses with a real packed consumer; no API snapshots or versions are regenerated.
 
 Focused injected checks cover whole-batch rejection, source snapshotting, UTF-8/depth/unsafe input, worker deadline/late settlement, listener/event startup rollback and Cluster cleanup failure, alongside existing admin authorization, scheduler and dashboard checks. Real Redis acceptance still requires isolated `QUEUE_REDIS_URL` (and separate Cluster configuration). Worker crash/restart, stalled-job redelivery, network partition and durable SMTP recovery are not proved by a compile, injected fixture or archive test. Native semantics follow [BullMQ graceful shutdown](https://docs.bullmq.io/guide/workers/graceful-shutdown) and its [bulk enqueue API](https://docs.bullmq.io/guide/queues/adding-bulks).
+
+## Reporting and resource ownership
+
+Reporters, task registries, outbox dispatchers and journal wrappers borrow their supplied stores/queues. They do not start timers or own a database connection. Close the queue service before its dependent database/cache resources; inspect `shutdownStatus()` when a grace deadline expires. A force-close receipt does not cancel arbitrary processor JavaScript or prove that a side effect rolled back.
+
+The native trends reporter defaults to 92 days and accepts a configured `maxDays` from 1 to 366. The separate transition-history trends helper retains its 92-day limit. Current-state update days, recorded transition days and provider-reported event days measure different things. Separate queries are not a transactional snapshot. Private store/page APIs return internal records and require host authorization; aggregate reports omit recipients and message IDs. A missing activity summary remains incomplete coverage.
+
+Journal wrappers write history after a successful delivery insert/state-changing CAS. A history error can therefore follow a committed delivery change; reconcile it rather than blindly replaying SMTP. Gap ledgers record observed discrepancies and never reconstruct missing transitions. Durable publish intents acknowledge registration separately from Redis acceptance and still require an explicitly scheduled dispatcher.
 
 
 ## Implementation sources

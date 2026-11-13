@@ -61,29 +61,32 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### SqlDialectDefinition
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `kind` | `string` | No |
-| `quoteIdentifier` | `string` | No |
-| `placeholder` | `string` | No |
-| `functions` | `Partial<Record<DatabaseFunctionName, string>>` | No |
-| `supportsReturning` | `boolean` | Yes |
-| `supportsIfNotExistsIndex` | `boolean` | Yes |
-| `supportsFetch` | `boolean` | Yes |
-| `ilikeOperator` | `string` | Yes |
-| `autoIncrementKeyword` | `string` | No |
+| Field                      | Accepted type/value                             | Optional |
+| -------------------------- | ----------------------------------------------- | -------- |
+| `kind`                     | `string`                                        | No       |
+| `quoteIdentifier`          | `(identifier: string) => string`                | No       |
+| `placeholder`              | `(index: number) => string`                     | No       |
+| `functions`                | `Partial<Record<DatabaseFunctionName, string>>` | No       |
+| `supportsReturning`        | `boolean`                                       | Yes      |
+| `supportsDdl`              | `boolean`                                       | Yes      |
+| `supportsGeneratedKeys`    | `boolean`                                       | Yes      |
+| `supportsIfNotExistsIndex` | `boolean`                                       | Yes      |
+| `supportsFetch`            | `boolean`                                       | Yes      |
+| `ilikeOperator`            | `string`                                        | Yes      |
+| `autoIncrementKeyword`     | `string`                                        | No       |
 
 ### SqlConnectorOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `executor` | `(statement: string, params: unknown[], operation: QueryOperation) => MaybePromise<unknown>` | Yes |
-| `client` | `{ query?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; execute?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; }` | Yes |
-| `pool` | `{ query?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; execute?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; }` | Yes |
-| `database` | `string` | Yes |
-| `fixedDatabase` | `boolean` | Yes |
-| `lockDatabase` | `boolean` | Yes |
-| `locked` | `boolean` | Yes |
+| Field           | Accepted type/value                                                                                                                                         | Optional |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `synchronous`   | `boolean`                                                                                                                                                   | Yes      |
+| `executor`      | `(statement: string, params: unknown[], operation: QueryOperation) => MaybePromise<unknown>`                                                                | Yes      |
+| `client`        | `{ query?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; execute?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; }` | Yes      |
+| `pool`          | `{ query?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; execute?: (statement: string, params?: unknown[]) => MaybePromise<unknown>; }` | Yes      |
+| `database`      | `string`                                                                                                                                                    | Yes      |
+| `fixedDatabase` | `boolean`                                                                                                                                                   | Yes      |
+| `lockDatabase`  | `boolean`                                                                                                                                                   | Yes      |
+| `locked`        | `boolean`                                                                                                                                                   | Yes      |
 
 ## Direct compilation and runtime guards
 
@@ -92,6 +95,10 @@ These tables list fields declared directly on the named public contract. Referen
 NULL equality uses explicit null predicates; empty IN/NOT IN is rejected. Multi-row shapes must match. Nested/subquery/keyset parameters retain lexical numbering. Structured CHECK predicates are supported through database-owned types; DDL literals are validated/encoded instead of losing placeholders. Raw CHECK text, subqueries and unsupported function semantics fail before execution.
 
 Unsupported index guards, RETURNING, DDL/generated-key policies, upsert/conflict clauses, join/order features and pagination combinations are rejected rather than dropped. The README lists the intentionally limited dialect matrix. Backend versions and permissions remain deployment prerequisites. Generated numeric IDs with lost precision fail; bigint SQLite IDs retain their string representation. The compiler owns no native clients, transactions or cleanup of borrowed pools. Native transaction and decimal/time precision acceptance require the actual driver/backend; mocked compilation is not live acceptance.
+
+## Source ownership
+
+The validation module owns bounded own-data snapshots and exact grammar fields; the compiler module owns lexical parameter buffers, supported dialect clauses, DDL literal mode and private native normalization. Each public compile call receives a fresh compiler, and borrowed executors remain host-owned. Neither facade construction nor compilation acquires a connection or supplies disconnect/transaction/cancellation. Trusted dialect callbacks are not sandboxed; SQL/params/results/causes require explicit response sanitization. The package README maps these owners and distinguishes native SQLite/injected-adapter checks from live backend acceptance.
 
 
 ## Public entry points
@@ -121,7 +128,7 @@ Shared parameterized SQL compiler and connector executor for PostgreSQL, MySQL a
 
 `createSqlConnector(dialect, options)` compiles the normalized JSON operation into dialect-specific SQL and normalizes returned row counts and insert IDs. Insert IDs are emitted only for actual `insert` operations, not DDL or updates; SQLite bigint IDs are converted to strings where necessary to preserve precision.
 
-**Trust boundary:** Query *values* are parameterized. Column/table identifiers are validated upstream by `@zeruxjs/db` and quoted by the dialect. Do not expose unrestricted schema operations or raw SQL to untrusted callers, and use database credentials with least privilege. Each SQL operation executes separately unless the application explicitly manages a native transaction.
+**Trust boundary:** Query _values_ are parameterized. Column/table identifiers are validated upstream by `@zeruxjs/db` and quoted by the dialect. Do not expose unrestricted schema operations or raw SQL to untrusted callers, and use database credentials with least privilege. Each SQL operation executes separately unless the application explicitly manages a native transaction.
 
 **Safety contract:** compiler validates identifiers and runtime operator/function/join/order/index enums independently of TypeScript; SQL CHECK text strings are **rejected**, use a validated structured expression. Column lengths, integer limits and INSERT row shapes are checked. Unsupported RETURNING (notably MySQL) throws rather than being silently ignored. PostgreSQL write results expose `affectedCount` from driver `rowCount`, including zero-row CAS misses. MySQL and SQLite index/drop syntax and SQLite integer primary key autoincrement use engine-specific rules.
 
@@ -178,6 +185,14 @@ Focused checks include direct compiler failures, executor outage, injected pool 
 Migration note: callers that relied on MySQL silently discarding index guards must choose an explicit owning migration policy. Analytics already fails closed for numeric backfill when its unique index cannot be verified; its existing `indexes:false,numericUniqueIndexManagedExternally:true` policy is appropriate only after the operator provisions that unique constraint. Optional read-index failures retain their existing degraded status. The compiler never automatically retries with an unguarded CREATE INDEX.
 
 `SqlConnectorOptions.synchronous:true` is an explicit owner contract for synchronous executors. Single- and multi-statement execution rejects thenables without creating an async continuation that could issue later DDL outside a native transaction. SQLite uses this path for its separate `transactionSync` API; it does not enable the shared async transaction capability.
+
+## Implementation and ownership map
+
+`src/validation.ts` owns bounded own-data snapshots and exact clause/list/flag validation. It rejects accessors before reading values and never invokes toJSON. `src/index.ts` owns a fresh per-operation compiler, lexical parameter allocation, explicit DDL literal mode, dialect support guards and native result normalization. Shared operation/count types remain in `@zeruxjs/db`; concrete adapters own pool/session/cancellation behavior.
+
+The compiler snapshots dialect metadata, but quoting/placeholders and executor functions remain trusted executable host code. Root runtime imports require Node. `compileSql` opens nothing, and `createSqlConnector` borrows its native executor without supplying disconnect, transaction or cancellation ownership. Do not add a fake close path or treat it as a tenant authorization boundary. Native results, generated SQL, parameters and original causes remain private until the host sanitizes a response.
+
+The focused suite preserves exact SQL/parameter fixtures and uses disposable native in-memory SQLite for CHECK/RETURNING/keyset/delete behavior. PostgreSQL/MySQL consumers also exercise their injected pinned contracts. These checks do not qualify live engine versions, transactional DDL across dialects or application-specific parser/precision policy.
 
 
 ## Implementation sources

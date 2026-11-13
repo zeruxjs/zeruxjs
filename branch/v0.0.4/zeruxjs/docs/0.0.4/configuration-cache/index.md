@@ -76,14 +76,14 @@ Namespace clearing is not a transaction. In Redis, namespace clearing scans matc
 
 The following table is captured from the source contract used by runtime bootstrap. Optional means a property may be omitted; it does not mean every combination is meaningful. Callback and nested adapter shapes must satisfy the full declared type.
 
-| Option | Accepted value | Runtime behavior |
-| --- | --- | --- |
-| `connector` | `string` | Runtime adapter name; absent means unconfigured |
-| `options` | `Record<string, unknown>` | Forwarded to the adapter |
-| `prefix` | `string` | Cache manager namespace |
-| `defaultTtlSeconds` | `number` | Default entry TTL in seconds |
-| `startupTimeoutMs` | `number` | Positive timeout; otherwise 3000 ms |
-| `required` | `boolean` | Exactly true makes connector startup failure fatal |
+| Option              | Accepted value            | Runtime behavior                                   |
+| ------------------- | ------------------------- | -------------------------------------------------- |
+| `connector`         | `string`                  | Runtime adapter name; absent means unconfigured    |
+| `options`           | `Record<string, unknown>` | Forwarded to the adapter                           |
+| `prefix`            | `string`                  | Cache manager namespace                            |
+| `defaultTtlSeconds` | `number`                  | Default entry TTL in seconds                       |
+| `startupTimeoutMs`  | `number`                  | Positive timeout; otherwise 3000 ms                |
+| `required`          | `boolean`                 | Exactly true makes connector startup failure fatal |
 
 ## Continue with the package
 

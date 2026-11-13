@@ -67,26 +67,26 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### ShareData
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `url` | `string` | No |
-| `title` | `string` | Yes |
-| `text` | `string` | Yes |
+| Field   | Accepted type/value | Optional |
+| ------- | ------------------- | -------- |
+| `url`   | `string`            | No       |
+| `title` | `string`            | Yes      |
+| `text`  | `string`            | Yes      |
 
 ### ShareEnvironment
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `share` | `(data:ShareData)=>Promise<void>` | Yes |
-| `writeText` | `(text:string)=>Promise<void>` | Yes |
-| `open` | `(url:string)=>void` | Yes |
+| Field       | Accepted type/value               | Optional |
+| ----------- | --------------------------------- | -------- |
+| `share`     | `(data:ShareData)=>Promise<void>` | Yes      |
+| `writeText` | `(text:string)=>Promise<void>`    | Yes      |
+| `open`      | `(url:string)=>void`              | Yes      |
 
 ### ShareCapabilities
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `native` | `boolean` | No |
-| `clipboard` | `boolean` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `native`    | `boolean`           | No       |
+| `clipboard` | `boolean`           | No       |
 
 ## Add persistent short links separately
 
@@ -121,6 +121,12 @@ requires explicit host persistent-file qualification and initializes its table o
 when requested. Create-only/CAS work uses the existing database transaction pin;
 there is no independent transaction engine or implicit connector ownership.
 
+Drain the short-link service before disconnecting its borrowed database or store.
+Caller timeout or cancellation stops waiting, but does not prove a storage rollback:
+unsettled native operations retain their capacity until actual completion. Optional
+analytics has separate bounded work and cannot block a valid redirect on failure.
+Browser sharing controllers own no listeners and need no invented teardown method.
+
 
 ## Public entry points
 
@@ -151,6 +157,8 @@ Manifest reference for `@zeruxjs/share@0.0.4`.
 Safe browser sharing, fallback handling, social share links and HTML metadata.
 
 ```ts
+import { createShareController, createShareMetadata } from '@zeruxjs/share';
+
 const controller = createShareController({
   share: data => navigator.share(data),
   writeText: text => navigator.clipboard.writeText(text)
@@ -206,7 +214,7 @@ responses when exposing these methods.
 URL-safe characters. IDs are public locators, **not bearer authorization**. A custom
 slug collision returns CONFLICT; generated collisions retry at most three times,
 and no retry follows an unknown storage acknowledgement. Framework names such as
-api/admin/auth/assets/_actions and host `reservedPaths` are denied. Traversal,
+api/admin/auth/assets/\_actions and host `reservedPaths` are denied. Traversal,
 encoded path separators and nested slug paths reject. Slugs are case-sensitive;
 reserved paths are protected case-insensitively. Names are globally reserved within
 the configured public namespace, not reusable per tenant.
@@ -291,7 +299,6 @@ outage and actual-settlement cleanup. The SQLite fixture touches only a disposab
 temporary file and closes borrowed connectors separately. Real mobile share sheets,
 production durable-store crash recovery, host session/CSRF/consent and deployed
 proxy/cache behavior require separate qualification; no live service was used.
-
 
 ### Optional borrowed SQLite store
 

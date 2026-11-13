@@ -23,6 +23,7 @@ const watcher = watchDirectory('./src', event => console.log(event), {
 await watcher.ready;
 await watcher.flush();
 watcher.close();
+await watcher.closed;
 ```
 
 JavaScript can use the same runtime APIs without type-only statements. Enable JSDoc checking if editor validation is desired; a transpilation step alone does not typecheck the input.
@@ -55,12 +56,16 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 ### WatchOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `debounceMs` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `pollIntervalMs` | `number` | No | Fallback scan interval; also detects changes missed by native notifications. |
-| `ignored` | `(relativePath: string) => boolean` | No | Ignore paths relative to the watched root. |
-| `onError` | `(error: Error) => void` | No | Called when watching/scanning fails. |
+| Option             | Accepted TypeScript value           | Required | Meaning                                                                      |
+| ------------------ | ----------------------------------- | -------- | ---------------------------------------------------------------------------- |
+| `debounceMs`       | `number`                            | No       | Integer 0–600000ms trailing debounce; defaults to 60.                        |
+| `pollIntervalMs`   | `number`                            | No       | Fallback scan interval; also detects changes missed by native notifications. |
+| `ignored`          | `(relativePath: string) => boolean` | No       | Ignore paths relative to the watched root.                                   |
+| `onError`          | `(error: Error) => void`            | No       | Isolated handler for scan/native/callback failures; causes remain private.   |
+| `maxEntries`       | `number`                            | No       | Integer 1–1000000 examined names per scan; defaults to 100000.               |
+| `maxPendingEvents` | `number`                            | No       | Integer 1–100000 retained changes per reconciliation; defaults to 4096.      |
+| `pollingOnly`      | `boolean`                           | No       | Suppresses native allocation; periodic reconciliation remains active.        |
+| `signal`           | `AbortSignal`                       | No       | Closes this subscription independently, including during startup.            |
 
 ## Bounded reconciliation and subscriber isolation
 
@@ -249,15 +254,15 @@ not wait for arbitrary user callback promises.
 
 ## Bounds, failures and ownership
 
-| Setting/resource | Default | Bound/behavior |
-| --- | --- | --- |
-| maxEntries | 100000 | 1–1000000 directory entries examined per scan, including ignored names but not their pruned descendants |
-| maxPendingEvents | 4096 | 1–100000 retained events per reconciliation |
-| debounceMs | 60 | 0–600000 integer milliseconds |
-| pollIntervalMs | 2000 | 100–600000 integer milliseconds |
-| Scan concurrency | 4 | Process-local limit shared by exported scan and watcher scans |
-| Scan admission queue | 128 | Excess calls fail with SCAN_QUEUE_LIMIT; queued abort removes admission |
-| Reconciliation requests | One active, one trailing per shared identity | Additional requests share a trailing promise, not an unbounded promise chain |
+| Setting/resource        | Default                                      | Bound/behavior                                                                                          |
+| ----------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| maxEntries              | 100000                                       | 1–1000000 directory entries examined per scan, including ignored names but not their pruned descendants |
+| maxPendingEvents        | 4096                                         | 1–100000 retained events per reconciliation                                                             |
+| debounceMs              | 60                                           | 0–600000 integer milliseconds                                                                           |
+| pollIntervalMs          | 2000                                         | 100–600000 integer milliseconds                                                                         |
+| Scan concurrency        | 4                                            | Process-local limit shared by exported scan and watcher scans                                           |
+| Scan admission queue    | 128                                          | Excess calls fail with SCAN_QUEUE_LIMIT; queued abort removes admission                                 |
+| Reconciliation requests | One active, one trailing per shared identity | Additional requests share a trailing promise, not an unbounded promise chain                            |
 
 Traversal uses streaming opendir iteration (directory handles close on completion,
 throw and cancellation), lstat and bounded pending directories. Descendant symlinks
@@ -342,6 +347,20 @@ npm-installed declaration consumer using shared TypeScript tooling. No live prov
 or browser is needed. Windows/macOS/network filesystems and real kernel-event-loss
 behavior need platform-specific verification; mocked native failure proves only the
 polling fallback path. Full scan costs O(entries) and no performance gain is claimed.
+
+### Reading and maintaining the watcher
+
+`src/scan.ts` owns process-local scan admission and complete candidate snapshots.
+`src/watcher.ts` owns shared root/settings identities, timers and native handles;
+subscriber ignore policies are applied after scanning so they cannot hide files
+from another subscriber. Failed scans keep the last complete baseline. Metadata
+comparison uses size and modification time, not a content hash.
+
+Use `watchDirectory` when teardown must be awaited: call `close()` and then await
+`closed`. This drains owned startup/scans/native handles, but does not await promises
+returned by consumer callbacks; the consumer must cancel and drain that work. The
+legacy `startWatcher` returns a stop function only, and an omitted callback remains
+an inert compatibility call. Retain that disposer rather than inventing a handle API.
 
 
 ## Implementation sources

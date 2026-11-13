@@ -71,48 +71,56 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### MediaRequestUploadOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `name` | `string` | Yes |
-| `maxBytes` | `number` | Yes |
-| `expiresInMs` | `number` | Yes |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `name`        | `string`            | Yes      |
+| `maxBytes`    | `number`            | Yes      |
+| `expiresInMs` | `number`            | Yes      |
 
 ### MediaResponseOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `request` | `Request` | Yes |
-| `downloadName` | `string` | Yes |
-| `inline` | `boolean` | Yes |
-| `cacheControl` | `string` | Yes |
+| Field          | Accepted type/value | Optional |
+| -------------- | ------------------- | -------- |
+| `request`      | `Request`           | Yes      |
+| `downloadName` | `string`            | Yes      |
+| `inline`       | `boolean`           | Yes      |
+| `cacheControl` | `string`            | Yes      |
 
 ### MediaFilesOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `storage` | `string` | Yes |
-| `bucket` | `string` | No |
-| `prefix` | `string` | Yes |
-| `maxUploadBytes` | `number` | Yes |
-| `visibility` | `'private'\|'public'` | Yes |
-| `authorize` | `(request: Request, address: FileAddress, action: 'read'\|'write'\|'delete', info?: FileInfo) => boolean\|Promise<boolean>` | Yes |
+| Field            | Accepted type/value                                                                                                         | Optional |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `storage`        | `string`                                                                                                                    | Yes      |
+| `bucket`         | `string`                                                                                                                    | No       |
+| `prefix`         | `string`                                                                                                                    | Yes      |
+| `maxUploadBytes` | `number`                                                                                                                    | Yes      |
+| `visibility`     | `'private'\|'public'`                                                                                                       | Yes      |
+| `authorize`      | `(request: Request, address: FileAddress, action: 'read'\|'write'\|'delete', info?: FileInfo) => boolean\|Promise<boolean>` | Yes      |
 
 ### UploadOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `name` | `string` | No |
-| `contentType` | `string` | No |
-| `expiresInMs` | `number` | Yes |
-| `maxBytes` | `number` | Yes |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `name`        | `string`            | No       |
+| `contentType` | `string`            | No       |
+| `expiresInMs` | `number`            | Yes      |
+| `maxBytes`    | `number`            | Yes      |
 
 ### ListOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `includeExpired` | `boolean` | Yes |
-| `limit` | `number` | Yes |
-| `offset` | `number` | Yes |
+| Field            | Accepted type/value | Optional |
+| ---------------- | ------------------- | -------- |
+| `includeExpired` | `boolean`           | Yes      |
+| `limit`          | `number`            | Yes      |
+| `offset`         | `number`            | Yes      |
+
+## Ownership and byte verification
+
+Root disk-store and files-service factories are inert configurations, not persistent close owners. Disk operations release their own handles; files-service borrows its manager. Request-facing metadata must use `statAuthorized`/branch/v0.0.4/`listAuthorized`; plain `stat`/branch/v0.0.4/`list` are trusted server operations. The disk list scans sidecars before paging, and binary/metadata files do not form a cross-file crash transaction.
+
+Await asset/resumable/transcode service `close()` before closing their borrowed dependencies. Transfer `close()` aborts active requests, revokes owned URLs and drains actual settlement; it never deletes persistent upload sessions implicitly. Destroy optional playback controls before the borrowed controller. Native capability probes and arbitrary JavaScript cannot be force-cancelled by a signal.
+
+Buffered disk downloads verify the complete SHA-256 before returning. Disk/Fetch streams count length and can expose bytes before a late failure; native playback performs no whole-file hash check. Explicit bounded Blob downloads support a trusted expected digest before exposing the Blob. Asset-backed HEAD performs full bounded verification, whereas disk HTTP HEAD/304 never open binary content. Default private caching and per-request host authorization remain separate from integrity hashes and signed access tokens.
 
 
 ## Public entry points
@@ -238,13 +246,13 @@ Up to four client operations run at once (maximum 64). `close()` rejects new wor
 
 The versioned `zerux-media-resumable-v1` protocol is intentionally narrow:
 
-| Path relative to configured prefix | Method | Body/operation |
-| --- | --- | --- |
-| empty | POST | Bounded JSON `{name,size,sha256,contentType}`; initiate a tenant/principal-bound session |
-| `/:id` | GET | Inspect status and accepted part numbers/sizes/hashes |
-| `/:id/parts/:number` | PUT | Raw bytes, `application/octet-stream`, `X-Media-Part-Size`, `X-Media-Part-SHA256` |
-| `/:id/complete` | POST | Bounded JSON `{parts:[1,2,...,N]}` |
-| `/:id` | DELETE | Explicit session abort/part cleanup |
+| Path relative to configured prefix | Method | Body/operation                                                                           |
+| ---------------------------------- | ------ | ---------------------------------------------------------------------------------------- |
+| empty                              | POST   | Bounded JSON `{name,size,sha256,contentType}`; initiate a tenant/principal-bound session |
+| `/:id`                             | GET    | Inspect status and accepted part numbers/sizes/hashes                                    |
+| `/:id/parts/:number`               | PUT    | Raw bytes, `application/octet-stream`, `X-Media-Part-Size`, `X-Media-Part-SHA256`        |
+| `/:id/complete`                    | POST   | Bounded JSON `{parts:[1,2,...,N]}`                                                       |
+| `/:id`                             | DELETE | Explicit session abort/part cleanup                                                      |
 
 Public session responses contain opaque IDs, expiry, status, total length/hash, fixed part size and accepted hashes; they omit addresses, native IDs and ETags. JSON bodies are limited to 8192 bytes, unknown/prototype fields reject, and errors use fixed sanitized codes. Optional `onError(cause,{committed})` is trusted internal diagnostics, never a client payload/logging policy. File-layer tenant binding and authorization run on every operation. Finalization rechecks ordered parts and **whole-file SHA-256 before commit**; each part is verified before acceptance. The server computes no hash from an AbortController.
 
@@ -312,6 +320,22 @@ Every quota is explicit: `maxInputBytes`/branch/v0.0.4/`maxOutputBytes` up to 64
 Timers/signals cannot force-cancel arbitrary JavaScript. Slots and `close()` retain ownership until the executor actually settles and disposal finishes, even after a deadline. Hard CPU/memory/filesystem limits depend on the host's real isolator, not its reported statistics. Persist/register returned output through the existing files/asset commit APIs only after success. No automatic variant publication, source overwrite, memory fallback or replay is added.
 
 Qualification: Node DOM-emulation/executor-contract fixtures cover expiry, blocked play, caption selection, unavailable capabilities, quotas/failures/cancellation and teardown. Isolated **Google Chrome 156 Linux** checks exercise actual `audio/wav` signed 16-bit PCM mono 8 kHz playback, WebVTT caption loading, native keyboard controls, focus restoration and listener/Blob URL cleanup. The clip is silence; audible output and assistive technologies were not qualified. No MKV, H.264/VP9/Opus encoding, other browser/OS, hardware decoding or production process/container executor was exercised. Configure a real isolated encoder and test each advertised preset before production use; synthetic executor success is not live transcoding acceptance.
+
+## Resource ownership and integrity
+
+| Entry/factory                  | Owner and teardown                                                        | Integrity boundary                                                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Root `createMediaStore`        | Inert configuration; each operation closes its own file handles           | `download` buffers and verifies complete SHA-256; `stream`/branch/v0.0.4/`streamRange` check file size, so bytes may be exposed before a later failure |
+| Root `createMediaFilesService` | Borrows the manager; host closes providers after active requests          | Delegates byte limits/stream responses to files; trusted `stat`/branch/v0.0.4/`list` do not authorize requests                                         |
+| `/assets` service              | Await `close()` before closing borrowed assets/files                      | Storage integrity/commit precedes catalog registration; repair remains an explicit authorized operation                                  |
+| `/resumable` handler           | Await `close()` before the borrowed uploads coordinator                   | Server journal verifies parts and final digest; request abort leaves the session available                                               |
+| `/browser` transfers           | Await `close()`; revoke individual `objectUrl` leases when no longer used | Stream downloads count bytes; explicit bounded Blob downloads can verify a trusted digest before return                                  |
+| `/playback`                    | Destroy controls before their borrowed playback controller                | Native decoding does not verify the whole file; use a verified Blob if pre-exposure integrity is required                                |
+| `/transcode`                   | Await `close()` through actual job termination/disposal                   | Input hash is checked before execution; bounded completed output is hashed and exposed only after cleanup                                |
+
+The disk store has no background cleanup task. `cleanupExpired()` is an explicit host-authorized scan; `list()` scans recognized sidecars before paging and is not a bounded database cursor. `exists()` returns false for storage errors as well as missing/expired records. A binary write and its JSON sidecar are separate files, not a global crash-atomic transaction. Host policies must also bound permitted buffered download sizes.
+
+The legacy signed token binds an ID and expiry, not a tenant/principal. Always authorize at the HTTP boundary. HTTP helpers default to `private, no-store`; an explicit cache override is the host's responsibility. HEAD/304 avoid opening binary data in the disk response path; asset-backed HEAD deliberately performs the bounded verified download. The disk stream opens lazily when its iterator is pulled, so consumers must finish or cancel response bodies.
 
 
 ## Implementation sources

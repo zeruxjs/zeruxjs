@@ -49,7 +49,6 @@ limits, unsupported features and disposal semantics. Local tests exercise instal
 Zyro HTML, normal routes, request isolation, linked ESM assets and production static
 serving; they do not establish browser hydration or vendor/framework parity.
 
-
 ## HTTP document composition
 
 `createZyroDocumentRenderer` and `createRenderAssets` in `zeruxjs/renderers`
@@ -70,7 +69,6 @@ keeps the last good generation/artifacts. The docs app retains its own exporter.
 See the package README's complete public-import plugin and hydration instructions.
 Local HTTP, emitted-client/jsdom and packed-declaration checks are distinct from
 real-browser CSP/form/navigation acceptance.
-
 
 ## Explicit generic static export
 

@@ -42,7 +42,6 @@ Private service startup settings are removed from the runtime config exposed to 
 
 Development may prepare a replacement generation while the old handler is still valid. Scope objects must not be shared carelessly across generations. For production restarts/rolling deploys, plan connection budgets, draining and compatibility between old and new schemas/configuration.
 
-
 ## Validated custom services and reload
 
 The public `defineService` and `createApplicationLifecycle` APIs register schema-owned namespaces and dependency-ordered resources. See the framework package README for a complete public-import example. Configuration precedence is defaults, selected file, explicit environment layer, then API/CLI overrides; undefined values do not override earlier values. Validation runs before connector factories. Unknown core keys and unregistered service namespaces are rejected.

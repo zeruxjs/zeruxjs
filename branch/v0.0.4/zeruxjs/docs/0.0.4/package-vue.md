@@ -6,11 +6,22 @@ Inject real Vue 3 APIs and connect stores within an explicit effect scope.
 ## Prefer scoped bindings
 
 ```ts
-import { shallowRef, readonly, getCurrentScope, onScopeDispose, watch } from 'vue';
+import { shallowRef, readonly, getCurrentScope, onScopeDispose, watch, effectScope } from '@vue/runtime-dom';
 import { createVueBindings } from '@zeruxjs/vue';
 const bridge = createVueBindings({ shallowRef, readonly, getCurrentScope, onScopeDispose, watch });
-// Inside setup() or effectScope.run():
-const state = bridge.useStore(externalStore);
+const externalStore = {
+  getSnapshot: () => 42,
+  subscribe: (_notify: () => void) => () => {},
+};
+const scope = effectScope();
+try {
+  scope.run(() => {
+    const state = bridge.useStore(externalStore);
+    console.log(state.value);
+  });
+} finally {
+  scope.stop();
+}
 ```
 
 The caller supplies actual Vue functions. useStore rejects a missing scope rather than leaking a subscription. Outside setup, connect returns a ref plus stop function that the caller must invoke.
@@ -101,26 +112,47 @@ These tables list fields declared directly on the named public contract. Referen
 
 Core Vue runtime injection loads no UI runtime on import; optional native entries load peers only when called.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `shallowRef` | `{value:T}` | No |
-| `getCurrentScope` | `unknown` | No |
-| `onScopeDispose` | `void` | No |
-| `readonly` | `(value:{value:any}) => {readonly value:any}` | Yes |
-| `watch` | `()=>void` | Yes |
+| Field             | Accepted type/value                           | Optional |
+| ----------------- | --------------------------------------------- | -------- |
+| `shallowRef`      | `{value:T}`                                   | No       |
+| `getCurrentScope` | `unknown`                                     | No       |
+| `onScopeDispose`  | `void`                                        | No       |
+| `readonly`        | `(value:{value:any}) => {readonly value:any}` | Yes      |
+| `watch`           | `()=>void`                                    | Yes      |
 
 ### VueStore
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `getSnapshot` | `T` | No |
-| `subscribe` | `()=>void` | No |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `getSnapshot` | `T`                 | No       |
+| `subscribe`   | `()=>void`          | No       |
 
 ### SubscribableRef
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `subscribe` | `()=>void` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `subscribe` | `()=>void`          | No       |
+
+## Ownership and compatibility details
+
+`toVueReadable`, `mapVueRef`, `combineVueRefs` and `observableToVueRef` own
+subscriptions and expose `stop()`. `bindVueRef` and `syncVueRef` return a function
+disposer. None destroys a borrowed source. `createVueRef` and `fromVueRef` alone
+create no native watcher. Keep manual owners even when a lint rule cannot prove
+eventual disposal; the rule detects immediately discarded handles only.
+
+The derived standalone refs retain their legacy writable TypeScript shape, but
+runtime writes throw. Readonly protection in injected bindings requires the
+runtime's `readonly` function; without it the returned type alone does not prevent
+runtime mutation. Callbacks run synchronously and are trusted application code.
+Legacy two-way/combined cleanup calls source disposers in order; a throwing
+source disposer can prevent later disposers from running. Native render leases
+instead attempt all registered cleanup callbacks and report aggregated failures.
+
+An update failure does not roll back native DOM changes. SSR checks its byte
+ceiling after native rendering has allocated the complete string, and cancellation
+waits for cooperative work to settle. These are output/lifecycle limits, not
+forced JavaScript cancellation or preallocation memory quotas.
 
 
 ## Public entry points
@@ -175,12 +207,12 @@ plain subscribable object, **not** a native Vue ref/proxy.
 
 ## Entry points and peers
 
-| Public entry | Implemented responsibility |
-| --- | --- |
-| `@zeruxjs/vue` | Standalone ref/store adapters and injected `createVueBindings`; no UI runtime dependency |
+| Public entry             | Implemented responsibility                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `@zeruxjs/vue`           | Standalone ref/store adapters and injected `createVueBindings`; no UI runtime dependency |
 | `@zeruxjs/vue/rendering` | Explicit component/view validation and per-app context key/types; imports Vue types only |
-| `@zeruxjs/vue/browser` | Lazy runtime-only createApp/createSSRApp, mount/update/unmount and native hydration |
-| `@zeruxjs/vue/server` | Lazy fresh-app string SSR through Vue's compiler-free server-renderer build |
+| `@zeruxjs/vue/browser`   | Lazy runtime-only createApp/createSSRApp, mount/update/unmount and native hydration      |
+| `@zeruxjs/vue/server`    | Lazy fresh-app string SSR through Vue's compiler-free server-renderer build              |
 
 Install matching optional peers only when using the native entries:
 
@@ -400,6 +432,27 @@ No user-managed app is started. Real-browser layouts, other Vue versions and
 external SFC/compiler pipelines remain separate prerequisites. Read the official
 [application API](https://vuejs.org/api/application.html) and [SSR guide](https://vuejs.org/guide/scaling-up/ssr.html)
 for Vue's own semantics; no complete Nuxt/Vue feature parity is promised.
+
+## Ownership and compatibility details
+
+`toVueReadable`, `mapVueRef`, `combineVueRefs` and `observableToVueRef` own
+subscriptions and expose `stop()`. `bindVueRef` and `syncVueRef` return a function
+disposer. None destroys a borrowed source. `createVueRef` and `fromVueRef` alone
+create no native watcher. Keep manual owners even when a lint rule cannot prove
+eventual disposal; the rule detects immediately discarded handles only.
+
+The derived standalone refs retain their legacy writable TypeScript shape, but
+runtime writes throw. Readonly protection in injected bindings requires the
+runtime's `readonly` function; without it the returned type alone does not prevent
+runtime mutation. Callbacks run synchronously and are trusted application code.
+Legacy two-way/combined cleanup calls source disposers in order; a throwing
+source disposer can prevent later disposers from running. Native render leases
+instead attempt all registered cleanup callbacks and report aggregated failures.
+
+An update failure does not roll back native DOM changes. SSR checks its byte
+ceiling after native rendering has allocated the complete string, and cancellation
+waits for cooperative work to settle. These are output/lifecycle limits, not
+forced JavaScript cancellation or preallocation memory quotas.
 
 
 ## Implementation sources

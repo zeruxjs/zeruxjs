@@ -59,7 +59,7 @@ application decision rather than an automatic retry.
 
 Injected clients stay open after wrapper close. Owned clients use bounded verified
 HTTPS requests and close after actual native work settles. Cancellation cannot
-prove rollback. Unit and disposable HTTPS fixtures cover translation, TLS and
+prove rollback. A shared manager may stop waiting at its observation deadline while the adapter still owns unsettled native work; await service close before tearing down its borrowed dependencies. Unit and disposable HTTPS fixtures cover translation, TLS and
 resource ownership; real engine acceptance requires an isolated configured 9.5.x
 instance, scoped API key and trusted CA. Those live prerequisites are separate
 from the mock transport checks.
@@ -139,7 +139,7 @@ and pool policy. Requests still carry zero retries, deadlines and cancellation.
 it closes only an owned client. Startup failures close owned resources too. A
 noncooperative injected client can delay direct calls and close; use the shared
 manager for an observation deadline while retaining actual pending ownership.
-Pending operations cap at 32 by default (configurable 1–128); deadlines default to
+The wrapper retains native work in its pending set through actual settlement: a shared-manager observation timeout does not release that capacity or prove rollback. Dispose the shared service before its host-owned dependencies. Pending operations cap at 32 by default (configurable 1–128); deadlines default to
 5 seconds (1–60000 ms). Response/compressed-response limits are 1 MiB for owned
 clients. Injected clients must enforce transport-level limits independently.
 Backend causes remain private in sanitized `SearchAdapterError.cause`; never expose

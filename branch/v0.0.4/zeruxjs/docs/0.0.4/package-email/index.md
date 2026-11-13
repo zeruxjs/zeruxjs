@@ -11,7 +11,7 @@ const mail = createEmailManager({ accounts: [{
   name: 'transactional',
   smtp: { host: 'smtp.example.com', port: 587, requireTLS: true,
     auth: { type: 'password', user: 'sender@example.com', pass: process.env.SMTP_PASSWORD! } },
-  defaults: { from: 'Sender <sender@example.com>' }
+  defaults: { from: { name: 'Sender', address: 'sender@example.com' } }
 }] });
 await mail.send({ account: 'transactional', to: 'person@example.net',
   subject: 'Receipt', text: 'Your receipt is ready.', tracking: { enabled: false } });
@@ -80,310 +80,331 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### EmailManagerOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `accounts` | `EmailAccount[]` | No |
-| `defaultAccount` | `string` | Yes |
-| `maxRecipients` | `number` | Yes |
-| `suppressions` | `string[]` | Yes |
-| `rules` | `RecipientRule[]` | Yes |
-| `authorize` | `(message:Readonly<EmailMessage>,account:string)=>boolean\|Promise<boolean>` | Yes |
-| `files` | `{ stat(addr:{storage?:string;bucket:string;key:string}):Promise<{size:number;contentType:string}\|null>;read(addr:{storage?:string;bucket:string;key:string}):Promise<AsyncIterable<Uint8Array>>}` | Yes |
-| `maxAttachmentBytes` | `number` | Yes |
-| `idempotencyTtlMs` | `number` | Yes |
-| `maxIdempotencyKeys` | `number` | Yes |
-| `tracking` | `{instrumentHtml(html:string,context:{id:string;account:string;message:Readonly<EmailMessage>}):string\|Promise<string>; onSent?(event:{id:string;account:string;message:Readonly<EmailMessage>;result:Readonly<EmailResult>}):void\|Promise<void>}` | Yes |
-| `marketingSuppression` | `{isSuppressed(address:EmailAddress):Promise<boolean>}` | Yes |
-| `preferences` | `{ isSubscribed(address:EmailAddress):Promise<boolean>; makeUnsubscribeUrl(address:EmailAddress):string; }` | Yes |
-| `reputation` | `{ checkBeforeSend:(account:string,purpose:'marketing'\|'transactional')=>Promise<{allowed:boolean}>; recordAccepted:(account:string,email:string,messageId:string)=>Promise<boolean\|unknown>; }` | Yes |
-| `onSmtpWarning` | `(warning:{account:string;status:'accepted'\|'partial'\|'rejected'\|'unknown';reason:string})=>void` | Yes |
-| `onReputationError` | `(error:unknown)=>void` | Yes |
-| `onTrackingError` | `(error:unknown)=>void` | Yes |
+| Field                  | Accepted type/value                                                                                                                                                                                                                                  | Optional |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `accounts`             | `EmailAccount[]`                                                                                                                                                                                                                                     | No       |
+| `defaultAccount`       | `string`                                                                                                                                                                                                                                             | Yes      |
+| `maxRecipients`        | `number`                                                                                                                                                                                                                                             | Yes      |
+| `suppressions`         | `string[]`                                                                                                                                                                                                                                           | Yes      |
+| `rules`                | `RecipientRule[]`                                                                                                                                                                                                                                    | Yes      |
+| `authorize`            | `(message:Readonly<EmailMessage>,account:string)=>boolean\|Promise<boolean>`                                                                                                                                                                         | Yes      |
+| `files`                | `{ stat(addr:{storage?:string;bucket:string;key:string}):Promise<{size:number;contentType:string}\|null>;read(addr:{storage?:string;bucket:string;key:string}):Promise<AsyncIterable<Uint8Array>>}`                                                  | Yes      |
+| `maxConcurrentSends`   | integer 1–128, default 8                                                                                                                                                                                                                             | Yes      |
+| `sendTimeoutMs`        | integer 1–600000ms, default 30000                                                                                                                                                                                                                    | Yes      |
+| `maxAttachmentStreams` | integer 1–40, default 4                                                                                                                                                                                                                              | Yes      |
+| `maxAttachmentBytes`   | `number`                                                                                                                                                                                                                                             | Yes      |
+| `idempotencyTtlMs`     | `number`                                                                                                                                                                                                                                             | Yes      |
+| `maxIdempotencyKeys`   | `number`                                                                                                                                                                                                                                             | Yes      |
+| `tracking`             | `{instrumentHtml(html:string,context:{id:string;account:string;message:Readonly<EmailMessage>}):string\|Promise<string>; onSent?(event:{id:string;account:string;message:Readonly<EmailMessage>;result:Readonly<EmailResult>}):void\|Promise<void>}` | Yes      |
+| `marketingSuppression` | `{isSuppressed(address:EmailAddress):Promise<boolean>}`                                                                                                                                                                                              | Yes      |
+| `preferences`          | `{ isSubscribed(address:EmailAddress):Promise<boolean>; makeUnsubscribeUrl(address:EmailAddress):string; }`                                                                                                                                          | Yes      |
+| `reputation`           | `{ checkBeforeSend:(account:string,purpose:'marketing'\|'transactional')=>Promise<{allowed:boolean}>; recordAccepted:(account:string,email:string,messageId:string)=>Promise<boolean\|unknown>; }`                                                   | Yes      |
+| `onSmtpWarning`        | `(warning:{account:string;status:'accepted'\|'partial'\|'rejected'\|'unknown';reason:string})=>void`                                                                                                                                                 | Yes      |
+| `onReputationError`    | `(error:unknown)=>void`                                                                                                                                                                                                                              | Yes      |
+| `onTrackingError`      | `(error:unknown)=>void`                                                                                                                                                                                                                              | Yes      |
 
 ### EmailAccount
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `name` | `string` | No |
-| `smtp` | `SmtpSettings` | Yes |
-| `transport` | `TransportLike` | Yes |
-| `receive` | `Omit<import('./inbound.js').IncomingAccount,'name'>` | Yes |
-| `defaults` | `Partial<EmailMessage>` | Yes |
-| `maxRecipients` | `number` | Yes |
-| `enabled` | `boolean` | Yes |
+| Field           | Accepted type/value                                   | Optional |
+| --------------- | ----------------------------------------------------- | -------- |
+| `name`          | `string`                                              | No       |
+| `smtp`          | `SmtpSettings`                                        | Yes      |
+| `transport`     | `TransportLike`                                       | Yes      |
+| `ownTransport`  | `boolean`, default true                               | Yes      |
+| `receive`       | `Omit<import('./inbound.js').IncomingAccount,'name'>` | Yes      |
+| `defaults`      | `Partial<EmailMessage>`                               | Yes      |
+| `maxRecipients` | `number`                                              | Yes      |
+| `enabled`       | `boolean`                                             | Yes      |
 
 ### SmtpSettings
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `host` | `string` | No |
-| `port` | `number` | No |
-| `secure` | `boolean` | Yes |
-| `requireTLS` | `boolean` | Yes |
-| `ignoreTLS` | `boolean` | Yes |
-| `auth` | `SmtpAuth` | Yes |
-| `pool` | `boolean` | Yes |
-| `maxConnections` | `number` | Yes |
-| `maxMessages` | `number` | Yes |
-| `connectionTimeout` | `number` | Yes |
-| `greetingTimeout` | `number` | Yes |
-| `socketTimeout` | `number` | Yes |
-| `tls` | `{servername?:string;minVersion?:'TLSv1.2'\|'TLSv1.3';rejectUnauthorized?:boolean;ca?:string\|string[]}` | Yes |
-| `dkim` | `{domainName:string;keySelector:string;privateKey:string;cacheDir?:string}` | Yes |
+| Field               | Accepted type/value                                                                                      | Optional |
+| ------------------- | -------------------------------------------------------------------------------------------------------- | -------- |
+| `host`              | `string`                                                                                                 | No       |
+| `port`              | `number`                                                                                                 | No       |
+| `secure`            | `boolean`                                                                                                | Yes      |
+| `requireTLS`        | `boolean`                                                                                                | Yes      |
+| `ignoreTLS`         | `boolean`                                                                                                | Yes      |
+| `auth`              | `SmtpAuth`                                                                                               | Yes      |
+| `pool`              | `boolean`                                                                                                | Yes      |
+| `maxConnections`    | `number`                                                                                                 | Yes      |
+| `maxMessages`       | `number`                                                                                                 | Yes      |
+| `connectionTimeout` | `number`                                                                                                 | Yes      |
+| `greetingTimeout`   | `number`                                                                                                 | Yes      |
+| `socketTimeout`     | `number`                                                                                                 | Yes      |
+| `tls`               | `{servername?:string;minVersion?:'TLSv1.2'\|'TLSv1.3';rejectUnauthorized?:boolean;ca?:string\|string[]}` | Yes      |
+| `dkim`              | `{domainName:string;keySelector:string;privateKey:string;cacheDir?:string}`                              | Yes      |
 
 ### EmailSendOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `htmlMode` | `'email'\|'trusted'` | Yes |
-| `allowLocalAttachmentPaths` | `boolean` | Yes |
-| `tracking` | `boolean\|NonNullable<EmailMessage['tracking']>` | Yes |
+| Field                       | Accepted type/value                              | Optional |
+| --------------------------- | ------------------------------------------------ | -------- |
+| `signal`                    | `AbortSignal`                                    | Yes      |
+| `timeoutMs`                 | integer 1–600000ms                               | Yes      |
+| `deadline`                  | bounded absolute epoch milliseconds              | Yes      |
+| `htmlMode`                  | `'email'\|'trusted'`                             | Yes      |
+| `allowLocalAttachmentPaths` | `boolean`                                        | Yes      |
+| `tracking`                  | `boolean\|NonNullable<EmailMessage['tracking']>` | Yes      |
 
 ### EmailPreferencesOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `baseUrl` | `string` | No |
-| `secret` | `string` | No |
-| `path` | `string` | Yes |
-| `store` | `ConsentStore` | Yes |
-| `maxAgeMs` | `number` | Yes |
-| `postTimeoutMs` | `number` | Yes |
+| Field           | Accepted type/value | Optional |
+| --------------- | ------------------- | -------- |
+| `baseUrl`       | `string`            | No       |
+| `secret`        | `string`            | No       |
+| `path`          | `string`            | Yes      |
+| `store`         | `ConsentStore`      | Yes      |
+| `maxAgeMs`      | `number`            | Yes      |
+| `postTimeoutMs` | `number`            | Yes      |
 
 ### EmailReceiverOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `accounts` | `IncomingAccount[]` | No |
-| `store` | `InboundStore` | Yes |
-| `mode` | `'persist'\|'json'` | Yes |
-| `onMessage` | `(message:InboundMessage)=>Promise<void>\|void` | Yes |
-| `inspectRaw` | `(context:{account:string;raw:Buffer})=>Promise<'clean'\|'spam'\|'phishing'\|'malware'\|'review'>` | Yes |
-| `inspectAttachment` | `(context:{account:string;messageId:string;filename:string;content:Buffer})=>Promise<'clean'\|'suspicious'\|'blocked'>` | Yes |
-| `attachmentContent` | `'metadata'\|'base64'` | Yes |
-| `maxInlineAttachmentBytes` | `number` | Yes |
-| `connections` | `IncomingConnections` | Yes |
-| `parse` | `(raw:Buffer)=>Promise<ParsedIncomingMail>` | Yes |
-| `sanitizeHtml` | `(html:string)=>string\|Promise<string>` | Yes |
-| `saveAttachment` | `(context:{account:string;messageId:string;attachment:InboundAttachment;content:Buffer})=>Promise<string>` | Yes |
-| `now` | `()=>number` | Yes |
+| Field                      | Accepted type/value                                                                                                     | Optional |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------- |
+| `accounts`                 | `IncomingAccount[]`                                                                                                     | No       |
+| `store`                    | `InboundStore`                                                                                                          | Yes      |
+| `mode`                     | `'persist'\|'json'`                                                                                                     | Yes      |
+| `onMessage`                | `(message:InboundMessage)=>Promise<void>\|void`                                                                         | Yes      |
+| `inspectRaw`               | `(context:{account:string;raw:Buffer})=>Promise<'clean'\|'spam'\|'phishing'\|'malware'\|'review'>`                      | Yes      |
+| `inspectAttachment`        | `(context:{account:string;messageId:string;filename:string;content:Buffer})=>Promise<'clean'\|'suspicious'\|'blocked'>` | Yes      |
+| `attachmentContent`        | `'metadata'\|'base64'`                                                                                                  | Yes      |
+| `maxInlineAttachmentBytes` | `number`                                                                                                                | Yes      |
+| `connections`              | `IncomingConnections`                                                                                                   | Yes      |
+| `parse`                    | `(raw:Buffer)=>Promise<ParsedIncomingMail>`                                                                             | Yes      |
+| `sanitizeHtml`             | `(html:string)=>string\|Promise<string>`                                                                                | Yes      |
+| `saveAttachment`           | `(context:{account:string;messageId:string;attachment:InboundAttachment;content:Buffer})=>Promise<string>`              | Yes      |
+| `now`                      | `()=>number`                                                                                                            | Yes      |
 
 ### MarketingCampaignServiceOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `db` | `CampaignDatabaseConnection` | No |
-| `queue` | `MarketingQueue` | No |
-| `delivery` | `MarketingDeliveryStore` | No |
-| `renderer` | `MarketingRenderer` | Yes |
-| `isSubscribed` | `(email:string)=>Promise<boolean>\|boolean` | Yes |
-| `isSuppressed` | `(email:string)=>Promise<boolean>\|boolean` | Yes |
-| `verifyMissingJob` | `(messageId:string)=>Promise<boolean>\|boolean` | Yes |
-| `approveRetention` | `(campaign:Readonly<StoredMarketingCampaign>)=>Promise<boolean>\|boolean` | Yes |
-| `authorize` | `(action:'create'\|'read'\|'enqueue'\|'cancel'\|'render'\|'append'\|'pause'\|'resume'\|'redrive'\|'schedule'\|'archive'\|'export'\|'exportPII'\|'retention'\|'finalize',code?:string)=>Promise<boolean>\|boolean` | Yes |
-| `onQueueError` | `(code:string,error:unknown)=>void\|Promise<void>` | Yes |
-| `verifyProvider` | `(account:string)=>boolean\|Promise<boolean>` | Yes |
-| `onAudit` | `(entry:{code:string;action:'create'\|'append'\|'enqueue'\|'pause'\|'resume'\|'cancel'\|'redrive'\|'schedule'\|'archive'\|'export'\|'retention'\|'finalize';at:number;count?:number})=>void\|Promise<void>` | Yes |
-| `table` | `string` | Yes |
-| `recipientTable` | `string` | Yes |
-| `now` | `()=>number` | Yes |
+| Field              | Accepted type/value                                                                                                                                                                                               | Optional |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `db`               | `CampaignDatabaseConnection`                                                                                                                                                                                      | No       |
+| `queue`            | `MarketingQueue`                                                                                                                                                                                                  | No       |
+| `delivery`         | `MarketingDeliveryStore`                                                                                                                                                                                          | No       |
+| `renderer`         | `MarketingRenderer`                                                                                                                                                                                               | Yes      |
+| `isSubscribed`     | `(email:string)=>Promise<boolean>\|boolean`                                                                                                                                                                       | Yes      |
+| `isSuppressed`     | `(email:string)=>Promise<boolean>\|boolean`                                                                                                                                                                       | Yes      |
+| `verifyMissingJob` | `(messageId:string)=>Promise<boolean>\|boolean`                                                                                                                                                                   | Yes      |
+| `approveRetention` | `(campaign:Readonly<StoredMarketingCampaign>)=>Promise<boolean>\|boolean`                                                                                                                                         | Yes      |
+| `authorize`        | `(action:'create'\|'read'\|'enqueue'\|'cancel'\|'render'\|'append'\|'pause'\|'resume'\|'redrive'\|'schedule'\|'archive'\|'export'\|'exportPII'\|'retention'\|'finalize',code?:string)=>Promise<boolean>\|boolean` | Yes      |
+| `onQueueError`     | `(code:string,error:unknown)=>void\|Promise<void>`                                                                                                                                                                | Yes      |
+| `verifyProvider`   | `(account:string)=>boolean\|Promise<boolean>`                                                                                                                                                                     | Yes      |
+| `onAudit`          | `(entry:{code:string;action:'create'\|'append'\|'enqueue'\|'pause'\|'resume'\|'cancel'\|'redrive'\|'schedule'\|'archive'\|'export'\|'retention'\|'finalize';at:number;count?:number})=>void\|Promise<void>`       | Yes      |
+| `table`            | `string`                                                                                                                                                                                                          | Yes      |
+| `recipientTable`   | `string`                                                                                                                                                                                                          | Yes      |
+| `now`              | `()=>number`                                                                                                                                                                                                      | Yes      |
 
 ### EmailLayoutOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxWidth` | `number` | Yes |
-| `background` | `string` | Yes |
-| `direction` | `'ltr'\|'rtl'` | Yes |
-| `language` | `string` | Yes |
-| `preheader` | `string` | Yes |
+| Field        | Accepted type/value | Optional |
+| ------------ | ------------------- | -------- |
+| `maxWidth`   | `number`            | Yes      |
+| `background` | `string`            | Yes      |
+| `direction`  | `'ltr'\|'rtl'`      | Yes      |
+| `language`   | `string`            | Yes      |
+| `preheader`  | `string`            | Yes      |
 
 ### HtmlConversionOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `layout` | `boolean` | Yes |
-| `maxInputBytes` | `number` | Yes |
-| `allowImages` | `boolean` | Yes |
-| `allowRemoteImages` | `boolean` | Yes |
+| Field               | Accepted type/value | Optional |
+| ------------------- | ------------------- | -------- |
+| `layout`            | `boolean`           | Yes      |
+| `maxInputBytes`     | `number`            | Yes      |
+| `allowImages`       | `boolean`           | Yes      |
+| `allowRemoteImages` | `boolean`           | Yes      |
 
 ### EmailQueueOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `concurrency` | `number` | Yes |
-| `maxPending` | `number` | Yes |
-| `retries` | `number` | Yes |
-| `backoffMs` | `number` | Yes |
-| `maxBackoffMs` | `number` | Yes |
+| Field          | Accepted type/value | Optional |
+| -------------- | ------------------- | -------- |
+| `concurrency`  | `number`            | Yes      |
+| `maxPending`   | `number`            | Yes      |
+| `retries`      | `number`            | Yes      |
+| `backoffMs`    | `number`            | Yes      |
+| `maxBackoffMs` | `number`            | Yes      |
 
 ### CampaignPlannerOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `store` | `CampaignStore` | No |
-| `source` | `CampaignSource` | No |
-| `isSubscribed` | `(email:string)=>Promise<boolean>` | No |
-| `isSuppressed` | `(email:string)=>Promise<boolean>` | No |
-| `ensureMessage` | `(target:CampaignTarget,context:{campaignId:string;tracking:EmailMessage['tracking']})=>Promise<void>` | No |
-| `enqueue` | `(messageId:string,sendAt:number)=>Promise<void>` | No |
-| `now` | `()=>number` | Yes |
-| `batchSize` | `number` | Yes |
-| `leaseMs` | `number` | Yes |
-| `onAudit` | `(entry:{campaignId:string;action:string;at:string})=>void\|Promise<void>` | Yes |
-| `onMetric` | `(metric:{campaignId:string;kind:'queued'\|'scheduled'\|'completed'\|'cancelled';at:number;count:number})=>Promise<void>\|void` | Yes |
+| Field           | Accepted type/value                                                                                                             | Optional |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `store`         | `CampaignStore`                                                                                                                 | No       |
+| `source`        | `CampaignSource`                                                                                                                | No       |
+| `isSubscribed`  | `(email:string)=>Promise<boolean>`                                                                                              | No       |
+| `isSuppressed`  | `(email:string)=>Promise<boolean>`                                                                                              | No       |
+| `ensureMessage` | `(target:CampaignTarget,context:{campaignId:string;tracking:EmailMessage['tracking']})=>Promise<void>`                          | No       |
+| `enqueue`       | `(messageId:string,sendAt:number)=>Promise<void>`                                                                               | No       |
+| `now`           | `()=>number`                                                                                                                    | Yes      |
+| `batchSize`     | `number`                                                                                                                        | Yes      |
+| `leaseMs`       | `number`                                                                                                                        | Yes      |
+| `onAudit`       | `(entry:{campaignId:string;action:string;at:string})=>void\|Promise<void>`                                                      | Yes      |
+| `onMetric`      | `(metric:{campaignId:string;kind:'queued'\|'scheduled'\|'completed'\|'cancelled';at:number;count:number})=>Promise<void>\|void` | Yes      |
 
 ### CampaignDashboardOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `planner` | `CampaignPlanner` | No |
-| `authorize` | `(request:Request)=>unknown\|Promise<unknown>` | No |
-| `verifyCsrf` | `(request:Request,principal:unknown)=>boolean\|Promise<boolean>` | No |
-| `csrfToken` | `(request:Request,principal:unknown)=>string\|Promise<string>` | No |
-| `authorizeCampaign` | `(principal:unknown,id:string,action:string)=>boolean\|Promise<boolean>` | No |
-| `deliveryReport` | `(campaignId:string)=>Promise<unknown>` | Yes |
-| `performanceReport` | `(campaignId:string)=>Promise<unknown>` | Yes |
-| `trendsReport` | `(campaignId:string,from:string,to:string)=>Promise<unknown>` | Yes |
-| `prefix` | `string` | Yes |
-| `publicOrigin` | `string` | Yes |
+| Field               | Accepted type/value                                                      | Optional |
+| ------------------- | ------------------------------------------------------------------------ | -------- |
+| `planner`           | `CampaignPlanner`                                                        | No       |
+| `authorize`         | `(request:Request)=>unknown\|Promise<unknown>`                           | No       |
+| `verifyCsrf`        | `(request:Request,principal:unknown)=>boolean\|Promise<boolean>`         | No       |
+| `csrfToken`         | `(request:Request,principal:unknown)=>string\|Promise<string>`           | No       |
+| `authorizeCampaign` | `(principal:unknown,id:string,action:string)=>boolean\|Promise<boolean>` | No       |
+| `deliveryReport`    | `(campaignId:string)=>Promise<unknown>`                                  | Yes      |
+| `performanceReport` | `(campaignId:string)=>Promise<unknown>`                                  | Yes      |
+| `trendsReport`      | `(campaignId:string,from:string,to:string)=>Promise<unknown>`            | Yes      |
+| `prefix`            | `string`                                                                 | Yes      |
+| `publicOrigin`      | `string`                                                                 | Yes      |
 
 ### MarketingFeedbackHttpOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `verifySignature` | `(body:Uint8Array,headers:Headers)=>Promise<boolean>\|boolean` | No |
-| `parse` | `(body:Uint8Array,headers:Headers)=>Promise<VerifiedEmailNotification[]>\|VerifiedEmailNotification[]` | No |
-| `suppression` | `ReturnType<typeof createMarketingSuppressionService>` | No |
-| `reputation` | `{recordFeedback(input:{account:string;email:string;eventId:string;kind:'hard-bounce'\|'soft-bounce'\|'complaint';at?:number}):Promise<unknown>}` | Yes |
-| `feedbackAccount` | `(event:MarketingFeedback)=>string` | Yes |
-| `providerOutcomes` | `{record(event:{eventId:string;provider:string;campaignId:string;messageId:string;kind:'hard-bounce'\|'soft-bounce'\|'complaint'\|'delivered'\|'deferred';occurredAt:number}):Promise<boolean>}` | Yes |
-| `feedbackDelivery` | `(event:VerifiedEmailNotification)=>{provider:string;campaignId:string;messageId:string;occurredAt:number}` | Yes |
-| `path` | `string` | Yes |
-| `maxBodyBytes` | `number` | Yes |
-| `timeoutMs` | `number` | Yes |
-| `maxEvents` | `number` | Yes |
+| Field              | Accepted type/value                                                                                                                                                                              | Optional |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| `verifySignature`  | `(body:Uint8Array,headers:Headers)=>Promise<boolean>\|boolean`                                                                                                                                   | No       |
+| `parse`            | `(body:Uint8Array,headers:Headers)=>Promise<VerifiedEmailNotification[]>\|VerifiedEmailNotification[]`                                                                                           | No       |
+| `suppression`      | `ReturnType<typeof createMarketingSuppressionService>`                                                                                                                                           | No       |
+| `reputation`       | `{recordFeedback(input:{account:string;email:string;eventId:string;kind:'hard-bounce'\|'soft-bounce'\|'complaint';at?:number}):Promise<unknown>}`                                                | Yes      |
+| `feedbackAccount`  | `(event:MarketingFeedback)=>string`                                                                                                                                                              | Yes      |
+| `providerOutcomes` | `{record(event:{eventId:string;provider:string;campaignId:string;messageId:string;kind:'hard-bounce'\|'soft-bounce'\|'complaint'\|'delivered'\|'deferred';occurredAt:number}):Promise<boolean>}` | Yes      |
+| `feedbackDelivery` | `(event:VerifiedEmailNotification)=>{provider:string;campaignId:string;messageId:string;occurredAt:number}`                                                                                      | Yes      |
+| `path`             | `string`                                                                                                                                                                                         | Yes      |
+| `maxBodyBytes`     | `number`                                                                                                                                                                                         | Yes      |
+| `timeoutMs`        | `number`                                                                                                                                                                                         | Yes      |
+| `maxEvents`        | `number`                                                                                                                                                                                         | Yes      |
 
 ### ReputationPolicy
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `windowMs` | `number` | Yes |
-| `minimumAccepted` | `number` | Yes |
-| `warnBouncePercent` | `number` | Yes |
-| `pauseBouncePercent` | `number` | Yes |
-| `warnComplaintPercent` | `number` | Yes |
-| `pauseComplaintPercent` | `number` | Yes |
-| `warnSoftBouncePercent` | `number` | Yes |
-| `pauseSoftBouncePercent` | `number` | Yes |
-| `protectTransactional` | `boolean` | Yes |
-| `scanLimit` | `number` | Yes |
+| Field                    | Accepted type/value | Optional |
+| ------------------------ | ------------------- | -------- |
+| `windowMs`               | `number`            | Yes      |
+| `minimumAccepted`        | `number`            | Yes      |
+| `warnBouncePercent`      | `number`            | Yes      |
+| `pauseBouncePercent`     | `number`            | Yes      |
+| `warnComplaintPercent`   | `number`            | Yes      |
+| `pauseComplaintPercent`  | `number`            | Yes      |
+| `warnSoftBouncePercent`  | `number`            | Yes      |
+| `pauseSoftBouncePercent` | `number`            | Yes      |
+| `protectTransactional`   | `boolean`           | Yes      |
+| `scanLimit`              | `number`            | Yes      |
 
 ### CampaignImportOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `batchSize` | `number` | Yes |
-| `maxRecipients` | `number` | Yes |
-| `enqueueAfter` | `boolean` | Yes |
-| `signal` | `AbortSignal` | Yes |
-| `onProgress` | `(result:{processed:number;added:number;existing:number})=>void\|Promise<void>` | Yes |
+| Field           | Accepted type/value                                                             | Optional |
+| --------------- | ------------------------------------------------------------------------------- | -------- |
+| `batchSize`     | `number`                                                                        | Yes      |
+| `maxRecipients` | `number`                                                                        | Yes      |
+| `enqueueAfter`  | `boolean`                                                                       | Yes      |
+| `signal`        | `AbortSignal`                                                                   | Yes      |
+| `onProgress`    | `(result:{processed:number;added:number;existing:number})=>void\|Promise<void>` | Yes      |
 
 ### MarketingCampaignDashboardOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `service` | `MarketingCampaignService` | No |
-| `authorize` | `(request:Request)=>unknown\|Promise<unknown>` | No |
-| `authorizeCampaign` | `(principal:unknown,code:string,action:'read'\|'recipients'\|'preview'\|'append'\|'enqueue'\|'pause'\|'resume'\|'cancel'\|'redrive'\|'schedule'\|'archive'\|'finalize'\|'export')=>boolean\|Promise<boolean>` | No |
-| `authorizeCreate` | `(principal:unknown)=>boolean\|Promise<boolean>` | No |
-| `authorizeList` | `(principal:unknown)=>boolean\|Promise<boolean>` | Yes |
-| `verifyCsrf` | `(request:Request,principal:unknown)=>boolean\|Promise<boolean>` | No |
-| `csrfToken` | `(request:Request,principal:unknown)=>string\|Promise<string>` | No |
-| `prefix` | `string` | Yes |
-| `publicOrigin` | `string` | Yes |
+| Field               | Accepted type/value                                                                                                                                                                                           | Optional |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `service`           | `MarketingCampaignService`                                                                                                                                                                                    | No       |
+| `authorize`         | `(request:Request)=>unknown\|Promise<unknown>`                                                                                                                                                                | No       |
+| `authorizeCampaign` | `(principal:unknown,code:string,action:'read'\|'recipients'\|'preview'\|'append'\|'enqueue'\|'pause'\|'resume'\|'cancel'\|'redrive'\|'schedule'\|'archive'\|'finalize'\|'export')=>boolean\|Promise<boolean>` | No       |
+| `authorizeCreate`   | `(principal:unknown)=>boolean\|Promise<boolean>`                                                                                                                                                              | No       |
+| `authorizeList`     | `(principal:unknown)=>boolean\|Promise<boolean>`                                                                                                                                                              | Yes      |
+| `verifyCsrf`        | `(request:Request,principal:unknown)=>boolean\|Promise<boolean>`                                                                                                                                              | No       |
+| `csrfToken`         | `(request:Request,principal:unknown)=>string\|Promise<string>`                                                                                                                                                | No       |
+| `prefix`            | `string`                                                                                                                                                                                                      | Yes      |
+| `publicOrigin`      | `string`                                                                                                                                                                                                      | Yes      |
 
 ### MarketingImportJobOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `db` | `CampaignDatabaseConnection` | No |
-| `id` | `string` | No |
-| `campaignCode` | `string` | No |
-| `sourceRevision` | `string` | No |
-| `source` | `MarketingImportSource` | No |
-| `append` | `(campaignCode:string,entries:readonly (string\|MarketingRecipient)[])=>Promise<{added:number;existing:number;recipientCount:number}>` | No |
-| `batchSize` | `number` | Yes |
-| `leaseMs` | `number` | Yes |
-| `now` | `()=>number` | Yes |
-| `table` | `string` | Yes |
+| Field            | Accepted type/value                                                                                                                    | Optional |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `db`             | `CampaignDatabaseConnection`                                                                                                           | No       |
+| `id`             | `string`                                                                                                                               | No       |
+| `campaignCode`   | `string`                                                                                                                               | No       |
+| `sourceRevision` | `string`                                                                                                                               | No       |
+| `source`         | `MarketingImportSource`                                                                                                                | No       |
+| `append`         | `(campaignCode:string,entries:readonly (string\|MarketingRecipient)[])=>Promise<{added:number;existing:number;recipientCount:number}>` | No       |
+| `batchSize`      | `number`                                                                                                                               | Yes      |
+| `leaseMs`        | `number`                                                                                                                               | Yes      |
+| `now`            | `()=>number`                                                                                                                           | Yes      |
+| `table`          | `string`                                                                                                                               | Yes      |
 
 ### ContactRetentionOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `store` | `MailingContactStore` | No |
-| `olderThan` | `number` | No |
-| `canErase` | `(contact:Readonly<MailingContact>)=>Promise<boolean>\|boolean` | No |
-| `dryRun` | `boolean` | Yes |
-| `cursor` | `string\|null` | Yes |
-| `pageSize` | `number` | Yes |
-| `maxScanned` | `number` | Yes |
-| `signal` | `AbortSignal` | Yes |
-| `onErased` | `(metadata:{contactId:string;at:number})=>void\|Promise<void>` | Yes |
-| `now` | `()=>number` | Yes |
+| Field        | Accepted type/value                                             | Optional |
+| ------------ | --------------------------------------------------------------- | -------- |
+| `store`      | `MailingContactStore`                                           | No       |
+| `olderThan`  | `number`                                                        | No       |
+| `canErase`   | `(contact:Readonly<MailingContact>)=>Promise<boolean>\|boolean` | No       |
+| `dryRun`     | `boolean`                                                       | Yes      |
+| `cursor`     | `string\|null`                                                  | Yes      |
+| `pageSize`   | `number`                                                        | Yes      |
+| `maxScanned` | `number`                                                        | Yes      |
+| `signal`     | `AbortSignal`                                                   | Yes      |
+| `onErased`   | `(metadata:{contactId:string;at:number})=>void\|Promise<void>`  | Yes      |
+| `now`        | `()=>number`                                                    | Yes      |
 
 ### IncomingPollOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `cursor` | `IncomingPollCursor` | Yes |
-| `mailbox` | `string` | Yes |
+| Field     | Accepted type/value  | Optional |
+| --------- | -------------------- | -------- |
+| `cursor`  | `IncomingPollCursor` | Yes      |
+| `mailbox` | `string`             | Yes      |
 
 ### MappedDatabaseInboxOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `table` | `string` | No |
-| `createTable` | `boolean` | Yes |
-| `columns` | `Partial<MappedInboxColumns>` | Yes |
+| Field         | Accepted type/value           | Optional |
+| ------------- | ----------------------------- | -------- |
+| `table`       | `string`                      | No       |
+| `createTable` | `boolean`                     | Yes      |
+| `columns`     | `Partial<MappedInboxColumns>` | Yes      |
 
 ### MailboxSyncOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `db` | `CampaignDatabaseConnection` | No |
-| `id` | `string` | No |
-| `account` | `string` | No |
-| `mailbox` | `string` | Yes |
-| `receiver` | `{poll:(account:string,options:{cursor:IncomingPollCursor;mailbox?:string})=>Promise<{stored:number;nextCursor?:IncomingPollCursor}>}` | No |
-| `leaseMs` | `number` | Yes |
-| `table` | `string` | Yes |
-| `now` | `()=>number` | Yes |
+| Field      | Accepted type/value                                                                                                                    | Optional |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `db`       | `CampaignDatabaseConnection`                                                                                                           | No       |
+| `id`       | `string`                                                                                                                               | No       |
+| `account`  | `string`                                                                                                                               | No       |
+| `mailbox`  | `string`                                                                                                                               | Yes      |
+| `receiver` | `{poll:(account:string,options:{cursor:IncomingPollCursor;mailbox?:string})=>Promise<{stored:number;nextCursor?:IncomingPollCursor}>}` | No       |
+| `leaseMs`  | `number`                                                                                                                               | Yes      |
+| `table`    | `string`                                                                                                                               | Yes      |
+| `now`      | `()=>number`                                                                                                                           | Yes      |
 
 ### InboundRetentionOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `store` | `InboundStore` | No |
-| `account` | `string` | No |
-| `olderThan` | `number` | No |
-| `canErase` | `(message:Readonly<InboundMessage>)=>boolean\|Promise<boolean>` | No |
-| `dryRun` | `boolean` | Yes |
-| `cursor` | `string\|null` | Yes |
-| `pageSize` | `number` | Yes |
-| `maxScanned` | `number` | Yes |
-| `signal` | `AbortSignal` | Yes |
-| `afterErase` | `(entry:{id:string;account:string;references:string[]})=>Promise<void>\|void` | Yes |
+| Field        | Accepted type/value                                                           | Optional |
+| ------------ | ----------------------------------------------------------------------------- | -------- |
+| `store`      | `InboundStore`                                                                | No       |
+| `account`    | `string`                                                                      | No       |
+| `olderThan`  | `number`                                                                      | No       |
+| `canErase`   | `(message:Readonly<InboundMessage>)=>boolean\|Promise<boolean>`               | No       |
+| `dryRun`     | `boolean`                                                                     | Yes      |
+| `cursor`     | `string\|null`                                                                | Yes      |
+| `pageSize`   | `number`                                                                      | Yes      |
+| `maxScanned` | `number`                                                                      | Yes      |
+| `signal`     | `AbortSignal`                                                                 | Yes      |
+| `afterErase` | `(entry:{id:string;account:string;references:string[]})=>Promise<void>\|void` | Yes      |
 
 ### InboxApiOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `store` | `InboundStore` | No |
-| `authorize` | `(access:InboxAccess)=>Promise<boolean>\|boolean` | No |
-| `receiver` | `Pick<EmailReceiver,'poll'\|'markSeen'\|'markUnread'\|'setFlagged'\|'folders'\|'accounts'>` | Yes |
-| `canErase` | `(message:Readonly<InboundMessage>)=>Promise<boolean>\|boolean` | Yes |
+| Field       | Accepted type/value                                                                         | Optional |
+| ----------- | ------------------------------------------------------------------------------------------- | -------- |
+| `store`     | `InboundStore`                                                                              | No       |
+| `authorize` | `(access:InboxAccess)=>Promise<boolean>\|boolean`                                           | No       |
+| `receiver`  | `Pick<EmailReceiver,'poll'\|'markSeen'\|'markUnread'\|'setFlagged'\|'folders'\|'accounts'>` | Yes      |
+| `canErase`  | `(message:Readonly<InboundMessage>)=>Promise<boolean>\|boolean`                             | Yes      |
+
+## Sending source and cleanup map
+
+The package README maps lazy SMTP ownership to `manager.ts`, recipient dispositions to `smtp-outcomes.ts`, byte-reader disposal to `attachments.ts`, local retries to `queue.ts` and committed one-click changes to `preferences.ts`. The public `examples/bounded-send.ts` adapter returns status/counters and borrows its native transport explicitly. Its close drains the manager without closing the host transport.
+
+Keep the local queue's close policy separate: default close rejects queued work without awaiting active sends; explicit drain observes completion and requires the host to stop producers first. V1 template/policy loading validates staged data, merges templates/suppressions and replaces rules. These registries and trusted placeholder/fingerprint objects are not code sandboxes or distributed transactions. Review raw native errors, SMTP responses, mailbox values and unsubscribe URLs as private application data.
+
+The paged planner's completed state means planning has finished, so queued delivery remains allowed. The separate function-first marketing service finalizes registered terminal deliveries and then blocks further sends. Campaign metadata, recipient inserts, delivery records and queue publication are separate commits. Explicit pending redrive checks exact durable identity, fresh policy and native queue absence; sending/uncertain outcomes are never replayed automatically.
+
+Import jobs bind aggregate checkpoints to a host-asserted immutable source revision. Changed source data needs a new job identity/revision. An append may commit before its checkpoint, so replay must use identical recipient data and durable idempotence. Lease cancellation prevents later checkpoint commits; it cannot forcibly cancel native persistence already in progress.
+
+Inbound receiver close stops new polls without cancelling or draining an active poll. Native IMAP operations release their locks and connections; injected drivers and stores retain host ownership. Attachment persistence can precede message metadata, making orphan repair a host responsibility. Inbox summaries remain private untrusted text even after authorization.
+
+Both optional dashboards require an opaque verified principal on pages, assets and API calls. Writes additionally require exact origin, host CSRF and action-scoped permission. Their five-second body-reader deadlines do not bound arbitrary host callbacks. Browser results render through text-only DOM operations; email HTML is displayed as data rather than injected into the console. Package parser/HTTP fixtures do not certify a live browser, provider or assistive technology.
 
 
 ## Public entry points
@@ -437,11 +458,11 @@ const mail=createEmailManager({
   accounts:[
     {name:'transactional',smtp:{host:'smtp.example.com',port:587,requireTLS:true,
       auth:{type:'password',user:'sender@example.com',pass:process.env.SMTP_PASSWORD!}},
-      defaults:{from:'Sender <sender@example.com>'}},
+      defaults:{from:{ name: 'Sender', address: 'sender@example.com' }}},
     {name:'notifications',smtp:{host:'smtp.example.com',port:465,secure:true,
       auth:{type:'oauth2',user:'alerts@example.com',clientId:process.env.OAUTH_CLIENT_ID!,
         clientSecret:process.env.OAUTH_CLIENT_SECRET!,refreshToken:process.env.OAUTH_REFRESH_TOKEN!}},
-      defaults:{from:'Alerts <alerts@example.com>'}}
+      defaults:{from:{ name: 'Alerts', address: 'alerts@example.com' }}}
   ],
   tracking,files // optional named Files manager for attachment streaming
 });
@@ -468,13 +489,13 @@ For file attachments supply `files` when creating the manager and set `attachmen
 
 ## Marketing permission is separate from activity tracking
 
-`purpose:'marketing'` requires one recipient and an affirmative subscribed record in an injected `preferences` service. Marketing unsubscribe endpoints are hosted by ZeruxJS and require a POST to modify preference state. `purpose:'transactional'` remains independent of the marketing permission store. Neither an opt-in subscription nor an unsubscribe silently changes `tracking` for any message. Tracking is still off unless explicitly requested *on the send*, and can be overridden by `{tracking:false}`.
+`purpose:'marketing'` requires one recipient and an affirmative subscribed record in an injected `preferences` service. Marketing unsubscribe endpoints are hosted by ZeruxJS and require a POST to modify preference state. `purpose:'transactional'` remains independent of the marketing permission store. Neither an opt-in subscription nor an unsubscribe silently changes `tracking` for any message. Tracking is still off unless explicitly requested _on the send_, and can be overridden by `{tracking:false}`.
 
 For tracked deliveries, `EmailResult.trackingId` identifies activity reports (an opaque UUID), but is only supplied when tracking is requested and a tracking service is injected. `message.tracking` accepts `opens`, `clicks`, `downloads`, and a list of exact HTTPS `downloadLinks`. For per-email first/last timestamps and counts call `tracking.getActivity(result.trackingId)` in `@zeruxjs/analytics`. A link click is **not** a proven completed download. Attachments are not trackable after delivery.
 
 ## Marketing campaigns
 
-Use `createCampaignPlanner` for persistent, segmented recipient paging and stage-before-enqueue checkpoints, `createDatabaseCampaignStore` for atomic multi-node document CAS, `createMarketingSuppressionService` with a shared store for hard/soft bounce and complaint handling, and `createCampaignDashboard`/branch/v0.0.4/`createMarketingFeedbackEndpoint` for *opt-in* authenticated routes. `createCampaignAnalyticsReporter` can emit best-effort operational events for internal Reports. Never assume memory stores provide restart/multi-server safety; provider webhooks must verify raw-body signatures.
+Use `createCampaignPlanner` for persistent, segmented recipient paging and stage-before-enqueue checkpoints, `createDatabaseCampaignStore` for atomic multi-node document CAS, `createMarketingSuppressionService` with a shared store for hard/soft bounce and complaint handling, and `createCampaignDashboard`/branch/v0.0.4/`createMarketingFeedbackEndpoint` for _opt-in_ authenticated routes. `createCampaignAnalyticsReporter` can emit best-effort operational events for internal Reports. Never assume memory stores provide restart/multi-server safety; provider webhooks must verify raw-body signatures.
 
 See the [durable email guide](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/apps/zerux-docs/src/docs/0.0.4/durable-email.md) for queue integration and delivery controls.
 
@@ -529,7 +550,6 @@ Marketing checks fresh boolean subscription/suppression state again at the SMTP 
 
 Qualification uses injected transports, streams and local HTTP preference fixtures. It does not certify live SMTP/TLS delivery, IMAP/POP3 servers, broker crash recovery or production durable stores.
 
-
 ## Authenticated feedback and local sender visibility
 
 `createSenderFeedbackService` is an opt-in correlated ledger alongside the unchanged `createEmailReputationService` policy API. [The public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/email/examples/sender-visibility.ts) binds one tenant/site/account/provider and wires authenticated feedback, suppression and a report endpoint. No collectors, provider polling, remote requests or analytics start on import.
@@ -571,6 +591,26 @@ executing markup. These lexical warnings are advisory, not an HTML sanitizer,
 complete browser parser, authentication result or malware certification.
 
 The dependency floor now selects Nodemailer 10.4+ and Mailparser 3.14.2+ to avoid the earlier address-parser advisories. Transport acceptance, ambiguous outcomes and MIME limits retain the contracts above; injected transport and MIME fixtures are not live SMTP qualification.
+
+## Reading the sending and consent implementation
+
+`src/manager.ts` owns lazy native transports, actual unsettled send/verification slots, caller observation, explicit tracking policy and process-local idempotency fences. `src/smtp-outcomes.ts` classifies intended envelope recipients and projects address-free counters. Neither a fulfilled send nor a tracking observation proves inbox delivery. The historical internal `redactResult` helper normalizes private native fields; it is not a public response sanitizer.
+
+`src/attachments.ts` owns lazy Node wrappers, exact recorded lengths, concurrent reader slots and iterator/close settlement. Files managers remain borrowed. `src/queue.ts` owns a separate process-local FIFO/retry loop: `close()` without `drain:true` rejects queued jobs without cancelling or awaiting active borrowed sends. `flush()` observes actual local drain. A draining close waits before stopping admission, so hosts should stop producers first. This is distinct from manager close and durable outbox delivery.
+
+`src/validation.ts`, `src/filters.ts`, `src/templates.ts` and `src/html.ts` separate envelope policy, local recipient rules, inert placeholder substitution and maintained sanitization/inlining. Authored table/cell HTML remains trusted input to layout helpers. Templates and fingerprinting do not sandbox getters, `toJSON` or scalar conversion on trusted application objects. Filter `setRules` retains its sequential replacement behavior; it is not a staged transaction.
+
+`src/persistence.ts` stage-validates a bounded V1 snapshot before applying it. Loading merges templates and suppressions while replacing rules; an absent imported template/suppression does not delete an existing one. Trusted directory ancestry and concurrent filesystem operators remain host responsibilities. Snapshot contents contain private recipient values, even though SMTP credentials are excluded.
+
+`src/preferences.ts` keeps committed subscription state separate from tracking. GET/HEAD confirmation cannot unsubscribe; the encrypted capability plus exact bounded POST body commits the change. The default memory consent store is development-only, its inspection snapshots copy the outer map rather than deep-freezing records, and production requires a shared committed store. Host code must authorize management/status access and independently verify opt-in evidence.
+
+`src/campaigns.ts` is the paged planner: its completed state means planning finished and still permits delivery of queued messages. `src/marketing.ts` is the separate function-first service: finalization checks registered terminal delivery records and its completed state blocks further sends. Campaign, recipient, durable delivery and queue writes are separate commits. Stable job IDs do not provide exactly-once SMTP delivery; pending redrive requires explicit queue-absence evidence and never replays sending/uncertain outcomes. Its five-minute CAS operation lease is private management state, not a browser capability.
+
+`src/marketing-import.ts` parses bounded inert CSV without evaluating source. `src/marketing-import-jobs.ts` checkpoints aggregate progress against an immutable host-asserted source revision. Changed input needs a new job identity/revision; append must reconcile identical replays because a crash can occur after append and before checkpoint. Lease loss/cancellation fences later checkpoints but cannot recall an already started native append.
+
+`src/inbound.ts` owns native per-operation IMAP locks/logout and POP3 completion, while injected drivers and stores remain borrowed. Receiver `close()` only stops admission: it does not cancel or drain active polls. Attachment persistence can precede message metadata, so hosts own idempotence and orphan repair. `src/inbound-sync.ts` fences durable folder cursors with lease epochs; `src/inbox-api.ts` requires literal per-call authorization and exposes private untrusted summaries. Remote unread/flag changes are distinct from local erasure. Retention previews do not delete; actual deletion needs explicit host policy, and related stores are not erased atomically.
+
+`src/campaign-dashboard.ts` and `src/marketing-dashboard.ts` return explicit host-registerable routes, never a listener. Every page, asset and API request requires a verified principal; writes also require exact origin, host CSRF and scoped action approval. Body readers own five-second read deadlines (12 KiB planner, 128 KiB marketing), not arbitrary callback deadlines. The browser assets use text-only result rendering; rendered email HTML remains untrusted data. The [sender visibility example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/email/examples/sender-visibility.ts) shows public imports with durable stores and host signature/report authorization callbacks. HTTP/parser fixtures are not live browser or provider qualification.
 
 
 ## Implementation sources

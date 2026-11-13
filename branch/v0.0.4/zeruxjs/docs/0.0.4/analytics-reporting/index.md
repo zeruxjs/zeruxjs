@@ -13,12 +13,12 @@ Request IDs support day-scoped deduplication/correlation. Use a shared atomic re
 
 ## Select the correct query path
 
-| Need | Query path | Interpretation |
-| --- | --- | --- |
-| Recent event inspection | Bounded raw event page | A sample/page, not a global total |
-| Counts over supported dimensions | Native aggregate | Exact for persisted matching rows |
-| Numeric sum/average/min/max | Configured materialized numeric facts | Indexed-only coverage |
-| Historical numeric repair | Reconciliation pages/jobs | Resumable repair, not a transactional completeness proof |
+| Need                             | Query path                            | Interpretation                                           |
+| -------------------------------- | ------------------------------------- | -------------------------------------------------------- |
+| Recent event inspection          | Bounded raw event page                | A sample/page, not a global total                        |
+| Counts over supported dimensions | Native aggregate                      | Exact for persisted matching rows                        |
+| Numeric sum/average/min/max      | Configured materialized numeric facts | Indexed-only coverage                                    |
+| Historical numeric repair        | Reconciliation pages/jobs             | Resumable repair, not a transactional completeness proof |
 
 Before comparing a chart to another system, compare its time window, tenant filter, dimensions, persisted-row coverage and ingestion loss policy.
 

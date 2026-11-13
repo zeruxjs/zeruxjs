@@ -64,49 +64,49 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### TypeScriptBuildOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `entryPoints` | `string[]` | No |
-| `outdir` | `string` | No |
-| `cwd` | `string` | Yes |
-| `format` | `"esm" \| "cjs" \| "iife"` | Yes |
-| `platform` | `"node" \| "browser" \| "neutral"` | Yes |
-| `target` | `string` | Yes |
-| `bundle` | `boolean` | Yes |
-| `minify` | `boolean` | Yes |
-| `sourcemap` | `boolean` | Yes |
-| `external` | `string[]` | Yes |
-| `signal` | `AbortSignal` | Yes |
+| Field         | Accepted type/value                | Optional |
+| ------------- | ---------------------------------- | -------- |
+| `entryPoints` | `string[]`                         | No       |
+| `outdir`      | `string`                           | No       |
+| `cwd`         | `string`                           | Yes      |
+| `format`      | `"esm" \| "cjs" \| "iife"`         | Yes      |
+| `platform`    | `"node" \| "browser" \| "neutral"` | Yes      |
+| `target`      | `string`                           | Yes      |
+| `bundle`      | `boolean`                          | Yes      |
+| `minify`      | `boolean`                          | Yes      |
+| `sourcemap`   | `boolean`                          | Yes      |
+| `external`    | `string[]`                         | Yes      |
+| `signal`      | `AbortSignal`                      | Yes      |
 
 ### TransformOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `filename` | `string` | Yes |
-| `format` | `ScriptFormat` | Yes |
-| `sourceMap` | `boolean` | Yes |
-| `target` | `ts.ScriptTarget` | Yes |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `filename`  | `string`            | Yes      |
+| `format`    | `ScriptFormat`      | Yes      |
+| `sourceMap` | `boolean`           | Yes      |
+| `target`    | `ts.ScriptTarget`   | Yes      |
 
 ### TsConfigOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `preset` | `TypeScriptPresetName` | Yes |
-| `overwrite` | `boolean` | Yes |
-| `compilerOptions` | `Record<string, unknown>` | Yes |
-| `include` | `string[]` | Yes |
-| `exclude` | `string[]` | Yes |
+| Field             | Accepted type/value       | Optional |
+| ----------------- | ------------------------- | -------- |
+| `preset`          | `TypeScriptPresetName`    | Yes      |
+| `overwrite`       | `boolean`                 | Yes      |
+| `compilerOptions` | `Record<string, unknown>` | Yes      |
+| `include`         | `string[]`                | Yes      |
+| `exclude`         | `string[]`                | Yes      |
 
 ### TypecheckOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `files` | `string[]` | No |
-| `cwd` | `string` | Yes |
-| `configFile` | `string` | Yes |
-| `checkDependencies` | `boolean` | Yes |
-| `signal` | `AbortSignal` | Yes |
-| `cancellationToken` | `ts.CancellationToken` | Yes |
+| Field               | Accepted type/value    | Optional |
+| ------------------- | ---------------------- | -------- |
+| `files`             | `string[]`             | No       |
+| `cwd`               | `string`               | Yes      |
+| `configFile`        | `string`               | Yes      |
+| `checkDependencies` | `boolean`              | Yes      |
+| `signal`            | `AbortSignal`          | Yes      |
+| `cancellationToken` | `ts.CancellationToken` | Yes      |
 
 ## Environment presets and declaration ownership
 
@@ -132,11 +132,11 @@ paths and export-map-aware resolution. Run `tsc -p tsconfig.json` in the owning
 package to emit declarations. Neither checkTypes nor esbuild emits declarations.
 The tooling package does not collect or reexport other packages' public types.
 
-| Preset | Modules/resolution | Globals and conditions |
-| --- | --- | --- |
-| `node-server` | NodeNext/NodeNext | ES2022, explicit Node types; implicit node/types/import-or-require conditions |
-| `browser-library` | ESNext/Bundler | ES2022 + DOM/DOM.Iterable, `types:[]`, additional browser condition |
-| `mixed-exports` | NodeNext/NodeNext | Portable ES2022 only, `types:[]`; implicit NodeNext conditions |
+| Preset            | Modules/resolution | Globals and conditions                                                        |
+| ----------------- | ------------------ | ----------------------------------------------------------------------------- |
+| `node-server`     | NodeNext/NodeNext  | ES2022, explicit Node types; implicit node/types/import-or-require conditions |
+| `browser-library` | ESNext/Bundler     | ES2022 + DOM/DOM.Iterable, `types:[]`, additional browser condition           |
+| `mixed-exports`   | NodeNext/NodeNext  | Portable ES2022 only, `types:[]`; implicit NodeNext conditions                |
 
 Install the Node typings in the server owner. Mixed packages should separately
 check server/browser trees and maintain their own conditional exports and matching
@@ -231,7 +231,7 @@ await buildTypescript({ entryPoints: ['src/index.ts'], outdir: 'dist', bundle: t
 createTsConfig(process.cwd()); // leaves an existing config untouched
 ```
 
-`registerTypescript()` installs and returns a disposer for **CommonJS require** hooks only. ESM TypeScript loading uses `@zeruxjs/typescript/loader` with Node's custom ESM loader mechanism. Transpilation does *not* typecheck; call `checkTypes` separately. `buildTypescript` requires esbuild, which is an explicit package dependency.
+`registerTypescript()` installs and returns a disposer for **CommonJS require** hooks only. ESM TypeScript loading uses `@zeruxjs/typescript/loader` with Node's custom ESM loader mechanism. Transpilation does _not_ typecheck; call `checkTypes` separately. `buildTypescript` requires esbuild, which is an explicit package dependency.
 
 ## Browser production assets
 
@@ -265,11 +265,11 @@ win; invalid compiler options reject before writing. Configs are trusted local
 build inputs. Run `tsc -p tsconfig.json` in the owning package to emit its own
 JavaScript/declarations; `checkTypes` never emits and esbuild emits no declarations.
 
-| Preset | Resolution and conditions | Environment |
-| --- | --- | --- |
-| `node-server` | `module`/branch/v0.0.4/`moduleResolution: NodeNext`; TypeScript selects `types`, `node`, and per-import `import`/branch/v0.0.4/`require` conditions | ES2022, explicit `types:['node']`; install `@types/node` in the owner |
-| `browser-library` | `ESNext`/branch/v0.0.4/`Bundler`, extra `browser` condition; respects package exports | ES2022 + DOM/DOM.Iterable, `types:[]` |
-| `mixed-exports` | NodeNext as above, no extra conditions | ES2022 only, `types:[]`; portable shared code |
+| Preset            | Resolution and conditions                                                                                               | Environment                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `node-server`     | `module`/branch/v0.0.4/`moduleResolution: NodeNext`; TypeScript selects `types`, `node`, and per-import `import`/branch/v0.0.4/`require` conditions | ES2022, explicit `types:['node']`; install `@types/node` in the owner |
+| `browser-library` | `ESNext`/branch/v0.0.4/`Bundler`, extra `browser` condition; respects package exports                                                 | ES2022 + DOM/DOM.Iterable, `types:[]`                                 |
+| `mixed-exports`   | NodeNext as above, no extra conditions                                                                                  | ES2022 only, `types:[]`; portable shared code                         |
 
 All presets enable strict checking, declaration emission, `noEmitOnError`,
 `skipLibCheck:false`, `noUncheckedSideEffectImports:true`, `rootDir:'src'` and `outDir:'dist'`. They never rewrite a
@@ -335,6 +335,32 @@ including esbuild's platform binary; all temporary files/cache are removed.
 It does not start applications or exercise a live browser. Archive fixtures skip
 prepack because the package-local build has already run; this is not a release
 publication check.
+
+## Source maintenance
+
+The source files follow the root formatting policy. Keep transpilation and
+execution separate when extending these entry points:
+
+| File                                | Responsibility and boundary                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `src/transform.ts`                  | Text transpilation and synchronous diagnostic checks; never emits during typechecking.                               |
+| `src/dependencies.ts`               | Literal-import manifest diagnostics, with invocation-local caching and no imported-code execution.                   |
+| `src/build.ts`                      | esbuild output and owned cancellation/disposal; callers own staging and promotion.                                   |
+| `src/loader.ts` / `src/register.ts` | Trusted Node module loading and process-wide CommonJS hook ownership. Dispose nested registrations in reverse order. |
+| `src/tsconfig.ts`                   | Validated config generation and same-directory temporary-file cleanup; not a cross-process reservation.              |
+| `src/presets.ts`                    | Fresh environment configuration data, safe to import without Node tooling.                                           |
+| `src/validation.ts`                 | Shared input narrowing; not filesystem authorization or a compiler graph budget.                                     |
+
+Run formatting and ESLint from the repository root with this package as the
+explicit scope. Run builds and the focused tests from this directory. The
+installed-consumer fixture checks public exports offline; it does not start an
+application or establish live-browser compatibility.
+
+Public and internal function contracts use typed `@param` and `@returns` tags;
+public option/result fields explain defaults and ownership at their declarations.
+Local constants document provenance, constraints or ownership, and loop comments
+explain iteration bindings. The reviewed-scope ESLint gate checks missing/empty
+contracts as well as formatting; it does not establish runtime correctness.
 
 
 ## Implementation sources

@@ -75,84 +75,94 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### QueueJobOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `jobId` | `string` | Yes |
-| `delay` | `number` | Yes |
-| `priority` | `number` | Yes |
-| `attempts` | `number` | Yes |
-| `backoff` | `number \| {type:'fixed'\|'exponential';delay:number}` | Yes |
-| `removeOnComplete` | `boolean \| number \| {age?:number;count?:number}` | Yes |
-| `removeOnFail` | `boolean \| number \| {age?:number;count?:number}` | Yes |
-| `repeat` | `{every?:number;pattern?:string;limit?:number;immediately?:boolean}` | Yes |
-| `deduplication` | `{id:string;ttl?:number}` | Yes |
+| Field              | Accepted type/value                                                  | Optional |
+| ------------------ | -------------------------------------------------------------------- | -------- |
+| `jobId`            | `string`                                                             | Yes      |
+| `delay`            | `number`                                                             | Yes      |
+| `priority`         | `number`                                                             | Yes      |
+| `attempts`         | `number`                                                             | Yes      |
+| `backoff`          | `number \| {type:'fixed'\|'exponential';delay:number}`               | Yes      |
+| `removeOnComplete` | `boolean \| number \| {age?:number;count?:number}`                   | Yes      |
+| `removeOnFail`     | `boolean \| number \| {age?:number;count?:number}`                   | Yes      |
+| `repeat`           | `{every?:number;pattern?:string;limit?:number;immediately?:boolean}` | Yes      |
+| `deduplication`    | `{id:string;ttl?:number}`                                            | Yes      |
 
 ### QueueWorkerOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `concurrency` | `number` | Yes |
-| `autorun` | `boolean` | Yes |
-| `lockDuration` | `number` | Yes |
-| `limiter` | `{max:number;duration:number}` | Yes |
+| Field          | Accepted type/value            | Optional |
+| -------------- | ------------------------------ | -------- |
+| `concurrency`  | `number`                       | Yes      |
+| `autorun`      | `boolean`                      | Yes      |
+| `lockDuration` | `number`                       | Yes      |
+| `limiter`      | `{max:number;duration:number}` | Yes      |
 
 ### QueueDashboardOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `authorize` | `(request:Request)=>unknown\|Promise<unknown>` | No |
-| `verifyCsrf` | `(request:Request,principal:unknown)=>boolean\|Promise<boolean>` | No |
-| `csrfToken` | `(request:Request,principal:unknown)=>string\|Promise<string>` | No |
-| `prefix` | `string` | Yes |
-| `publicOrigin` | `string` | Yes |
+| Field          | Accepted type/value                                              | Optional |
+| -------------- | ---------------------------------------------------------------- | -------- |
+| `authorize`    | `(request:Request)=>unknown\|Promise<unknown>`                   | No       |
+| `verifyCsrf`   | `(request:Request,principal:unknown)=>boolean\|Promise<boolean>` | No       |
+| `csrfToken`    | `(request:Request,principal:unknown)=>string\|Promise<string>`   | No       |
+| `prefix`       | `string`                                                         | Yes      |
+| `publicOrigin` | `string`                                                         | Yes      |
 
 ### DurableEmailDeliveryOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `store` | `DurableEmailDeliveryStore` | No |
-| `isSubscribed` | `(email:string)=>Promise<boolean>` | No |
-| `isSuppressed` | `(email:string)=>Promise<boolean>` | Yes |
-| `campaignGate` | `(record:Readonly<DurableEmailDeliveryRecord>)=>Promise<'allow'\|'defer'\|'suppress'>` | Yes |
-| `send` | `(messageId:string,record:Readonly<DurableEmailDeliveryRecord>)=>Promise<unknown>` | No |
-| `onUncertain` | `(messageId:string)=>void\|Promise<void>` | Yes |
-| `leaseMs` | `number` | Yes |
-| `now` | `()=>number` | Yes |
+| Field          | Accepted type/value                                                                    | Optional |
+| -------------- | -------------------------------------------------------------------------------------- | -------- |
+| `store`        | `DurableEmailDeliveryStore`                                                            | No       |
+| `isSubscribed` | `(email:string)=>Promise<boolean>`                                                     | No       |
+| `isSuppressed` | `(email:string)=>Promise<boolean>`                                                     | Yes      |
+| `campaignGate` | `(record:Readonly<DurableEmailDeliveryRecord>)=>Promise<'allow'\|'defer'\|'suppress'>` | Yes      |
+| `send`         | `(messageId:string,record:Readonly<DurableEmailDeliveryRecord>)=>Promise<unknown>`     | No       |
+| `onUncertain`  | `(messageId:string)=>void\|Promise<void>`                                              | Yes      |
+| `leaseMs`      | `number`                                                                               | Yes      |
+| `now`          | `()=>number`                                                                           | Yes      |
 
 ### TaskScheduleOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `attempts` | `number` | Yes |
-| `backoffMs` | `number` | Yes |
-| `startDate` | `string\|number\|Date` | Yes |
-| `endDate` | `string\|number\|Date` | Yes |
-| `limit` | `number` | Yes |
-| `timezone` | `string` | Yes |
+| Field       | Accepted type/value    | Optional |
+| ----------- | ---------------------- | -------- |
+| `attempts`  | `number`               | Yes      |
+| `backoffMs` | `number`               | Yes      |
+| `startDate` | `string\|number\|Date` | Yes      |
+| `endDate`   | `string\|number\|Date` | Yes      |
+| `limit`     | `number`               | Yes      |
+| `timezone`  | `string`               | Yes      |
 
 ### QueueServiceConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `enabled` | `boolean` | Yes |
-| `redis` | `RedisConnectionSettings` | No |
-| `prefix` | `string` | Yes |
-| `queues` | `Array<string \| QueueDefinition>` | No |
-| `workers` | `Record<string, {processor:JobProcessor} & QueueWorkerOptions>` | Yes |
-| `readyTimeoutMs` | `number` | Yes |
-| `shutdownGraceMs` | `number` | Yes |
-| `onWorkerError` | `(queue:string, error:unknown)=>void` | Yes |
-| `events` | `{enabled:true;onEvent?:(event:QueueEventNotice)=>void;onError?:(queue:string,error:unknown)=>void}` | Yes |
-| `administration` | `QueueAdministrationPolicy` | Yes |
-| `dashboard` | `QueueDashboardOptions` | Yes |
+| Field             | Accepted type/value                                                                                  | Optional |
+| ----------------- | ---------------------------------------------------------------------------------------------------- | -------- |
+| `enabled`         | `boolean`                                                                                            | Yes      |
+| `redis`           | `RedisConnectionSettings`                                                                            | No       |
+| `prefix`          | `string`                                                                                             | Yes      |
+| `queues`          | `Array<string \| QueueDefinition>`                                                                   | No       |
+| `workers`         | `Record<string, {processor:JobProcessor} & QueueWorkerOptions>`                                      | Yes      |
+| `readyTimeoutMs`  | `number`                                                                                             | Yes      |
+| `shutdownGraceMs` | `number`                                                                                             | Yes      |
+| `onWorkerError`   | `(queue:string, error:unknown)=>void`                                                                | Yes      |
+| `events`          | `{enabled:true;onEvent?:(event:QueueEventNotice)=>void;onError?:(queue:string,error:unknown)=>void}` | Yes      |
+| `administration`  | `QueueAdministrationPolicy`                                                                          | Yes      |
+| `dashboard`       | `QueueDashboardOptions`                                                                              | Yes      |
 
 ### QueueAdministrationPolicy
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `authorize` | `(action:QueueAdminAction,queue:string,context:unknown)=>boolean\|Promise<boolean>` | No |
-| `onAudit` | `(entry:{action:QueueAdminAction;queue:string;jobId?:string;success:boolean;at:string})=>void\|Promise<void>` | Yes |
-| `maxPageSize` | `number` | Yes |
+| Field         | Accepted type/value                                                                                           | Optional |
+| ------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
+| `authorize`   | `(action:QueueAdminAction,queue:string,context:unknown)=>boolean\|Promise<boolean>`                           | No       |
+| `onAudit`     | `(entry:{action:QueueAdminAction;queue:string;jobId?:string;success:boolean;at:string})=>void\|Promise<void>` | Yes      |
+| `maxPageSize` | `number`                                                                                                      | Yes      |
+
+## Explicit neutral backends and durable webhooks
+
+The root retains the BullMQ compatibility API. `/neutral` accepts an explicit trusted factory selection and `/backends` supplies inert adapters for injected standalone basics. Required capabilities reject before startup; destructive MemcacheQ cannot satisfy manual acknowledgement. Native BullMQ push workers/schedulers remain on the typed exact-factory extension, while RabbitMQ pull acknowledgements stay on the original channel. No automatic package discovery, fallback worker loop or exactly-once business processing is provided.
+
+Await neutral `close()` through actual pending calls before reverse registered cleanup; do not separately close its borrowed native extension. The wrapper bounds plain JSON and pending work, but trusted native extension calls retain their own owning package policy. Static cleanup diagnostics cannot authorize a tenant or prove teardown occurred.
+
+`/webhooks` is an opt-in host-durable CAS workflow. The application supplies storage, verified principals, destination registry, rotating signing keys and approved HTTPS egress. Queue jobs contain only tenant/delivery references; inspection omits bodies, keys and URLs. Expired sending leases and lost acknowledgements become uncertain rather than automatic retries. Explicit redrive rechecks permissions, destination, credentials and original age/attempt caps.
+
+Await `prepare()` before a SQLite synchronous transaction, then insert the prepared outbox record and business change on its exact synchronous pin without awaits. Async `commit()` requires the existing real pinned transaction contract. Close workflow before its borrowed HTTPS transport/store; HTTPS close also awaits actual DNS settlement. Built-in address denial, TLS and redirect rejection still require deployment egress controls and receiver idempotency. See the package README's public-import examples and exact limits; fixtures do not certify a live broker, receiver or crash-recovery deployment.
 
 
 ## Public entry points
@@ -195,7 +205,7 @@ Manifest reference for `@zeruxjs/queue@0.0.4`.
 
 # @zeruxjs/queue
 
-The implementation now lives in [`@zeruxjs/queue-bullmq`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/queue-bullmq/README.md); this package preserves its public API through compatibility exports. [`queue-rabbitmq`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/queue-rabbitmq/README.md) and [`queue-memcacheq`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/queue-memcacheq/README.md) currently provide explicit standalone factories with different capabilities. Legacy framework `queue` configuration still uses BullMQ; the explicit neutral selection below opts into other factories.
+The implementation now lives in [`@zeruxjs/queue-bullmq`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/queue/package-queue-bullmq.md); this package preserves its public API through compatibility exports. [`queue-rabbitmq`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/queue/package-queue-rabbitmq.md) and [`queue-memcacheq`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/queue/package-queue-memcacheq.md) currently provide explicit standalone factories with different capabilities. Legacy framework `queue` configuration still uses BullMQ; the explicit neutral selection below opts into other factories.
 
 BullMQ-backed named job queues, durable Redis storage, optional worker processors, delayed/retried/repeatable jobs, and generation-scoped ZeruxJS startup/shutdown. This is a **Redis-backed queue** and does not use the SQL/Mongo analytics storage as a queue backend.
 
@@ -310,7 +320,7 @@ await enqueueEmailById(service.queue('emails'),'mail_123',{delay:30_000});
 
 **Delivery contract:** `deliver()` must atomically claim an ID in a shared durable store, recheck consent at the send boundary via the email manager for marketing, and return `'sent'`, `'already-sent'` or `'suppressed'`. BullMQ is at-least-once; an SMTP acceptance followed by a crash before marking sent remains ambiguous, so neither BullMQ nor this adapter can promise exactly-once delivery. Provider idempotency where available, a transactional outbox, an explicit uncertain-delivery state, and manual reconciliation are recommended. Do not retry unknown SMTP outcomes blindly. Queue worker errors and operations callbacks do not govern optional email tracking.
 
-**Deployment status:** Unit tests use injected BullMQ classes. Live Redis/BullMQ and multi-worker recovery were not exercised without installed dependencies and `QUEUE_REDIS_URL`. Reinstall with network access and regenerate the npm lockfile before `npm ci` or production rollout.
+**Deployment qualification:** Injected BullMQ fixtures do not establish live Redis/BullMQ or multi-worker recovery. Use the committed npm lockfile and matching installed dependencies; explicitly configure an isolated `QUEUE_REDIS_URL` for live acceptance. Never point acceptance tests at production.
 
 ## Authenticated queue operations dashboard
 
@@ -347,7 +357,7 @@ State transitions:
 
 `pending -> claimed -> suppressed` (marketing opted out)
 
-`claimed -> pending` (consent store unavailable *before* SMTP begins; safe to retry)
+`claimed -> pending` (consent store unavailable _before_ SMTP begins; safe to retry)
 
 `sending -> uncertain` (SMTP error, timeout, crash, or expired sending lease; **never resend automatically**)
 
@@ -393,7 +403,7 @@ Server-internal `service.schedules(queue)` remains an explicitly trusted applica
 
 ### Opt-in live release gate
 
-Install dependencies with a repaired registry-backed lockfile, use isolated Redis and **explicitly** opt in:
+Install matching dependencies from the committed lockfile, use isolated Redis and **explicitly** opt in:
 
 ```bash
 # Real standalone, two BullMQ service instances, delayed/retry/concurrent workers:
@@ -435,11 +445,11 @@ export async function sendReference(url: string) {
 
 The example publishes/pulls a reference only; it does not implement that business side effect. URL credentials are private server configuration, never job payloads. Authorization, tenant-specific factory/queue allowlists, consent, durable idempotency and uncertain-result reconciliation remain host responsibilities. No API is automatically exposed over HTTP. A queue prefix/name is not permission. Native factory options retain the owning package's inferred types; unknown top-level and known nested backend options reject before startup. `selectQueueBackend` validates synchronously and the framework validates again before opening database/cache resources. Custom validators must be pure synchronous trusted code.
 
-| Adaptation | Publish completion | Neutral consumption | Delay/retry | Scheduler |
-| --- | --- | --- | --- | --- |
-| `bullMQBackend(['jobs'])` | Native BullMQ add completes | `push:true`; configure native `options.workers`, neutral `take` rejects | Native delay/attempts supported | Native typed extension only |
-| `rabbitMQBackend(createRabbitMQ, ['jobs'])` | Broker publisher confirmation | Manual-ack pull; settle `ack`, `discard`, `requeue` once locally | No delay/automatic retry; explicit requeue can repeat indefinitely | Unsupported |
-| `memcacheQBackend(createMemcacheQ, ['jobs'])` | Native append response | Destructive pull; disposition `consumed`, no settle method | Unsupported | Unsupported |
+| Adaptation                                    | Publish completion            | Neutral consumption                                                     | Delay/retry                                                        | Scheduler                   |
+| --------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------ | --------------------------- |
+| `bullMQBackend(['jobs'])`                     | Native BullMQ add completes   | `push:true`; configure native `options.workers`, neutral `take` rejects | Native delay/attempts supported                                    | Native typed extension only |
+| `rabbitMQBackend(createRabbitMQ, ['jobs'])`   | Broker publisher confirmation | Manual-ack pull; settle `ack`, `discard`, `requeue` once locally        | No delay/automatic retry; explicit requeue can repeat indefinitely | Unsupported                 |
+| `memcacheQBackend(createMemcacheQ, ['jobs'])` | Native append response        | Destructive pull; disposition `consumed`, no settle method              | Unsupported                                                        | Unsupported                 |
 
 `publish(queue,name,data,{delay?,attempts?})` rejects unsupported options even when delay is zero or attempts is one. No scheduling, automatic polling/worker loop or acknowledgement is emulated. `require(capability)` provides an explicit runtime guard. Scheduler requests must use the matching native extension; the neutral API has no fake scheduler. BullMQ `acknowledgement:false` means no **manual neutral settlement**; processor completion/failure still uses native BullMQ acknowledgement/retry. `publisherConfirms` specifically describes RabbitMQ broker confirms, not a generic persistence guarantee for every backend.
 
@@ -516,6 +526,21 @@ Bodies are plain JSON ≤64 KiB, nesting ≤16, visited values ≤8192. HTTP hea
 Close the workflow before its host-owned transport/store. `workflow.close()` rejects new work, aborts active HTTP signals and awaits actual in-flight work; `transport.close()` closes its own requests and awaits outstanding DNS/native settlement. Noncooperating host callbacks/DNS/database work can delay closure; slots remain occupied instead of starting unbounded replacement work. Abort does not prove remote rollback. The workflow borrows its store/transport/signing source and never closes the application's database, queue or credential vault.
 
 Qualification includes synthetic pinned commit/rollback, actual disposable SQLite rollback, CAS/replayed jobs, expired leases, signature rotation/replay-store claims, 429/5xx/permanent/redirect outcomes, total caps, SSRF/DNS/egress denial and HTTP cancellation/cleanup through an injected Node-request fixture. These are not live receiver, TLS/DNS infrastructure or broker/process-crash acceptance. That needs a dedicated acknowledged broker, production-quality durable CAS/journal/replay stores, qualified HTTPS receivers with idempotency, active credentials and deployment egress policy. See the official [Node HTTPS API](https://nodejs.org/docs/latest-v24.x/api/https.html), [DNS lookup API](https://nodejs.org/docs/latest-v24.x/api/dns.html#dnslookuphostname-options-callback) and [Retry-After semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-retry-after). Existing email outbox/recovery helpers stay unchanged and retain their own boundaries.
+
+## Ownership at each boundary
+
+| Public contract                                  | Owner and cleanup                                                                                                                   |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Legacy root `createQueueService`                 | BullMQ owns producer/worker/events/Cluster cleanup; await service close and inspect incomplete shutdown counters when relevant      |
+| Root or `/neutral` `createQueueBackend`          | Wrapper drains actual admitted calls, then invokes registered cleanup once in reverse order; native extensions share this lifecycle |
+| `/backends` descriptors and `selectQueueBackend` | Inert trusted configuration; no connection or cleanup handle until the selected factory opens                                       |
+| `/webhooks` workflow                             | Close before its borrowed transport/store; admitted HTTP work remains owned through actual settlement                               |
+| `/webhooks` HTTPS transport                      | Close requests and await outstanding DNS/native settlement; borrowed connector/resolver policy remains host-owned                   |
+| Publisher/processor/signing helpers              | Borrow existing owners or create short-lived key copies; no worker, scheduler or network loop starts                                |
+
+`prepare()` is asynchronous authorization/signing preparation. Await it before SQLite `transactionSync`, then insert the returned record and business mutation on that callback's exact synchronous pin without awaiting. The separate async `commit()` requires the existing negotiated pinned transaction contract. Neither API turns independent queue publication/HTTP effects into a database transaction.
+
+Native extension calls are trusted access and bypass the neutral wrapper's payload/pending policy. Manual acknowledgements stay on their original delivery channel; closing/replacing a connection cannot transfer them. A lost publish or receiver acknowledgement remains an uncertain external effect, not permission for an automatic replay. Runtime tenant authorization, consent, durable idempotency and reconciliation remain authoritative despite static lint ownership hints.
 
 
 ## Implementation sources

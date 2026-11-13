@@ -11,14 +11,14 @@ Use a persisted message descriptor plus a shared per-message delivery record. Qu
 
 ## Delivery state machine
 
-| Transition | Meaning |
-| --- | --- |
-| pending → claimed | One worker acquires the versioned delivery record |
-| claimed → suppressed | Current marketing consent forbids delivery |
-| claimed → pending | A failure before SMTP begins can be retried safely |
-| claimed → sending | The worker is about to contact the sender |
-| sending → sent | The sender reports acceptance and state is durably recorded |
-| sending → uncertain | Error, timeout, crash or expired sending lease leaves outcome ambiguous |
+| Transition           | Meaning                                                                 |
+| -------------------- | ----------------------------------------------------------------------- |
+| pending → claimed    | One worker acquires the versioned delivery record                       |
+| claimed → suppressed | Current marketing consent forbids delivery                              |
+| claimed → pending    | A failure before SMTP begins can be retried safely                      |
+| claimed → sending    | The worker is about to contact the sender                               |
+| sending → sent       | The sender reports acceptance and state is durably recorded             |
+| sending → uncertain  | Error, timeout, crash or expired sending lease leaves outcome ambiguous |
 
 The host store must provide atomic compare-and-swap across all workers. A module-local Map or process-local mutex cannot protect a multi-server delivery record.
 

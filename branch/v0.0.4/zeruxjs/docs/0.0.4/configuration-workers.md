@@ -36,10 +36,10 @@ The fields below come from the current source declarations. Optional is not a de
 
 ### ZeruxWorkerConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `minThreads` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `maxThreads` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option       | Accepted TypeScript value | Required | Meaning                                                                          |
+| ------------ | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `minThreads` | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `maxThreads` | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 
 ## Implementation sources

@@ -70,19 +70,24 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### MongoConnectorOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `db` | `MongoDbLike` | Yes |
-| `client` | `MongoClientLike` | Yes |
-| `database` | `string` | Yes |
-| `uri` | `string` | Yes |
-| `url` | `string` | Yes |
-| `clientOptions` | `Record<string, unknown>` | Yes |
-| `allowUnfilteredWrites` | `boolean` | Yes |
-| `executor` | `(operation: QueryOperation) => Promise<unknown> \| unknown` | Yes |
-| `fixedDatabase` | `boolean` | Yes |
-| `locked` | `boolean` | Yes |
-| `lockDatabase` | `boolean` | Yes |
+| Field                   | Accepted type/value                                          | Optional |
+| ----------------------- | ------------------------------------------------------------ | -------- |
+| `db`                    | `MongoDbLike`                                                | Yes      |
+| `client`                | `MongoClientLike`                                            | Yes      |
+| `transactions`          | `boolean`                                                    | Yes      |
+| `maxCommitAttempts`     | `number`                                                     | Yes      |
+| `maxCommitTimeMS`       | `number`                                                     | Yes      |
+| `maxSessions`           | `number`                                                     | Yes      |
+| `probeTimeoutMS`        | `number`                                                     | Yes      |
+| `database`              | `string`                                                     | Yes      |
+| `uri`                   | `string`                                                     | Yes      |
+| `url`                   | `string`                                                     | Yes      |
+| `clientOptions`         | `Record<string, unknown>`                                    | Yes      |
+| `allowUnfilteredWrites` | `boolean`                                                    | Yes      |
+| `executor`              | `(operation: QueryOperation) => Promise<unknown> \| unknown` | Yes      |
+| `fixedDatabase`         | `boolean`                                                    | Yes      |
+| `locked`                | `boolean`                                                    | Yes      |
+| `lockDatabase`          | `boolean`                                                    | Yes      |
 
 ## Opt-in pinned session lifecycle
 
@@ -93,6 +98,10 @@ The shared transaction facade passes one session through CRUD/find/aggregation a
 `maxSessions` defaults to 32; `maxCommitTimeMS` to 10000 and `probeTimeoutMS` to 5000. Cooperative deadlines drain native work before abort/endSession and may exceed their duration. Disconnect waits for accepted work/sessions and only closes URI-created clients; initialization failure rolls back owned acquisition. Injected clients retain host ownership.
 
 Projection/group literals are wrapped in $literal; executable expression objects and unsafe fields reject. Index definitions validate before namespace creation. Unfiltered-write protection applies to executors too: supply a predicate or explicitly enable the trusted bulk policy. Existing matched/modified counts and narrow analytics aggregation shapes are preserved. BSON parser behavior remains driver-owned; no lossless JSON-number conversion is claimed. Live checks require a disposable replica-set/sharded `ZX_TEST_MONGO_URI`; offline fixtures do not prove engine/failover/precision behavior.
+
+## Source ownership
+
+The connector owns explicit acquisition, pre-mutation policy, normalized counts and drain. Query helpers generate only the supported structured operators and literal projections. Session ownership is separate: the deployment probe, exact native argument injection and endSession barrier live together. The root index preserves public exports without starting a connection. Trusted executors/native accessors are not sandboxed; native records/pipelines/causes still require response sanitization. The package README maps these boundaries to source files and separates injected checks from live deployment qualification.
 
 
 ## Public entry points
@@ -178,6 +187,16 @@ Projection/group expressions support validated columns and explicit literal valu
 Unfiltered update/delete protection now also applies to injected executors; add a real predicate or explicitly configure the existing allowUnfilteredWrites policy for trusted bulk administration. Executors remain trusted executable code. Unknown expressions previously forwarded to Mongo now reject instead of acting as a raw expression escape hatch. Count fields must be nonnegative safe integers, and modifiedCount/affectedCount zero remains distinct from matchedCount. BSON values and precision retain the native driver's parser policy; this change does not coerce Decimal128/Long/ObjectId into lossless JSON numbers. Driver results/causes/pipelines are internal data: sanitize API errors and never serialize private request values or credentials to clients.
 
 See official [Node driver transaction APIs](https://www.mongodb.com/docs/drivers/node/current/crud/transactions/) and [deployment prerequisites](https://www.mongodb.com/docs/manual/core/transactions-production-consideration/). Opt-in live checks require `ZX_TEST_MONGO_URI` pointing to a disposable replica-set/sharded database. Offline session fixtures do not establish native transaction, failover or BSON precision acceptance, and no database/application is started automatically.
+
+## Implementation and ownership map
+
+- `src/index.ts` preserves the public factory/types/query-helper exports. `src/connector.ts` owns native transport selection, pre-mutation validation, normalized counts, the existing analytics aggregation shapes and connector drain.
+- `src/query.ts` owns allowlisted field/selector/projection/sort translation. `$literal` keeps aggregation strings as data; these helpers do not authorize tenant access or sandbox trusted host accessors.
+- `src/session.ts` owns the opt-in hello prerequisite probe, explicit session argument injection, live session capacity and bounded uncertain-commit attempts. Every release waits for endSession and never replays a callback.
+
+Root runtime imports require Node. Native clients/options/executors are trusted host configuration; the wrapper cannot sandbox an injected function or override all native driver retry/BSON policy. Native records, generated pipelines and original causes stay private until an application deliberately sanitizes a response. Read limits must be chosen explicitly; input validation does not impose a universal returned-byte ceiling.
+
+Offline tests own injected databases/session fixtures and temporary packed consumers. Wrapper teardown is registered independently of assertions. The optional live test needs a disposable replica-set/sharded deployment and is kept separate; no server, operator database or credential is created/read by the readability pass.
 
 
 ## Implementation sources

@@ -8,15 +8,21 @@ Use independent store hooks and optional native React DOM mount, SSR and hydrati
 ```tsx
 import { createReactBindings, createReactStore } from '@zeruxjs/react';
 import { useMemo, useSyncExternalStore, useCallback } from 'react';
+
 const bindings = createReactBindings({ useMemo, useSyncExternalStore });
-const store = createReactStore({ count: 0 });
-/** Render counter state. @returns A button. Reads the explicitly owned store. */
-function Counter() {
-  const selector = useCallback((state: { count: number }) => state.count, []);
-  const count = bindings.useSelector(store, selector);
-  return <button onClick={() => store.update(s => ({ count: s.count + 1 }))}>{count}</button>;
+
+export function createCounterOwner() {
+  const store = createReactStore({ count: 0 });
+  function Counter() {
+    const selector = useCallback((state: { count: number }) => state.count, []);
+    const count = bindings.useSelector(store, selector);
+    return <button onClick={() => store.update(s => ({ count: s.count + 1 }))}>{count}</button>;
+  }
+  return { Counter, store, destroy: () => store.destroy() };
 }
 ```
+
+Create one counter owner per host scope and call `destroy()` on teardown. Server request state must have a fresh owner for every request; hook bindings can stay shared because they do not retain that state.
 
 Use the real React hooks inside components. Stable selectors and equality prevent accidental snapshot churn. Core imports do not load React DOM or register an application renderer. Optional native entries use matching host peers.
 
@@ -111,11 +117,13 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### ExternalStore
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `getSnapshot` | `T` | No |
-| `subscribe` | `() => void` | No |
-| `getServerSnapshot` | `T` | Yes |
+| Field               | Accepted type/value | Optional |
+| ------------------- | ------------------- | -------- |
+| `getSnapshot`       | `T`                 | No       |
+| `subscribe`         | `() => void`        | No       |
+| `getServerSnapshot` | `T`                 | Yes      |
+
+Root teardown must run before its DOM/container owner disappears. A store is borrowed by native hooks unless the host explicitly transfers cleanup using `onDispose`. Hydration state uses `dispose()`, and ordinary subscriptions return independent unsubscribe callbacks; none of these operations implies forced cancellation of synchronous component code. See the package README for the separately checked server/client examples and fixed peer/error budgets.
 
 
 ## Public entry points
@@ -172,12 +180,12 @@ remain structural adapters; actual HTML, mount and hydration use separate entrie
 
 ## Entry points and peer policy
 
-| Public entry | Implemented behavior |
-| --- | --- |
-| `@zeruxjs/react` | `createReactStore`, stable selectors, injected hooks, observable adapters; usable without React DOM |
-| `@zeruxjs/react/browser` | Lazy native `createRoot` / `hydrateRoot`, explicit update/unmount ownership |
-| `@zeruxjs/react/server` | Lazy native `renderToString` / `renderToStaticMarkup`; no DOM globals needed |
-| `@zeruxjs/react/hydration` | ESM-only, bounded public-state codec and request-owned pinned server snapshots |
+| Public entry               | Implemented behavior                                                                                |
+| -------------------------- | --------------------------------------------------------------------------------------------------- |
+| `@zeruxjs/react`           | `createReactStore`, stable selectors, injected hooks, observable adapters; usable without React DOM |
+| `@zeruxjs/react/browser`   | Lazy native `createRoot` / `hydrateRoot`, explicit update/unmount ownership                         |
+| `@zeruxjs/react/server`    | Lazy native `renderToString` / `renderToStaticMarkup`; no DOM globals needed                        |
+| `@zeruxjs/react/hydration` | ESM-only, bounded public-state codec and request-owned pinned server snapshots                      |
 
 Install matching host peers, for example the exercised versions:
 
@@ -386,6 +394,12 @@ React DOM, missing-peer diagnostics, installed public declarations and the examp
 Ephemeral local framework requests verify real output/isolation and close their
 server; no user-managed application is started. Live browser qualification needs
 a separately configured functioning browser and application bundle.
+
+## Ownership during parallel development
+
+Keep root, store and subscription owners distinct. `createReactBindings`, selectors and structural observable bridges borrow stores; they do not destroy them. `createReactStore` owns its listeners, `mountReact`/branch/v0.0.4/`hydrateReact` own accepted native roots, and hydration create/read helpers own a fresh public store through `dispose()`. Preflight rejection leaves resources with the caller. Native root acquisition is asynchronous and remains separate from commit.
+
+The focused DOM fixtures register successful root handles before assertions, unmount while their emulated window still exists, and restore original global descriptors afterward. Synthetic stores/subscriptions are released even when an assertion fails. These are React 19.3.1/jsdom checks, not browser layout, assistive-technology or all-peer-version certification.
 
 
 ## Implementation sources

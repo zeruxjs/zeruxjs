@@ -24,18 +24,18 @@ Import public types and helpers from zeruxjs: ZeruxConfig, ZeruxPluginApi, Zerux
 
 ## Focused entry points
 
-| Import | Responsibility |
-| --- | --- |
-| zeruxjs/navigation | Redirect responses and supported redirect codes |
-| zeruxjs/response | HTTP cache policies and bounded streams |
-| zeruxjs/fetch-route | Web Request/Response interoperability |
-| zeruxjs/theme | Theme preferences and HTML integration |
-| zeruxjs/accessibility | Accessible tab enhancement and reduced-motion helper |
-| zeruxjs/variables | Explicit interpolation registries |
-| zeruxjs/build | Application source compilation and production structure resolution |
-| zeruxjs/services | Service scope and lifecycle startup types/functions |
-| zeruxjs/protocols | Protocol registration facade |
-| zeruxjs/cache | Active cache facade convenience exports |
+| Import                | Responsibility                                                     |
+| --------------------- | ------------------------------------------------------------------ |
+| zeruxjs/navigation    | Redirect responses and supported redirect codes                    |
+| zeruxjs/response      | HTTP cache policies and bounded streams                            |
+| zeruxjs/fetch-route   | Web Request/Response interoperability                              |
+| zeruxjs/theme         | Theme preferences and HTML integration                             |
+| zeruxjs/accessibility | Accessible tab enhancement and reduced-motion helper               |
+| zeruxjs/variables     | Explicit interpolation registries                                  |
+| zeruxjs/build         | Application source compilation and production structure resolution |
+| zeruxjs/services      | Service scope and lifecycle startup types/functions                |
+| zeruxjs/protocols     | Protocol registration facade                                       |
+| zeruxjs/cache         | Active cache facade convenience exports                            |
 
 The complete export map below includes other low-level bootstrap/loader paths and the configuration schema. They are advanced integration surfaces, not additional automatic application features.
 
@@ -428,7 +428,6 @@ A browser fixture (under `tests/browser/`) covers bridge snapshot projection, ex
 
 [`create-zerux-js`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zerux-app/README.md) generates private ZyroJS (default), React or Vue HTML-only SSR projects through the shared zclivo engine, with explicit flags/dry-run and no automatic install/start. Browser hydration and registry/source-version qualification remain separate; see its README.
 
-
 ## Validated configuration and custom services
 
 `resolveApplicationConfig({ defaults, file, environment, overrides })` merges in that order: later defined values win, plain objects merge recursively, and arrays replace. `loadConfig(rootDir, mode, layers)` chooses the first existing `.ts`, `.js`, `.mjs`, `.cjs` configuration file; CLI port overrides are applied before validation. Runtime defaults then fill omitted values. Environment layers are explicit typed values, not automatic coercion of `process.env`. The existing env loader preserves process values and uses first-defined values across its ordered env files.
@@ -811,17 +810,17 @@ field-error results remain HTTP 200 with fixed messages/null propagation. Option
 `onError` receives internal causes for trusted diagnostics; its exceptions cannot
 interrupt cleanup. Response headers are private `no-store`.
 
-| Limit | Default | Maximum |
-| --- | --- | --- |
-| Selection depth | 8 | 32 |
-| Conservative field complexity | 1000 | 10000 |
-| Expanded aliases | 32 | 256 |
-| Query UTF-8 bytes | 32768 | 131072 |
-| Variables UTF-8 bytes | 32768 | 262144 |
-| Response/event UTF-8 bytes | 1048576 | 16777216 |
-| Active operations/connections | 32 | 256 |
-| Initial authentication/query execution time, ms | 5000 | 120000 |
-| List items per resolved field | 100 | 1000 |
+| Limit                                           | Default | Maximum  |
+| ----------------------------------------------- | ------- | -------- |
+| Selection depth                                 | 8       | 32       |
+| Conservative field complexity                   | 1000    | 10000    |
+| Expanded aliases                                | 32      | 256      |
+| Query UTF-8 bytes                               | 32768   | 131072   |
+| Variables UTF-8 bytes                           | 32768   | 262144   |
+| Response/event UTF-8 bytes                      | 1048576 | 16777216 |
+| Active operations/connections                   | 32      | 256      |
+| Initial authentication/query execution time, ms | 5000    | 120000   |
+| List items per resolved field                   | 100     | 1000     |
 
 All configured limits are positive integers. Parser tokens are capped at 4096,
 validation issues at 20, variable structure at depth 16/2048 nodes, serialized
@@ -917,13 +916,13 @@ HTML has an explicit HTML result marker, so text-only render output is still sen
 as HTML. Existing string-route theme behavior is unchanged; renderer HTML is not
 automatically rewritten into a different runtime's tree.
 
-| Framework factory/contract | Static HTML | Streaming | Hydration | Client-only |
-| --- | --- | --- | --- | --- |
-| `createZyroRenderer(renderToString)` | yes, injected Zyro function | no | no | no |
-| `createReactRenderer(renderToString)` | yes, injected React server function | no | no | no |
-| `createVueRenderer(renderToString)` | yes, injected Vue server function | no | no | no |
-| `createZyroDocumentRenderer` | yes, injected Zyro SSR | document chunks | explicit V1 client asset; no generic hydration dispatch | no |
-| Explicit custom registry adapter | declared HTML capability | declared bounded async iterable | unsupported | unsupported |
+| Framework factory/contract            | Static HTML                         | Streaming                       | Hydration                                               | Client-only |
+| ------------------------------------- | ----------------------------------- | ------------------------------- | ------------------------------------------------------- | ----------- |
+| `createZyroRenderer(renderToString)`  | yes, injected Zyro function         | no                              | no                                                      | no          |
+| `createReactRenderer(renderToString)` | yes, injected React server function | no                              | no                                                      | no          |
+| `createVueRenderer(renderToString)`   | yes, injected Vue server function   | no                              | no                                                      | no          |
+| `createZyroDocumentRenderer`          | yes, injected Zyro SSR              | document chunks                 | explicit V1 client asset; no generic hydration dispatch | no          |
+| Explicit custom registry adapter      | declared HTML capability            | declared bounded async iterable | unsupported                                             | unsupported |
 
 Core React/Vue store and hook entries remain independent adapters and are not
 installed by these factories. `@zeruxjs/react/server` optionally supplies native
@@ -1743,14 +1742,14 @@ Hashes/linkable references remain personal data under applicable host policies.
 
 ### Existing service coverage and explicit participants
 
-| Owner inspected | Existing public contract | Required host binding / exclusions |
-| --- | --- | --- |
-| Analytics | Versioned schemas; site/cutoff retention; durable ledger preview/pinned purge and numeric sidecars | Verified subject index and lawful scope; never substitute an all-site purge for subject erasure. Coordinate unprocessed work and sidecars through analytics policies. |
-| Email contacts/inbound | Versioned contact delete, dry-run retention, local inbox erase | Host subject/account mapping and holds. Suppression/consent/audit records may need retention; remote IMAP/POP3 mail and attachment objects are separate. |
-| Auth | Fresh-authorized session/challenge revocation in host CAS stores | Account index and provider/passkey policy. Revocation is not account/provider erasure; never export token digests, keys or challenges. |
-| Files/media/assets | Authorized object operations, named providers and explicit catalogs | Host-owned subject/object index, version/ownership checks and receipt journal. Borrowed/shared binary references are not automatically deletable. Multipart journals, backups and provider versions require explicit coverage. |
-| Tags | Versioned governed documents and controlled provider dispatch | Tenant-bound document edits through governance; published releases/destination records and remote provider data are separate. No universal subject-record API. |
-| Reports | Versioned CAS documents, tenant-authorized source registry | Subject/document association is host-owned. GA4/AdSense adapters are read-only reporting, not remote erasure APIs. |
+| Owner inspected        | Existing public contract                                                                           | Required host binding / exclusions                                                                                                                                                                                             |
+| ---------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Analytics              | Versioned schemas; site/cutoff retention; durable ledger preview/pinned purge and numeric sidecars | Verified subject index and lawful scope; never substitute an all-site purge for subject erasure. Coordinate unprocessed work and sidecars through analytics policies.                                                          |
+| Email contacts/inbound | Versioned contact delete, dry-run retention, local inbox erase                                     | Host subject/account mapping and holds. Suppression/consent/audit records may need retention; remote IMAP/POP3 mail and attachment objects are separate.                                                                       |
+| Auth                   | Fresh-authorized session/challenge revocation in host CAS stores                                   | Account index and provider/passkey policy. Revocation is not account/provider erasure; never export token digests, keys or challenges.                                                                                         |
+| Files/media/assets     | Authorized object operations, named providers and explicit catalogs                                | Host-owned subject/object index, version/ownership checks and receipt journal. Borrowed/shared binary references are not automatically deletable. Multipart journals, backups and provider versions require explicit coverage. |
+| Tags                   | Versioned governed documents and controlled provider dispatch                                      | Tenant-bound document edits through governance; published releases/destination records and remote provider data are separate. No universal subject-record API.                                                                 |
+| Reports                | Versioned CAS documents, tenant-authorized source registry                                         | Subject/document association is host-owned. GA4/AdSense adapters are read-only reporting, not remote erasure APIs.                                                                                                             |
 
 No built-in participant guesses these missing mappings. Explicit `PrivacyParticipant`
 adapters consume the owning service's public APIs and declare versioned find/export/
@@ -1866,6 +1865,23 @@ Legacy theme bootstrap code is static; cookie-name/default settings travel as
 inert UTF-8 base64 data on its script element. Runtime metadata is read through a
 bounded descriptor. Explicit host environment files retain symlink-based secret
 rotation support and are limited to 1 MiB each; their contents are never logs.
+
+### Compatibility resources and readability contracts
+
+Runtime/plugin type comments distinguish generation-owned services from borrowed
+handles and process-wide compatibility state. `zeruxjs/cache` does not create a
+manager on import; its convenience calls use the cache package’s active manager.
+Database virtual modules and loader resolver registries also use compatibility
+state, so they must not be treated as request- or tenant-local stores.
+
+The logger singleton opens an owned append stream on module evaluation. Its
+`close()` requests orderly stream end synchronously, without an awaited flush
+receipt. Supplemental objects are redacted; callers must still keep private values
+out of message strings. Loader registration is process-wide and exposes no native
+unregister handle. Cache startup deadlines bound waiting rather than cancelling
+underlying manager creation. A running thread-task timeout requests native termination without awaiting it;
+the task rejection is not a native termination-settlement receipt. The public examples retain owners and release them in cleanup;
+privacy examples require injected durable stores and verified host policies.
 
 
 ## Implementation sources

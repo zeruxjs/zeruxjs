@@ -37,6 +37,34 @@ checks authored labels, not browser or screen-reader conformance. Live identity,
 proxy/TLS/cookie deployment, browser keyboard and backup qualification remain host
 prerequisites. See the package README for exact routes, limits and ownership.
 
+## Explicit owners and inert metadata
+
+```js
+import { version, status, capabilities } from 'zenixjs';
+
+console.log({ version, status, capabilities });
+// Importing metadata opens no database, session service or HTTP listener.
+```
+
+Use the package's public `examples/application.mjs` to install the application
+from a trusted host plugin. Its database/core/application cleanup order is explicit;
+private authentication and CSRF implementations must be supplied separately.
+`createZenixApplication` owns request admission, readers, previews and its renderer.
+`createSqliteSetupStore` borrows the qualified connector and has no invented close
+method. Close the application before shutting down the borrowed core/store/database.
+
+The setup claim and CMS content writes are separate transactions. A failed or lost
+response after claiming setup does not authorize automatic retry or claim deletion.
+Use fresh operator proof and the original claim's recovery procedure. A preview
+nonce still requires fresh session/core authorization, expires locally and does not
+recall bytes already delivered. Keep private query tokens out of host access logs.
+
+Authorization and parsing are separate: strict form schemas require the authored
+fields, but only host/session/core policy authorizes a write. Rendered text and
+fixed response messages do not include submitted passwords, setup secrets or private
+causes. Metadata flags describe the current baseline, not a certification of production
+identity, browser accessibility, distributed atomicity or complete CMS capability.
+
 
 ## Public entry points
 
@@ -137,17 +165,17 @@ No live identity provider or production session adapter is bundled or qualified.
 
 For base `/cms`, installed exact routes are:
 
-| Path | Behavior |
-| --- | --- |
-| `/cms/login` | GET/HEAD host-backed login form; POST checks Origin, anonymous CSRF and admission |
-| `/cms/setup` | Authenticated privileged GET/POST setup; host secret, CSRF, Origin and durable unique claim |
-| `/cms/admin` | Authorized dashboard for the one configured entry |
-| `/cms/editor` | Authorized title/body editor, current optimistic revision and saved-preview action |
-| `/cms/save` | POST validated title/body draft with expected head; no remote executable functions |
-| `/cms/publish` | POST separate authorization and exact expected saved revision |
+| Path           | Behavior                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| `/cms/login`   | GET/HEAD host-backed login form; POST checks Origin, anonymous CSRF and admission                 |
+| `/cms/setup`   | Authenticated privileged GET/POST setup; host secret, CSRF, Origin and durable unique claim       |
+| `/cms/admin`   | Authorized dashboard for the one configured entry                                                 |
+| `/cms/editor`  | Authorized title/body editor, current optimistic revision and saved-preview action                |
+| `/cms/save`    | POST validated title/body draft with expected head; no remote executable functions                |
+| `/cms/publish` | POST separate authorization and exact expected saved revision                                     |
 | `/cms/preview` | POST creates private saved-revision preview; GET/HEAD requires fresh auth and session-bound nonce |
-| `/cms/page` | GET/HEAD only the published revision; drafts are never a fallback |
-| `/cms/logout` | CSRF/Origin-protected POST host session termination |
+| `/cms/page`    | GET/HEAD only the published revision; drafts are never a fallback                                 |
+| `/cms/logout`  | CSRF/Origin-protected POST host session termination                                               |
 
 The initial immutable content type is `article@1` with required title (200 characters)
 and plain-text body (8192 characters). This is one editor/theme, not arbitrary schema
@@ -249,6 +277,34 @@ integration, browser keyboard use and assistive technology remain host prerequis
 ## Project generator and license
 
 [`create-zenix-js`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zenix-app/README.md) generates a JavaScript SQLite integration scaffold with explicit migration and unconfigured-host startup diagnostics. It does not supply a production identity provider or default credentials. Installing the application alone does not run generation. License: MIT OR Apache-2.0.
+
+## Explicit owners and inert metadata
+
+```js
+import { version, status, capabilities } from 'zenixjs';
+
+console.log({ version, status, capabilities });
+// Importing metadata opens no database, session service or HTTP listener.
+```
+
+Use the package's public `examples/application.mjs` to install the application
+from a trusted host plugin. Its database/core/application cleanup order is explicit;
+private authentication and CSRF implementations must be supplied separately.
+`createZenixApplication` owns request admission, readers, previews and its renderer.
+`createSqliteSetupStore` borrows the qualified connector and has no invented close
+method. Close the application before shutting down the borrowed core/store/database.
+
+The setup claim and CMS content writes are separate transactions. A failed or lost
+response after claiming setup does not authorize automatic retry or claim deletion.
+Use fresh operator proof and the original claim's recovery procedure. A preview
+nonce still requires fresh session/core authorization, expires locally and does not
+recall bytes already delivered. Keep private query tokens out of host access logs.
+
+Authorization and parsing are separate: strict form schemas require the authored
+fields, but only host/session/core policy authorizes a write. Rendered text and
+fixed response messages do not include submitted passwords, setup secrets or private
+causes. Metadata flags describe the current baseline, not a certification of production
+identity, browser accessibility, distributed atomicity or complete CMS capability.
 
 
 ## Implementation sources

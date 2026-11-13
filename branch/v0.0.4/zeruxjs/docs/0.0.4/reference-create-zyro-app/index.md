@@ -23,6 +23,41 @@ No React/Vue dependencies, server secrets or server entry points are included in
 
 `planZyroApp` from `create-zyro-app` returns an inspectable plan without writes. `writeProjectPlanAsync` from `zclivo` performs the explicit write. Unsupported modes, invalid names/base paths and occupied targets reject. Consult the package README for the feature matrix, example and precise build/test limitations. Workspace-linked fixtures qualify generated builds and jsdom interactions, not all browser engines or clean published installation.
 
+## Planning, build and preview ownership
+
+```js
+import { planZyroApp } from 'create-zyro-app';
+
+const plan = planZyroApp({
+  name: 'demo',
+  destination: './demo',
+  mode: 'static',
+  language: 'javascript',
+  basePath: '/demo',
+  port: 3000,
+});
+console.log(Object.keys(plan.files));
+```
+
+Planning reads fixed authored assets as inert text. Only explicit generation writes
+them, and only subsequent operator commands execute a build or start preview.
+The reusable CLI creates no process listeners on import; its executable owns its
+invocation's SIGINT/SIGTERM handlers. Public mount parsing delegates general
+argument validation to zclivo, rejects repeated base-path options and leaves
+arguments after `--` uninterpreted as creator switches.
+
+The generated build owns an exclusive private lock, temporary candidate files and
+previous-output verification. It checks manifests/hashes before replacing output;
+a failed compilation does not authorize deleting an edited or unowned output tree.
+The preview reads only manifest-listed bounded regular files, closes file
+descriptors on failure and binds loopback. Its shutdown handlers own that preview
+alone. These checks do not sandbox edited build scripts or qualify production
+hosting, hostile same-account filesystem races or crash recovery.
+
+Fixture tooling resolves the explicitly installed TypeScript package rather than
+assuming npm kept a nested dependency directory. The generated browser graph and
+all existing public source/fixture literals remain unchanged by that test-path fix.
+
 
 ## Public entry points
 
@@ -65,12 +100,12 @@ node packages/create/create-zyro-app/dist/index.js my-app --yes --language types
 
 Remove `--dry-run` to create the project. Then explicitly run `npm install`, `npm run typecheck`, `npm test`, `npm run build` and `npm start` inside it. Generation never installs dependencies or executes generated code. With a published compatible release, the equivalent invocation is `npm create zyro-app -- my-app --yes`; these source changes do not publish that release.
 
-| Mode | Output and requirements |
-| --- | --- |
-| `client` (default) | Browser component bundle; JavaScript required for content. Node preview server included. |
-| `static` | General `zeruxjs/static-export` pipeline; HTML, CSS, canonical and real 404, no JavaScript. Deploy the mounted directory with host-specific 404 handling. |
-| `ssr` | Standalone Node HTML server with disabled demo interaction; no hydration. |
-| `hydrated` | Standalone Node SSR plus ZyroJS V1 whole-root hydration and retained form edits. |
+| Mode               | Output and requirements                                                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `client` (default) | Browser component bundle; JavaScript required for content. Node preview server included.                                                                  |
+| `static`           | General `zeruxjs/static-export` pipeline; HTML, CSS, canonical and real 404, no JavaScript. Deploy the mounted directory with host-specific 404 handling. |
+| `ssr`              | Standalone Node HTML server with disabled demo interaction; no hydration.                                                                                 |
+| `hydrated`         | Standalone Node SSR plus ZyroJS V1 whole-root hydration and retained form edits.                                                                          |
 
 All modes support JavaScript or TypeScript. Selective hydration, template compilation, framework routing, React and Vue templates are unavailable. Static exports never embed a server runtime. SSR/hydration use `zyrojs/server`, `/component`, `/hydrate` and `/dom` public APIs, not a claimed complete framework integration.
 
@@ -105,6 +140,41 @@ See [the inert example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/p
 Run `npm run build --workspace=create-zyro-app` and `node --test packages/create/create-zyro-app/test/consumer.test.mjs` from the repository. Fixtures install local workspace packages offline into temporary consumers, build all eight mode/language combinations twice, typecheck, serve `/demo`, exercise DOM/hydration in jsdom and clean owned servers/files. These are not clean-registry installation or real-browser acceptance. Production hosting, TLS, assistive technology and other browser engines remain unqualified.
 
 License: MIT OR Apache-2.0.
+
+## Planning, build and preview ownership
+
+```js
+import { planZyroApp } from 'create-zyro-app';
+
+const plan = planZyroApp({
+  name: 'demo',
+  destination: './demo',
+  mode: 'static',
+  language: 'javascript',
+  basePath: '/demo',
+  port: 3000,
+});
+console.log(Object.keys(plan.files));
+```
+
+Planning reads fixed authored assets as inert text. Only explicit generation writes
+them, and only subsequent operator commands execute a build or start preview.
+The reusable CLI creates no process listeners on import; its executable owns its
+invocation's SIGINT/SIGTERM handlers. Public mount parsing delegates general
+argument validation to zclivo, rejects repeated base-path options and leaves
+arguments after `--` uninterpreted as creator switches.
+
+The generated build owns an exclusive private lock, temporary candidate files and
+previous-output verification. It checks manifests/hashes before replacing output;
+a failed compilation does not authorize deleting an edited or unowned output tree.
+The preview reads only manifest-listed bounded regular files, closes file
+descriptors on failure and binds loopback. Its shutdown handlers own that preview
+alone. These checks do not sandbox edited build scripts or qualify production
+hosting, hostile same-account filesystem races or crash recovery.
+
+Fixture tooling resolves the explicitly installed TypeScript package rather than
+assuming npm kept a nested dependency directory. The generated browser graph and
+all existing public source/fixture literals remain unchanged by that test-path fix.
 
 
 ## Implementation sources

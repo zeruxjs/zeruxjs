@@ -24,7 +24,7 @@ Never use a shared response cache when applying user/tenant visibility filters. 
 
 ## Persistence
 
-The Node-only persistence export saves/loads snapshots with atomic replacement and symlink checks. The parent directory must already exist. A single-writer local snapshot is not distributed coordination or an authoritative database. Rebuild from source data when the index format/content changes.
+The Node-only persistence export saves/loads snapshots with atomic replacement and symlink checks. The parent directory must already exist. A single-writer local snapshot is not distributed coordination or an authoritative database. V1 snapshots use the receiving index configuration; opt-in V2 records analyzers, weights, fields and stopwords and rejects incompatible receivers. Import validates the entire candidate before replacing the current index. Metadata and snapshot containers must be inert plain JSON: class-based envelopes, array subclasses, accessors and serialization callbacks are rejected. This is ordinary-data validation, not a JavaScript proxy sandbox. Rebuild from source data when index policy/content changes.
 
 ## Install and select the integration
 
@@ -32,7 +32,7 @@ The Node-only persistence export saves/loads snapshots with atomic replacement a
 npm install @zeruxjs/search@0.0.4
 ```
 
-There is no automatic `search` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reference.md) and [TypeScript](/branch/v0.0.4/zeruxjs/docs/0.0.4/typescript.md).
+Standalone indexes are created explicitly. The optional `@zeruxjs/search/adapters` entry also exports `registerSearchService` for the framework’s private `search: { enabled: true, registration }` integration. Register trusted factories explicitly and verify the initiating principal/tenant on every invocation; setting arbitrary search options alone does not start an engine. `registration.start()` creates a generation whose owner must await `close()`; framework startup/shutdown owns that lifecycle when it consumes the registration. See [configuration integration boundaries](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reference.md) and [TypeScript](/branch/v0.0.4/zeruxjs/docs/0.0.4/typescript.md).
 
 ## A practical integration workflow
 
@@ -68,36 +68,46 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### SearchIndexOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `fields` | `(keyof T & string)[]` | Yes |
-| `weights` | `Partial<Record<keyof T & string, number>>` | Yes |
-| `stopWords` | `Iterable<string>` | Yes |
-| `maxDocuments` | `number` | Yes |
+| Field                                 | Accepted type/value                         | Optional |
+| ------------------------------------- | ------------------------------------------- | -------- |
+| `fields`                              | `(keyof T & string)[]`                      | Yes      |
+| `weights`                             | `Partial<Record<keyof T & string, number>>` | Yes      |
+| `stopWords`                           | `Iterable<string>`                          | Yes      |
+| `maxDocuments`                        | `number`                                    | Yes      |
+| `analyzer` / `analyzers`              | Default / per-field `SearchAnalyzer`        | Yes      |
+| `maxDocumentBytes` / `maxBatchBytes`  | Serialized byte budgets                     | Yes      |
+| `maxBatchSize` / `maxVocabulary`      | Staged document / posting-key caps          | Yes      |
+| `maxVocabularyScan` / `maxExpansions` | Prefix/fuzzy work caps                      | Yes      |
+| `maxQueryTerms` / `maxQueryLength`    | Analyzed clause / UTF-16 caps               | Yes      |
+| `maxSnapshotBytes`                    | Complete serialized snapshot byte cap       | Yes      |
 
 ### SearchOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `limit` | `number` | Yes |
-| `offset` | `number` | Yes |
-| `mode` | `'all' \| 'any'` | Yes |
-| `prefix` | `boolean` | Yes |
-| `filter` | `(document: SearchDocument) => boolean` | Yes |
+| Field       | Accepted type/value                     | Optional |
+| ----------- | --------------------------------------- | -------- |
+| `limit`     | `number`                                | Yes      |
+| `offset`    | `number`                                | Yes      |
+| `mode`      | `'all' \| 'any'`                        | Yes      |
+| `prefix`    | `boolean`                               | Yes      |
+| `filter`    | `(document: SearchDocument) => boolean` | Yes      |
+| `filters`   | Bounded structured scalar clauses       | Yes      |
+| `match`     | `'exact' \| 'prefix' \| 'fuzzy'`        | Yes      |
+| `fuzzy`     | Explicit distance and expansion caps    | Yes      |
+| `algorithm` | `'bm25' \| 'term-frequency'`            | Yes      |
 
 ### SearchDocument
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `text` | `string` | No |
+| Field  | Accepted type/value | Optional |
+| ------ | ------------------- | -------- |
+| `id`   | `string`            | No       |
+| `text` | `string`            | No       |
 
 ### SearchSnapshot
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `version` | `1` | No |
-| `documents` | `T[]` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `version`   | `1`                 | No       |
+| `documents` | `T[]`               | No       |
 
 
 ## Public entry points
@@ -188,7 +198,7 @@ Filters are **not authorization**. Ranking statistics and expansion budgets desc
 
 ## Staged updates and snapshot migration
 
-Document metadata must be inert, finite, plain JSON: no functions, accessors, class instances, symbols, bigint, prototype keys, cyclic values or sparse arrays. IDs are nonempty strings up to 512 code units and text is required. This tightens formerly structured-cloneable metadata (such as Date/Map) so snapshots have a real serializable contract; convert such metadata explicitly before indexing. Default limits are 1 MiB per document (maximum 16 MiB), 100,000 analyzed tokens per document, depth 16 and 20,000 visited document nodes. `maxVocabulary` defaults to 100,000 analyzer/term posting keys (maximum one million). `maxDocuments` keeps its existing default Infinity for compatibility: production hosts should set a finite cap.
+Document metadata must be inert, finite, plain JSON: no functions, accessors, class instances, symbols, bigint, prototype keys, cyclic values or sparse arrays. Array subclasses and class-based snapshot envelopes are rejected before traversal/serialization; inherited `toJSON` hooks are not accepted as data. This boundary assumes ordinary JavaScript data and does not sandbox hostile proxies or modified platform intrinsics. IDs are nonempty strings up to 512 code units and text is required. This tightens formerly structured-cloneable metadata (such as Date/Map) so snapshots have a real serializable contract; convert such metadata explicitly before indexing. Default limits are 1 MiB per document (maximum 16 MiB), 100,000 analyzed tokens per document, depth 16 and 20,000 visited document nodes. `maxVocabulary` defaults to 100,000 analyzer/term posting keys (maximum one million). `maxDocuments` keeps its existing default Infinity for compatibility: production hosts should set a finite cap.
 
 `add`/branch/v0.0.4/`update` validate, clone and tokenize before replacing postings. `addMany` stages all its own changes and swaps once; invalid documents, source-iterator failure, capacity or vocabulary overflow leave that batch uncommitted. Default batch bounds are 1000 documents/16 MiB (configurable maxima 100,000/64 MiB). Duplicate IDs within a valid batch retain last-write replacement semantics. Chunking a large ingest intentionally creates separate commits; it does not make the entire stream atomic. Arbitrary side effects performed by trusted input iterators/filters are not a transaction the library can roll back. `remove` drops obsolete postings, while `clear` releases the current generation; referenced iterators/results remain caller-owned memory.
 
@@ -233,8 +243,7 @@ immutable conjunctive scope to reads, writes, deletes and IDs. Query text and
 user filters cannot replace it. `tenantIsolation: true` is a required adapter
 contract, not an audit of arbitrary host code. Do not register an engine adapter
 that cannot enforce it. Index documents are inert bounded JSON; batches cap at
-100 items/1 MiB, queries at 4096 characters, pages at 100 hits/1 MiB and offsets at
-10000. Filter validation reuses the local index contract. Controls accept
+100 items/1 MiB, queries at 4096 characters, pages at 100 hits/1 MiB and offsets at 10000. Filter validation reuses the local index contract. Controls accept
 `signal` and a timeout no longer than the configured 1–60000 ms default deadline.
 
 Remote connections require an HTTPS endpoint exactly present in `allowedEndpoints`

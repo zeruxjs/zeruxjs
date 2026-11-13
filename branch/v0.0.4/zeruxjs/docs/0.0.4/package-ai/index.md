@@ -19,7 +19,7 @@ This is an OpenAI-compatible Chat Completions transport, not a complete provider
 
 ## Streaming
 
-SSE text is decoded across network and UTF-8 boundaries with total/frame size bounds. Streams emit text only, not complete tool/multimodal event structures. Stop iteration or abort to cancel and release concurrency slots.
+SSE text is decoded across network and UTF-8 boundaries with total/frame size bounds. Streams emit text only, not complete tool/multimodal event structures. Stop iteration to close the reader, or abort to request cancellation. Admission remains owned until the injected provider/reader actually settles; cancellation alone does not prove a slot is free.
 
 ## Retry and fallback
 
@@ -71,31 +71,31 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### ProviderConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `apiKey` | `string` | No |
-| `baseUrl` | `string` | No |
-| `model` | `string` | No |
-| `fetch` | `typeof fetch` | Yes |
-| `timeoutMs` | `number` | Yes |
-| `headers` | `Record<string,string>` | Yes |
-| `maxResponseBytes` | `number` | Yes |
+| Field              | Accepted type/value     | Optional |
+| ------------------ | ----------------------- | -------- |
+| `apiKey`           | `string`                | No       |
+| `baseUrl`          | `string`                | No       |
+| `model`            | `string`                | No       |
+| `fetch`            | `typeof fetch`          | Yes      |
+| `timeoutMs`        | `number`                | Yes      |
+| `headers`          | `Record<string,string>` | Yes      |
+| `maxResponseBytes` | `number`                | Yes      |
 
 ### ChatOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `signal` | `AbortSignal` | Yes |
-| `temperature` | `number` | Yes |
-| `maxTokens` | `number` | Yes |
-| `topP` | `number` | Yes |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `signal`      | `AbortSignal`       | Yes      |
+| `temperature` | `number`            | Yes      |
+| `maxTokens`   | `number`            | Yes      |
+| `topP`        | `number`            | Yes      |
 
 ### AiConcurrencyOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxConcurrent` | `number` | No |
-| `maxQueued` | `number` | Yes |
+| Field           | Accepted type/value | Optional |
+| --------------- | ------------------- | -------- |
+| `maxConcurrent` | `number`            | No       |
+| `maxQueued`     | `number`            | Yes      |
 
 ## Dedicated model adapters
 
@@ -142,7 +142,6 @@ require per-operation approval and return inert descriptors only. No package,
 command, URL or remote schema is executed from model input. See the package README
 and `examples/tools.mjs` for limits, cancellation and deployment prerequisites.
 
-
 ## Inert media and source data
 
 Optional `chatContent`/branch/v0.0.4/`streamContent` accept bounded typed parts. Anthropic maps
@@ -157,7 +156,6 @@ markup, and hosts must authorize and obtain consent before sharing private files
 with a provider. See README capability/MIME/budget details and the content example.
 Opaque-byte fixtures verify transport and inertness; live media/model decoding is
 not qualified.
-
 
 ## Structured request budgets and local evaluation
 
@@ -177,6 +175,12 @@ metrics separately from truthfulness/quality (unmeasured). It uses deterministic
 local providers, no external requests and no private repository evidence. Live
 model evaluations need separate explicit data-disclosure authorization and actual
 model/configuration reporting.
+
+## Maintaining the transport and execution boundaries
+
+The package README maps each source owner. Native adapters build only their declared wire envelopes; content encoding treats filenames, source code, JSON and opaque media bytes as data. Structured generation owns its separate cumulative attempt/output/token/cost ledger and independent validator. Tool execution remains an explicitly registered, authenticated server boundary with uncertain outcomes after a possible side-effect commit.
+
+Public examples in `packages/@zeruxjs/ai/examples/` document each parameter and cleanup owner. They start no requests on import. Provider registries borrow instances, structured clients drain their native jobs, and tool sessions/executors own their cancellation listeners and unsettled work. A host must qualify credentials, model/version, consent and deployment egress separately; local fixtures do not certify provider behavior.
 
 
 ## Public entry points
@@ -215,7 +219,7 @@ Manifest reference for `@zeruxjs/ai@0.0.4`.
 
 # @zeruxjs/ai
 
-Provider-agnostic chat with OpenAI-compatible *Chat Completions*, bounded buffered responses, incremental SSE text streaming, retries for explicit transient errors, fallbacks and concurrency limiting.
+Provider-agnostic chat with OpenAI-compatible _Chat Completions_, bounded buffered responses, incremental SSE text streaming, retries for explicit transient errors, fallbacks and concurrency limiting.
 
 ```ts
 import { createAiClient, createOpenAICompatibleProvider, withRetry, withConcurrencyLimit } from '@zeruxjs/ai';
@@ -256,11 +260,11 @@ duplicate names/capacity reject. Default registry capacity is 16 (maximum 128).
 ones. Closing the registry clears references; already returned providers remain
 usable, and the host cancels their calls with request/generation signals.
 
-| Adapter | Chat | Text stream | Tools | Usage |
-| --- | --- | --- | --- | --- |
-| OpenAI-compatible Chat Completions | yes | yes | no | not exposed |
-| Anthropic Messages | yes | yes | no | reported token counts |
-| Gemini Developer generateContent | yes | yes | no | reported token counts |
+| Adapter                            | Chat | Text stream | Tools | Usage                 |
+| ---------------------------------- | ---- | ----------- | ----- | --------------------- |
+| OpenAI-compatible Chat Completions | yes  | yes         | no    | not exposed           |
+| Anthropic Messages                 | yes  | yes         | no    | reported token counts |
+| Gemini Developer generateContent   | yes  | yes         | no    | reported token counts |
 
 Capabilities are optional on legacy providers; absence is unknown, not support.
 New adapters have four active calls and 16 queued by default, configurable through
@@ -479,15 +483,15 @@ retry streams. `capabilities.inputs` describes the implemented input wire format
 chosen model/account supports every modality—configure an enabled appropriate
 model and handle provider rejection.
 
-| Input part | Anthropic | Gemini | Local behavior |
-| --- | --- | --- | --- |
-| text | yes | yes | plain text, including Markdown/HTML/CSV/XML/YAML/code |
-| file | yes | yes | caller-supplied text plus safe basename/language metadata |
-| json | yes | yes | bounded plain JSON serialized into a text part |
-| image | JPEG/PNG/GIF/WebP | JPEG/PNG/GIF/WebP | inline byte copy/base64 only |
-| pdf | PDF | PDF | inline bytes; no local document engine |
-| audio | rejects | WAV/MP3/MPEG/AIFF/AAC/OGG/FLAC MIME subset | inline bytes only |
-| video | rejects | MP4/MPEG/MOV/AVI/FLV/MPG/WebM/WMV/3GPP MIME subset | inline bytes only |
+| Input part | Anthropic         | Gemini                                             | Local behavior                                            |
+| ---------- | ----------------- | -------------------------------------------------- | --------------------------------------------------------- |
+| text       | yes               | yes                                                | plain text, including Markdown/HTML/CSV/XML/YAML/code     |
+| file       | yes               | yes                                                | caller-supplied text plus safe basename/language metadata |
+| json       | yes               | yes                                                | bounded plain JSON serialized into a text part            |
+| image      | JPEG/PNG/GIF/WebP | JPEG/PNG/GIF/WebP                                  | inline byte copy/base64 only                              |
+| pdf        | PDF               | PDF                                                | inline bytes; no local document engine                    |
+| audio      | rejects           | WAV/MP3/MPEG/AIFF/AAC/OGG/FLAC MIME subset         | inline bytes only                                         |
+| video      | rejects           | MP4/MPEG/MOV/AVI/FLV/MPG/WebM/WMV/3GPP MIME subset | inline bytes only                                         |
 
 See [the public example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/ai/examples/content.mjs). Source file parts work with
 JavaScript/TypeScript, Python, Go, Rust, Java, C/C++, shell, SQL, JSON and other
@@ -661,6 +665,26 @@ are explicitly not-measured. No live provider evaluation is authorized or run by
 this fixture. Any separate live run requires host authorization of data disclosure,
 credentials, model/version, generation configuration, budgets and pricing; record
 those actual exercised settings separately rather than relabeling local checks.
+
+## Source ownership map
+
+- `types.ts` defines the legacy text contract and optional rich capabilities; missing capability declarations remain unknown.
+- `registry.ts` owns application-local name selection and registration leases. Providers are borrowed: registry close clears references without closing providers or cancelling already selected calls.
+- `client.ts` owns prompt conveniences and explicit retry/fallback decisions. Buffered retries require typed retryable errors; streams never retry, and fallback stops after the first emitted text.
+- `concurrency.ts` owns FIFO admission shared across supported methods. Iterator return and actual call settlement release slots; merely signalling cancellation does not force an injected provider to settle.
+- `provider.ts` owns fixed-endpoint Chat Completions request timers/listeners and response cleanup. Injected Fetch pools remain host-owned.
+- `sse.ts` owns reader locks, fatal streaming UTF-8 decoding, frame/response bounds and early-return cancellation. `safe-json.ts` snapshots inert data with descriptor, traversal and byte checks; it is not a sandbox for trusted callbacks or JavaScript Proxy traps.
+- `model-adapters.ts` and `content.ts` own native wire mapping and inert content encoding. `structured.ts` independently owns validation and per-request accounting. `tools.ts`, `tool-transports.ts` and `tool-openapi.ts` remain a separate explicitly authorized execution boundary.
+
+Retain and close the owners returned by `createAiProviderRegistry`, `createStructuredClient` and `createToolExecutor`. `createAiClient` itself only borrows a provider and adds no close operation. Host callbacks and transports must cooperate with cancellation; no wrapper can force-stop arbitrary JavaScript or undo a committed side effect. Source maintenance and local fixtures do not qualify live providers, pricing, codecs or deployed egress controls.
+
+### Readability checks and fixed fixtures
+
+The strict repository readability gate covers authored code, tests and public examples. Parameters, result fields, constant provenance and cleanup are documented at their owning declarations. Complexity/depth advisories remain visible for the native wire validation, structured ledger and tool lifecycle paths; these checks are not proof of sandboxing or live provider correctness.
+
+`src/design/` contains inert static reference previews, not executable model tools or installed runtime assets. Their local HTML configuration inherits semantic validation and enforces Prettier-compatible lowercase doctypes, self-closing void elements and quoted attributes (double quotes unless embedded quotes require the alternate delimiter). It does not disable semantic/security rules. Formatting checks compare normalized parsed HTML/CSS structure; browser rendering was not qualified by this maintenance pass.
+
+The fixed `evaluation/cases.json` retains its exact bytes and schema/version hash identity. It is the sole AI fixture excluded from whitespace rewriting; local evaluation still parses and exercises its schema/citation/retrieval cases. No private prompts or live requests enter this fixture.
 
 
 ## Implementation sources

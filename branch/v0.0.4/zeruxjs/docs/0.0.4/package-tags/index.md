@@ -9,7 +9,7 @@ Tags connect browser ttag, request-scoped server astag, trigger definitions and 
 
 ## Browser collection
 
-Load the configured /_tags/ttag.js route after establishing an intentional consent policy. Use ttag event/set/get/consent operations. Denied consent discards queued events. Browser events are delivered asynchronously and best effort; a generated request ID does not prove delivery or legal consent.
+Load the configured /\_tags/ttag.js route after establishing an intentional consent policy. Use ttag event/set/get/consent operations. Denied consent discards queued events. Browser events are delivered asynchronously and best effort; a generated request ID does not prove delivery or legal consent.
 
 ## Server context
 
@@ -65,81 +65,109 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### TagRuntimeOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `analytics` | `AnalyticsManager` | No |
-| `requestIds` | `RequestIdStore` | No |
-| `store` | `TagContainerStore` | Yes |
-| `container` | `TagContainer` | Yes |
-| `prefix` | `string` | Yes |
-| `publicOrigin` | `string` | Yes |
-| `site` | `string` | Yes |
-| `allowedOrigins` | `string[]` | Yes |
-| `serverToken` | `string` | Yes |
-| `credentials` | `Record<string,{secret:string}>` | Yes |
-| `destinations` | `Record<string,{url:string;headers?:Record<string,string>}>` | Yes |
-| `fetch` | `typeof fetch` | Yes |
-| `authorizeAdmin` | `(request:Request)=>boolean\|Promise<boolean>` | Yes |
-| `authorizePublish` | `(request:Request)=>boolean\|Promise<boolean>` | Yes |
-| `requireBrowserConsent` | `boolean` | Yes |
-| `siteByOrigin` | `Record<string,string>` | Yes |
-| `botPolicy` | `'allow'\|'drop-known'` | Yes |
-| `dashboardHost` | `string` | Yes |
-| `debug` | `boolean` | Yes |
-| `defaultConsent` | `'granted'\|'denied'` | Yes |
-| `onDebug` | `(data:{requestId:string;event:string;matchedTriggers:string[];firedTags:string[];failures:string[]})=>void` | Yes |
-| `onWarning` | `(message:string)=>void` | Yes |
-| `maxBodyBytes` | `number` | Yes |
-| `maxEventsPerMinute` | `number` | Yes |
+| Field                     | Accepted type/value                                                                                          | Optional |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ | -------- |
+| `analytics`               | `AnalyticsManager`                                                                                           | No       |
+| `requestIds`              | `RequestIdStore`                                                                                             | No       |
+| `store`                   | `TagContainerStore`                                                                                          | Yes      |
+| `container`               | `TagContainer`                                                                                               | Yes      |
+| `prefix`                  | `string`                                                                                                     | Yes      |
+| `administration`          | `TagAdminMount`                                                                                              | Yes      |
+| `publicOrigin`            | `string`                                                                                                     | Yes      |
+| `site`                    | `string`                                                                                                     | Yes      |
+| `allowedOrigins`          | `string[]`                                                                                                   | Yes      |
+| `serverToken`             | `string`                                                                                                     | Yes      |
+| `credentials`             | `Record<string,{secret:string}>`                                                                             | Yes      |
+| `destinations`            | `Record<string,{url:string;headers?:Record<string,string>}>`                                                 | Yes      |
+| `fetch`                   | `typeof fetch`                                                                                               | Yes      |
+| `authorizeAdmin`          | `(request:Request)=>boolean\|Promise<boolean>`                                                               | Yes      |
+| `authorizePublish`        | `(request:Request)=>boolean\|Promise<boolean>`                                                               | Yes      |
+| `requireBrowserConsent`   | `boolean`                                                                                                    | Yes      |
+| `siteByOrigin`            | `Record<string,string>`                                                                                      | Yes      |
+| `botPolicy`               | `'allow'\|'drop-known'`                                                                                      | Yes      |
+| `dashboardHost`           | `string`                                                                                                     | Yes      |
+| `debug`                   | `boolean`                                                                                                    | Yes      |
+| `defaultConsent`          | `'granted'\|'denied'`                                                                                        | Yes      |
+| `onDebug`                 | `(data:{requestId:string;event:string;matchedTriggers:string[];firedTags:string[];failures:string[]})=>void` | Yes      |
+| `onWarning`               | `(message:string)=>void`                                                                                     | Yes      |
+| `providers`               | `TagProviderRegistry`                                                                                        | Yes      |
+| `ownProviders`            | `boolean`                                                                                                    | Yes      |
+| `maxConcurrentDispatches` | `number`                                                                                                     | Yes      |
+| `dispatchTimeoutMs`       | `number`                                                                                                     | Yes      |
+| `allowDispatch`           | `(event: Readonly<TagEvent>) => boolean \| Promise<boolean>`                                                 | Yes      |
+| `maxBodyBytes`            | `number`                                                                                                     | Yes      |
+| `maxEventsPerMinute`      | `number`                                                                                                     | Yes      |
 
 ### TagContainer
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `version` | `number` | No |
-| `name` | `string` | No |
-| `triggers` | `Trigger[]` | No |
-| `tags` | `TagDefinition[]` | No |
-| `variables` | `Variable[]` | No |
-| `governance` | `TagGovernance` | Yes |
+| Field        | Accepted type/value | Optional |
+| ------------ | ------------------- | -------- |
+| `id`         | `string`            | No       |
+| `version`    | `number`            | No       |
+| `name`       | `string`            | No       |
+| `triggers`   | `Trigger[]`         | No       |
+| `tags`       | `TagDefinition[]`   | No       |
+| `variables`  | `Variable[]`        | No       |
+| `governance` | `TagGovernance`     | Yes      |
 
 ### TagDefinition
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `name` | `string` | No |
-| `type` | `'analytics'\|'ga4'\|'webhook'` | No |
-| `triggerIds` | `string[]` | No |
-| `enabled` | `boolean` | Yes |
-| `eventName` | `string` | Yes |
-| `measurementId` | `string` | Yes |
-| `credentialRef` | `string` | Yes |
-| `destinationRef` | `string` | Yes |
-| `clientIdVariable` | `string` | Yes |
-| `parameters` | `Record<string,Scalar\|string>` | Yes |
+| Field              | Accepted type/value                         | Optional |
+| ------------------ | ------------------------------------------- | -------- |
+| `id`               | `string`                                    | No       |
+| `name`             | `string`                                    | No       |
+| `type`             | `'analytics'\|'ga4'\|'webhook'\|'provider'` | No       |
+| `providerRef`      | `string`                                    | Yes      |
+| `providerVersion`  | `number`                                    | Yes      |
+| `publicConfig`     | `Values`                                    | Yes      |
+| `triggerIds`       | `string[]`                                  | No       |
+| `enabled`          | `boolean`                                   | Yes      |
+| `eventName`        | `string`                                    | Yes      |
+| `measurementId`    | `string`                                    | Yes      |
+| `credentialRef`    | `string`                                    | Yes      |
+| `destinationRef`   | `string`                                    | Yes      |
+| `clientIdVariable` | `string`                                    | Yes      |
+| `parameters`       | `Record<string,Scalar\|string>`             | Yes      |
 
 ### Trigger
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `name` | `string` | No |
-| `type` | `'event'\|'all'\|'pageview'\|'click'\|'form'\|'history'` | No |
-| `event` | `string` | Yes |
-| `conditions` | `Condition[]` | Yes |
-| `enabled` | `boolean` | Yes |
+| Field           | Accepted type/value                                               | Optional |
+| --------------- | ----------------------------------------------------------------- | -------- |
+| `id`            | `string`                                                          | No       |
+| `name`          | `string`                                                          | No       |
+| `type`          | `'event'\|'all'\|'pageview'\|'click'\|'form'\|'history'\|'group'` | No       |
+| `schemaVersion` | `1`                                                               | Yes      |
+| `composition`   | `{mode: 'all' \| 'any' \| 'not'; triggerIds: string[]}`           | Yes      |
+| `event`         | `string`                                                          | Yes      |
+| `conditions`    | `Condition[]`                                                     | Yes      |
+| `enabled`       | `boolean`                                                         | Yes      |
 
 ### Variable
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `name` | `string` | No |
-| `type` | `'constant'\|'event'\|'dataLayer'\|'context'` | No |
-| `key` | `string` | Yes |
-| `value` | `Scalar` | Yes |
+| Field           | Accepted type/value                           | Optional |
+| --------------- | --------------------------------------------- | -------- |
+| `id`            | `string`                                      | No       |
+| `name`          | `string`                                      | No       |
+| `type`          | `'constant'\|'event'\|'dataLayer'\|'context'` | No       |
+| `schemaVersion` | `1`                                           | Yes      |
+| `key`           | `string`                                      | Yes      |
+| `value`         | `Scalar`                                      | Yes      |
+
+## Explicit owners and public imports
+
+Use `createTagManager` and `createTagProviderRegistry` from `@zeruxjs/tags` on
+the server. Retain the manager and await `close()` before closing borrowed
+analytics, document and request-ID stores. A registry is borrowed unless
+`ownProviders:true`; close a shared registry only after every borrowing manager
+drains. Cancellation stops observation, not arbitrary JavaScript or a previously
+accepted external mutation. Saved drafts, preview and import never imply publish.
+
+For replaceable UI, import `createTagAdminClient` from
+`@zeruxjs/tags/admin-client` and `mountTagAdmin` from
+`@zeruxjs/tags/admin-view`. These browser-safe entries do no work on import.
+Explicitly load the view, destroy its owned subtree/listeners on unmount, then
+close any client you own. The host still verifies every session, tenant, origin,
+CSRF token and publisher grant; hiding a control grants no permission.
 
 
 ## Public entry points
@@ -269,23 +297,22 @@ const tagConfig = {
 
 An authorizer must verify the user's authenticated session, tenant and role. Both controls are checked for publisher actions; a publisher needs editor/admin access too. By default, all POST/PUT studio writes require same-origin `Origin` checks in addition to these authorizers; the explicit administration policy below permits exact approved UI origins only with host-verified CSRF tokens. Never expose a dashboard publicly. Add CSRF tokens in the host layer if your deployment accepts unusual state-changing request patterns.
 
-| Route | Method | Permission | Purpose |
-|---|---|---|---|
-| `/_tags/admin` | GET | editor | Visual draft editor, dry-run, publish and rollback controls |
-| `/_tags/admin/api` | GET / PUT | editor | Read full draft / save `{version: prior+1,...}` |
-| `/_tags/admin/status` | GET | editor | Draft revision, live release and bounded release-history metadata |
-| `/_tags/admin/preview` | POST | editor | Pure trigger dry-run `{name,properties,data,mode:'draft'|'published'}` |
-| `/_tags/admin/publish` | POST | editor + publisher | `{expectedVersion}`; atomic CAS live switch and history append |
-| `/_tags/admin/rollback` | POST | editor + publisher | `{expectedVersion,releaseId}`; publish a retained snapshot as a new live release |
-| `/_tags/ttag.js` | GET | public | Bootstrap **from published triggers only**, `Cache-Control: no-store` |
-| `/_tags/collect` | POST | allowed origin or server bearer token | Browser/server telemetry, validated and fail-soft |
+| Route                   | Method    | Permission                            | Purpose                                                                          |
+| ----------------------- | --------- | ------------------------------------- | -------------------------------------------------------------------------------- | ------------- |
+| `/_tags/admin`          | GET       | editor                                | Visual draft editor, dry-run, publish and rollback controls                      |
+| `/_tags/admin/api`      | GET / PUT | editor                                | Read full draft / save `{version: prior+1,...}`                                  |
+| `/_tags/admin/status`   | GET       | editor                                | Draft revision, live release and bounded release-history metadata                |
+| `/_tags/admin/preview`  | POST      | editor                                | Pure trigger dry-run `{name,properties,data,mode:'draft'                         | 'published'}` |
+| `/_tags/admin/publish`  | POST      | editor + publisher                    | `{expectedVersion}`; atomic CAS live switch and history append                   |
+| `/_tags/admin/rollback` | POST      | editor + publisher                    | `{expectedVersion,releaseId}`; publish a retained snapshot as a new live release |
+| `/_tags/ttag.js`        | GET       | public                                | Bootstrap **from published triggers only**, `Cache-Control: no-store`            |
+| `/_tags/collect`        | POST      | allowed origin or server bearer token | Browser/server telemetry, validated and fail-soft                                |
 
 The editor shows draft and live revision independently; **saving never fires edited tags**. Preview is pure and does not send to GA4/webhooks or internal storage. Publish rejects missing GA4 credentials or webhook destination references; credentials, actual URL/headers and OAuth tokens are always supplied by trusted server configuration, never dashboard JSON. Rollback preserves the current draft so a publisher may fix/re-publish it later. Revisions are monotonic and concurrent conflicting writers receive HTTP 409. The atomic single-document scheme supports a 12-entry release history, compacted further to keep the complete document below 58,000 bytes for portable SQL `TEXT` implementations. Oversized definitions are rejected until simplified; historical snapshots pruned by the retention policy are not available for rollback. A rollback is a new release, not mutation of old history.
 
 `ttag('config', {site:..., debug:...})` is **no longer accepted**: an untrusted web page may not change the server-issued tenant or debug policy. Arbitrary JavaScript/HTML tags are **not supported**. The studio uses an exact SHA-256 hash for inline script CSP, with scripts otherwise denied; it also denies framing and uses no-store responses. Automatic click/form listeners avoid form field values, text contents and URLs. Browser telemetry uses opaque random request IDs, bounded scalar properties and client-side consent. `ttag('consent','denied')` discards queued events. `defaultConsent:'denied'` gates `astag` until it receives `astag('consent','granted')`, and enables consent checks on browser ingestion by default. The collector drops explicit `denied` claims and, with `requireBrowserConsent:true`, ignores unknown consent. **A browser's `granted` claim cannot prove legal consent**: host consent management and privacy policies remain essential. `siteByOrigin` should be configured for every public origin in multi-tenant deployments; collection-side binding rejects mismatched site assertions. The system never infers identity from IPs or browser fingerprints.
 
 Built-in GA4/webhook destinations have independently bounded 1-second timeouts; provider helpers use the owning evaluation deadline. Failures isolate each tag, with sanitized warnings. Webhook destinations must use public HTTPS DNS hostnames and redirects are disallowed; this **does not remove DNS-rebinding risk**. Enforce outbound DNS/IP allowlists and egress firewall rules in your deployment. GA4 HTTP acceptance is not proof of Google-side processing. No arbitrary remote script execution, guaranteed browser delivery, distributed rate limiting, replay queue or unbounded GTM/GA4 feature parity is provided. Large production deployments should migrate release snapshots to a normalized transactional release table rather than depending on the capped JSON envelope.
-
 
 ## Explicit versioned provider plugins
 
@@ -323,7 +350,6 @@ Preview remains a pure authorized dry-run: no provider callback, network call, a
 
 Qualification includes existing collector/governance checks plus provider version/import failures, recursive groups, consent changes, denied destinations, outage/no-replay, overload/deadlines and actual-settlement disposal fixtures. These tests use injected transports/VM browser fixtures, not live Google/webhook or browser acceptance. Live prerequisites remain a shared durable container/request-ID store, tenant-authorized sessions, consent management, approved egress/DNS policy and dedicated configured provider credentials. No live credentials, user applications or production destinations were used.
 
-
 ## Configurable headless administration
 
 The package keeps telemetry mounting (`prefix`, collection `publicOrigin`, collector `allowedOrigins`) separate from **administration**. `TagRuntimeOptions.administration` accepts `basePath` for API routes, `uiPath` for the authenticated HTML page, optional API `publicOrigin`, and `serveUi:false` for a completely separately hosted UI. Defaults preserve `/_tags/admin` and its existing endpoints. Paths must be explicit root paths; conflicting route registrations reject. The host mounts the returned routes; no application, asset compiler or listener starts automatically.
@@ -344,14 +370,14 @@ The package creates no cookies or sessions. A UI subdomain does not automaticall
 
 The API base exposes:
 
-| Suffix | Method | Operation |
-| --- | --- | --- |
-| `/api` | GET / PUT | Read / CAS-save full draft; create/update/delete entries through validated document arrays |
-| `/validate` | POST | Validate schemas/provider versions without storage mutation |
-| `/preview` | POST | Authorized dry-run; consent and destination policy still apply |
-| `/status` | GET | Draft/live revisions and retained release metadata |
-| `/publish`, `/rollback` | POST | Separate publisher-authorized CAS transition |
-| `/import`, `/export` | POST / GET | Versioned draft-only definition transfer |
+| Suffix                  | Method     | Operation                                                                                  |
+| ----------------------- | ---------- | ------------------------------------------------------------------------------------------ |
+| `/api`                  | GET / PUT  | Read / CAS-save full draft; create/update/delete entries through validated document arrays |
+| `/validate`             | POST       | Validate schemas/provider versions without storage mutation                                |
+| `/preview`              | POST       | Authorized dry-run; consent and destination policy still apply                             |
+| `/status`               | GET        | Draft/live revisions and retained release metadata                                         |
+| `/publish`, `/rollback` | POST       | Separate publisher-authorized CAS transition                                               |
+| `/import`, `/export`    | POST / GET | Versioned draft-only definition transfer                                                   |
 
 Saving requires `version=previous+1`; publishing/rollback require `expectedVersion`. A CAS conflict returns 409. There is no silent merge, last-writer-wins overwrite, automatic retry or implicit publish on save. Provider compatibility, destination configuration, consent and tenant checks from the execution contract remain intact. Imported definitions contain inert public data, not executable slots, credentials or callbacks. Stored labels remain text, including strings that resemble markup; notes/HTML fields are not supported expression extensions.
 

@@ -9,7 +9,7 @@ Set multisite: true in configuration, then register mappings from middleware usi
 
 ## Request mapping
 
-A mapping example.com/shop to shop resolves example.com/shop/api/health against app/shop/api/health/route.ts. Use * to register a host wildcard. Unmatched hosts do not fall through into unrelated root dynamic routes when mappings are registered.
+A mapping example.com/shop to shop resolves example.com/shop/api/health against app/shop/api/health/route.ts. Use \* to register a host wildcard. Unmatched hosts do not fall through into unrelated root dynamic routes when mappings are registered.
 
 ## Tenant boundaries
 

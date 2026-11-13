@@ -5,12 +5,12 @@ Own focus, dialogs, roving selection and live announcements explicitly.
 
 ## Choose a helper
 
-| API | Responsibility |
-| --- | --- |
-| createFocusTrap | Topmost trap keyboard capture and focus restoration |
-| createAccessibleDialog | Dialog roles, labels, Escape and show/close/destroy |
-| createRovingTabIndex | Arrow/Home/End navigation, orientation, RTL and disabled items |
-| createLiveAnnouncer | Polite/urgent live-region messages and cleanup |
+| API                    | Responsibility                                                 |
+| ---------------------- | -------------------------------------------------------------- |
+| createFocusTrap        | Topmost trap keyboard capture and focus restoration            |
+| createAccessibleDialog | Dialog roles, labels, Escape and show/close/destroy            |
+| createRovingTabIndex   | Arrow/Home/End navigation, orientation, RTL and disabled items |
+| createLiveAnnouncer    | Polite/urgent live-region messages and cleanup                 |
 
 ## Lifecycle
 
@@ -70,22 +70,22 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### FocusTrapOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `initialFocus` | `()=>HTMLElement\|null` | Yes |
-| `fallbackFocus` | `()=>HTMLElement\|null` | Yes |
-| `returnFocus` | `boolean` | Yes |
-| `escapeDeactivates` | `boolean` | Yes |
-| `onEscape` | `(event:KeyboardEvent)=>void` | Yes |
+| Field               | Accepted type/value           | Optional |
+| ------------------- | ----------------------------- | -------- |
+| `initialFocus`      | `()=>HTMLElement\|null`       | Yes      |
+| `fallbackFocus`     | `()=>HTMLElement\|null`       | Yes      |
+| `returnFocus`       | `boolean`                     | Yes      |
+| `escapeDeactivates` | `boolean`                     | Yes      |
+| `onEscape`          | `(event:KeyboardEvent)=>void` | Yes      |
 
 ### RovingOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `orientation` | `'horizontal'\|'vertical'\|'both'` | Yes |
-| `loop` | `boolean` | Yes |
-| `direction` | `'ltr'\|'rtl'` | Yes |
-| `isDisabled` | `(node:HTMLElement)=>boolean` | Yes |
+| Field         | Accepted type/value                | Optional |
+| ------------- | ---------------------------------- | -------- |
+| `orientation` | `'horizontal'\|'vertical'\|'both'` | Yes      |
+| `loop`        | `boolean`                          | Yes      |
+| `direction`   | `'ltr'\|'rtl'`                     | Yes      |
+| `isDisabled`  | `(node:HTMLElement)=>boolean`      | Yes      |
 
 
 ## Public entry points
@@ -250,6 +250,46 @@ The panel's speech controls are disabled when unavailable. Speech text providers
 Focused checks cover V1→V2 migration, corrupt/blocked storage, isolated instances, reset scope, media changes, keyboard controls, synthetic-action denial, unavailable/remote-only voices, busy ownership, pause/resume/stop and teardown. Chrome 156 Linux tests use real keyboard dispatch and media emulation to verify scoped font/contrast/focus and reduced-motion/forced-colors behavior. Speech-engine state/failure paths are simulated while retaining actual trusted browser clicks; audible local-voice output was not qualified. A functioning installed local voice/audio device, screen-reader testing and other browser/OS qualification remain prerequisites for those claims.
 
 This optional panel cannot repair arbitrary inaccessible markup, replace accessible application design or certify WCAG compliance. Host CSS can override generated rules; test the actual components and content, including assistive technology.
+
+## Source maintenance and contracts
+
+| Module                     | Ownership and review boundary                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `aria.ts` / `announcer.ts` | Explicit native attributes, media subscription and text-only live-region ownership.                          |
+| `ownership.ts`             | Compare-and-restore leases; different host writes survive, identical concurrent writes cannot be identified. |
+| `focus.ts` / `dialog.ts`   | Document-local active layers, validated focus targets, inert branches and opener/fallback restoration.       |
+| `keyboard.ts`              | Bounded dynamic supplier reconciliation, native/host disabled filtering and zero/minus-one tab stops.        |
+| `props.ts`                 | Own-data validation and same-root ID relationships before any attribute/listener acquisition.                |
+| `preferences.ts`           | Finite per-owner state, explicit V1/V2 data contracts, scoped storage failures and bounded notifications.    |
+| `preference-styles.ts`     | Human-readable scoped CSS and owned media/state subscriptions; no global filter.                             |
+| `preference-panel.ts`      | Native labelled controls; borrowed state/speech must outlive the panel.                                      |
+| `speech.ts`                | Explicit trusted actions, local-voice capability checks, bounded text and exclusive native queue leases.     |
+
+Typed parameter/return descriptions live beside functions and public fields;
+constant/iteration comments explain provenance and ownership. Pure helpers and
+headless state remain distinct from APIs requiring a live DOM. The generated
+stylesheet source is readable; its output whitespace is not a stable public
+serialization contract. Native HTML/CSS semantics and existing renderer imports
+remain unchanged.
+
+`FocusTrap.destroy()` currently delegates to `deactivate()`; explicit later
+activation remains supported. Dialog, roving, state, panel and speech owners have
+their separately documented destroyed-state behavior. Do not infer one universal
+lifecycle from a method name. `AccessibilityValidationError` copies/freezes its
+issue array without deep-cloning caller-created records; built-in validators
+produce frozen redacted records.
+
+The lint package's narrow cleanup rule now recognizes the preference state,
+style/panel/speech factories plus motion/Escape listener helpers. Retaining a
+handle is still not proof that teardown eventually runs. No source-marked API
+is newly deprecated. Native DOM/media/speech primitives remain appropriate in
+their owning implementation; the raw esbuild browser fixture needs buffered
+stdin output not offered by the managed build wrapper.
+
+For each change, run the package-local build/focused tests, reviewed-scope lint
+and formatting. Keep embedded browser/subprocess fixture code stable and report
+DOM emulation, native browser checks and simulated speech separately. Neither
+comments nor passing automation establish assistive-technology conformance.
 
 
 ## Implementation sources

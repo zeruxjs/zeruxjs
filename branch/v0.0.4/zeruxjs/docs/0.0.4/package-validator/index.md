@@ -10,6 +10,7 @@ import { object, string } from '@zeruxjs/validator/schemas';
 import { validatedJsonHandler } from '@zeruxjs/validator/http';
 const schema = object({ name: string() });
 const handler = validatedJsonHandler(schema, async body => ({ hello: body.name }));
+// The host mounts this handler explicitly and awaits handler.close() on teardown.
 ```
 
 Schema constructors and synchronous/asynchronous parsing actions are exported from `/schemas` and `/browser`; the root remains compatible. `/browser` also provides explicit DOM feedback and excludes request parsing. Choose a schema that represents the operation's allowed input, not an entire database object with private fields.
@@ -68,70 +69,69 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### HttpValidationOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxBytes` | `number` | Yes |
-| `maxQueryFields` | `number` | Yes |
-| `maxQueryLength` | `number` | Yes |
-| `maxFields` | `number` | Yes |
-| `maxFieldBytes` | `number` | Yes |
-| `bodyTimeoutMs` | `number` | Yes |
-| `maxConcurrentReads` | `number` | Yes |
-| `signal` | `AbortSignal` | Yes |
-| `validation` | `Omit<Config<BaseIssue<unknown>>, "signal">` | Yes |
+| Field                | Accepted type/value                          | Optional |
+| -------------------- | -------------------------------------------- | -------- |
+| `maxBytes`           | `number`                                     | Yes      |
+| `maxQueryFields`     | `number`                                     | Yes      |
+| `maxQueryLength`     | `number`                                     | Yes      |
+| `maxFields`          | `number`                                     | Yes      |
+| `maxFieldBytes`      | `number`                                     | Yes      |
+| `bodyTimeoutMs`      | `number`                                     | Yes      |
+| `maxConcurrentReads` | `number`                                     | Yes      |
+| `signal`             | `AbortSignal`                                | Yes      |
+| `validation`         | `Omit<Config<BaseIssue<unknown>>, "signal">` | Yes      |
 
 ### ToJsonSchemaOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `strict` | `boolean \| undefined` | Yes |
+| Field    | Accepted type/value    | Optional |
+| -------- | ---------------------- | -------- |
+| `strict` | `boolean \| undefined` | Yes      |
 
 ### ParseBooleanConfig
 
 Parse boolean config interface.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `truthy` | `MaybeReadonly<unknown[]> \| undefined` | Yes |
-| `falsy` | `MaybeReadonly<unknown[]> \| undefined` | Yes |
+| Field    | Accepted type/value                     | Optional |
+| -------- | --------------------------------------- | -------- |
+| `truthy` | `MaybeReadonly<unknown[]> \| undefined` | Yes      |
+| `falsy`  | `MaybeReadonly<unknown[]> \| undefined` | Yes      |
 
 ### ParseJsonConfig
 
 Parse JSON config interface.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `reviver` | `(this: any, key: string, value: any) => any` | Yes |
+| Field     | Accepted type/value                           | Optional |
+| --------- | --------------------------------------------- | -------- |
+| `reviver` | `(this: any, key: string, value: any) => any` | Yes      |
 
 ### StringifyJsonConfig
 
 Stringify JSON config interface.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `replacer` | `((this: any, key: string, value: any) => any) \| (number \| string)[]` | Yes |
-| `space` | `string \| number` | Yes |
+| Field      | Accepted type/value                                                     | Optional |
+| ---------- | ----------------------------------------------------------------------- | -------- |
+| `replacer` | `((this: any, key: string, value: any) => any) \| (number \| string)[]` | Yes      |
+| `space`    | `string \| number`                                                      | Yes      |
 
 ### CacheConfig
 
 Cache config type.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxSize` | `number` | Yes |
-| `maxAge` | `number` | Yes |
+| Field     | Accepted type/value | Optional |
+| --------- | ------------------- | -------- |
+| `maxSize` | `number`            | Yes      |
+| `maxAge`  | `number`            | Yes      |
 
 ### Config
 
 Config interface.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `lang` | `string \| undefined` | Yes |
-| `message` | `ErrorMessage<TIssue> \| undefined` | Yes |
-| `abortEarly` | `boolean \| undefined` | Yes |
-| `abortPipeEarly` | `boolean \| undefined` | Yes |
-
+| Field            | Accepted type/value                 | Optional |
+| ---------------- | ----------------------------------- | -------- |
+| `lang`           | `string \| undefined`               | Yes      |
+| `message`        | `ErrorMessage<TIssue> \| undefined` | Yes      |
+| `abortEarly`     | `boolean \| undefined`              | Yes      |
+| `abortPipeEarly` | `boolean \| undefined`              | Yes      |
 
 ## Functional inference and explicit compatibility
 
@@ -153,13 +153,13 @@ unions. Public types live in validator. Zero-argument constructor action shortha
 also preserves output inference; other legacy shorthand and `z`/branch/v0.0.4/`chain` methods
 can retain broad types. Use functional composition for precise inference.
 
-| Surface | Implemented contract |
-| --- | --- |
-| Functional schemas/actions/parsers | Existing named schema subset, typed pipelines and sync/async parses |
-| Object keys | object strips; looseObject preserves safe extra keys; strictObject rejects; objectWithRest validates extras |
-| `z` / `chain` | Limited convenience API, not full Zod compatibility |
-| Valibot-style names / Standard Schema | Existing subset/adapter, not full Valibot conformance |
-| JSON Schema / ajvSafeParse | Limited local conversion/checking; not the AJV engine or full JSON Schema |
+| Surface                               | Implemented contract                                                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Functional schemas/actions/parsers    | Existing named schema subset, typed pipelines and sync/async parses                                         |
+| Object keys                           | object strips; looseObject preserves safe extra keys; strictObject rejects; objectWithRest validates extras |
+| `z` / `chain`                         | Limited convenience API, not full Zod compatibility                                                         |
+| Valibot-style names / Standard Schema | Existing subset/adapter, not full Valibot conformance                                                       |
+| JSON Schema / ajvSafeParse            | Limited local conversion/checking; not the AJV engine or full JSON Schema                                   |
 
 Object schemas reject arrays, read declared fields only from own properties and
 reject unsafe schema keys. Class instances remain eligible by their own fields.
@@ -173,19 +173,45 @@ abort flags stop them. Callback exceptions propagate. Unions try branches in ord
 and return the first successful output, or structured branch issues on failure.
 Keep callbacks side-effect-free because failed union branches may run first.
 
+`undefinedable` permits an explicit undefined value without declaring the object
+key optional. `exactOptional` delegates supplied values to the wrapped schema and
+retains default metadata; its run method does not apply a default replacement.
+Do not treat that metadata as evidence that an absent field will be filled.
+
 Parsed structural containers are new, but leaves, loose extras, dates/instances,
 custom/unknown values and cache outputs may share identity. Parsing is not a deep
 clone and transforms can mutate their inputs.
 
+### Collections, callbacks and measurement units
+
+Map/Set schemas allocate new native collections but can retain borrowed child
+outputs. Transformed duplicate Map keys keep the last assignment; Set values
+collapse under native equality. Async collection work starts before ordered
+result accumulation, so abortEarly does not prevent every child from starting.
+Record input-key filtering does not revalidate trusted transformed output names.
+
+Custom predicates assert the host-declared generic type; they do not prove that
+type independently. Lazy getters select trusted child schemas per parse without
+memoization or source-text evaluation. Intersection merging can mutate its first
+branch result before a later conflict and has no independent cycle/depth budget or
+rollback; host transforms must produce compatible finite output graphs.
+
+Length actions measure UTF-16 code units or array-like positions. Size actions
+measure Blob bytes or Map/Set element counts. These refinements are separate from
+streaming HTTP admission, grapheme counts and root execution budgets. Their legacy
+numeric threshold constructors do not independently validate host configuration.
+Native remainder checks preserve distinct number/bigint arithmetic; bigint zero
+divisors and mixed numeric kinds throw, and floating-point values are not rounded.
+
 ## Parse budgets, cancellation and private notifications
 
 | Root parse option | Default | Maximum |
-| --- | --- | --- |
-| maxDepth | 64 | 128 |
-| maxNodes | 10000 | 100000 |
-| maxCollectionSize | 1000 | 10000 |
-| maxIssues | 100 | 1000 |
-| maxConcurrency | 8 | 32 |
+| ----------------- | ------- | ------- |
+| maxDepth          | 64      | 128     |
+| maxNodes          | 10000   | 100000  |
+| maxCollectionSize | 1000    | 10000   |
+| maxIssues         | 100     | 1000    |
+| maxConcurrency    | 8       | 32      |
 
 Limits are positive integers. Depth covers input nesting and schema/action
 nesting (wrappers count); work bounds input scan nodes and schema/callback steps
@@ -246,6 +272,45 @@ limits, async misuse, concurrency, dependency failures, hook exceptions and clea
 Installed shared tooling/TypeScript are required. There are no live-service
 prerequisites, and no live-provider/browser behavior is claimed.
 
+### Message and metadata ownership
+
+Message registries use exact language keys, including a distinct `undefined` key;
+they provide no locale fallback, expiry, cardinality cap or tenant isolation.
+Configure trusted static messages at bootstrap. Getters return borrowed messages
+without invoking them; validation may invoke message callbacks with private issue
+data. Deleting a specific message leaves its constructor bucket allocated.
+
+`getDefaults`/branch/v0.0.4/`getFallbacks` recursively read declared object entries and tuple
+positions, not dynamic rest values. They may invoke trusted leaf factories without
+an input dataset or root parse budget. Async variants start sibling factories
+concurrently; rejection does not cancel independent factory work. These helpers
+do not validate replacements or deep-clone their results.
+
+`getTitle`/branch/v0.0.4/`getDescription` prefer the last matching metadata at the highest
+pipeline level. `getMetadata` instead shallowly merges in depth-first source
+order, with later keys winning. Metadata is host-owned, unvalidated and unescaped;
+reading record getters may execute host code. Escape text for its eventual output
+context and keep untrusted records outside this API.
+
+### Local compatibility boundaries
+
+Format/checksum matches do not establish mailbox/card/device ownership, JWS
+signatures, digest integrity, calendar existence or destination authorization.
+Native URL parsing accepts schemes the host may need to deny. Custom RegExp and
+input-size policy remain explicit because native matching cannot be force-stopped
+by a cooperative deadline.
+
+Native array callback conveniences do not await callbacks; sortItems mutates its
+array. Readonly/brand/flavor are type-level markers, not runtime freezing or
+permissions. Function wrappers retain configuration and do not preserve a method
+receiver; create them with parseAsync when their child schemas are async. Return
+validation cannot roll back effects of a function that already executed.
+
+The local JSON Schema checker is not AJV and does not run original transforms. It
+ignores unsupported keywords, retains inherited-key presence/slash-path behavior
+and has no independent cycle/work/deadline budget. Converter strict mode rejects
+only explicitly unsupported branches; it does not certify full coverage. Use the
+functional APIs for their documented own-field and root-budget behavior.
 
 ## Browser schemas and app-owned HTTP adapters
 
@@ -277,15 +342,15 @@ close is idempotent, prevents new operations, aborts owned work and awaits clean
 Schema/provider exceptions propagate; cancellation of noncooperative validation
 can still delay close. Do not share tenant/user-specific mutable callback state.
 
-| HTTP budget | Default | Allowed range |
-| --- | --- | --- |
-| maxBytes | 1 MiB | 1 byte–16 MiB |
-| bodyTimeoutMs | 3000 ms | 10–60000 ms |
-| maxConcurrentReads | 32 | 1–1024 |
-| maxFields | 200 | 1–1000 |
-| maxQueryFields | maxFields | 1–1000 |
-| maxQueryLength | 16384 characters | 1–1048576 |
-| maxFieldBytes | 16384 UTF-8 bytes | 1–1048576 |
+| HTTP budget        | Default           | Allowed range |
+| ------------------ | ----------------- | ------------- |
+| maxBytes           | 1 MiB             | 1 byte–16 MiB |
+| bodyTimeoutMs      | 3000 ms           | 10–60000 ms   |
+| maxConcurrentReads | 32                | 1–1024        |
+| maxFields          | 200               | 1–1000        |
+| maxQueryFields     | maxFields         | 1–1000        |
+| maxQueryLength     | 16384 characters  | 1–1048576     |
+| maxFieldBytes      | 16384 UTF-8 bytes | 1–1048576     |
 
 All budgets are positive safe integers. JSON key inspection additionally caps
 10000 nodes. validation supplies existing parse controls/hooks, excluding signal;
@@ -298,7 +363,7 @@ released. Cancellation rejection remains in the internal cause; an uncooperative
 stream cancel promise does not hold a slot indefinitely. A body locked by another
 consumer is rejected without stealing that lock.
 
-JSON accepts application/json and application/*+json. Forms accept URL-encoded or
+JSON accepts application/json and application/\*+json. Forms accept URL-encoded or
 multipart/form-data with a valid boundary; UTF-8 is required and compressed input
 is rejected. Multipart uses the runtime's Fetch parser after the bounded read;
 field caps apply after native decoding, not as a streaming multipart parser.
@@ -317,17 +382,17 @@ reserved dot/bracket segments, reject before stripping. Keys are literal and no
 nested expansion occurs. Names are nonempty, control-free, at most 256 characters;
 headers also require token syntax and names are lowercased.
 
-| Field option | Contract |
-| --- | --- |
-| duplicates:'array' (default) | Singletons scalar, repeated names arrays |
-| duplicates:'reject' | Reject any repeat, including empty values |
-| duplicates:'first'/branch/v0.0.4/'last' | Choose literal first/last before empty handling |
-| empty:'preserve' (default) | Keep empty strings |
-| empty:'omit' | Remove selected empties; all removed means absent/default-eligible |
-| coerce:{name:'number'} | Strict finite JSON-number spelling; no blanks, hex, Infinity or NaN |
-| coerce:{name:'boolean'} | Exact lowercase true/false |
-| coerce:{name:'string'} | Keep strings; do not stringify files |
-| files:'reject' (default)/'preserve' | Explicit bounded File acceptance |
+| Field option                        | Contract                                                            |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| duplicates:'array' (default)        | Singletons scalar, repeated names arrays                            |
+| duplicates:'reject'                 | Reject any repeat, including empty values                           |
+| duplicates:'first'/branch/v0.0.4/'last'           | Choose literal first/last before empty handling                     |
+| empty:'preserve' (default)          | Keep empty strings                                                  |
+| empty:'omit'                        | Remove selected empties; all removed means absent/default-eligible  |
+| coerce:{name:'number'}              | Strict finite JSON-number spelling; no blanks, hex, Infinity or NaN |
+| coerce:{name:'boolean'}             | Exact lowercase true/false                                          |
+| coerce:{name:'string'}              | Keep strings; do not stringify files                                |
+| files:'reject' (default)/'preserve' | Explicit bounded File acceptance                                    |
 
 Selected repeated values coerce individually. Arrays stay arrays after empty
 filtering. Coercion does not create absent fields and no schema-based coercion or
@@ -369,7 +434,9 @@ errors. No user-controlled selector interpolation or frontend framework is added
 Focused checks cover Node Fetch streams, reader cleanup, slow/trickled/oversized/
 disconnected bodies, duplicate/coercion/prototype policies, sanitized causes,
 multipart/file handling, a DOM feedback fixture and browser bundle dependencies.
-Installed archive consumers verify public subpaths and declarations. No live
+Installed archive consumers verify public subpaths and declarations. Browser
+checks trace actual imports and parse emitted executable identifiers/module
+references; documentation text is not mistaken for an executed Node API. No live
 browser/proxy/provider behavior is implied. No credentials are required; a real
 browser and deployment-specific Fetch bridge/proxy remain integration checks.
 
@@ -419,7 +486,15 @@ import { object, string } from '@zeruxjs/validator/schemas';
 import { validatedJsonHandler } from '@zeruxjs/validator/http';
 const schema = object({ name: string() });
 const handler = validatedJsonHandler(schema, async (body) => ({ hello: body.name }));
-const response = await handler(new Request('https://example.test/api', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({name:'Maya'}) }));
+try {
+  const response = await handler(new Request('https://example.test/api', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Maya' })
+  }));
+  console.log(await response.json());
+} finally {
+  await handler.close();
+}
 ```
 
 `readJsonBody` streams up to 1 MiB by default, rejecting invalid media types, malformed JSON and oversized payloads; `parseJsonRequest` and `parseQuery` validate with both synchronous and asynchronous schemas. `HttpValidationError.toResponse()` emits bounded error details and `Cache-Control: no-store`. Do not disclose raw input in external API errors. Use `maxBytes`/branch/v0.0.4/`maxQueryFields` to set explicit caps. Body reads also have an absolute deadline and app-owned concurrency limit (below). This adapter works with the Web Fetch `Request` API and can be used by ZeruxJS route handlers or other framework integrations.
@@ -449,16 +524,18 @@ Public types remain owned by this package, not by `@zeruxjs/typescript`.
 
 ## Object, union and default contracts
 
-| Schema | Unknown own keys |
-| --- | --- |
-| `object` / `objectAsync` | Removed |
-| `looseObject` / async equivalent | Preserved, except unsafe prototype keys |
-| `strictObject` / async equivalent | Rejected |
-| `objectWithRest` / async equivalent | Validated with the rest schema |
+| Schema                              | Unknown own keys                        |
+| ----------------------------------- | --------------------------------------- |
+| `object` / `objectAsync`            | Removed                                 |
+| `looseObject` / async equivalent    | Preserved, except unsafe prototype keys |
+| `strictObject` / async equivalent   | Rejected                                |
+| `objectWithRest` / async equivalent | Validated with the rest schema          |
 
 Object schemas require a non-null object that is not an array. Declared fields
 read only own properties; inherited values cannot satisfy required fields. Unsafe
-schema keys (`__proto__`, `constructor`, `prototype`) reject. Collection limits
+schema keys (`__proto__`, `constructor`, `prototype`) are explicitly rejected by
+the synchronous object implementations. Async schema dictionaries remain trusted
+host configuration; the root input scan separately guards unsafe candidate keys. Collection limits
 apply before key stripping, including unknown keys. Non-array class instances can
 still be accepted by their own fields; this is not a plain-record guarantee.
 
@@ -469,6 +546,13 @@ undefined stays an own property. A missing field's default factory runs once.
 Defaults are validated/transformed by the wrapped schema. For async defaults use
 the async wrapper and async parse. A default that returns the sentinel again
 short-circuits to that sentinel instead of repeatedly invoking the factory.
+
+`undefinedable` accepts an explicit undefined value but does not mark an object key
+optional. `exactOptional` marks presence metadata while delegating supplied values
+to the wrapped schema; its stored default is currently introspection metadata, not
+a replacement branch in its run method. Use the implemented `optional`/branch/v0.0.4/`nullish`
+default handling when a missing value must be filled rather than relying on that
+metadata alone.
 
 Pipelines run left to right: wrapper defaults, wrapped schema, then actions in
 listed order. A transform before a refinement changes the value that refinement
@@ -493,13 +577,13 @@ application-owned values. Do not rely on parsing to isolate mutable private data
 Schema validation use per-call execution state. Internal `~run` methods are not a
 public safety boundary. Limits are positive integers within these hard ceilings:
 
-| Parse option | Default | Maximum | Bound |
-| --- | --- | --- | --- |
-| `maxDepth` | 64 | 128 | Input nesting and nested schema/action dispatch (wrappers also count) |
-| `maxNodes` | 10000 | 100000 | Input scan nodes and, separately, schema/action/callback steps |
-| `maxCollectionSize` | 1000 | 10000 | Array length, map/set size, own object keys and object schema fields |
-| `maxIssues` | 100 | 1000 | Issues generated/reused across actions and attempted union branches |
-| `maxConcurrency` | 8 | 32 | Active built-in async refinement/transform callbacks per parse |
+| Parse option        | Default | Maximum | Bound                                                                 |
+| ------------------- | ------- | ------- | --------------------------------------------------------------------- |
+| `maxDepth`          | 64      | 128     | Input nesting and nested schema/action dispatch (wrappers also count) |
+| `maxNodes`          | 10000   | 100000  | Input scan nodes and, separately, schema/action/callback steps        |
+| `maxCollectionSize` | 1000    | 10000   | Array length, map/set size, own object keys and object schema fields  |
+| `maxIssues`         | 100     | 1000    | Issues generated/reused across actions and attempted union branches   |
+| `maxConcurrency`    | 8       | 32      | Active built-in async refinement/transform callbacks per parse        |
 
 The iterative input scan rejects cycles and enumerable accessors without invoking
 them, including beneath `unknown`/branch/v0.0.4/`any`. Strings are scalar; use `maxLength` and
@@ -573,15 +657,77 @@ or signals. Explicit signals or limit overrides bypass schema caches so controll
 work cannot reuse a computation owned by another parse. Cached issues consume the receiving parse's issue budget. Default cache semantics
 (including output identity and stale mutable inputs) remain unchanged.
 
+Message registries use exact language keys, including a distinct `undefined` key;
+they provide no locale fallback, expiry, cardinality cap or tenant isolation.
+Configure trusted static messages at bootstrap. Getters return borrowed messages
+without invoking them; validation may invoke message callbacks with private issue
+data. Deleting a specific message leaves its constructor bucket allocated.
+
+`getDefaults`/branch/v0.0.4/`getFallbacks` recursively read declared object entries and tuple
+positions, not dynamic rest values. They may invoke trusted leaf factories without
+an input dataset or root parse budget. Async variants start sibling factories
+concurrently; rejection does not cancel independent factory work. These helpers
+do not validate replacements or deep-clone their results.
+
+`getTitle`/branch/v0.0.4/`getDescription` prefer the last matching metadata at the highest
+pipeline level. `getMetadata` instead shallowly merges in depth-first source
+order, with later keys winning. Metadata is host-owned, unvalidated and unescaped;
+reading record getters may execute host code. Escape text for its eventual output
+context and keep untrusted records outside this API.
+
+Native grapheme/word actions use the installed runtime’s `Intl.Segmenter` and
+ICU data. Word segmenters use a legacy unbounded cache keyed by exact locale value
+or locale-array identity; keep locale configuration static and bounded. Byte
+actions allocate a UTF-8 encoding and are separate from streaming HTTP limits.
+
+Map/Set schemas produce fresh native collections while child outputs may retain
+borrowed identity. Transformed duplicate Map keys use last assignment; Set values
+collapse under native equality. Async collection schemas start child work before
+ordered result accumulation, so `abortEarly` does not prevent every child from
+starting. Record schemas inspect own enumerable string fields; trusted key
+transforms must enforce permitted output names because the input-key filter does
+not revalidate transformed names. Custom predicates assert host-declared types;
+lazy getters select trusted schemas per parse and are not memoized or sandboxed.
+
+Intersection validation merges compatible branch outputs into the first result.
+That legacy recursive merge may mutate borrowed objects before a later conflict
+and has no standalone cycle/depth budget or rollback; trusted transforms must
+produce compatible finite output graphs. Root input budgets do not make arbitrary
+host callbacks or their output merge transactional.
+
+Format refinements check retained text patterns/checksums only: URL parsing is
+not a scheme/egress allowlist, IP checks do not deny private addresses, JWS shape
+does not verify signatures, and hash checks do not compute digests. ISO patterns
+are a syntax subset, not complete calendar validation. Native RegExp matching is
+synchronous; explicit custom patterns and candidate size remain host policy.
+
+Native array callback actions retain native synchronous behavior; their callbacks
+are not awaited. `sortItems` mutates its array in place. `readonly`, `brand` and
+`flavor` change TypeScript inference without freezing, cloning or authorizing
+runtime values; their declaration-only symbols are not runtime symbol exports.
+Function argument/result wrappers keep their captured configuration and call the
+borrowed function without preserving a method receiver. Create wrappers through
+`parseAsync` when their child schemas are async. Result validation happens after
+function side effects and cannot undo them.
+
+The local `ajvSafeParse` checker does not run functional transforms or the AJV
+engine. It ignores unsupported keywords, uses legacy inherited-key presence
+checks and slash-joined paths without full JSON Pointer escaping, and adds no
+independent scan/cycle/deadline budget. `toJsonSchema(schema, {strict:true})` selects the stricter converter policy.
+Strict mode
+throws for explicitly unsupported branches but still ignores some refinements
+and transformations; it does not certify full conversion coverage. Prefer the
+functional parse APIs when relying on their own-field and root-budget contracts.
+
 ## Compatibility and verification
 
-| Surface | Compatibility goal |
-| --- | --- |
-| Functional schemas/actions/parsers | Preserve existing named contracts; precise functional inference |
-| Constructor action shorthand | Runtime convenience; typed zero-argument shorthand, broader legacy argument-taking forms |
-| `z` / `chain` | Limited convenience API with broad types; not Zod parity |
-| JSON Schema / `ajvSafeParse` helpers | Existing limited local conversion/checking subset; not the AJV engine or full JSON Schema |
-| Valibot-style names / Standard Schema adapter | Existing named subset; no full Valibot conformance claim |
+| Surface                                       | Compatibility goal                                                                        |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Functional schemas/actions/parsers            | Preserve existing named contracts; precise functional inference                           |
+| Constructor action shorthand                  | Runtime convenience; typed zero-argument shorthand, broader legacy argument-taking forms  |
+| `z` / `chain`                                 | Limited convenience API with broad types; not Zod parity                                  |
+| JSON Schema / `ajvSafeParse` helpers          | Existing limited local conversion/checking subset; not the AJV engine or full JSON Schema |
+| Valibot-style names / Standard Schema adapter | Existing named subset; no full Valibot conformance claim                                  |
 
 After changing source, run `npm run build`, then `node --test test/*.test.mjs` in
 this package. The foundation suite checks normal/denied inputs, inference against
@@ -592,12 +738,12 @@ TypeScript/shared tooling are required; there are no live-service prerequisites.
 
 ## Browser and HTTP entry points
 
-| Public import | Contents |
-| --- | --- |
-| `@zeruxjs/validator/schemas` | Schemas, actions, parsers and existing utilities; no request-parsing dependency |
+| Public import                | Contents                                                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
+| `@zeruxjs/validator/schemas` | Schemas, actions, parsers and existing utilities; no request-parsing dependency        |
 | `@zeruxjs/validator/browser` | Same pure API plus explicit DOM feedback; no HTTP reader, Node imports or Node globals |
-| `@zeruxjs/validator/http` | Fetch JSON/query/header/form adapters and client-safe error types |
-| `@zeruxjs/validator` | Compatibility barrel retaining previous root exports |
+| `@zeruxjs/validator/http`    | Fetch JSON/query/header/form adapters and client-safe error types                      |
+| `@zeruxjs/validator`         | Compatibility barrel retaining previous root exports                                   |
 
 The browser entry can be imported before a DOM exists. Browser-only functions
 access supplied elements only when called. HTTP adapters use Fetch/Web Streams,
@@ -629,15 +775,15 @@ publish/register routes or perform authorization/CSRF checks.
 
 ### HTTP budgets and failures
 
-| Option | Default | Allowed range |
-| --- | --- | --- |
-| `maxBytes` | 1 MiB | 1 byte–16 MiB |
-| `bodyTimeoutMs` | 3000 ms | 10–60000 ms |
-| `maxConcurrentReads` | 32 | 1–1024 |
-| `maxFields` | 200 | 1–1000 |
-| `maxQueryFields` | maxFields | 1–1000 |
-| `maxQueryLength` | 16384 characters | 1–1048576 |
-| `maxFieldBytes` | 16384 UTF-8 bytes | 1–1048576 |
+| Option               | Default           | Allowed range |
+| -------------------- | ----------------- | ------------- |
+| `maxBytes`           | 1 MiB             | 1 byte–16 MiB |
+| `bodyTimeoutMs`      | 3000 ms           | 10–60000 ms   |
+| `maxConcurrentReads` | 32                | 1–1024        |
+| `maxFields`          | 200               | 1–1000        |
+| `maxQueryFields`     | maxFields         | 1–1000        |
+| `maxQueryLength`     | 16384 characters  | 1–1048576     |
+| `maxFieldBytes`      | 16384 UTF-8 bytes | 1–1048576     |
 
 Budgets are positive safe integers. Byte limits count actual streamed bytes before
 JSON/form decoding and compare Content-Length to the final length. Field budgets
@@ -647,7 +793,7 @@ node cap before schema validation. `validation` supplies the existing schema par
 options/limits/hooks, excluding signal. `signal` on the adapter and Request.signal
 both cancel that operation; neither overrides the other.
 
-JSON requires application/json or application/*+json. Form requests require
+JSON requires application/json or application/\*+json. Form requests require
 application/x-www-form-urlencoded or multipart/form-data with a valid boundary.
 UTF-8 is required; content encoding other than identity rejects with 415. FormData
 objects and Headers/pair iterables are already decoded and have no content-type
@@ -688,16 +834,16 @@ prototype names, including reserved dot/bracket segments, reject with 400 before
 schema stripping. Names must be nonempty, at most 256 characters, and contain no
 controls; headers additionally require token syntax and are lowercased.
 
-| Policy | Behavior |
-| --- | --- |
-| `duplicates:'array'` (default) | One occurrence is scalar; repeated occurrences are arrays |
-| `duplicates:'reject'` | Any repeated name rejects, including repeats containing empty values |
-| `duplicates:'first'` / `'last'` | Select the literal first/last occurrence before empty handling |
-| `empty:'preserve'` (default) | Empty strings stay empty; absent fields stay absent |
-| `empty:'omit'` | Remove selected empty strings; if all disappear, the field is absent and schema defaults may run |
-| `coerce:{field:'number'}` | Strict finite JSON-number syntax only; no whitespace, hex, NaN, Infinity or empty conversion |
-| `coerce:{field:'boolean'}` | Exact lowercase true/false only |
-| `coerce:{field:'string'}` | Preserve strings; do not stringify files |
+| Policy                          | Behavior                                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `duplicates:'array'` (default)  | One occurrence is scalar; repeated occurrences are arrays                                        |
+| `duplicates:'reject'`           | Any repeated name rejects, including repeats containing empty values                             |
+| `duplicates:'first'` / `'last'` | Select the literal first/last occurrence before empty handling                                   |
+| `empty:'preserve'` (default)    | Empty strings stay empty; absent fields stay absent                                              |
+| `empty:'omit'`                  | Remove selected empty strings; if all disappear, the field is absent and schema defaults may run |
+| `coerce:{field:'number'}`       | Strict finite JSON-number syntax only; no whitespace, hex, NaN, Infinity or empty conversion     |
+| `coerce:{field:'boolean'}`      | Exact lowercase true/false only                                                                  |
+| `coerce:{field:'string'}`       | Preserve strings; do not stringify files                                                         |
 
 Only named fields coerce, and repeated selected values coerce individually. No
 field is created just because it has a coercion rule. Repeated arrays remain
@@ -740,7 +886,8 @@ The HTTP-input suite additionally checks slow/trickled/disconnected streams,
 reader overload/cleanup, duplicate/coercion/prototype policies, multipart/file
 handling, sanitized responses and feedback rollback using a DOM fixture. Its
 browser bundle check confirms the dependency graph excludes request parsers and
-Node globals. Installed archive checks cover the new public subpaths. These are
+checks executable syntax for Node references, including computed/module access.
+Comments and unrelated string data may name Node APIs without being executed. Installed archive checks cover the new public subpaths. These are
 Node Fetch/stream and DOM-fixture checks, not live-browser or deployed proxy tests.
 There are no credentials/live-service prerequisites; a real browser and a host's
 actual Fetch bridge/proxy are separate integration checks.

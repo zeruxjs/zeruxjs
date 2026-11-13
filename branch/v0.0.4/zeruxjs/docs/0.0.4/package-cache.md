@@ -31,16 +31,16 @@ Logical keys are unprefixed at the call site. Values are JSON-serializable; a mi
 
 ## API choices
 
-| API | Behavior |
-| --- | --- |
-| `get`, `set`, `delete`, `has` | Single logical key |
-| `getMany`, `setMany`, `deleteMany` | Bulk operations; not necessarily atomic |
-| `increment`, `decrement` | Nonnegative safe-integer amounts |
-| `touch` | Refresh a positive TTL |
-| `clear` | Clear a namespace, or provider-wide clear when unprefixed |
-| `remember` | Process-local load coalescing |
-| `native` | Trusted provider-specific access |
-| `close` | Release owned resources |
+| API                                | Behavior                                                  |
+| ---------------------------------- | --------------------------------------------------------- |
+| `get`, `set`, `delete`, `has`      | Single logical key                                        |
+| `getMany`, `setMany`, `deleteMany` | Bulk operations; not necessarily atomic                   |
+| `increment`, `decrement`           | Nonnegative safe-integer amounts                          |
+| `touch`                            | Refresh a positive TTL                                    |
+| `clear`                            | Clear a namespace, or provider-wide clear when unprefixed |
+| `remember`                         | Process-local load coalescing                             |
+| `native`                           | Trusted provider-specific access                          |
+| `close`                            | Release owned resources                                   |
 
 ## Invalidation and safety
 
@@ -88,36 +88,36 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### CacheManagerConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `helper` | `string` | No |
-| `options` | `Record<string, unknown>` | Yes |
-| `prefix` | `string` | Yes |
-| `defaultTtlSeconds` | `number` | Yes |
+| Field               | Accepted type/value       | Optional |
+| ------------------- | ------------------------- | -------- |
+| `helper`            | `string`                  | No       |
+| `options`           | `Record<string, unknown>` | Yes      |
+| `prefix`            | `string`                  | Yes      |
+| `defaultTtlSeconds` | `number`                  | Yes      |
 
 ### CacheSetOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `ttlSeconds` | `number` | Yes |
-| `ifAbsent` | `boolean` | Yes |
-| `ifPresent` | `boolean` | Yes |
+| Field        | Accepted type/value | Optional |
+| ------------ | ------------------- | -------- |
+| `ttlSeconds` | `number`            | Yes      |
+| `ifAbsent`   | `boolean`           | Yes      |
+| `ifPresent`  | `boolean`           | Yes      |
 
 ### MemoryCacheOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxEntries` | `number` | Yes |
-| `now` | `() => number` | Yes |
+| Field        | Accepted type/value | Optional |
+| ------------ | ------------------- | -------- |
+| `maxEntries` | `number`            | Yes      |
+| `now`        | `() => number`      | Yes      |
 
 ### MemoryCacheStats
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `entries` | `number` | No |
-| `hits` | `number` | No |
-| `misses` | `number` | No |
-| `evictions` | `number` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `entries`   | `number`            | No       |
+| `hits`      | `number`            | No       |
+| `misses`    | `number`            | No       |
+| `evictions` | `number`            | No       |
 
 ## Capabilities, limits and cleanup
 
@@ -126,6 +126,10 @@ Scoped managers snapshot optional adapter capability metadata. Missing declarati
 The package-owned CachePolicy bounds bulk count, pending remember jobs, key/value bytes and JSON depth. Memory applies equivalent direct-helper limits and evicts counter-created entries. Remember producers receive a cooperative signal/deadline; caller cancellation detaches only its waiter. Timed-out producers retain slots until settlement and cannot write late results. Close rejects stale use, aborts/drains production/native calls and closes an owned helper once. Use ownHelper:false when sharing a helper across tenant managers and close it from the host afterward. Active convenience APIs remain process-global compatibility APIs, not tenant/generation routing.
 
 Framework cache.policy validates before provider startup. See the package README for exact defaults, numeric semantics, compatibility limits and a compiled public-import example. No live Redis/Memcached acceptance is implied by memory/injected checks.
+
+## Source and cleanup boundaries
+
+The manager owns namespace dispatch and pending producers; the memory helper owns its LRU map. Close managers after accepted work settles. Set `policy.ownHelper: false` when sharing a helper, then close it after all borrowing managers. Root imports use Node module resolution and `/policy` uses Buffer; keep runtime imports server-side. Helper module names are trusted executable host configuration. Memory is process-local, and void conditional writes do not provide lock-acquisition receipts. A produced `remember` value is shared by joined callers; cached reads use defensive JSON copies.
 
 
 ## Public entry points
@@ -170,9 +174,13 @@ const cache = await createCacheManager({
   options: { maxEntries: 2000 }
 });
 
-await cache.set('u:42', {name: 'Ada'}, {ttlSeconds: 30});
-const users = await cache.getMany(['u:42', 'u:43']); // logical/unprefixed keys
-await cache.clear(); // namespace only
+try {
+  await cache.set('u:42', {name: 'Ada'}, {ttlSeconds: 30});
+  const users = await cache.getMany(['u:42', 'u:43']); // logical/unprefixed keys
+  await cache.clear(); // namespace only
+} finally {
+  await cache.close();
+}
 ```
 
 `createCacheManagerWithHelper(adapter, config)` allows testing or injecting an existing adapter. `createMemoryCacheHelper({maxEntries, now})` implements LRU eviction, lazy TTL expiry, defensive JSON cloning, numeric counters, conditional `ifAbsent`/branch/v0.0.4/`ifPresent` writes, bulk methods, and stats.
@@ -180,7 +188,11 @@ await cache.clear(); // namespace only
 ## Cache stampede prevention
 
 ```ts
-const item = await cache.remember('catalog', async () => fetchCatalog(), {ttlSeconds: 60});
+import type { CacheManager, CacheValue } from '@zeruxjs/cache';
+
+export async function loadCatalog(cache: CacheManager, produce: () => Promise<CacheValue>) {
+  return await cache.remember('catalog', produce, {ttlSeconds: 60});
+}
 ```
 
 Concurrent misses for the same key **within one manager process** share one pending producer Promise. Failed producers are not cached. It is not a distributed lock and cannot prevent concurrent work across Redis clients or server instances.
@@ -231,6 +243,16 @@ The active `cache`, get/set/remember exports and configureCacheManager are a pro
 ### Valkey adapter and shared policy
 
 The explicit [`@zeruxjs/cache-valkey`](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/cache-valkey/README.md) adapter uses iovalkey with bounded command ownership; select it by helper package name. The public `@zeruxjs/cache/policy` subpath exports the same key, JSON, bulk and condition validators used by the manager, so adapter authors can enforce these limits at direct boundaries. This export does not grant distributed atomicity.
+
+## Implementation and ownership map
+
+- `src/types.ts` owns public helper/manager contracts; `src/policy.ts` validates bounded keys, plain JSON values and capability requirements.
+- `src/memory.ts` owns each helper's LRU map, counters and lazy expiry. `src/manager.ts` owns namespace dispatch, producer coalescing and actual-settlement shutdown.
+- `src/utils.ts` normalizes trusted configuration and helper factory shapes. `src/index.ts` exports the scoped factories and legacy active-manager facade.
+
+The root entry uses Node module/path resolution; `/policy` uses Node Buffer for UTF-8 budgets. Neither entry is a browser bundle. A helper package name is executable, trusted host configuration: application-first resolution falls back to package-local import. Never derive it from a request or let untrusted administrators select arbitrary modules. `CacheError.details` retains caller-supplied details; hosts must redact private configuration before logging it.
+
+Memory reads/writes copy JSON, but a newly produced `remember` result is the producer's original value shared by joined callers; do not mutate it as though every subscriber received a separate clone. Keep manager shutdown outside its own producer to avoid waiting on itself.
 
 
 ## Implementation sources

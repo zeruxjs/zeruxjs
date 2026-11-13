@@ -28,12 +28,12 @@ This store is bounded, but not durable or tenant-safe. It is not a database, not
 
 ## Choose a real persistence layer
 
-| Need | Start with |
-| --- | --- |
-| Understand named connections and startup ownership | [Database configuration](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-database.md) |
-| Use queries/transactions deliberately | [Database queries](/branch/v0.0.4/zeruxjs/docs/0.0.4/database-queries.md) |
-| Select a concrete engine | [SQL core](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-sql-core.md), [PostgreSQL](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-pg.md), [MySQL](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-mysql.md), [SQLite](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-sqlite.md), or [MongoDB](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-mongo.md) |
-| Cache repeated public/scoped computation | [Cache setup](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-cache.md) |
+| Need                                               | Start with                                                                                                                                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Understand named connections and startup ownership | [Database configuration](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-database.md)                                                                                                                 |
+| Use queries/transactions deliberately              | [Database queries](/branch/v0.0.4/zeruxjs/docs/0.0.4/database-queries.md)                                                                                                                             |
+| Select a concrete engine                           | [SQL core](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-sql-core.md), [PostgreSQL](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-pg.md), [MySQL](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-mysql.md), [SQLite](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-sqlite.md), or [MongoDB](/branch/v0.0.4/zeruxjs/docs/0.0.4/package-db-mongo.md) |
+| Cache repeated public/scoped computation           | [Cache setup](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-cache.md)                                                                                                                               |
 
 A database choice is a product/deployment decision. Follow the adapter's actual options, migrations and authorization requirements rather than pasting a universal connection example. Confirm the manager was initialized before using it. Disabled/degraded service state should not look like a successful write.
 

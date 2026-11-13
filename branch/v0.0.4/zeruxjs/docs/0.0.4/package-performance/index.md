@@ -13,7 +13,7 @@ createVitalCollector keeps bounded per-metric samples and percentile summaries. 
 
 ## Cleanup
 
-Call the observer stop function and reporter.destroy on page/component teardown. Avoid registering duplicate observers on every route transition. A bounded in-process sample is not a durable metrics backend.
+Call the observer stop function, then reporter.destroy and await reporter.whenClosed on page/component teardown. Avoid registering duplicate observers on every route transition. A bounded in-process sample is not a durable metrics backend.
 
 ## Lighthouse
 
@@ -84,51 +84,56 @@ These tables list fields declared directly on the named public contract. Referen
 
 Public-static navigation prefetching. Browser globals are read only when installed.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `paths` | `readonly string[]` | No |
-| `maxPages` | `number` | Yes |
-| `delayMs` | `number` | Yes |
-| `strategy` | `"auto" \| "link"` | Yes |
-| `nonce` | `string` | Yes |
+| Field      | Accepted type/value | Optional |
+| ---------- | ------------------- | -------- |
+| `paths`    | `readonly string[]` | No       |
+| `maxPages` | `number`            | Yes      |
+| `delayMs`  | `number`            | Yes      |
+| `strategy` | `"auto" \| "link"`  | Yes      |
+| `nonce`    | `string`            | Yes      |
 
 ### VitalObserverOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `onMetric` | `(metric:PerformanceMetric)=>void` | No |
-| `createObserver` | `(callback:(entries:PerformanceEntry[])=>void)=>{observe(options:PerformanceObserverInit):void;disconnect():void}` | Yes |
-| `navigation` | `()=>{responseStart:number;requestStart:number}\|undefined` | Yes |
+| Field            | Accepted type/value                                                                                                | Optional |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ | -------- |
+| `onMetric`       | `(metric:PerformanceMetric)=>void`                                                                                 | No       |
+| `createObserver` | `(callback:(entries:PerformanceEntry[])=>void)=>{observe(options:PerformanceObserverInit):void;disconnect():void}` | Yes      |
+| `navigation`     | `()=>{responseStart:number;requestStart:number}\|undefined`                                                        | Yes      |
 
 ### VitalReporterOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `url` | `string` | No |
-| `fetch` | `typeof fetch` | Yes |
-| `maxBatch` | `number` | Yes |
-| `signal` | `AbortSignal` | Yes |
-| `credentials` | `RequestCredentials` | Yes |
+| Field                        | Accepted type/value                                                                    | Optional |
+| ---------------------------- | -------------------------------------------------------------------------------------- | -------- |
+| `url`                        | `string`; mutually exclusive with `send`                                               | Yes      |
+| `fetch`                      | `typeof fetch`                                                                         | Yes      |
+| `maxBatch`                   | `number`                                                                               | Yes      |
+| `signal`                     | `AbortSignal`                                                                          | Yes      |
+| `credentials`                | `RequestCredentials`                                                                   | Yes      |
+| `send`                       | Trusted `(metrics, {signal}) => Promise<boolean>` transport; required if URL is absent | Yes      |
+| `maxQueue` / `maxBatchBytes` | Bounded pending count / serialized UTF-8 bytes                                         | Yes      |
+| `maxRetries` / `maxAgeMs`    | Additional transient attempts / admission age ceiling                                  | Yes      |
+| `retryBaseMs` / `retryMaxMs` | Explicit-flush exponential backoff bounds; no automatic retry timer                    | Yes      |
+| `timeoutMs` / `now`          | Observation deadline / trusted clock; native capacity remains until settlement         | Yes      |
 
 ### LighthouseOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `port` | `number` | Yes |
-| `runner` | `(url:string,options:Record<string,unknown>)=>Promise<unknown>` | Yes |
+| Field    | Accepted type/value                                             | Optional |
+| -------- | --------------------------------------------------------------- | -------- |
+| `port`   | `number`                                                        | Yes      |
+| `runner` | `(url:string,options:Record<string,unknown>)=>Promise<unknown>` | Yes      |
 
 ### CacheOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxAge` | `number` | Yes |
-| `immutable` | `boolean` | Yes |
-| `private` | `boolean` | Yes |
-| `noStore` | `boolean` | Yes |
-| `mustRevalidate` | `boolean` | Yes |
-| `staleWhileRevalidate` | `number` | Yes |
-| `staleIfError` | `number` | Yes |
-| `sMaxAge` | `number` | Yes |
+| Field                  | Accepted type/value | Optional |
+| ---------------------- | ------------------- | -------- |
+| `maxAge`               | `number`            | Yes      |
+| `immutable`            | `boolean`           | Yes      |
+| `private`              | `boolean`           | Yes      |
+| `noStore`              | `boolean`           | Yes      |
+| `mustRevalidate`       | `boolean`           | Yes      |
+| `staleWhileRevalidate` | `number`            | Yes      |
+| `staleIfError`         | `number`            | Yes      |
+| `sMaxAge`              | `number`            | Yes      |
 
 ## Explicit hosting response policy
 
@@ -148,6 +153,12 @@ cleanup. Build-time minification remains in TypeScript tooling.
 See the package README and `examples/response.mjs` for exact limits, lifecycle and
 HTTP semantics. Local identity/gzip/Brotli measurements are workload observations,
 not evidence of general latency gains or production/CDN/browser qualification.
+
+## Actual disposal and validation boundaries
+
+Reporters and analytics adapters separate `destroy()` from `whenClosed()`: cancellation ends waiting but an uncooperative native transport retains its slot until actual settlement. Consent/identity changes fence late failures so old samples cannot requeue. Recovery contains only known queued scalar observations; an active outcome remains unknown. The optional web-vitals 5 source is page-owned and has no public native observer unsubscribe; bridge detach is not full source cancellation.
+
+The weak ETag helper is length/FNV-1a, not a cryptographic integrity check. Resource-hint relations and credential-mode unions are trusted typed host inputs; serialization does not authorize destinations. Callback measurement helpers preserve results/failures and emit no automatic telemetry. Keep cache classification, native compression, collector authorization and build minification with their actual owners.
 
 
 ## Public entry points
@@ -299,15 +310,15 @@ Native buffered APIs and a maintained source can report earlier page timing afte
 
 `createVitalReporter` now supports either its existing explicit `url`/fetch transport or a trusted `send(metrics,{signal})` callback. It serializes only approved scalar `PerformanceMetric` fields. Endpoint URLs reject credentials, queries and fragments; fetch defaults to omitted credentials, no-store, redirect error and keepalive. Keepalive is a browser hint, not proof of delivery after page exit. Fetch response bodies are canceled and native work remains owned until cancellation settles. Host callbacks own authentication, destination policy and actual persistence; `true` means that transport reported success, not a database commit.
 
-| Bound | Default / allowed range |
-| --- | --- |
-| maxBatch | 50 / 1–500 observations per explicit flush |
-| maxQueue | maxBatch / 1–2000 observations |
-| maxBatchBytes | 32768 / 256–60000 UTF-8 JSON bytes |
-| maxRetries | 3 / 0–20 **additional** attempts |
-| maxAgeMs | 60000 / 1–3600000 ms from queue admission |
+| Bound                    | Default / allowed range                        |
+| ------------------------ | ---------------------------------------------- |
+| maxBatch                 | 50 / 1–500 observations per explicit flush     |
+| maxQueue                 | maxBatch / 1–2000 observations                 |
+| maxBatchBytes            | 32768 / 256–60000 UTF-8 JSON bytes             |
+| maxRetries               | 3 / 0–20 **additional** attempts               |
+| maxAgeMs                 | 60000 / 1–3600000 ms from queue admission      |
 | retryBaseMs / retryMaxMs | legacy 0 / 60000; each 0–60000 and max >= base |
-| timeoutMs | 3000 / 1–60000 ms observation deadline |
+| timeoutMs                | 3000 / 1–60000 ms observation deadline         |
 
 Analytics/operational adapters opt into a 1000ms base by default; legacy reporter explicit immediate-flush retries remain compatible. No timer automatically retries or starts a network loop. `flush()` sends only due items, returns 0 during backoff, and preserves the bounded exponential retry/age budget. HTTP 408/429/5xx, network failure or callback false may retry; permanent HTTP denials drop. Retry-After is not interpreted. Queue overflow drops oldest pending observations and increments diagnostics, preserving the legacy newest-sample behavior. Expired/exhausted observations are discarded visibly. Server-side storage loss or lost acknowledgements can still duplicate observations on retry: there are no durable idempotency receipts, exact-delivery guarantees or automatic marketing conversions.
 
@@ -397,6 +408,20 @@ bytes/elapsed milliseconds with the Node version. These measurements describe
 that workload only, not a speed gain, production capacity, CDN behavior or browser
 qualification. Deployment TLS/CDN/HTTP2 and real slow-client capacity need separate
 qualification; none is started by this package.
+
+## Ownership checklist
+
+| API                                              | Lifetime and teardown                                                                                            |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Cache/header/hint/schema builders and collector  | Inert data helpers; collector `clear()` releases retained samples                                                |
+| `observePerformance`, `observeWebVitals`         | Invoke the returned disconnect function; no observation starts on import                                         |
+| `installNavigationPrefetch`                      | One explicit public-page scope; `destroy()` removes owned hints/listeners/timer, not browser caches              |
+| Reporter, browser analytics, operational adapter | `destroy()` stops admission/signals transport; await `whenClosed()` for actual settlement                        |
+| Optional maintained INP source                   | One host-owned source per document; bridge detach cannot disconnect web-vitals 5 library observers               |
+| `forwardPerformanceResponse`                     | Borrows one native hosting owner; host stops admission then closes that owner                                    |
+| Lighthouse                                       | Explicit audit against an existing private Chrome port; host controls target/egress and borrowed runner lifetime |
+
+The lightweight `createETag` is a compatible weak length/FNV-1a validator, not a cryptographic content-integrity digest. Resource hints escape attributes but their typed relation/credential modes are trusted host configuration, not an arbitrary JavaScript input-validation or destination-authorization boundary. Measurement helpers invoke the callback once and return its result/duration; their compatible `name` argument does not emit telemetry.
 
 
 ## Implementation sources

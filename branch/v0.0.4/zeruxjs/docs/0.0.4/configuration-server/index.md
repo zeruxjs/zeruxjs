@@ -54,26 +54,26 @@ The fields below come from the current source declarations. Optional is not a de
 
 ### ZeruxServerConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `port` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `devPort` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `allowedDomains` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `allowedDevDomain` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option             | Accepted TypeScript value | Required | Meaning                                                                          |
+| ------------------ | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `port`             | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `devPort`          | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowedDomains`   | `string \| string[]`      | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowedDevDomain` | `string`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ### ZeruxDevtoolsConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `modules` | `Array<string \| ZeruxDevtoolsModuleConfig>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option    | Accepted TypeScript value                    | Required | Meaning                                                                          |
+| --------- | -------------------------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `modules` | `Array<string \| ZeruxDevtoolsModuleConfig>` | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ### ZeruxDevtoolsModuleConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `package` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `enabled` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `options` | `Record<string, unknown>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option    | Accepted TypeScript value | Required | Meaning                                                                          |
+| --------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `package` | `string`                  | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `enabled` | `boolean`                 | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `options` | `Record<string, unknown>` | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 
 ## Implementation sources

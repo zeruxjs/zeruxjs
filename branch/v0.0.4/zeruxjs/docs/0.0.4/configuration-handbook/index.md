@@ -7,23 +7,23 @@ Choose the correct runtime setup, inspect every option and verify a complete typ
 
 Start with the application's owning process and the feature you need. `zerux.config.js`/branch/v0.0.4/`.ts` is server startup input. Some packages participate in managed service startup; other packages are explicit factories or browser helpers. A property accepted by an open TypeScript type is not proof of a runtime consumer.
 
-| Responsibility | Configuration chapter | What it establishes |
-| --- | --- | --- |
-| Config file/export/precedence | [zerux.config.js](/branch/v0.0.4/zeruxjs/docs/0.0.4/zerux-config.md) | Which module is loaded and when |
-| Paths, modules and environment | [Structure](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-structure.md) | Relative discovery paths and environment timing |
-| Listener and hosts | [Server](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-server.md) | Actual CLI/config precedence and host policy |
-| Named databases/adapters | [Database](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-database.md) | Connection slugs, default manager and ownership |
-| Memory/Redis caching | [Cache](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-cache.md) | Adapter, namespace, TTL and required policy |
-| Local/S3 object stores | [Files](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-files.md) | Store drivers, access limits and private roots |
-| SMTP, inbound and campaigns | [Email](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-email.md) | Account setup and independent opt-in features |
-| Internal events and collector | [Analytics](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-analytics.md) | Database binding and bounded ingestion |
-| Browser/server event destinations | [Tags](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-tags.md) | Consent, shared stores and protected administration |
-| Charts/studio | [Reports](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reports.md) | Authorization, tenant scope and data coverage |
-| Durable job processing | [Queue](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-queue.md) | Redis, named producers/workers and retries |
-| Lifecycle/thread work | [Workers](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-workers.md) | Pool defaults and task lifetime |
-| RPC/MCP and other protocols | [Protocols](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-protocols.md) | Registration, authorization and body/origin limits |
-| Server/browser appearance helpers | [Theme](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-theme.md) | Mode/cookie/script defaults and compatibility |
-| Login/request enforcement | [Auth/security](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-auth-security.md) | Explicit setup and current automatic-integration limits |
+| Responsibility                    | Configuration chapter                           | What it establishes                                     |
+| --------------------------------- | ----------------------------------------------- | ------------------------------------------------------- |
+| Config file/export/precedence     | [zerux.config.js](/branch/v0.0.4/zeruxjs/docs/0.0.4/zerux-config.md)              | Which module is loaded and when                         |
+| Paths, modules and environment    | [Structure](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-structure.md)         | Relative discovery paths and environment timing         |
+| Listener and hosts                | [Server](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-server.md)               | Actual CLI/config precedence and host policy            |
+| Named databases/adapters          | [Database](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-database.md)           | Connection slugs, default manager and ownership         |
+| Memory/Redis caching              | [Cache](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-cache.md)                 | Adapter, namespace, TTL and required policy             |
+| Local/S3 object stores            | [Files](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-files.md)                 | Store drivers, access limits and private roots          |
+| SMTP, inbound and campaigns       | [Email](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-email.md)                 | Account setup and independent opt-in features           |
+| Internal events and collector     | [Analytics](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-analytics.md)         | Database binding and bounded ingestion                  |
+| Browser/server event destinations | [Tags](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-tags.md)                   | Consent, shared stores and protected administration     |
+| Charts/studio                     | [Reports](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reports.md)             | Authorization, tenant scope and data coverage           |
+| Durable job processing            | [Queue](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-queue.md)                 | Redis, named producers/workers and retries              |
+| Lifecycle/thread work             | [Workers](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-workers.md)             | Pool defaults and task lifetime                         |
+| RPC/MCP and other protocols       | [Protocols](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-protocols.md)         | Registration, authorization and body/origin limits      |
+| Server/browser appearance helpers | [Theme](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-theme.md)                 | Mode/cookie/script defaults and compatibility           |
+| Login/request enforcement         | [Auth/security](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-auth-security.md) | Explicit setup and current automatic-integration limits |
 
 ## Follow a complete setup sequence
 

@@ -111,15 +111,15 @@ Callbacks and session variables above are host-owned, not bundled defaults. See 
 [public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zenixjs/core/examples/cms.mjs) for explicit schema/draft/publication calls.
 No HTTP endpoint or `zerux.config` option is mounted automatically.
 
-| Capability | Implemented behavior |
-| --- | --- |
-| Sites | Create/read, fixed tenant and site scope; names are inert content |
-| Content types | Immutable numbered schemas; text, finite number, boolean and versioned media-reference fields |
-| Entries | Create draft, optimistic head updates, authorized reads |
-| Revisions | Immutable tenant/site/entry/revision references, actor/time and restore provenance |
-| Publication | Publishing creates a new immutable revision and advances a separate published pointer |
-| Adapter | SQLite file only through `@zeruxjs/db-sqlite` native synchronous transactions |
-| Plugins | Explicit trusted setup callbacks and LIFO async disposal; no package scanning |
+| Capability      | Implemented behavior                                                                                                                                |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sites           | Create/read, fixed tenant and site scope; names are inert content                                                                                   |
+| Content types   | Immutable numbered schemas; text, finite number, boolean and versioned media-reference fields                                                       |
+| Entries         | Create draft, optimistic head updates, authorized reads                                                                                             |
+| Revisions       | Immutable tenant/site/entry/revision references, actor/time and restore provenance                                                                  |
+| Publication     | Publishing creates a new immutable revision and advances a separate published pointer                                                               |
+| Adapter         | SQLite file only through `@zeruxjs/db-sqlite` native synchronous transactions                                                                       |
+| Plugins         | Explicit trusted setup callbacks and LIFO async disposal; no package scanning                                                                       |
 | Not implemented | Admin/router, anonymous delivery, localization, relations, nested rich text, search, deletion, unpublish, arbitrary migrations or other DB adapters |
 
 ## Authentication, permissions and media
@@ -230,6 +230,31 @@ complete CMS or legal/compliance product.
 ## License
 
 MIT OR Apache-2.0.
+
+## Source maintenance
+
+| Module              | Ownership and review focus                                                                                           |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `src/index.ts`      | Inert compatibility metadata; preserve version/status exports.                                                       |
+| `src/types.ts`      | Package-owned domain contracts, field constraints and host callbacks; role data never authenticates a caller.        |
+| `src/validation.ts` | Own-data checks and bounded schema/content/media syntax; files policy and authorization stay with their owners.      |
+| `src/cms.ts`        | SQLite migration identity, scoped reads, optimistic revision commits, fresh host authorization and instance cleanup. |
+| `examples/cms.mjs`  | Inert public-import helpers; setup/save/publish remain separate commits.                                             |
+| `test/cms.test.mjs` | Synthetic temporary SQLite files; tests close resources before removing owned paths.                                 |
+
+Function/method contracts include typed parameters, return values and relevant
+failure behavior. Constants and loop bindings document provenance/ownership.
+Auth/media awaits stay outside synchronous SQLite callbacks; write permissions
+are rechecked before the final guarded commit. Admission remains occupied until
+actual promise settlement; close drains it before LIFO plugin disposal. Native
+SHA-256 identifies trusted schema/key data and is not a replacement for auth,
+signing or a managed service. This package has no source-marked deprecated APIs.
+
+The repository reviewed-scope formatting/documentation gate applies to authored
+source/tests/examples/configuration, excluding generated output and license text.
+Do not sort/rewrite schema data as a cosmetic change: migration identity depends
+on its deterministic JSON content/order. Preserve embedded subprocess fixture
+source bytes and verify public consumers after any actual type/API change.
 
 
 ## Implementation sources

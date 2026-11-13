@@ -7,18 +7,18 @@ These docs describe workspace source at 0.0.4, an early release. Availability is
 
 ## Framework capabilities
 
-| Capability | Current boundary |
-| --- | --- |
-| File routes and HTTP methods | Implemented in the Node runtime |
-| HTML and JSON responses | Returned by application handlers |
-| Middleware, controller references, plugins | Discovered/registered during generation creation |
-| Startup and thread workers | Lifecycle-managed; cleanup remains application code |
-| Compiled application build | Server modules and manifest, not a static-site export |
-| Multisite mapping | Host/path-to-folder routing; authorization is separate |
-| Fetch-compatible endpoints | Explicit adapter with streamed request/response handling |
-| React/Vue adapters | Optional explicit native browser/server entries; store bridges remain separate |
-| Project generators | Zerux SSR; Zyro client/static/SSR/hydrated; Zenix host-configured SQLite scaffold |
-| Zenix CMS | Minimal SQLite core plus authenticated host-integrated setup/editor/published page; not a complete CMS |
+| Capability                                 | Current boundary                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| File routes and HTTP methods               | Implemented in the Node runtime                                                                        |
+| HTML and JSON responses                    | Returned by application handlers                                                                       |
+| Middleware, controller references, plugins | Discovered/registered during generation creation                                                       |
+| Startup and thread workers                 | Lifecycle-managed; cleanup remains application code                                                    |
+| Compiled application build                 | Server modules and manifest, not a static-site export                                                  |
+| Multisite mapping                          | Host/path-to-folder routing; authorization is separate                                                 |
+| Fetch-compatible endpoints                 | Explicit adapter with streamed request/response handling                                               |
+| React/Vue adapters                         | Optional explicit native browser/server entries; store bridges remain separate                         |
+| Project generators                         | Zerux SSR; Zyro client/static/SSR/hydrated; Zenix host-configured SQLite scaffold                      |
+| Zenix CMS                                  | Minimal SQLite core plus authenticated host-integrated setup/editor/published page; not a complete CMS |
 
 ## Independent packages
 

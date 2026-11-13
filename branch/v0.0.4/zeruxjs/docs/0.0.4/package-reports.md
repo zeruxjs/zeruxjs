@@ -5,7 +5,7 @@ Build authenticated views with tenant-isolated definitions and visible query pro
 
 ## Source and authorization
 
-Reports query internal analytics, not arbitrary SQL or executable chart code. A host authorize callback is required; missing authorization disables the service. Grant read, edit, export, sensitive-property and campaign access independently where needed.
+Reports query internal analytics, not arbitrary SQL or executable chart code. A host authorize callback is required; the standalone factory rejects a missing authorizer. Grant read, edit, export, sensitive-property and campaign access independently where needed.
 
 ## Definition ownership
 
@@ -13,7 +13,7 @@ Reports contain pages and charts. Definition updates use same-origin JSON writes
 
 ## Query modes
 
-Native count dimensions can query all persisted matching rows. Supported numeric fields use indexed-only materialized facts. Other queries can fall back to a bounded sample (commonly 500 raw rows). Display queryMode, truncation and coverage in every dashboard/export; sampled totals cannot be represented as all-time facts.
+Native count dimensions can query all persisted matching rows. Supported numeric fields use indexed-only materialized facts. Other queries can fall back to a bounded sample (at most 500 raw rows, including custom `source.events()` callbacks). Display queryMode, truncation and coverage in every dashboard/export; sampled totals cannot be represented as all-time facts.
 
 ## Exports and campaigns
 
@@ -65,53 +65,73 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### ReportsOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `analytics` | `AnalyticsManager` | No |
-| `store` | `ReportsStore` | Yes |
-| `source` | `AnalyticsReportSource` | Yes |
-| `prefix` | `string` | Yes |
-| `authorize` | `(request:Request,action?:ReportAction,resourceId?:string)=>boolean\|Promise<boolean>` | No |
-| `dashboardHost` | `string` | Yes |
-| `maxSourceRows` | `number` | Yes |
-| `site` | `string` | Yes |
-| `resolveScope` | `(request:Request)=>Promise<ReportTenantScope>\|ReportTenantScope` | Yes |
-| `campaigns` | `CampaignReportsSource` | Yes |
+| Field           | Accepted type/value                                                                    | Optional |
+| --------------- | -------------------------------------------------------------------------------------- | -------- |
+| `analytics`     | `AnalyticsManager`                                                                     | No       |
+| `store`         | `ReportsStore`                                                                         | Yes      |
+| `source`        | `AnalyticsReportSource`                                                                | Yes      |
+| `prefix`        | `string`                                                                               | Yes      |
+| `authorize`     | `(request:Request,action?:ReportAction,resourceId?:string)=>boolean\|Promise<boolean>` | No       |
+| `dashboardHost` | `string`                                                                               | Yes      |
+| `maxSourceRows` | `number`                                                                               | Yes      |
+| `site`          | `string`                                                                               | Yes      |
+| `resolveScope`  | `(request:Request)=>Promise<ReportTenantScope>\|ReportTenantScope`                     | Yes      |
+| `campaigns`     | `CampaignReportsSource`                                                                | Yes      |
 
 ### ChartDefinition
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `title` | `string` | No |
-| `type` | `ChartKind` | No |
-| `groupBy` | `` 'event'\|'day'\|'source'\|'site'\|'pathname'\|`property:${string}` `` | No |
-| `metric` | `Metric` | No |
-| `valueField` | `string` | Yes |
-| `eventName` | `string` | Yes |
-| `source` | `string` | Yes |
-| `site` | `string` | Yes |
-| `since` | `number` | Yes |
-| `until` | `number` | Yes |
-| `limit` | `number` | Yes |
+| Field        | Accepted type/value                                                      | Optional |
+| ------------ | ------------------------------------------------------------------------ | -------- |
+| `id`         | `string`                                                                 | No       |
+| `title`      | `string`                                                                 | No       |
+| `type`       | `ChartKind`                                                              | No       |
+| `groupBy`    | `` 'event'\|'day'\|'source'\|'site'\|'pathname'\|`property:${string}` `` | No       |
+| `metric`     | `Metric`                                                                 | No       |
+| `valueField` | `string`                                                                 | Yes      |
+| `eventName`  | `string`                                                                 | Yes      |
+| `source`     | `string`                                                                 | Yes      |
+| `site`       | `string`                                                                 | Yes      |
+| `since`      | `number`                                                                 | Yes      |
+| `until`      | `number`                                                                 | Yes      |
+| `limit`      | `number`                                                                 | Yes      |
 
 ### AnalyticsReportSource
 
-Custom aggregate adapters remove the built-in 500-row query limit.
+Native `aggregate`/branch/v0.0.4/`aggregateNumeric` adapters can count persisted facts beyond the raw sampling cap. Custom `events` callbacks still return at most 500 raw rows; display groups and provenance remain independently bounded.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `events` | `Promise<AnalyticsRow[]>` | No |
-| `aggregate` | `Promise<AnalyticsAggregateResult>` | Yes |
-| `aggregateNumeric` | `Promise<AnalyticsNumericAggregateResult>` | Yes |
-| `supportsNumericField` | `boolean` | Yes |
+| Field                  | Accepted type/value                        | Optional |
+| ---------------------- | ------------------------------------------ | -------- |
+| `events`               | `Promise<AnalyticsRow[]>`                  | No       |
+| `aggregate`            | `Promise<AnalyticsAggregateResult>`        | Yes      |
+| `aggregateNumeric`     | `Promise<AnalyticsNumericAggregateResult>` | Yes      |
+| `supportsNumericField` | `boolean`                                  | Yes      |
 
 ### ReportsStore
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `load` | `Promise<ReportsDocument>` | No |
-| `save` | `Promise<boolean>` | No |
+| Field  | Accepted type/value        | Optional |
+| ------ | -------------------------- | -------- |
+| `load` | `Promise<ReportsDocument>` | No       |
+| `save` | `Promise<boolean>`         | No       |
+
+## Explicit external sources and browser views
+
+The framework reports configuration above enables the internal studio. External `/sources`, `/ga4` and `/adsense` contracts are separately registered server APIs: no configuration label discovers providers, credentials or arbitrary endpoints. Registries require fresh host tenant/site/principal/credential-partition authorization for every query. GA4 and AdSense use distinct fixed read-only endpoints, explicit field/unit/timezone catalogs and honest quota/unavailable/coverage states. Their results are not automatically joined or converted into internal event charts.
+
+Use `/definitions` for bounded inert V1 definition transfer/layouts and `/view` for replaceable browser views. Imported definitions never contain rendering callbacks or bypass a current storage revision. A view receives an already authorized result and retains a labeled semantic table alongside supplementary charts:
+
+```ts
+import { mountReportChart } from '@zeruxjs/reports/view';
+import type { ChartData } from '@zeruxjs/reports/definitions';
+
+export function showAuthorizedChart(host: HTMLElement, data: ChartData) {
+  return mountReportChart(host, data, { pageSize: 20, timeZone: 'UTC' });
+}
+// The host retains the returned view and calls view.destroy() on replacement.
+```
+
+The studio facade borrows sources/stores. External registry `close()` drains actual work before disposing accepted adapters; host-owned credentials have a separate `dispose()`. `mountReportChart` owns only its inserted subtree/listeners/custom components, so destroy it before its DOM owner disappears. Filtering/sorting/paging affects returned groups only. UTC grouping is separate from display zones, and empty, unavailable, sampled, materialized and truncated states must stay distinguishable.
+
+Public source/view examples are included in the package. Focused checks use injected transports and jsdom; live Google grants, browser keyboard defaults and assistive-technology acceptance remain separate host prerequisites.
 
 
 ## Public entry points
@@ -163,7 +183,7 @@ Manifest reference for `@zeruxjs/reports@0.0.4`.
 
 # @zeruxjs/reports — authenticated report studio
 
-A structured report/page/chart designer over **internal @zeruxjs/analytics events**. Routes: `/_reports` (studio), `/_reports/api` (versioned definition CRUD), `/_reports/query` (chart data). All routes require the host application's `authorize(request)` callback; missing auth disables the service.
+A structured report/page/chart designer over **internal @zeruxjs/analytics events**. Routes: `/_reports` (studio), `/_reports/api` (versioned definition CRUD), `/_reports/query` (chart data). All routes require the host application's `authorize(request)` callback; the standalone factory rejects a missing authorizer.
 
 ```ts
 export default {
@@ -179,7 +199,7 @@ export default {
 
 Reports contain pages; pages contain charts. Chart types: `bar`, `horizontal-bar`, `line`, `area`, `pie`, `doughnut`, `scatter`, `stacked-bar`, `table`, and `kpi`. Grouping supports event name, UTC day, source, site, pathname, or `property:<name>`; metrics include count, sum, average, minimum, maximum, distinct. Data is only internal analytics, never arbitrary SQL or JavaScript. The studio has page/chart controls and an advanced JSON editor; data and layouts are escaped in the browser and pages are not exposed anonymously. PUT requires same-origin request and optimistic versioning. Host access control decides which users may read, publish or both.
 
-**Important scope:** The built-in `analytics.events()` connector currently returns **at most 500 source rows**; charts report `sampledRows` and `truncated` when hitting their limit. Those charts must not be represented as global totals. For production-scale reporting, supply `source.events()` backed by your analytics warehouse/materialized aggregation, or extend the core analytics query layer with DB-native aggregate queries. The report document store is persisted in `analytics_report_documents` when the analytics connection implements conditional update and affectedCount; memory-only mode is for development. Cross-replica changes need a shared DB or atomic `store` adapter. Charts currently render client-side using Canvas (table/KPI use DOM) with a single value series; more advanced multi-series, sharing and scheduled exports remain future capabilities. Optional external sources below use a separate explicit table-query API.
+**Important scope:** The built-in `analytics.events()` connector currently returns **at most 500 source rows**; charts report `sampledRows` and `truncated` when hitting their limit. Those charts must not be represented as global totals. The Reports raw-event path keeps the same 500-row ceiling for custom `source.events()` implementations. For larger exact counts or indexed numeric projections, supply the supported `source.aggregate()` / `source.aggregateNumeric()` contracts backed by native bounded aggregation; returning more raw rows is rejected. The report document store is persisted in `analytics_report_documents` when the analytics connection implements conditional update and affectedCount; memory-only mode is for development. Cross-replica changes need a shared DB or atomic `store` adapter. Charts currently render client-side using Canvas (table/KPI use DOM) with a single value series; more advanced multi-series, sharing and scheduled exports remain future capabilities. Optional external sources below use a separate explicit table-query API.
 
 Admin sessions must be protected by your own secure cookies/session middleware; this package intentionally provides no default password, OAuth identity provider or anonymous editor. Never put raw analytics database credentials in a chart definition.
 
@@ -187,7 +207,7 @@ Admin sessions must be protected by your own secure cookies/session middleware; 
 
 For `metric:'count'` grouped by `event`, `source`, `site`, or `pathname`, Reports automatically calls the optional `source.aggregate()` / `analytics.aggregate()` endpoint rather than loading only 500 raw events. UTC `day` grouping also uses exact native counts when the chart specifies both `since` and `until` within a 366-day range. The backend returns exact `total` and bounded chart groups; the dashboard marks hidden groups distinctly from sampled events. Other metrics and `property:` dimensions still use the bounded sample fallback with explicit `queryMode:'sampled'`. A custom AnalyticsReportSource may implement `aggregate(query)` to cover other backends.
 
-`ReportsOptions.site` and ZeruxJS `reports.site` enforce an application-selected site filter that chart authors cannot override. Supply site from your authenticated tenant context, *not* a user-supplied query string. Protect reports with application auth and tenant authorization.
+`ReportsOptions.site` and ZeruxJS `reports.site` enforce an application-selected site filter that chart authors cannot override. Supply site from your authenticated tenant context, _not_ a user-supplied query string. Protect reports with application auth and tenant authorization.
 
 ## Indexed numerical metrics
 
@@ -265,7 +285,6 @@ Read-only report requests default to at most two attempts (maximum three), retry
 
 Focused fixtures exercise schema/tenant denial, fixed destinations, quota/outage, precision, cancellation, refresh and disposal. They do not certify live Google grants, property access, AdSense account eligibility or production quotas. Live acceptance requires enabled APIs, a dedicated authorized property/account/domain, tenant-isolated read-only OAuth grants and approved network access. No browser or live-provider test is implied.
 
-
 ## Versioned layouts and replaceable views
 
 `@zeruxjs/reports/definitions` is a DOM/Node-global-free-on-import entry for validated definitions and definition-only JSON codecs; `@zeruxjs/reports/view` exposes `mountReportChart(host,data,options)`. [The replaceable-view example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/reports/examples/replaceable-view.ts) uses public imports. Source execution remains in the existing authorized report runtime or opt-in source registry; neither browser entry fetches data, resolves credentials or grants permissions.
@@ -295,6 +314,12 @@ For a completely different studio, supply trusted `createReports({...,renderDash
 Built-in CSS exposes `--reports-gap`, `--reports-border`, `--reports-radius`, `--reports-focus` and `--reports-surface`; keep contrast and visible focus when overriding them. The headless view injects no global CSS, so host styles can target `.report-view` within their container. External provider/source registry contracts are unchanged; external table results are not automatically interpreted as internal ChartData or merged into the studio.
 
 Qualification includes jsdom keyboard-event/focus, table controls, stored-XSS text, component failure and teardown fixtures, plus existing authorization/export checks. This is DOM emulation, not live-browser or screen-reader certification. Native keyboard/assistive-technology checks still require a functioning browser and relevant AT; none was started for this task.
+
+## Disposal and maintained source boundaries
+
+The studio facade and memory definition store acquire no separate close owner. The external source registry owns accepted adapters and waits for actual unsettled queries before disposal; credentials stay borrowed and must be disposed separately by their host owner after registry close. Browser views own inserted nodes/listeners/components through `destroy()`. Definition codecs/layout helpers are inert and never authorize, fetch or persist by themselves.
+
+The authored dashboard script, stylesheet and markup remain readable source. Formatting is checked separately against JavaScript structure, CSS declarations and HTML/interpolation structure; the runtime still hashes the exact emitted script/style bytes for CSP. Test fixtures release held work, views, sources, credential helpers and DOM environments in dependency order, even after assertions fail. These checks use synthetic transports and DOM emulation, not live Google grants, browser/AT certification or cross-store transaction guarantees.
 
 
 ## Implementation sources

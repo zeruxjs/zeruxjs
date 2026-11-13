@@ -88,7 +88,7 @@ LinkedIn/X have separate reviewed protocol metadata and require explicit custom 
 npm install @zeruxjs/auth@0.0.4
 ```
 
-There is no automatic `auth` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reference.md) and [TypeScript](/branch/v0.0.4/zeruxjs/docs/0.0.4/typescript.md).
+There is no automatic `auth` startup service in `zerux.config.js` for this package. Import its public APIs and create the explicit server owner in the application that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reference.md) and [TypeScript](/branch/v0.0.4/zeruxjs/docs/0.0.4/typescript.md).
 
 ## A practical integration workflow
 
@@ -124,52 +124,58 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### AuthConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `db` | `{ usersTable: string; rolesTable: string; usermetaTable: string; /** Set false on engines (e.g. MySQL) without INSERT .. RETURNING; inspect insertedIds instead. */ supportsReturning?: boolean; fields: { userId: string; email: string; passwordHash: string; role: string; }; }` | No |
-| `session` | `{ cookieName: string; expiresIn: number; }` | No |
+| Field     | Accepted type/value                                                                                                                                                               | Optional |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `db`      | `{ usersTable: string; rolesTable: string; usermetaTable: string; supportsReturning?: boolean; fields: { userId: string; email: string; passwordHash: string; role: string; }; }` | No       |
+| `session` | `{ cookieName: string; expiresIn: number; }`                                                                                                                                      | No       |
 
 ### PasswordPolicy
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `minLength` | `number` | Yes |
-| `maxLength` | `number` | Yes |
-| `requireUppercase` | `boolean` | Yes |
-| `requireLowercase` | `boolean` | Yes |
-| `requireDigit` | `boolean` | Yes |
-| `requireSymbol` | `boolean` | Yes |
+| Field              | Accepted type/value | Optional |
+| ------------------ | ------------------- | -------- |
+| `minLength`        | `number`            | Yes      |
+| `maxLength`        | `number`            | Yes      |
+| `requireUppercase` | `boolean`           | Yes      |
+| `requireLowercase` | `boolean`           | Yes      |
+| `requireDigit`     | `boolean`           | Yes      |
+| `requireSymbol`    | `boolean`           | Yes      |
 
 ### TotpOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `period` | `number` | Yes |
-| `digits` | `6 \| 8` | Yes |
-| `algorithm` | `"sha1" \| "sha256" \| "sha512"` | Yes |
-| `now` | `number` | Yes |
+| Field       | Accepted type/value              | Optional |
+| ----------- | -------------------------------- | -------- |
+| `period`    | `number`                         | Yes      |
+| `digits`    | `6 \| 8`                         | Yes      |
+| `algorithm` | `"sha1" \| "sha256" \| "sha512"` | Yes      |
+| `now`       | `number`                         | Yes      |
 
 ### OAuthAuthorizationOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `authorizationEndpoint` | `string` | No |
-| `clientId` | `string` | No |
-| `redirectUri` | `string` | No |
-| `allowedRedirectUris` | `readonly string[]` | No |
-| `scopes` | `readonly string[]` | Yes |
-| `extra` | `Record<string, string>` | Yes |
+| Field                   | Accepted type/value      | Optional |
+| ----------------------- | ------------------------ | -------- |
+| `authorizationEndpoint` | `string`                 | No       |
+| `clientId`              | `string`                 | No       |
+| `redirectUri`           | `string`                 | No       |
+| `allowedRedirectUris`   | `readonly string[]`      | No       |
+| `scopes`                | `readonly string[]`      | Yes      |
+| `extra`                 | `Record<string, string>` | Yes      |
 
 ### TenantPrincipal
 
 Host must obtain this principal only after verifying an authenticated, unexpired session.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `userId` | `string \| number` | No |
-| `tenantId` | `string \| number` | No |
-| `permissions` | `readonly string[]` | No |
-| `siteIds` | `readonly string[]` | Yes |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `userId`      | `string \| number`  | No       |
+| `tenantId`    | `string \| number`  | No       |
+| `permissions` | `readonly string[]` | No       |
+| `siteIds`     | `readonly string[]` | Yes      |
+
+## Readable source ownership
+
+The package README maps legacy primitives, shared state, verifier/store contracts and provider flow owners separately. Root runtime imports eagerly use Node crypto; no browser runtime entry is supplied. UI code may use erased types or sanitized authorized results, never raw user rows, credentials, PKCE attempts or private causes.
+
+`createSharedAuth`, `createPasskeyManager` and `createProviderLogin` own active operations and copied key material. Await their `close()` before releasing borrowed stores/transports. A timeout only bounds waiting; actual native/host settlement can delay shutdown. Process-local token/revocation/reference stores do not expose a manager close lifecycle or imply distributed persistence. Legacy wildcard role/token behavior remains compatible and does not weaken exact tenant/shared-scope checks.
 
 
 ## Public entry points
@@ -195,16 +201,18 @@ Manifest reference for `@zeruxjs/auth@0.0.4`.
 
 Server-side password hashing, encrypted sessions, user/role database facade, one-time passwords, RFC 6238 authenticator TOTP, scoped API/reset tokens, password policy, and optional revocation store.
 
-Existing `hashPassword`, `verifyPassword`, `createSession`, `verifySession`, database helpers, `createOtp` and passkey challenge *generation* remain supported. Passkey challenge creation does **not** validate WebAuthn attestation/assertions; use the opt-in `createPasskeyManager` verifier described below. OTP code hashes alone do not enforce expiry or one-time use: use a dedicated persisted challenge record with attempt limits.
+Existing `hashPassword`, `verifyPassword`, `createSession`, `verifySession`, database helpers, `createOtp` and passkey challenge _generation_ remain supported. Passkey challenge creation does **not** validate WebAuthn attestation/assertions; use the opt-in `createPasskeyManager` verifier described below. OTP code hashes alone do not enforce expiry or one-time use: use a dedicated persisted challenge record with attempt limits.
 
 ```ts
-import { generateTotpSecret, totpUri, verifyTotp, createTokenStore, validatePasswordStrength } from '@zeruxjs/auth';
+import { generateTotpSecret, generateTotp, totpUri, verifyTotp, createTokenStore, validatePasswordStrength } from '@zeruxjs/auth';
 const secret = generateTotpSecret(); // encrypt at rest; never log
 const uri = totpUri(secret, 'alice@example.com', 'Your App');
-const matches = verifyTotp(userInput, secret, { window: 1 });
+const matches = verifyTotp(generateTotp(secret), secret, { window: 1 }); // local round-trip only
+const assessment = validatePasswordStrength('example long password');
 const apiKeys = createTokenStore();
 const { token } = apiKeys.issue('user-id', ['read:posts'], 3600_000);
 const identity = apiKeys.verify(token, 'read:posts');
+apiKeys.clear(); // explicit teardown of this process-local example
 ```
 
 For production sessions set `SECURITY_SESSION_KEY`, `SECURITY_SESSION_SALT` and `SECURITY_PASSWORD_SALT` securely; rotate with planned migration. Built-in token and revocation registries are in-memory and must be replaced with persistent shared stores for distributed deployments. Provide request rate limiting and brute-force protection at the application edge. Do not confuse TOTP validation with replay protection; store and reject already-used time steps.
@@ -353,13 +361,13 @@ OIDC requires an explicit `jwksUrl`, allowlisted asymmetric `algorithms` (defaul
 
 No entry installs a vendor's endpoints or scopes automatically. Register them from current official metadata/docs and your actual application enrollment:
 
-| Profile | Protocol and identity mapping | Email behavior |
-| --- | --- | --- |
-| `google` | OIDC `sub`; exact configured issuer/client | Only `email_verified:true` retains email |
-| `microsoft` | Tenant-specific OIDC `sub`; configure exact issuer and approved tenant endpoints, not an unrestricted common-tenant wildcard | email/preferred_username is not treated as verified identity |
-| `github` | OAuth code + `/user` numeric stable `id`; user-info identity is explicitly `protocol:'oauth2'` | `/user` does not prove email verification, so email is omitted |
-| `discord` | OAuth code + `/users/@me` string ID; explicitly declare identify/email scopes and callback issuer policy | `verified:true` is required to retain email |
-| `custom` | Explicit protocol and trusted `mapProfile` callback; an OIDC mapping cannot change the verified `sub` | Host must establish actual verification semantics; unverified email is omitted |
+| Profile     | Protocol and identity mapping                                                                                                | Email behavior                                                                 |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `google`    | OIDC `sub`; exact configured issuer/client                                                                                   | Only `email_verified:true` retains email                                       |
+| `microsoft` | Tenant-specific OIDC `sub`; configure exact issuer and approved tenant endpoints, not an unrestricted common-tenant wildcard | email/preferred_username is not treated as verified identity                   |
+| `github`    | OAuth code + `/user` numeric stable `id`; user-info identity is explicitly `protocol:'oauth2'`                               | `/user` does not prove email verification, so email is omitted                 |
+| `discord`   | OAuth code + `/users/@me` string ID; explicitly declare identify/email scopes and callback issuer policy                     | `verified:true` is required to retain email                                    |
+| `custom`    | Explicit protocol and trusted `mapProfile` callback; an OIDC mapping cannot change the verified `sub`                        | Host must establish actual verification semantics; unverified email is omitted |
 
 `profiles()` exposes only id/label/protocol/profile display metadata, with no client secrets/endpoints/tokens. Display names are text, not safe HTML. No email—even verified email—auto-links an account. Passing `linkAccount` requires `authorizeFresh(account,'link',session)` before authorization **and again on callback**; the shared store atomically enforces a unique owner for tenant/provider/issuer/subject. `unlink(account,session,providerId,subject)` also requires fresh proof and removes only that account's binding. The host must preserve another login/recovery route and current tenant permissions. No linked identity is a wildcard administrator.
 
@@ -377,8 +385,26 @@ Deadlines/cancellation reject the caller but retain native slots until store/tra
 
 Primary references reviewed: [OIDC Core validation](https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation), [Google](https://developers.google.com/identity/openid-connect/openid-connect), [Microsoft](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow), [GitHub](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps), [Discord](https://github.com/discord/discord-api-docs/blob/main/developers/topics/oauth2.mdx), [LinkedIn](https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin-v2), [X](https://docs.x.com/fundamentals/authentication/oauth-2-0/authorization-code). Isolated fixtures exercise real JWT cryptography and scripted HTTP, not live provider acceptance. Live registration, credentials, consent, HTTPS callbacks, production egress policy and atomic storage remain prerequisites.
 
+## Source ownership and compatibility boundaries
+
+| Owner                                                            | Responsibility and limit                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core.ts`                                                        | Process-global legacy mappings, scrypt compatibility, encrypted sessions and database helpers. Never change global mappings per concurrent tenant request. `verifyUser` returns a private raw row that can include hashes; sanitize before any client output. Metadata lookup/update/insert is not an atomic upsert. |
+| `password-policy.ts`, `totp.ts`, `oauth.ts`                      | Explicit policy assessment, code calculation/validation and PKCE URL/state helpers. None persists enrollment, consumes proof or performs token exchange. Enrollment URIs contain private secrets.                                                                                                                    |
+| `token-store.ts`, `session-store.ts`                             | Bounded process-local compatibility registries. Legacy token/role wildcard semantics are preserved; exact tenant/shared scopes remain separate.                                                                                                                                                                      |
+| `tenant-authorization.ts`, `step-up.ts`                          | Exact claim checks and explicit injected verification contracts; labels alone never authenticate a request.                                                                                                                                                                                                          |
+| `shared-auth.ts`                                                 | Linearizable opaque sessions/challenges/TOTP replay state over a borrowed primary, finite pure CAS retries and key-copy cleanup after drain.                                                                                                                                                                         |
+| `passkey-store.ts`, `passkeys.ts`                                | Atomic ceremony/credential/recovery contracts and lazy maintained verification. Consumed ceremonies never revive after errors; zero counters still require a fresh revision CAS.                                                                                                                                     |
+| `provider-store.ts`, `provider-profiles.ts`, `provider-login.ts` | Explicit bounded provider flow, atomic replay/identity ownership, declared mappings and owned optional JWT/JWKS cleanup. No live endpoint discovery or automatic email account linking.                                                                                                                              |
+
+The three application managers (`createSharedAuth`, `createPasskeyManager`, `createProviderLogin`) must be closed before their borrowed stores/transports are released. Their close operations drain actual work before wiping owned key copies; cancellation or timeout cannot forcibly terminate arbitrary host code. Local memory/token/revocation helpers expose no close handle. Existing public root exports and legacy crypto wire formats remain compatible; this source map adds no browser runtime entry or authentication route.
+
 
 ## Implementation sources
 
 - [packages/@zeruxjs/auth/README.md](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/auth/README.md)
 - [packages/@zeruxjs/auth/package.json](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/auth/package.json)
+- [packages/@zeruxjs/auth/src/core.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/auth/src/core.ts)
+- [packages/@zeruxjs/auth/src/shared-auth.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/auth/src/shared-auth.ts)
+- [packages/@zeruxjs/auth/src/passkeys.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/auth/src/passkeys.ts)
+- [packages/@zeruxjs/auth/src/provider-login.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/auth/src/provider-login.ts)

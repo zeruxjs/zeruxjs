@@ -36,6 +36,35 @@ combinations with offline local-link installs, actual builds/typechecks and owne
 production HTTP fixtures. It is not clean-registry, live-browser, hydration or
 production hosting acceptance.
 
+## Headless planning and ownership
+
+```js
+import { planZeruxApp } from 'create-zerux-js';
+
+const plan = planZeruxApp({
+  name: 'example-app',
+  destination: './example-app',
+  renderer: 'zyro',
+  language: 'typescript',
+  mode: 'ssr',
+  port: 3000,
+});
+console.log(Object.keys(plan.files));
+```
+
+Planning validates capabilities and produces inert authored source text. Importing
+`runCreateZerux` starts no prompts, process listeners or application resources.
+Its optional prompt factory transfers cleanup to the shared command engine; the
+executable owns only its invocation's terminal signal listeners and removes them
+on exit. The example's `generate()` writes only when explicitly called and still
+does not install dependencies or execute generated code.
+
+The renderer/function/import selections are fixed reviewed code. User project
+options cannot supply arbitrary import paths or shell commands. Native renderer
+APIs and matching peer requirements remain owned by their adapter packages.
+Consumer verification resolves explicitly named installed tooling, including
+hoisted TypeScript, and leaves real applications and their ports untouched.
+
 
 ## Public entry points
 
@@ -104,11 +133,11 @@ no registry release availability or deployment is promised.
 
 One explicit `zerux-app` template offers HTML-only server rendering:
 
-| Renderer | Required generated renderer dependencies | Mode |
-| --- | --- | --- |
-| ZyroJS (default) | `zyrojs@0.0.4` | `ssr` |
-| React | `@zeruxjs/react@0.0.4`, matching `react`/branch/v0.0.4/`react-dom@19.3.1` | `ssr` |
-| Vue | `@zeruxjs/vue@0.0.4`, matching `vue`/branch/v0.0.4/`@vue/runtime-dom`/branch/v0.0.4/`@vue/server-renderer@3.5.44` | `ssr` |
+| Renderer         | Required generated renderer dependencies                                              | Mode  |
+| ---------------- | ------------------------------------------------------------------------------------- | ----- |
+| ZyroJS (default) | `zyrojs@0.0.4`                                                                        | `ssr` |
+| React            | `@zeruxjs/react@0.0.4`, matching `react`/branch/v0.0.4/`react-dom@19.3.1`                           | `ssr` |
+| Vue              | `@zeruxjs/vue@0.0.4`, matching `vue`/branch/v0.0.4/`@vue/runtime-dom`/branch/v0.0.4/`@vue/server-renderer@3.5.44` | `ssr` |
 
 Every renderer supports TypeScript (default) or JavaScript. `zeruxjs@0.0.4` is common;
 only the selected renderer's direct dependencies are emitted. TypeScript is included
@@ -206,6 +235,35 @@ otherwise does not modify framework implementations or loosen browser boundaries
 ## License
 
 MIT OR Apache-2.0.
+
+## Headless planning and ownership
+
+```js
+import { planZeruxApp } from 'create-zerux-js';
+
+const plan = planZeruxApp({
+  name: 'example-app',
+  destination: './example-app',
+  renderer: 'zyro',
+  language: 'typescript',
+  mode: 'ssr',
+  port: 3000,
+});
+console.log(Object.keys(plan.files));
+```
+
+Planning validates capabilities and produces inert authored source text. Importing
+`runCreateZerux` starts no prompts, process listeners or application resources.
+Its optional prompt factory transfers cleanup to the shared command engine; the
+executable owns only its invocation's terminal signal listeners and removes them
+on exit. The example's `generate()` writes only when explicitly called and still
+does not install dependencies or execute generated code.
+
+The renderer/function/import selections are fixed reviewed code. User project
+options cannot supply arbitrary import paths or shell commands. Native renderer
+APIs and matching peer requirements remain owned by their adapter packages.
+Consumer verification resolves explicitly named installed tooling, including
+hoisted TypeScript, and leaves real applications and their ports untouched.
 
 
 ## Implementation sources

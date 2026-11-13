@@ -64,31 +64,31 @@ The fields below come from the current source declarations. Optional is not a de
 
 ### TagsStartupConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `enabled` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `prefix` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `site` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `publicOrigin` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `allowedOrigins` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `serverToken` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `requestIds` | `{reserve(day:string,id:string):Promise<boolean>}` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `store` | `{load():Promise<unknown>;save(container:unknown,expectedVersion:number):Promise<boolean>}` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `container` | `unknown` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `credentials` | `Record<string,{secret:string}>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `destinations` | `Record<string,{url:string;headers?:Record<string,string>}>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `authorizeAdmin` | `(request:Request)=>boolean\|Promise<boolean>` | No | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
-| `authorizePublish` | `(request:Request)=>boolean\|Promise<boolean>` | No | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
-| `requireBrowserConsent` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `siteByOrigin` | `Record<string,string>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `botPolicy` | `'allow'\|'drop-known'` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `onWarning` | `(message:string)=>void` | No | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
-| `dashboardHost` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `debug` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `defaultConsent` | `'granted'\|'denied'` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `onDebug` | `(data:unknown)=>void` | No | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
-| `maxBodyBytes` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `maxEventsPerMinute` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option                  | Accepted TypeScript value                                                                   | Required | Meaning                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------- |
+| `enabled`               | `boolean`                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `prefix`                | `string`                                                                                    | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `site`                  | `string`                                                                                    | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `publicOrigin`          | `string`                                                                                    | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `allowedOrigins`        | `string[]`                                                                                  | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `serverToken`           | `string`                                                                                    | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `requestIds`            | `{reserve(day:string,id:string):Promise<boolean>}`                                          | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `store`                 | `{load():Promise<unknown>;save(container:unknown,expectedVersion:number):Promise<boolean>}` | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `container`             | `unknown`                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `credentials`           | `Record<string,{secret:string}>`                                                            | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `destinations`          | `Record<string,{url:string;headers?:Record<string,string>}>`                                | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `authorizeAdmin`        | `(request:Request)=>boolean\|Promise<boolean>`                                              | No       | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
+| `authorizePublish`      | `(request:Request)=>boolean\|Promise<boolean>`                                              | No       | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
+| `requireBrowserConsent` | `boolean`                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `siteByOrigin`          | `Record<string,string>`                                                                     | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `botPolicy`             | `'allow'\|'drop-known'`                                                                     | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `onWarning`             | `(message:string)=>void`                                                                    | No       | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
+| `dashboardHost`         | `string`                                                                                    | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `debug`                 | `boolean`                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `defaultConsent`        | `'granted'\|'denied'`                                                                       | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `onDebug`               | `(data:unknown)=>void`                                                                      | No       | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
+| `maxBodyBytes`          | `number`                                                                                    | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `maxEventsPerMinute`    | `number`                                                                                    | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
 
 
 ## Implementation sources

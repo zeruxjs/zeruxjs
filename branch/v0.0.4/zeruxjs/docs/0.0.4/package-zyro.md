@@ -13,6 +13,7 @@ const scope = createZyroSubscriptionScope();
 scope.observe(count, value => console.log(value));
 state.batch(() => { state.set({ count: 1 }); state.set({ count: 2 }); });
 scope.destroy();
+state.destroy();
 ```
 
 Selected/combined observables keep stable snapshots for external-store consumers. A scope owns subscriptions and drains all disposers even when one throws. Calling destroy repeatedly is safe.
@@ -100,45 +101,73 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### Observable
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `get` | `T` | No |
-| `subscribe` | `() => void` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `get`       | `T`                 | No       |
+| `subscribe` | `() => void`        | No       |
 
 ### BatchedObservable
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `batch` | `R` | No |
+| Field   | Accepted type/value | Optional |
+| ------- | ------------------- | -------- |
+| `batch` | `R`                 | No       |
 
 ### AsyncState
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `status` | `'idle'\|'loading'\|'success'\|'error'` | No |
-| `data` | `T\|undefined` | No |
-| `error` | `unknown` | No |
-| `updatedAt` | `number` | No |
+| Field       | Accepted type/value                     | Optional |
+| ----------- | --------------------------------------- | -------- |
+| `status`    | `'idle'\|'loading'\|'success'\|'error'` | No       |
+| `data`      | `T\|undefined`                          | No       |
+| `error`     | `unknown`                               | No       |
+| `updatedAt` | `number`                                | No       |
 
 ### AsyncObservable
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `refresh` | `Promise<T\|undefined>` | No |
-| `cancel` | `void` | No |
-| `reset` | `void` | No |
-| `destroy` | `void` | No |
+| Field     | Accepted type/value     | Optional |
+| --------- | ----------------------- | -------- |
+| `refresh` | `Promise<T\|undefined>` | No       |
+| `cancel`  | `void`                  | No       |
+| `reset`   | `void`                  | No       |
+| `destroy` | `void`                  | No       |
 
 ### ZyroSubscriptionScope
 
 An explicit ownership boundary for Zyro-style observable subscriptions.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `observe` | `()=>void` | No |
-| `add` | `()=>void` | No |
-| `destroy` | `void` | No |
-| `destroyed` | `boolean` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `observe`   | `()=>void`          | No       |
+| `add`       | `()=>void`          | No       |
+| `destroy`   | `void`              | No       |
+| `destroyed` | `boolean`           | No       |
+
+## Snapshot and cleanup semantics
+
+Observable values are borrowed references. `Object.is` suppresses same-identity
+writes, so mutating a stored object in place does not notify observers. A function
+passed to `set` is an updater; wrap a function-valued replacement in an updater
+that returns it. `batch` coalesces synchronous notifications, flushes when its
+callback exits and does not roll back writes after an exception or span `await`.
+Listener and selector callbacks are trusted synchronous code; no CPU deadline or
+reentrant-notification count limit is implied for the core observable.
+
+`mapObservable`, `combineObservables`, `toExternalStore` and `fromExternalStore`
+borrow their inputs. Their creation does not own a persistent subscription, but
+snapshot projections can read and execute selectors immediately. Each subsequent
+subscription returns its own disposer. The legacy combined subscription registers
+sources in order without universal partial-registration rollback; a throwing
+source registration must clean its own partial work. Its returned cleanup invokes
+source disposers in order, so a throwing disposer can prevent later cleanup.
+`awaitObservable` likewise expects well-behaved source cleanup. Use trusted sources
+with coherent synchronous snapshots and nonthrowing unsubscribe functions.
+
+Subscription scopes and renderer bridges provide stronger owned cleanup: they
+attempt every registered disposer and aggregate failures. They fence callbacks
+before releasing registrations. They cannot recover an undisclosed handle when a
+custom source throws before returning its disposer. Destroying a source clears its
+listeners and prevents future writes; it does not erase objects retained by the
+host or make their contents public-safe. Keep sources scoped to an authorized
+request, tenant or mount, and destroy owned sources separately from borrowed views.
 
 
 ## Public entry points
@@ -263,14 +292,14 @@ host effect scope, never during repeated render (the standalone hook guard rejec
 back and throws. Supply `signal`, `batch`, `untracked`, `onScopeDispose` and `useRef` from
 the same `zyrojs/component` runtime instance that owns the render.
 
-| Method | Behavior |
-| --- | --- |
-| `read(source)` | Immediate read-only conversion with `.value`, `.peek()` and `.dispose()` |
-| `select(source, selector, equal = Object.is)` | Read-only stable projection; equal results retain the previous reference |
-| `write(mutableSource)` | Explicit `.value` write-through to source `.set()`; no projected writes or optimistic state |
-| `batch(fn)` | Synchronous batching of target ZyroJS notifications, including updates across multiple sources/conversions |
-| `resource(loader, options)` | Create an owned async observable; bridge lifetime owns its AbortSignal |
-| `destroy()` | Idempotent unsubscribe/resource teardown; attempts all disposers and aggregates errors |
+| Method                                        | Behavior                                                                                                   |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `read(source)`                                | Immediate read-only conversion with `.value`, `.peek()` and `.dispose()`                                   |
+| `select(source, selector, equal = Object.is)` | Read-only stable projection; equal results retain the previous reference                                   |
+| `write(mutableSource)`                        | Explicit `.value` write-through to source `.set()`; no projected writes or optimistic state                |
+| `batch(fn)`                                   | Synchronous batching of target ZyroJS notifications, including updates across multiple sources/conversions |
+| `resource(loader, options)`                   | Create an owned async observable; bridge lifetime owns its AbortSignal                                     |
+| `destroy()`                                   | Idempotent unsubscribe/resource teardown; attempts all disposers and aggregates errors                     |
 
 Conversions subscribe synchronously and read the latest source snapshot on
 registration. Selectors and initial reads are untracked in the renderer. Sources
@@ -342,6 +371,34 @@ component example through real public exports without source aliases. The DOM
 fixture and ephemeral local framework requests cover batching, scope isolation,
 cancellation, failure and teardown; they do not certify a real browser, live API or
 cross-framework hydration. No user-managed application is started.
+
+## Snapshot and cleanup semantics
+
+Observable values are borrowed references. `Object.is` suppresses same-identity
+writes, so mutating a stored object in place does not notify observers. A function
+passed to `set` is an updater; wrap a function-valued replacement in an updater
+that returns it. `batch` coalesces synchronous notifications, flushes when its
+callback exits and does not roll back writes after an exception or span `await`.
+Listener and selector callbacks are trusted synchronous code; no CPU deadline or
+reentrant-notification count limit is implied for the core observable.
+
+`mapObservable`, `combineObservables`, `toExternalStore` and `fromExternalStore`
+borrow their inputs. Their creation does not own a persistent subscription, but
+snapshot projections can read and execute selectors immediately. Each subsequent
+subscription returns its own disposer. The legacy combined subscription registers
+sources in order without universal partial-registration rollback; a throwing
+source registration must clean its own partial work. Its returned cleanup invokes
+source disposers in order, so a throwing disposer can prevent later cleanup.
+`awaitObservable` likewise expects well-behaved source cleanup. Use trusted sources
+with coherent synchronous snapshots and nonthrowing unsubscribe functions.
+
+Subscription scopes and renderer bridges provide stronger owned cleanup: they
+attempt every registered disposer and aggregate failures. They fence callbacks
+before releasing registrations. They cannot recover an undisclosed handle when a
+custom source throws before returning its disposer. Destroying a source clears its
+listeners and prevents future writes; it does not erase objects retained by the
+host or make their contents public-safe. Keep sources scoped to an authorized
+request, tenant or mount, and destroy owned sources separately from borrowed views.
 
 
 ## Implementation sources

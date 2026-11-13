@@ -45,7 +45,7 @@ Use installed public declarations and validate untrusted runtime values separate
 
 ## Failures, ownership and production use
 
-Use the dispatch result instead of calling process.exit from reusable handlers. Unknown commands/invalid flags are distinct from a successful command; preserve nonzero status in automation. Async servers may retain handles after dispatch returns. Test help, aliases, repeated flags, wrong choices, unknown plugin entry paths and plugin exceptions. The reserved create packages do not become complete project generators merely because this toolkit contains scaffolding primitives.
+Use the dispatch result instead of calling process.exit from reusable handlers. Unknown commands/invalid flags are distinct from a successful command; preserve nonzero status in automation. A long-running handler must keep its Promise pending for its resource lifetime; returning early ends invocation ownership and starts cleanup. Test help, aliases, repeated flags, wrong choices, unknown plugin entry paths and plugin exceptions. The separate create-zerux-js, create-zyro-app and create-zenix-js packages own their verified templates and prerequisites; zclivo itself supplies only the minimal starter and shared safe engine.
 
 ## Verify the integration
 
@@ -55,25 +55,30 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 ### CommandOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `rea` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `description` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `help` | `{arg:string;'its description':string}[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `docs` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `example` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `aliases` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `usage` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `hidden` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `flags` | `OptionSchema` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `allowUnknownFlags` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option              | Accepted TypeScript value                 | Required | Meaning                                                                      |
+| ------------------- | ----------------------------------------- | -------- | ---------------------------------------------------------------------------- |
+| `rea`               | `boolean`                                 | No       | Retained compatibility flag; it does not add a dispatch policy.              |
+| `description`       | `string`                                  | No       | Help display text, terminal-sanitized when rendered.                         |
+| `help`              | `{arg:string;'its description':string}[]` | No       | Legacy argument descriptions; display text only.                             |
+| `docs`              | `string`                                  | No       | Authored documentation returned by --docs; never evaluated.                  |
+| `example`           | `string`                                  | No       | Authored example display text; never executed.                               |
+| `aliases`           | `string[]`                                | No       | Alternative command names validated against canonical/alias collisions.      |
+| `usage`             | `string`                                  | No       | Authored usage suffix for command help.                                      |
+| `hidden`            | `boolean`                                 | No       | Hide from listings/completion; this does not authorize or deny dispatch.     |
+| `flags`             | `OptionSchema`                            | No       | Strict scalar option schema validated at registration and dispatch.          |
+| `allowUnknownFlags` | `boolean`                                 | No       | Explicitly retain undeclared flags under a schema instead of rejecting them. |
 
 ### StarterOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `language` | `StarterLanguage` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `dryRun` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option     | Type              | Meaning                                                                                |
+| ---------- | ----------------- | -------------------------------------------------------------------------------------- |
+| `language` | `StarterLanguage` | JavaScript or TypeScript supported by the minimal template.                            |
+| `dryRun`   | `boolean`         | Validate and list files without writing the destination.                               |
+| `name`     | `string`          | Portable display/package name; defaults from the destination.                          |
+| `port`     | `number`          | Integer 1–65535 configuration, never a port reservation.                               |
+| `renderer` | `string`          | Only `none` for this built-in minimal template.                                        |
+| `mode`     | `string`          | Only `minimal` for this built-in template.                                             |
+| `signal`   | `AbortSignal`     | Cooperative write cancellation; use the async writer to observe signals between files. |
 
 ## Predictable validation and lifecycle
 
@@ -92,7 +97,7 @@ OptionDefinition.conflicts lists canonical flag names and checks explicit input,
 even false/empty, before defaults. Required flags still require explicit input.
 Defaults must match the declared type/choices; definitions are snapshotted/frozen.
 Argv is bounded to 1024 entries, 8192 code units each, 65536 total; schemas have at
-most 128 flags. No grouped short flags or implicit --no-* negation is provided.
+most 128 flags. No grouped short flags or implicit --no-\* negation is provided.
 
 ```ts
 import { setTimeout as delay } from 'node:timers/promises';
@@ -173,6 +178,29 @@ commands never install dependencies or start generated code. New directories are
 private; whole-directory crash atomicity and hostile same-account filesystem races
 are not claimed. See the package README and `examples/generator.mjs` for ownership,
 runtime floors, public APIs and checks.
+
+## Resource handles and display boundaries
+
+`CommandRegistry` registration is inert. A returned transaction disposer owns only
+its staged additions; it does not unload modules or roll back arbitrary plugin
+side effects. `loadPlugins` and `loadConfiguredPlugins` return owned records, so
+retain the array and await each `dispose()` at the host lifecycle boundary.
+`createTerminalGeneratorPrompt` is a lazy close owner; shared command orchestration
+closes it when the invocation ends. Inert generators and parsed argument values
+have no invented close method.
+
+Terminal sanitization removes control sequences, not secrets. `color` deliberately
+emits ANSI styles and stringifies application values without sanitizing their
+contents. Keep raw error causes, input arguments and cleanup failures in private
+tool diagnostics. Help visibility is not authorization, and a command schema does
+not authorize the operation its trusted handler performs.
+
+Planning and snapshot digests describe bytes, not permission or authorship. A plan
+must come from this package instance before its writers accept it; importing a
+serialized review document does not authorize writes. Template code is explicit
+trusted server tooling, not a browser module or a safe place to evaluate saved
+content. The package's lint boundaries detect direct static misuse only; they do
+not prove eventual disposal, sandbox code or certify an authorization policy.
 
 
 ## Public entry points
@@ -298,12 +326,12 @@ Dispatch returns a result and never calls process.exit or changes process.exitCo
 The entry point owns status selection. The legacy wrapper and standalone binary
 are entry-point conveniences and continue setting/returning status respectively.
 
-| Outcome | exitCode |
-| --- | --- |
-| Success/help/docs/completion | 0 |
-| Handler rejection, invalid handler status, output or cleanup failure | 1 |
-| Unknown keyword/command, malformed argv or invalid typed options | 2 |
-| Observed cooperative cancellation | 130 |
+| Outcome                                                              | exitCode |
+| -------------------------------------------------------------------- | -------- |
+| Success/help/docs/completion                                         | 0        |
+| Handler rejection, invalid handler status, output or cleanup failure | 1        |
+| Unknown keyword/command, malformed argv or invalid typed options     | 2        |
+| Observed cooperative cancellation                                    | 130      |
 
 A handler may return an integer from 0 through 255. Invalid flag usage previously
 returned 1; migrate automation to 2. Typo suggestions cover registered visible
@@ -321,7 +349,7 @@ Typed boolean flags do not consume a following positional unless it is the liter
 true/false. The public parseArguments(argv) keeps legacy value consumption; its
 optional second argument names boolean options. `--` ends all option/help/docs
 recognition, so `run -- --help` passes a positional string to the handler. Grouped
-short flags and implicit --no-* negation are not implemented. Empty --name= is a
+short flags and implicit --no-\* negation are not implemented. Empty --name= is a
 string value; a bare string/number flag without a value is invalid under a schema.
 Without a schema, legacy unknown options remain accepted. Option names must be
 ASCII alphanumeric/underscore/hyphen, starting with alphanumeric; prototype keys
@@ -439,9 +467,9 @@ file maps are validated even though the functions themselves can have side effec
 `minimalProjectGenerator` supplies the existing minimal Zerux starter through this
 engine. Its actual supported matrix is:
 
-| Template | Mode | Renderer | Languages |
-| --- | --- | --- | --- |
-| `zerux-minimal` | `minimal` | `none` | `typescript`, `javascript` |
+| Template        | Mode      | Renderer | Languages                  |
+| --------------- | --------- | -------- | -------------------------- |
+| `zerux-minimal` | `minimal` | `none`   | `typescript`, `javascript` |
 
 There is no built-in React/Vue/Zyro/CMS/static-export template. Such selections reject
 rather than generating files that imply runtime support. Future creator packages
@@ -526,6 +554,29 @@ concurrent target appearance, dangling links/parent links, capability denial,
 interactive/flag equivalence, deterministic files and real SIGINT during a controlled
 prompt fixture. This is not live interactive-terminal or all-platform certification.
 No generated application server or external integration was started by the engine.
+
+## Resource handles and display boundaries
+
+`CommandRegistry` registration is inert. A returned transaction disposer owns only
+its staged additions; it does not unload modules or roll back arbitrary plugin
+side effects. `loadPlugins` and `loadConfiguredPlugins` return owned records, so
+retain the array and await each `dispose()` at the host lifecycle boundary.
+`createTerminalGeneratorPrompt` is a lazy close owner; shared command orchestration
+closes it when the invocation ends. Inert generators and parsed argument values
+have no invented close method.
+
+Terminal sanitization removes control sequences, not secrets. `color` deliberately
+emits ANSI styles and stringifies application values without sanitizing their
+contents. Keep raw error causes, input arguments and cleanup failures in private
+tool diagnostics. Help visibility is not authorization, and a command schema does
+not authorize the operation its trusted handler performs.
+
+Planning and snapshot digests describe bytes, not permission or authorship. A plan
+must come from this package instance before its writers accept it; importing a
+serialized review document does not authorize writes. Template code is explicit
+trusted server tooling, not a browser module or a safe place to evaluate saved
+content. The package's lint boundaries detect direct static misuse only; they do
+not prove eventual disposal, sandbox code or certify an authorization policy.
 
 
 ## Implementation sources

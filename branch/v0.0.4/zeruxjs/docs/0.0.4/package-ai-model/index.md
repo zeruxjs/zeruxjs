@@ -5,7 +5,7 @@ Retrieve bounded lexical evidence and keep citations separate from generated tex
 
 ## What the package does
 
-This is a local keyword retrieval/chunking layer, not model training, embeddings or a vector database. It ranks source documents, budgets excerpts and can pass evidence to a compatible chat provider.
+This is a local keyword retrieval/chunking layer. It does not train models, generate embeddings or own a vector database. It ranks source documents, budgets excerpts and can pass evidence to a compatible chat provider; the separate evidence API can explicitly borrow a host-qualified embedding ranker.
 
 ```ts
 import { createKnowledgeBase, chunkDocument, retrieveEvidence } from '@zeruxjs/ai-model';
@@ -26,7 +26,7 @@ createGroundedAssistant returns an answer and structured sources. Validate citat
 
 ## Access policy and scale
 
-Apply document authorization before populating/searching the knowledge base. Search is lexical and linear in corpus size; it is not semantic reranking. Avoid treating an answer as accurate or authorized simply because sources were attached.
+Apply document authorization before populating/searching the knowledge base. Default search is lexical and linear in corpus size; it is not semantic reranking. Avoid treating an answer as accurate or authorized simply because sources were attached.
 
 ## Install and select the integration
 
@@ -34,11 +34,11 @@ Apply document authorization before populating/searching the knowledge base. Sea
 npm install @zeruxjs/ai-model@0.0.4
 ```
 
-There is no automatic `ai-model` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reference.md) and [TypeScript](/branch/v0.0.4/zeruxjs/docs/0.0.4/typescript.md).
+There is no automatic `ai-model` startup service in `zerux.config.js` for this package. Import its public APIs and create the server-side object in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reference.md) and [TypeScript](/branch/v0.0.4/zeruxjs/docs/0.0.4/typescript.md).
 
 ## A practical integration workflow
 
-Build a knowledge base from documents the requesting principal is allowed to read. Use stable source IDs, deterministic chunks and an explicit overlap/context budget. Keyword ranking scans document text; it is not vector retrieval, training or fine-tuning. Pass the returned evidence separately from generated text so a UI can inspect source IDs instead of treating model prose as verified citations.
+Build a knowledge base from documents the requesting principal is allowed to read. Use stable source IDs, deterministic chunks and an explicit overlap/context budget. Default keyword ranking scans document text; it is not vector retrieval, training or fine-tuning. Pass the returned evidence separately from generated text so a UI can inspect source IDs instead of treating model prose as verified citations.
 
 ## TypeScript: inputs, results and ownership
 
@@ -70,28 +70,27 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### KnowledgeOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `stopWords` | `string[]` | Yes |
-| `maxDocuments` | `number` | Yes |
-| `maxDocumentCharacters` | `number` | Yes |
+| Field                   | Accepted type/value | Optional |
+| ----------------------- | ------------------- | -------- |
+| `stopWords`             | `string[]`          | Yes      |
+| `maxDocuments`          | `number`            | Yes      |
+| `maxDocumentCharacters` | `number`            | Yes      |
 
 ### ChunkingOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxCharacters` | `number` | Yes |
-| `overlapCharacters` | `number` | Yes |
-| `maxChunks` | `number` | Yes |
+| Field               | Accepted type/value | Optional |
+| ------------------- | ------------------- | -------- |
+| `maxCharacters`     | `number`            | Yes      |
+| `overlapCharacters` | `number`            | Yes      |
+| `maxChunks`         | `number`            | Yes      |
 
 ### EvidenceOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `limit` | `number` | Yes |
-| `maxExcerptCharacters` | `number` | Yes |
-| `maxTotalCharacters` | `number` | Yes |
-
+| Field                  | Accepted type/value | Optional |
+| ---------------------- | ------------------- | -------- |
+| `limit`                | `number`            | Yes      |
+| `maxExcerptCharacters` | `number`            | Yes      |
+| `maxTotalCharacters`   | `number`            | Yes      |
 
 ## Reproducible public corpus
 
@@ -111,7 +110,6 @@ to run instructions or tools. Authored docs are labeled claims, not proof of tes
 features. Read the package README and corpus example for source/snapshot budgets,
 Git requirements, stable-checkout assumptions and host privacy/authorization duties.
 
-
 ## Ranked evidence with explicit insufficiency
 
 The optional evidence entry adds configured field-weighted lexical ranking and a
@@ -128,6 +126,14 @@ the provider when evidence is insufficient. This validates IDs, not truth or
 prompt-injection safety. See README and evidence example for exact limits and the
 small reproducible ranking comparison; no live semantic-provider evaluation is
 claimed.
+
+## Ownership and source maintenance
+
+The root entry includes Node filesystem persistence, and `/corpus` and `/evidence` load Node filesystem/cryptography helpers. Keep their runtime imports on the server; erased type-only imports do not load those dependencies. The package does not automatically create a browser controller, scan sources or start an AI provider.
+
+The package README maps storage, Unicode chunking, legacy excerpts, corpus generation and ranked context packing to their source owners. Public examples document their input/return and disposal contracts. Retain/close corpus readers and await evidence-retriever close; assistants borrow those owners. Abort can stop caller waiting while an embedding adapter still holds its native slot. Permission/remote-consent changes after async ranking reject the whole stale result.
+
+Legacy ranking defaults and locale ties remain compatible. Explicit weighted ranking, code-point spans and complete-prompt token accounting are separate opt-in contracts. Local fixture comparisons and valid citation IDs do not establish factual entailment or live model grounding.
 
 
 ## Public entry points
@@ -169,18 +175,33 @@ Manifest reference for `@zeruxjs/ai-model@0.0.4`.
 A local dependency-light **retrieval knowledge base**, not a model-training or embedding runtime. It offers keyword-based ranking, chunking, source-addressable excerpts, context budgeting, snapshots and optional filesystem persistence.
 
 ```ts
-import {createKnowledgeBase, chunkDocument, retrieveEvidence, createGroundedAssistant,
-        saveKnowledgeBase, loadKnowledgeBase} from '@zeruxjs/ai-model';
-import {createOpenAICompatibleProvider} from '@zeruxjs/ai';
+import {
+  createKnowledgeBase,
+  chunkDocument,
+  retrieveEvidence,
+} from '@zeruxjs/ai-model';
 
-const kb = createKnowledgeBase({maxDocuments:5000,maxDocumentCharacters:100_000});
-kb.addMany(chunkDocument({id:'guide/routing',title:'Routing guide',text:manualText},
-  {maxCharacters:1200,overlapCharacters:150}));
-const sources = retrieveEvidence(kb,'How does routing work?',{limit:4,maxTotalCharacters:4000});
-const assistant = createGroundedAssistant(kb, provider); // any compatible chat provider
-const {answer,sources:citations} = await assistant.answer('How does routing work?');
-await saveKnowledgeBase(kb,'./private/knowledge.json');
-const restored = await loadKnowledgeBase('./private/knowledge.json');
+// This base contains public sample text; private sources need host authorization first.
+const kb = createKnowledgeBase({
+  maxDocuments: 5000,
+  maxDocumentCharacters: 100_000,
+});
+kb.addMany(
+  chunkDocument(
+    {
+      id: 'guide/routing',
+      title: 'Routing guide',
+      text: 'Register explicit request handlers for application routes.',
+    },
+    { maxCharacters: 1200, overlapCharacters: 150 }
+  )
+);
+// Return source records for presentation without calling any external provider.
+const sources = retrieveEvidence(kb, 'request handlers', {
+  limit: 4,
+  maxTotalCharacters: 4000,
+});
+console.log(sources.map((source) => source.sourceId));
 ```
 
 Chunk IDs are deterministic (`originalId#0`, etc.). Chunk metadata contains `sourceId` and chunk number. The assistant returns citations as structured source data, allowing consumers to display evidence separately from generated text. `createGroundedPrompt` and `DocumentKnowledgeBase.search()` remain available. Document and snapshot sizes are bounded; snapshots use atomic replacement and reject symlink targets.
@@ -407,13 +428,13 @@ notes, Chinese route text, accented French café text, duplicate chunks and a lo
 repeated-keyword distractor. A hidden fixture is excluded for both rankings.
 The same five queries/expected top source are:
 
-| Query | Expected source |
-| --- | --- |
-| routing | routing.md |
-| cache | cache.md |
-| session | session.md |
-| 路由 | unicode.md |
-| cafe | drinks.md |
+| Query   | Expected source |
+| ------- | --------------- |
+| routing | routing.md      |
+| cache   | cache.md        |
+| session | session.md      |
+| 路由    | unicode.md      |
+| cafe    | drinks.md       |
 
 On this deliberately adversarial fixture, legacy top-1 was 0/5 and configured
 weighted top-1 was 5/5 (8/1/4, NFKC, diacritic folding, Han bigrams). The test records
@@ -423,6 +444,18 @@ weight, a representative retrieval evaluation, statistical significance or
 production latency. Lexical and injected embedding fixtures qualify authorization,
 budgets, Unicode spans, duplicate removal, cancellation and citation rejection;
 no live embedding/model provider or semantic grounding evaluation was performed.
+
+## Source ownership and maintenance
+
+- `knowledge-base.ts`, `tokenizer.ts` and `ranking.ts` retain separate legacy and explicit weighted ranking. Legacy locale folding/ties stay unchanged; opt-in ranking uses its documented binary ID tie order. Bulk adds and restores validate a complete staged replacement first.
+- `chunking.ts` uses Unicode code points for chunks/overlap. `retrieval.ts` and `context.ts` preserve legacy UTF-16 excerpt/context budgets. `evidence.ts` separately owns code-point spans and budgets the entire serialized prompt, including question/provenance overhead.
+- `snapshot-io.ts` owns file descriptors and private temporary siblings. `persistence.ts` preserves legacy V1 loading/saving. Parents and concurrent-writer coordination remain trusted host responsibilities; atomic rename is not a distributed transaction.
+- `corpus.ts` owns explicit source selection, bounded Git/filesystem reads, public manifest projection and source/hash/overlap validation. A successful candidate is not automatically saved. Missing selections remove stale chunks; source text is never imported or executed.
+- `evidence.ts` owns query admission, authorization before lexical IDF/embedding inputs, post-embedding permission/consent rechecks, deduplication and native settlement. Its close drains jobs and closes only an explicitly owned embedding adapter. The returned assistant borrows both dependencies and makes no provider call when evidence is insufficient.
+
+The root entry eagerly exports Node filesystem persistence; `/corpus` and `/evidence` also load Node filesystem/cryptography helpers. These entries are server-side modules. Erased type-only imports do not load runtime dependencies. This package does not install a browser controller or framework service automatically.
+
+Public examples document parameters, returns and cleanup ownership. Fixed prompt strings and embedded source fixtures retain their contents during formatting. Local deterministic retrieval/citation checks are separate from live embedding/model acceptance, factual entailment and prompt-injection resistance. The strict readability gate retains visible complexity advisories for the large validation and packing paths; no security or ownership rules are disabled to remove those warnings.
 
 
 ## Implementation sources

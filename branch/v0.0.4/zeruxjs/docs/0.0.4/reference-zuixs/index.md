@@ -54,25 +54,25 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 ### ZuixConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `limits` | `ZuixLimits` | No | Upper bounds for filesystem scanning and CSS token generation. |
-| `content` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `exclude` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `output` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `prefix` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `important` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `darkMode` | `'class' \| 'media'` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `preflight` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `minify` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `safelist` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `theme` | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `extend` | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `plugins` | `ZuixPlugin[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `recipes` | `readonly ZuixRecipe[]` | No | Ordered utility recipes, emitted before scanned utility classes. |
-| `perFile` | `boolean \| {dir?: string; shared?: boolean}` | No | Emit CSS for each matching source file, with optional shared CSS. |
-| `optimize` | `boolean` | No | Remove unneeded spaces and group identical declaration blocks. |
-| `keyframes` | `Record<string,string>` | No | Custom reusable animation keyframes (name -> CSS frames body). |
+| Option      | Accepted TypeScript value                       | Required | Meaning                                                                                         |
+| ----------- | ----------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `limits`    | `ZuixLimits`                                    | No       | Upper bounds for filesystem scanning and CSS token generation.                                  |
+| `content`   | `string[]`                                      | No       | Source globs; omitted values use the documented finite source-extension defaults.               |
+| `exclude`   | `string[]`                                      | No       | Additional source exclusion globs; built-in build/private directories remain pruned.            |
+| `output`    | `string`                                        | No       | Contained shared CSS destination; defaults to zuix.css.                                         |
+| `prefix`    | `string`                                        | No       | Literal prefix required before each base utility lookup.                                        |
+| `important` | `boolean`                                       | No       | Apply !important to generated utility declarations.                                             |
+| `darkMode`  | `'class' \| 'media'`                            | No       | Choose class selectors or prefers-color-scheme media conditions.                                |
+| `preflight` | `boolean`                                       | No       | Emit the built-in reset unless explicitly false.                                                |
+| `minify`    | `boolean`                                       | No       | Omit section-joining newlines; not a general CSS optimizer.                                     |
+| `safelist`  | `string[]`                                      | No       | Explicit literal tokens retained even when scanning cannot discover them.                       |
+| `theme`     | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No       | Scale values merged over copied default scales.                                                 |
+| `extend`    | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No       | Scale values merged after theme overrides.                                                      |
+| `plugins`   | `ZuixPlugin[]`                                  | No       | Explicit trusted registration functions executed during compiler construction.                  |
+| `recipes`   | `readonly ZuixRecipe[]`                         | No       | Ordered utility recipes, emitted before scanned utility classes.                                |
+| `perFile`   | `boolean \| {dir?: string; shared?: boolean}`   | No       | Emit CSS for each matching source file, with optional shared CSS.                               |
+| `optimize`  | `boolean`                                       | No       | Reserved compatibility field; currently not consumed. Exact duplicate rules are always removed. |
+| `keyframes` | `Record<string,string>`                         | No       | Custom reusable animation keyframes (name -> CSS frames body).                                  |
 
 ## CSS entry without configuration files
 
@@ -97,10 +97,20 @@ Link the generated stylesheet. Native variables, keyframes, layers, media/suppor
 
 For Vite, register `zuixVite()` and import the stylesheet from the application entry. For TypeScript build integrations, import `compileStylesheet` from `zuixs` or `buildZuixStylesheet` from `zuixs/node`; the latter reads/scans files and writes output. CSS entries and generated output must be distinct paths inside the project. Other CSS imports are resolved by your bundler, not by this CLI. Tailwind-specific `@theme`, `@utility`, `@source` and custom variant directives are not supported; this is not a complete Tailwind compatibility implementation.
 
-
 ## Source build dependency
 
 `zlook` remains an optional peer loaded only for watching, and is also a development dependency so source compilation receives its actual declarations first. The Pages tooling build uses the shared dependency planner; adding an independent parallel build command is not sufficient to establish that ordering. Core/compiler imports still do not start watchers.
+
+## Maintenance and cleanup boundaries
+
+The pure compiler has no external lifecycle. Dispose browser style injection with
+its returned callback. Watch owners use `stop(); await stop.closed`; actual loader
+settlement remains required, so AbortSignal does not force-cancel arbitrary code.
+Vite owns adapter cleanup through `closeBundle`; the host retains its graph/socket.
+Source-cache and output candidates are staged independently: a complete successful
+scan replaces cache records, then successful compilation prepares output. Ordinary
+replacement failures compensate already replaced files; this is not a crash-atomic
+multi-file deployment. Plugin/config functions remain trusted host code.
 
 
 ## Public entry points
@@ -241,15 +251,15 @@ project directory permissions—these checks are not an OS filesystem sandbox.
 
 ### Tested integration matrix
 
-| Environment | Supported mechanism | Verification |
-| --- | --- | --- |
-| Plain HTML / ZeruxJS templates | `zuix build` or `zuix watch`; link generated CSS | Node filesystem/compiler tests |
-| ZyroJS DOM templates | Same generated CSS; optional `injectZuix()` / `renderZuixStyle()` | API and packed import tests; live browser pending |
-| React + Vite | `zuixVite()` and `import 'virtual:zuix.css'` | Vite hook/transform simulation; real React app pending |
-| Vue + Vite | Same Vite adapter | Vite hook simulation; real Vue app pending |
-| Next.js | External CLI-generated CSS imported by app layout | No official Next adapter or live Next app certification |
-| Nuxt | External CLI-generated CSS through app stylesheet | No official Nuxt adapter or live Nuxt app certification |
-| Browser/SSR | Browser style injection and inline SSR style | Node output validation; Chromium CSS rendering pending |
+| Environment                    | Supported mechanism                                               | Verification                                            |
+| ------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------- |
+| Plain HTML / ZeruxJS templates | `zuix build` or `zuix watch`; link generated CSS                  | Node filesystem/compiler tests                          |
+| ZyroJS DOM templates           | Same generated CSS; optional `injectZuix()` / `renderZuixStyle()` | API and packed import tests; live browser pending       |
+| React + Vite                   | `zuixVite()` and `import 'virtual:zuix.css'`                      | Vite hook/transform simulation; real React app pending  |
+| Vue + Vite                     | Same Vite adapter                                                 | Vite hook simulation; real Vue app pending              |
+| Next.js                        | External CLI-generated CSS imported by app layout                 | No official Next adapter or live Next app certification |
+| Nuxt                           | External CLI-generated CSS through app stylesheet                 | No official Nuxt adapter or live Nuxt app certification |
+| Browser/SSR                    | Browser style injection and inline SSR style                      | Node output validation; Chromium CSS rendering pending  |
 
 ### Reproducible commands
 
@@ -361,16 +371,16 @@ This is Zuixs syntax, not full Tailwind compatibility: Tailwind-specific directi
 
 This is a documented Zuixs subset, not Tailwind feature or plugin compatibility.
 
-| Family | Supported examples | Deliberate limits |
-| --- | --- | --- |
-| Layout | `box-border`, `flow-root`, `flex-wrap-reverse`, `grid-flow-col-dense`, `size-4`, `size-[3rem]`, `w-1/2`, `h-2/3`, `basis-1/4` | Fractions require positive integers up to 999 with numerator no greater than denominator; other sizes use existing theme/arbitrary values |
-| Grid lines | `col-start-2`, `col-end-auto`, `row-start-1` | Emit native `grid-column-start/end` and `grid-row-start/end`; no implicit layout engine |
-| Typography | `text-start`, `text-end`, `wrap-anywhere`, `whitespace-pre-wrap`, `whitespace-pre-line`, `whitespace-break-spaces`, `break-keep`, `leading-6`, `decoration-wavy`, `decoration-2`, `underline-offset-4` | Numeric decoration/underline offsets are 0–16px; no typography plugin or font loading |
-| Forms | `appearance-auto`, `resize-none`, `resize-x`, `resize-y`, `accent-blue-600`, `caret-[var(--caret)]`, `outline-solid` | Native properties only; no automatic form reset, validation, accessible labels or focus-management behavior |
-| Containers | `container-inline-size`, existing `container-inline`, `container-name-[card]`, `cq-md:grid`, `cq-card-md:grid` | Named query syntax is Zuixs-specific; names use ASCII letters/digits/underscore/hyphen, start with a letter and are at most 48 characters; reserved CSS keywords reject |
-| Arbitrary syntax | `w-[calc(100%_-_2rem)]`, `bg-[rgb(0_0_0/0.5)]`, `[--step2:2rem]`, typed `text-[length:var(--heading)]` | Underscores decode to spaces; quotes, escapes, URLs, comments and declaration/rule delimiters reject; no full property/value semantic validator |
-| Variants | `md:dark:hover:`, `motion-reduce:`, `focus-visible:`, `disabled:`, `placeholder:text-slate-500`, named container/state chains | At most 11 variants plus a utility, nesting depth at most 8; no arbitrary variant selectors, named group/peer syntax or user-defined variants |
-| Composition | Recipes, trusted plugin utilities, native CSS and `@apply` | No Tailwind `@theme`, `@utility`, `@source`, plugin loading, slash line-height syntax or automatic vendor prefixing |
+| Family           | Supported examples                                                                                                                                                                                     | Deliberate limits                                                                                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layout           | `box-border`, `flow-root`, `flex-wrap-reverse`, `grid-flow-col-dense`, `size-4`, `size-[3rem]`, `w-1/2`, `h-2/3`, `basis-1/4`                                                                          | Fractions require positive integers up to 999 with numerator no greater than denominator; other sizes use existing theme/arbitrary values                               |
+| Grid lines       | `col-start-2`, `col-end-auto`, `row-start-1`                                                                                                                                                           | Emit native `grid-column-start/end` and `grid-row-start/end`; no implicit layout engine                                                                                 |
+| Typography       | `text-start`, `text-end`, `wrap-anywhere`, `whitespace-pre-wrap`, `whitespace-pre-line`, `whitespace-break-spaces`, `break-keep`, `leading-6`, `decoration-wavy`, `decoration-2`, `underline-offset-4` | Numeric decoration/underline offsets are 0–16px; no typography plugin or font loading                                                                                   |
+| Forms            | `appearance-auto`, `resize-none`, `resize-x`, `resize-y`, `accent-blue-600`, `caret-[var(--caret)]`, `outline-solid`                                                                                   | Native properties only; no automatic form reset, validation, accessible labels or focus-management behavior                                                             |
+| Containers       | `container-inline-size`, existing `container-inline`, `container-name-[card]`, `cq-md:grid`, `cq-card-md:grid`                                                                                         | Named query syntax is Zuixs-specific; names use ASCII letters/digits/underscore/hyphen, start with a letter and are at most 48 characters; reserved CSS keywords reject |
+| Arbitrary syntax | `w-[calc(100%_-_2rem)]`, `bg-[rgb(0_0_0/0.5)]`, `[--step2:2rem]`, typed `text-[length:var(--heading)]`                                                                                                 | Underscores decode to spaces; quotes, escapes, URLs, comments and declaration/rule delimiters reject; no full property/value semantic validator                         |
+| Variants         | `md:dark:hover:`, `motion-reduce:`, `focus-visible:`, `disabled:`, `placeholder:text-slate-500`, named container/state chains                                                                          | At most 11 variants plus a utility, nesting depth at most 8; no arbitrary variant selectors, named group/peer syntax or user-defined variants                           |
+| Composition      | Recipes, trusted plugin utilities, native CSS and `@apply`                                                                                                                                             | No Tailwind `@theme`, `@utility`, `@source`, plugin loading, slash line-height syntax or automatic vendor prefixing                                                     |
 
 Minimal public-import example:
 
@@ -432,6 +442,27 @@ Compare IDs/integrity across manifest generations to replace only affected style
 Source maps are off by default. With `buildManifest: { ..., sourceMap: true }`, install optional `source-map-js@^1.2.1`. External V3 maps record **file-level ownership at source line 1**, not exact token locations. Reset, authored CSS, recipes and plugin-only rules stay unmapped. Relative source filenames are present only in explicitly enabled maps; source contents require the separate `includeSources: true` option and should remain development-only. Map JSON and CSS count toward `limits.maxOutputBytes`. Disabling maps removes previously generated maps identified by their generated CSS footer; use a fresh production output directory when switching from a source-bearing development build. Hosts must restrict source/map access as appropriate. Source map encoding/consumption follows the [source map format](https://tc39.es/ecma426/2024/); no fabricated fine-grained mappings or production source disclosure by default is claimed.
 
 Source-map generation remains opt-in and requires the patched optional `source-map-js` peer at version 1.2.2 or later within 1.x. It is a build tool dependency, not a browser runtime download.
+
+## Source and lifecycle ownership
+
+The browser-safe compiler path is `scanner` → `compiler` → `utilities`/branch/v0.0.4/`families`,
+with restricted utility syntax in `safety`. Trusted authored CSS composition lives
+in `stylesheet`/branch/v0.0.4/`recipes`; it is distinct from utility-value validation. Plugins
+execute explicitly registered application code and are not a sandbox.
+
+The Node path separates source-cache staging (`node-build`), complete output plans
+and compensating replacement (`outputs`), and subscription/config-loader ownership
+(`watch`). A failed scan cannot promote a partial source cache. Output rollback
+handles ordinary replacement failures but does not provide crash-atomic multi-file
+publication. `stop(); await stop.closed` drains actual owned watch work; cooperative
+loader cancellation is required for prompt teardown. Vite borrows the host graph
+and socket; its `closeBundle` hook clears adapter-owned state without closing them.
+Browser `injectZuix` returns a style-node disposer; pure compiler instances do not
+need an invented close method.
+
+`optimize` is retained in the public configuration type for compatibility but is
+currently not consumed. Exact duplicate generated rule strings are always removed;
+`minify` controls added section newlines and is not an AST minifier.
 
 
 ## Implementation sources

@@ -75,31 +75,31 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### RedisCacheHelperOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `client` | `RedisCacheClient` | Yes |
-| `allowFlushDb` | `boolean` | Yes |
-| `ownClient` | `boolean` | Yes |
+| Field          | Accepted type/value | Optional |
+| -------------- | ------------------- | -------- |
+| `client`       | `RedisCacheClient`  | Yes      |
+| `allowFlushDb` | `boolean`           | Yes      |
+| `ownClient`    | `boolean`           | Yes      |
 
 ### RedisConnectionSettings
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `url` | `string` | Yes |
-| `cluster` | `RedisClusterSettings` | Yes |
-| `host` | `string` | Yes |
-| `port` | `number` | Yes |
-| `username` | `string` | Yes |
-| `password` | `string` | Yes |
-| `db` | `number` | Yes |
-| `tls` | `Record<string, unknown>` | Yes |
-| `keyPrefix` | `never` | Yes |
+| Field       | Accepted type/value       | Optional |
+| ----------- | ------------------------- | -------- |
+| `url`       | `string`                  | Yes      |
+| `cluster`   | `RedisClusterSettings`    | Yes      |
+| `host`      | `string`                  | Yes      |
+| `port`      | `number`                  | Yes      |
+| `username`  | `string`                  | Yes      |
+| `password`  | `string`                  | Yes      |
+| `db`        | `number`                  | Yes      |
+| `tls`       | `Record<string, unknown>` | Yes      |
+| `keyPrefix` | `never`                   | Yes      |
 
 ### RedisClusterSettings
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `nodes` | `Array<{host:string;port:number}>` | No |
+| Field   | Accepted type/value                | Optional |
+| ------- | ---------------------------------- | -------- |
+| `nodes` | `Array<{host:string;port:number}>` | No       |
 
 ## Scoped cache command policy and diagnostics
 
@@ -110,6 +110,12 @@ Deadlines reject caller waits with unknown write outcomes when appropriate, reta
 RedisHelperConfig and RedisSetOptions remain owned by this package. The helper advertises supported conditions/counters/literal namespace clear and unsupported overall bulk atomicity. Counter numbers outside JS safe integers reject after potential mutation; JSON strings remain distinct from native numeric counters. Direct JSON/key/bulk boundaries are bounded, and actual ioredis Cluster masters use per-key batches instead of cross-slot assumptions. See the package README for exact defaults, lifecycle/migration limits and a packed public-import example.
 
 Live acceptance needs dedicated CACHE_REDIS_URL / CACHE_REDIS_CLUSTER_NODES, plus explicit outage/ACL/TLS endpoints through CACHE_REDIS_OUTAGE_URL, CACHE_REDIS_ACL_URL and CACHE_REDIS_TLS_URL. TLS requires trusted CA setup; ACL requires a host-configured denied identity. Tests never create credentials or restart services, and offline fixtures do not establish live failover/security acceptance.
+
+## Source and cleanup boundaries
+
+The factory owns startup and explicit driver loading; the scoped helper owns caller waits and native-settlement capacity. The codec validates inert JSON, while the ioredis bridge owns lowercase translation and actual master inventory. BullMQ options are inert; its Cluster factory acquires two separate native connections. The limiter store uses only the fixed Lua strategy and borrows its helper by default. Root runtime imports stay server-side.
+
+Close wrappers even for injected clients to remove listeners and drain accepted work. Borrowed native connections remain host-owned. Code-derived internal messages are redacted; host-created public error messages and private causes still require host review. Local fixture success is not live Redis/Cluster/TLS or durable quota certification.
 
 
 ## Public entry points
@@ -146,8 +152,10 @@ const cache = await createCacheManager({
   helper: '@zeruxjs/cache-redis', prefix: 'shop',
   options: {url: 'redis://127.0.0.1:6379'}
 });
-await cache.set('product:1', {stock: 5}, {ttlSeconds: 30});
-await cache.clear(); // SCAN + DEL only keys with literal prefix `shop:`
+try {
+  await cache.set('product:1', {stock: 5}, {ttlSeconds: 30});
+  await cache.clear(); // SCAN + DEL only keys with literal prefix `shop:`
+} finally { await cache.close(); }
 ```
 
 ## Operational safety
@@ -235,6 +243,17 @@ The hash/expiry index use one explicit {namespace} Cluster slot. Redis TIME owns
 Store close invalidates future claims; ownHelper defaults false. The helper continues to own/drain native commands, with unknown write outcomes on deadlines and no automatic replay. Use the security package's application-scoped limiter example for fail-open/closed policy, verified tenant/subject derivation and safe 429/Retry-After responses. Build security before cache-redis when compiling this workspace. The new exact @zeruxjs/security dependency supplies the public contract; its code does not start telemetry or Redis connections.
 
 Live multi-client/TTL checks require an isolated CACHE_RATE_LIMIT_REDIS_URL. Native Lua execution and distribution are not established by script-shape/mocked-client checks.
+
+## Implementation and ownership map
+
+- `src/index.ts` owns explicit driver selection, startup budgets and failure cleanup. `src/policy.ts` owns package limits, fixed diagnostic records and public errors.
+- `src/helper.ts` owns accepted native work, caller cancellation, bounded hooks, literal-prefix scanning and drain. `src/codec.ts` owns inert JSON, safe integer/TTL validation and glob escaping.
+- `src/ioredis.ts` translates structural commands, scans actual Cluster masters and separately creates BullMQ producer/worker options or owned Cluster connections. The option builder opens no connection; the Cluster factory returns two native owners requiring quit.
+- `src/rate-limit.ts` owns the optional security-store facade; `src/limiter-script.ts` holds the fixed two-key Lua strategy. Script text and claimed scope do not prove persistence/failover acceptance.
+
+The root runtime is Node-only. Credentials and injected-driver transport policy belong to trusted server configuration. A borrowed client may have its own replay/offline policy: the wrapper cannot repair that configuration, and unknown native writes are never retried by the wrapper. Prefixing alone grants no tenant authorization. Internal errors use fixed code-derived messages, but the public RedisCacheError constructor accepts host messages; hosts must redact those and keep causes private.
+
+Offline fixtures exercise both driver factories, borrowed ownership, late native settlement, atomic-store argument validation and synthetic multi-primary routing. Live Redis, Cluster, Lua atomicity, ACLs and TLS require the separately configured dedicated acceptance endpoints.
 
 
 ## Implementation sources

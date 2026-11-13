@@ -73,13 +73,15 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### SqliteOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `filename` | `string` | Yes |
-| `driver` | `SqliteDriver` | Yes |
-| `databaseInstance` | `SqliteDatabase` | Yes |
-| `readonly` | `boolean` | Yes |
-
+| Field              | Accepted type/value         | Optional |
+| ------------------ | --------------------------- | -------- |
+| `filename`         | `string`                    | Yes      |
+| `driver`           | `SqliteDriver`              | Yes      |
+| `databaseInstance` | `SqliteDatabase`            | Yes      |
+| `readonly`         | `boolean`                   | Yes      |
+| `busyTimeoutMs`    | integer 0–60000             | Yes      |
+| `journalMode`      | `preserve`, `wal`, `delete` | Yes      |
+| `readBigInts`      | `boolean`                   | Yes      |
 
 ## Owned synchronous transactions and policies
 
@@ -88,6 +90,10 @@ The public `SqliteConnector.transactionSync` API owns one synchronous BEGIN/call
 Configure bounded `busyTimeoutMs`, explicit `journalMode` (preserve/wal/delete), readonly policy and optional bigint row output before opening resources. WAL still permits one writer; busy waiting blocks the JavaScript thread and does not provide retries or force cancellation. The callback timeout/signal is cooperative, checked around native work. Borrowed handles remain host-owned and requested policy changes persist on them. Captured native handles remain privileged; transactions do not authorize tenant access.
 
 Safe integer reads preserve large native values without guessing numeric precision. RETURNING capability follows the detected native SQLite version; injected executor-only versions are unknown. Backup loads Node SQLite lazily and retains online copying, integrity checks and cleanup of owned random temporary WAL/SHM sidecars. The README provides a public-import example using a disposable directory and explains missing optional native-driver prerequisites. No application files or user-managed processes are changed by these checks.
+
+## Source and cleanup boundaries
+
+The package README maps selection/close in `index.ts`, native preparation in `driver.ts`, scoped rollback state in `sync-transaction.ts` and no-overwrite publication in `backup.ts`. Public `openSqlite` returns an owned native handle requiring `close`; `createSqliteExecutor` only borrows one. Backup owns its temporary verification handle and random sidecars, while the host owns trusted directory ancestry, permissions and backup protection. Private rows/errors must be redacted at application boundaries.
 
 
 ## Public entry points
@@ -192,6 +198,16 @@ Prepared statements enable the driver's integer-safe mode when available (`setRe
 Backups retain native online copying, integrity_check verification and no-overwrite publication. The integrity-check handle closes before temporary main/WAL/SHM files are removed; cleanup failures retain the primary failure. Backup and restore tests use disposable file/WAL databases, verify rolled-back rows are absent and leave application paths untouched. Optional better-sqlite3 acceptance requires its installed working native binding; the package does not install or download it automatically. See [Node SQLite](https://nodejs.org/api/sqlite.html) and [better-sqlite3 transactions](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md) for driver-specific runtime behavior.
 
 Statement row metadata is preferred over SQL keyword matching, so a quoted column/default containing RETURNING cannot hide write counts. Older injected drivers without reader/column metadata reject ambiguous raw WITH statements; this helper is not a general SQL parser. Structured compiler output remains supported.
+
+## Source ownership map
+
+- `src/index.ts` owns transport selection, initialization rollback, readonly guards and connector shutdown.
+- `src/driver.ts` owns driver selection, explicit native policy and prepared-result precision. `openSqlite` returns a new handle requiring `close`; `createSqliteExecutor` borrows its handle and never closes it.
+- `src/sync-transaction.ts` owns BEGIN/COMMIT/ROLLBACK state, escaped-continuation guards and rollback-failure quarantine. Callbacks and captured native handles remain trusted application code.
+- `src/backup.ts` owns the online-copy verification handle and random temporary main/WAL/SHM paths. Publication uses a no-overwrite hard link; parent-directory trust, symlink ancestors, filesystem permissions and concurrent operators remain host responsibilities.
+- `src/dialect.ts` declares the supported shared compiler subset; it opens no database.
+
+Native errors and rows remain private application data. Redact them before returning HTTP responses or telemetry. These helpers do not provide a SQL sandbox, asynchronous pinned transactions or tenant authorization. Source comments describe synchronous cancellation checks; they do not promise interruption of blocking native work.
 
 
 ## Implementation sources

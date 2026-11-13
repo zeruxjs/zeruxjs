@@ -19,13 +19,13 @@ Browser → GET /welcome → ZeruxJS route handler → response → Browser
 
 ## Put each tool in its place
 
-| Layer | Responsibility | Example |
-| --- | --- | --- |
-| ZeruxJS | Node server runtime, route discovery and application lifecycle | Answer GET /api/hello |
-| ZyroJS | Reactive browser/UI primitives | Update a visible greeting when state changes |
-| zlocale | Translation data and locale formatting | Display Bonjour or format a price |
-| Database adapter | Connect to persistent storage | Keep records after restart |
-| Your application | Product rules, user permissions and ownership | Decide who may read a private note |
+| Layer            | Responsibility                                                 | Example                                      |
+| ---------------- | -------------------------------------------------------------- | -------------------------------------------- |
+| ZeruxJS          | Node server runtime, route discovery and application lifecycle | Answer GET /api/hello                        |
+| ZyroJS           | Reactive browser/UI primitives                                 | Update a visible greeting when state changes |
+| zlocale          | Translation data and locale formatting                         | Display Bonjour or format a price            |
+| Database adapter | Connect to persistent storage                                  | Keep records after restart                   |
+| Your application | Product rules, user permissions and ownership                  | Decide who may read a private note           |
 
 A **package** is installable code with a public import contract. Installing one does not automatically connect every feature. A **framework** coordinates application behavior; a **library** provides functions your application calls. Read each package's documented integration path.
 

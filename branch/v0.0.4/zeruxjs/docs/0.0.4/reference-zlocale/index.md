@@ -9,7 +9,7 @@ Use zlocale for bounded in-memory translation, native locale formatting, request
 npm install zlocale@0.0.4
 ```
 
-`zlocale` is a browser-safe, framework-independent i18n/l10n core. `zlocale/node` adds Node request-local state. `zlocale/zyro` adapts translation reads to the host's signal implementation. There are no runtime dependencies and no application or service is started on import. It can run in a browser bundle, a Node server, SSR or a background process.
+`zlocale` is a browser-safe, framework-independent i18n/l10n core. `zlocale/node` adds Node request-local state. `zlocale/zyro` adapts translation reads to the host's signal implementation. Core/browser imports have no runtime dependencies and start no application or service. The explicit build and encoding entries require their declared optional TypeScript/security peers. It can run in a browser bundle, a Node server, SSR or a background process.
 
 Internationalization is the application/API structure that makes translation possible. Localization is the actual translated text and locale-sensitive display of dates, numbers, lists and relative time. Both may run on the server or browser; the import boundary determines whether Node-only functionality is included.
 
@@ -60,7 +60,7 @@ i18n.registerCatalogs(catalogs);
 
 A catalog module exports plain catalog data. The same manifest can be bundled into locale/domain chunks for browser applications. Load the selected chunk before changing locale; loading is always an explicit async boundary. `__`, `_n` and formatting never invoke loaders, read files or fetch URLs.
 
-Concurrent loads for one key share a promise. Cache entries, in-flight jobs and preload concurrency are bounded, and failed loads may retry. A loader returning a different locale/domain fails validation. `clear()` drops fulfilled cached results; application loader functions own their timeouts/cancellation and may still be in flight. Preload only hot locales during startup; warm other allowed catalogs using controlled background/deployment work, rather than hiding cold I/O inside a translation call. The host chooses its memory/startup tradeoff.
+Concurrent loads for one key share a promise. Cache entries, in-flight jobs and preload concurrency are bounded, and failed loads may retry. A loader returning a different locale/domain fails validation. `clear()` evicts cached results and aborts pending producer signals; invalidated results cannot repopulate the cache. Producer deadlines and retained byte/slot budgets belong to the loader. Application callbacks must cooperate: aborted work still occupies its pending slot until actual settlement, and `await loader.close()` drains it without closing borrowed transports. Preload only hot locales during startup; warm other allowed catalogs using controlled background/deployment work, rather than hiding cold I/O inside a translation call. The host chooses its memory/startup tradeoff.
 
 ## ZeruxJS request integration
 
@@ -143,7 +143,7 @@ const list = i18n.formatList(["Ada", "Lin"]);
 
 Native Intl instances are reused in a bounded LRU cache. Date/time formatting defaults to UTC rather than the server's local timezone; override it deliberately for a user's display timezone. Actual text can vary with host ICU/CLDR data. This package does not ship polyfills or a timezone database.
 
-Translations and interpolation return plain strings. Zyro text children escape DOM text. For server-rendered HTML text/quoted attributes, use `escapeHtml`; validate URL contexts separately. Never insert a translated string using innerHTML. `interpolate` accepts named own string/finite-number values. `sprintf` supports strings, integers, floats, positional arguments and precision; it does not implement the complete PHP format grammar. Neither function evaluates code or executes message instructions.
+Translations and interpolation return plain strings. Zyro text children escape DOM text. For destination-specific server output use `escapeHtmlText`, `escapeHtmlAttribute` and `serializeJsonForScript` from the optional `zlocale/encoding` entry; validate URL policy before attribute encoding. `escapeHtml` remains a legacy character encoder. Never insert a translated string using innerHTML. `interpolate` accepts named own string/finite-number values. `sprintf` supports strings, integers, floats, positional arguments and precision; it does not implement the complete PHP format grammar. Neither function evaluates code or executes message instructions.
 
 ## TypeScript and resource limits
 
@@ -187,11 +187,36 @@ if (applied) {
 controller.dispose();
 ```
 
-Rapid selections are last-selection-wins: a slower earlier locale cannot overwrite the latest one. All required catalogs must load, validate and match their requested locale/domain keys before installation. The old locale stays active while loading. A current failure rejects; superseded, cancelled or disposed work resolves `false`. `cancel()` ignores pending results without cancelling shared loader imports. Unsupported locale selections reject before loading. Catalog keys use the selected BCP-47 base name; explicitly preload parent/fallback catalogs if the application needs them. Supported locales are bounded to 128 and domains to 32. Subscriber callbacks should not throw: registration and locale changes notify separately, and a thrown subscriber can follow a committed registry update. This controller changes an application-owned locale, never a shared server request locale; use `zlocale/node` for request isolation.
+Rapid selections are last-selection-wins: a slower earlier locale cannot overwrite the latest one. All required catalogs must load, validate and match their requested locale/domain keys before installation. The old locale stays active while loading. A current failure rejects; superseded, cancelled or disposed work resolves `false`. `cancel()` aborts this selection's waiter and fences its result; other shared-loader waiters remain independent. Native module imports and uncooperative callbacks cannot be force-canceled. Unsupported locale selections reject before loading. Catalog keys use the selected BCP-47 base name; explicitly preload parent/fallback catalogs if the application needs them. Supported locales are bounded to 128 and domains to 32. Subscriber callbacks should not throw: registration and locale changes notify separately, and a thrown subscriber can follow a committed registry update. This controller changes an application-owned locale, never a shared server request locale; use `zlocale/node` for request isolation.
 
 ## Follow an integration guide
 
 For reusable translations, read [translate a module or plugin](/branch/v0.0.4/zeruxjs/docs/0.0.4/localization-package-authoring.md). For the application policy, request integration and browser language control, read [configure site languages](/branch/v0.0.4/zeruxjs/docs/0.0.4/localization-site-settings.md).
+
+## Catalog generations and lifetime details
+
+A locale-fixed translator captures its language/fallback chain, while reading the
+owner's current immutable catalog registry. Replacing/removing catalogs explicitly
+can therefore affect later reads through an existing fixed view. Loader invalidation
+alone does not install a new registry generation. If a request must pin an entire
+catalog generation across a rollout, the host must supply a separate preloaded
+catalog owner rather than mutate a shared registry mid-request.
+
+`createCatalogLoader` owns producer signals, deadlines, waiter listeners and bounded
+cache references. Controllers own only their locale-selection waiter; request
+facades own their AsyncLocalStorage, and reactive adapters own their subscription.
+Dispose these owners separately. `createI18n` has no invented destroy/close method;
+release subscriber registrations through their returned unsubscribe functions.
+`createSourceExtractor` retains bounded result metadata until invalidate/clear or
+owner release, starts no watcher and never executes source to discover strings.
+
+Catalog updates commit before synchronous subscriber notifications. A subscriber
+failure does not roll back the registry or a locale change. Keep subscribers
+nonthrowing and do not replay a mutation merely because notification failed.
+Extraction diagnostics contain codes/locations, but other runtime exceptions may
+include developer-selected placeholder names; hosts should select/redact diagnostics
+instead of exposing arbitrary errors to clients. Text remains inert and destination
+escaping does not grant permission to publish tenant-private catalogs.
 
 
 ## Public entry points
@@ -427,6 +452,31 @@ Do not share private user-specific translations in a process-wide catalog. Trans
 ## License
 
 MIT OR Apache-2.0. No WordPress source is copied and no WordPress runtime dependency is required.
+
+## Catalog generations and lifetime details
+
+A locale-fixed translator captures its language/fallback chain, while reading the
+owner's current immutable catalog registry. Replacing/removing catalogs explicitly
+can therefore affect later reads through an existing fixed view. Loader invalidation
+alone does not install a new registry generation. If a request must pin an entire
+catalog generation across a rollout, the host must supply a separate preloaded
+catalog owner rather than mutate a shared registry mid-request.
+
+`createCatalogLoader` owns producer signals, deadlines, waiter listeners and bounded
+cache references. Controllers own only their locale-selection waiter; request
+facades own their AsyncLocalStorage, and reactive adapters own their subscription.
+Dispose these owners separately. `createI18n` has no invented destroy/close method;
+release subscriber registrations through their returned unsubscribe functions.
+`createSourceExtractor` retains bounded result metadata until invalidate/clear or
+owner release, starts no watcher and never executes source to discover strings.
+
+Catalog updates commit before synchronous subscriber notifications. A subscriber
+failure does not roll back the registry or a locale change. Keep subscribers
+nonthrowing and do not replay a mutation merely because notification failed.
+Extraction diagnostics contain codes/locations, but other runtime exceptions may
+include developer-selected placeholder names; hosts should select/redact diagnostics
+instead of exposing arbitrary errors to clients. Text remains inert and destination
+escaping does not grant permission to publish tenant-private catalogs.
 
 
 ## Implementation sources

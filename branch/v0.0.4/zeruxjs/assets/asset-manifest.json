@@ -16,25 +16,25 @@
       "url": "/branch/v0.0.4/zeruxjs/assets/docs.js",
       "version": "e519f9bd0dd8",
       "bytes": 11344,
-      "sourceBytes": 12938
+      "sourceBytes": 12958
     },
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/search.js",
-      "version": "371a5ecadd78",
-      "bytes": 20014,
-      "sourceBytes": 2702
+      "version": "8ea2c8485ce0",
+      "bytes": 20413,
+      "sourceBytes": 2699
     },
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/learning.js",
       "version": "1bdfbaf21afb",
       "bytes": 14797,
-      "sourceBytes": 12036
+      "sourceBytes": 12029
     },
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/offline.js",
       "version": "568708c29348",
       "bytes": 2941,
-      "sourceBytes": 5069
+      "sourceBytes": 5060
     }
   ]
 }

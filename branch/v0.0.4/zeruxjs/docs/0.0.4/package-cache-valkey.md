@@ -38,6 +38,10 @@ Injected clients are borrowed unless `ownClient:true` and must meet the safe nat
 
 Existing fixtures use an actual iovalkey client against a local RESP fixture and injected contracts; they do not qualify a real Valkey/TLS/ACL/Cluster deployment. No service is started by this documentation build. See the linked package README for exact limits and native deployment prerequisites.
 
+## Source ownership
+
+`types.ts` owns structural contracts; `index.ts` owns explicit connection/TLS policy, lazy driver selection and acquisition rollback. `helper.ts` owns bounded native work, shared inert JSON validation and separate close/settlement receipts. The public scoped example closes its manager before awaiting helper cleanup. No native handle, credential or arbitrary error cause belongs in browser configuration. Custom host-created error codes also require redaction.
+
 
 ## Public entry points
 
@@ -117,6 +121,15 @@ Close invalidates all wrapper methods and drains actual work before closing an o
 ## Verification
 
 `npm run build --workspace=@zeruxjs/cache-valkey` and `npm test --workspace=@zeruxjs/cache-valkey` exercise direct/manager contracts, tenant separation, deadlines/cleanup, Cluster namespace behavior and an actual iovalkey connection against a local RESP fixture. That fixture is not live Valkey or Cluster acceptance. Dedicated Valkey/TLS/ACL/Cluster deployments are still required for native deployment qualification.
+
+## Implementation and ownership map
+
+- `src/types.ts` owns structural native-client and package policy contracts. It does not import a driver or open a connection.
+- `src/index.ts` owns validated endpoint/TLS selection, fixed lazy driver loading, explicit constructor injection and startup rollback. Factory-owned native clients enforce no replay/offline queueing; injected clients must already expose compatible policy.
+- `src/helper.ts` owns shared-cache JSON validation, native result checks, admitted work, bounded hook observations and the separate close/actual-settlement receipts.
+- `examples/scoped.ts` demonstrates public imports and manager-before-helper cleanup with an explicitly supplied host URL.
+
+Root runtime imports require Node; type-only imports erase safely. Host configuration is trusted executable configuration, and native handles bypass the wrapper. Internal error codes are fixed and value-free; passing private data as a host-created ValkeyCacheError code would expose it, so keep custom codes bounded/public and causes private. Shutdown does not force-cancel JavaScript or prove ambiguous native writes rolled back.
 
 
 ## Implementation sources

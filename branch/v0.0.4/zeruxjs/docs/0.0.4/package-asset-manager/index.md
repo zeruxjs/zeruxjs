@@ -30,7 +30,7 @@ saveAssetCatalog/loadAssetCatalog use bounded snapshots, restricted permissions,
 npm install @zeruxjs/asset-manager@0.0.4
 ```
 
-There is no automatic `asset-manager` startup service in `zerux.config.js` for this package. Import its public APIs and create the object or browser controller in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reference.md) and [TypeScript](/branch/v0.0.4/zeruxjs/docs/0.0.4/typescript.md).
+There is no automatic `asset-manager` startup service in `zerux.config.js` for this package. Import its public APIs and create the catalog or explicit server workflow in the application owner that needs it. If a config object holds custom settings, your plugin/application code must explicitly consume them. See [configuration integration boundaries](/branch/v0.0.4/zeruxjs/docs/0.0.4/configuration-reference.md) and [TypeScript](/branch/v0.0.4/zeruxjs/docs/0.0.4/typescript.md).
 
 ## A practical integration workflow
 
@@ -55,7 +55,7 @@ A revision conflict means another edit won; reload and reconcile instead of sile
 
 ## Verify before deploying
 
-- Exercise the example with the actual owning runtime/browser, not only an imported module.
+- Exercise the example in the owning Node runtime; this package offers no browser runtime entry.
 - Test one invalid input and the relevant unavailable/denied dependency path; do not turn those into a silent success.
 - Confirm teardown leaves no owned listeners, timers, connections or stale per-user state.
 - Check the production entry point and installed export map; a workspace checkout can contain features not yet published to npm.
@@ -66,42 +66,49 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### Asset
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `name` | `string` | No |
-| `type` | `'image'\|'video'\|'font'\|'color'\|'document'\|'other'` | No |
-| `url` | `string` | Yes |
-| `value` | `string` | Yes |
-| `tags` | `string[]` | Yes |
-| `metadata` | `Record<string,string>` | Yes |
-| `variants` | `Record<string, AssetVariant>` | Yes |
+| Field      | Accepted type/value                                      | Optional |
+| ---------- | -------------------------------------------------------- | -------- |
+| `brand`    | `BrandRules`                                             | Yes      |
+| `id`       | `string`                                                 | No       |
+| `name`     | `string`                                                 | No       |
+| `type`     | `'image'\|'video'\|'font'\|'color'\|'document'\|'other'` | No       |
+| `url`      | `string`                                                 | Yes      |
+| `value`    | `string`                                                 | Yes      |
+| `tags`     | `string[]`                                               | Yes      |
+| `metadata` | `Record<string,string>`                                  | Yes      |
+| `variants` | `Record<string, AssetVariant>`                           | Yes      |
 
 ### AssetVariant
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `url` | `string` | Yes |
-| `value` | `string` | Yes |
-| `metadata` | `Record<string,string>` | Yes |
+| Field      | Accepted type/value     | Optional |
+| ---------- | ----------------------- | -------- |
+| `url`      | `string`                | Yes      |
+| `value`    | `string`                | Yes      |
+| `metadata` | `Record<string,string>` | Yes      |
 
 ### AssetFilter
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `type` | `Asset['type']` | Yes |
-| `tag` | `string` | Yes |
-| `query` | `string` | Yes |
-| `limit` | `number` | Yes |
-| `offset` | `number` | Yes |
+| Field    | Accepted type/value | Optional |
+| -------- | ------------------- | -------- |
+| `type`   | `Asset['type']`     | Yes      |
+| `tag`    | `string`            | Yes      |
+| `query`  | `string`            | Yes      |
+| `limit`  | `number`            | Yes      |
+| `offset` | `number`            | Yes      |
 
 ### AssetSnapshot
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `version` | `1` | No |
-| `assets` | `Asset[]` | No |
-| `revision` | `number` | Yes |
+| Field      | Accepted type/value | Optional |
+| ---------- | ------------------- | -------- |
+| `version`  | `1`                 | No       |
+| `assets`   | `Asset[]`           | No       |
+| `revision` | `number`            | Yes      |
+
+## Optional workflow boundaries
+
+Root imports eagerly include Node filesystem persistence. `/storage` and `/brand` are explicit server owners, while erased type imports can describe authorized public data in UI code. The package README maps each source owner and supplies public-import storage and audited-brand examples checked in an isolated local consumer.
+
+`createAssetStorage` owns finite active operations and process-local address leases, then drains them in `close()` without closing borrowed files. Uploaded bytes are owned; registering matching bytes never grants ownership. Repair remains previewed, freshly authorized and explicitly approved. `createBrandCatalog` owns one catalog workflow and immutable metadata history; `close()` drains sink settlement and releases that local ownership. Required audit failure after commit returns an already-committed version/revision receipt, so reconcile instead of blindly retrying. Neither workflow supplies a distributed lock or a transaction across binary/catalog/audit resources.
 
 
 ## Public entry points
@@ -283,8 +290,24 @@ Legacy `AssetSnapshot`, `catalog.snapshot()`, `saveAssetCatalog` and `loadAssetC
 
 Focused checks cover V1/V2 loading, malformed rules, script-like notes remaining inert, immutable history/restore, stale revisions, required/best-effort sink failures, rejected intents, persistence and exact close ownership. Packed consumers compile the public example. Durable audit provider/retention, multi-process transactions and UI/browser rendering remain host prerequisites; no live audit service or browser UI is claimed.
 
+## Source and runtime ownership
+
+| Module                                     | Responsibility                                                                                                                                                                                   |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `types.ts`, `validation.ts`, `variants.ts` | Catalog-owned metadata shapes, bounded validation and explicit variant selection. Values/notes are inert; URLs are not fetch authority.                                                          |
+| `manager.ts`                               | Detached reads and staged single-process batch/revision changes. Legacy `add`/batch add remain upserts; optional workflows impose their own stronger duplicate/version policy.                   |
+| `catalog-io.ts`, `persistence.ts`          | Bounded private JSON and owned no-follow descriptors, exclusive temporary files, sync/rename and failure cleanup. Parent directory trust and multiple-writer locks remain host responsibilities. |
+| `brand-rules.ts`, `brand.ts`               | Descriptive rules plus explicit usage validation, immutable V2 history and acknowledged audit phases. Postcommit audit failure carries a committed receipt.                                      |
+| `storage.ts`                               | Explicit tenant-scoped binary ownership, bounded hash verification and approved orphan repair. Same-catalog address leases are process-local.                                                    |
+
+Root imports eagerly include Node filesystem persistence; `/storage` and `/brand` also import Node cryptography. No browser runtime entry is offered by this package. Erased type imports are separate from executable imports. Rendering consumers should receive explicitly authorized sanitized public data, not private snapshots/references. The standalone catalog owns no close handle; storage/brand workflow owners must await `close()` before releasing borrowed files or audit resources. Neither close forcibly cancels arbitrary host promises.
+
 
 ## Implementation sources
 
 - [packages/@zeruxjs/asset-manager/README.md](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/asset-manager/README.md)
 - [packages/@zeruxjs/asset-manager/package.json](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/asset-manager/package.json)
+- [packages/@zeruxjs/asset-manager/src/manager.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/asset-manager/src/manager.ts)
+- [packages/@zeruxjs/asset-manager/src/catalog-io.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/asset-manager/src/catalog-io.ts)
+- [packages/@zeruxjs/asset-manager/src/storage.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/asset-manager/src/storage.ts)
+- [packages/@zeruxjs/asset-manager/src/brand.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/asset-manager/src/brand.ts)

@@ -13,11 +13,11 @@ npx zerux start
 
 The runtime CLI uses zclivo for command registration. Your application can expose npm scripts for the same commands. A monorepo root without an application config is not necessarily an application to build.
 
-| Command | Responsibility |
-| --- | --- |
-| dev | Work against source modules, watch changes, stage replacement generations |
-| build | Compile application sources and public assets to the production build |
-| start | Start the compiled production structure |
+| Command | Responsibility                                                            |
+| ------- | ------------------------------------------------------------------------- |
+| dev     | Work against source modules, watch changes, stage replacement generations |
+| build   | Compile application sources and public assets to the production build     |
+| start   | Start the compiled production structure                                   |
 
 ## Lint commands
 

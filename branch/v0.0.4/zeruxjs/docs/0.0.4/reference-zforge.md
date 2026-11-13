@@ -17,7 +17,7 @@ This package has its own public API. Installing it does not create an automatic 
 import { registerSharedDevApp } from 'zforge';
 type Registration = Parameters<typeof registerSharedDevApp>[0];
 const options = { appName: 'example', appPort: 3000, rootDir: process.cwd() } satisfies Registration;
-// The host owns startup and teardown when registering this application. 
+// The host owns startup and teardown when registering this application.
 ```
 
 JavaScript can use the same runtime APIs without type-only statements. Enable JSDoc checking if editor validation is desired; a transpilation step alone does not typecheck the input.
@@ -50,33 +50,33 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 ### SharedDevRegistrationOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `appName` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `appPort` | `number` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `rootDir` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `preferredPort` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `dataFilePath` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `logFilePath` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `runtimeManifestPath` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `allowedDomains` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `allowedDevDomain` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `serviceName` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `devtools` | `{ modules: Array<string \| { package: string; enabled?: boolean; options?: Record<string, unknown> }>; }` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option                | Accepted TypeScript value                                                                                  | Required | Meaning                                                                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `appName`             | `string`                                                                                                   | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `appPort`             | `number`                                                                                                   | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `rootDir`             | `string`                                                                                                   | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `preferredPort`       | `number`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `dataFilePath`        | `string`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `logFilePath`         | `string`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `runtimeManifestPath` | `string`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowedDomains`      | `string \| string[]`                                                                                       | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowedDevDomain`    | `string`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `serviceName`         | `string`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `devtools`            | `{ modules: Array<string \| { package: string; enabled?: boolean; options?: Record<string, unknown> }>; }` | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ### DevtoolsModuleConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `id` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `title` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `version` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `description` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `entry` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `assets` | `DevtoolsModuleAssetConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `server` | `DevtoolsModuleServerConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `dependencies` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `meta` | `Record<string, unknown>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option         | Accepted TypeScript value    | Required | Meaning                                                                          |
+| -------------- | ---------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `id`           | `string`                     | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `title`        | `string`                     | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `version`      | `string`                     | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `description`  | `string`                     | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `entry`        | `string`                     | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `assets`       | `DevtoolsModuleAssetConfig`  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `server`       | `DevtoolsModuleServerConfig` | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `dependencies` | `string[]`                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `meta`         | `Record<string, unknown>`    | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ## Explicit transport module ownership
 
@@ -116,7 +116,6 @@ raw callback output. Dispose/reload drains the generation and closes the evaluat
 The package's `examples/experiments.mjs` demonstrates public imports and explicit
 policies. Host authentication/audit durability and browser UI remain integrations
 that require their own acceptance checks.
-
 
 ## Clean source builds
 
@@ -165,7 +164,7 @@ Manifest reference for `zforge@0.0.4`.
 
 # zforge
 
-The internal development toolkit for **Zdev**. `zforge` provides the foundational infrastructure for developer tools, including the shared dev server, dev-client injection, and the devtools module registry.
+The development toolkit used by the ZeruxJS hosting integration. `zforge` provides the foundational infrastructure for developer tools, including the shared dev server, dev-client injection, and the devtools module registry.
 
 ## Core Capabilities
 
@@ -173,11 +172,12 @@ The internal development toolkit for **Zdev**. `zforge` provides the foundationa
 - **Client Injection**: Automatically injects development scripts and overlays into HTML responses during development mode.
 - **Module Registry**: A flexible system to register and manage devtools modules, complete with API and WebSocket handlers.
 - **Event Bus**: A robust event broadcaster for hot-updates and real-time communication between the server and the browser.
-- **Security**: Integrated with `@zeruxjs/security` to ensure devtools access is authorized and safe.
+- **Security boundaries**: Security helpers provide encoding, file-path checks and document policy. Hosts still supply authentication and access controls; optional transport modules require explicit authorization callbacks.
 
 ## Key APIs
 
 ### App Registration
+
 ```typescript
 import { registerSharedDevApp } from 'zforge';
 
@@ -190,6 +190,7 @@ const devInfo = await registerSharedDevApp({
 ```
 
 ### Client Injection
+
 ```typescript
 import { injectDevClient } from 'zforge';
 
@@ -202,6 +203,7 @@ const polyfilledHtml = injectDevClient(originalHtml, {
 ```
 
 ### Module Definition
+
 ```typescript
 import { defineDevtoolsModule } from 'zforge';
 
@@ -270,11 +272,11 @@ HTTP/WS registries and file module loader. Inject the actual `zhost/protocols`
 exports; type-only optional peers avoid a runtime dependency cycle. Merely
 importing these entries starts no listener. See [public example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zforge/examples/modules.mjs).
 
-| Declaration | Actual implementation | Limits |
-| --- | --- | --- |
-| `sse` | zhost HTTP `/events`, bounded replay | Server-to-client JSON `update` events; no client commands |
-| `mcp` | zhost HTTP `/mcp` | Stateless JSON tool subset; not full MCP/stdio/subscription parity |
-| `grpc` | Unavailable | Rejected before startup; a name is not an implementation |
+| Declaration | Actual implementation                | Limits                                                             |
+| ----------- | ------------------------------------ | ------------------------------------------------------------------ |
+| `sse`       | zhost HTTP `/events`, bounded replay | Server-to-client JSON `update` events; no client commands          |
+| `mcp`       | zhost HTTP `/mcp`                    | Stateless JSON tool subset; not full MCP/stdio/subscription parity |
+| `grpc`      | Unavailable                          | Rejected before startup; a name is not an implementation           |
 
 Every endpoint requires message/concurrency/time limits, a host authentication
 callback and an exact origin allowlist. Missing Origin supports authenticated
@@ -368,12 +370,45 @@ results are rejected, old handles cannot dispose replacements, and imported defi
 start no work. Existing custom sections/components can render these headless results;
 no browser dashboard or statistical significance claim is added.
 
-
 ## Building from workspace source
 
 Use `node scripts/build-workspaces.mjs --scope zforge` from the repository root for a clean checkout. The manifest's repository-only `workspaceBuild` metadata selects `build:core` first, then builds the declared zhost/ZeruxJS owners and runs the normal full `build`. Both TypeScript configurations inherit strict checking. The core entry does not import the optional modules/diagnostics/experiments entries; the final pass must compile those entries successfully before the workspace build succeeds.
 
 This resolves the source dependency cycle without duplicating transport/tracing types or adding eager runtime dependencies. `build:core` alone is an intermediate developer step, not a complete package/archive build. `npm run build` and prepack remain the full compiler check once prerequisite declarations exist. Invalid bootstrap metadata and either compilation-stage failure reject the build; the planner does not run applications or listeners. Optional peers remain host-selected for consumers of the compiled package.
+
+## Ownership and maintenance boundaries
+
+The legacy shared server, module/API/channel maps and short-lived module cache are
+process-wide compatibility state. Registration does not create an independent
+returned disposer: unregister explicit registrations and close the shared server
+through its owning hosting lifecycle. Port probes release their listeners before
+returning and do not reserve a port; native listener startup remains authoritative.
+Private registry replacement is atomic at the file boundary, not a distributed
+registration transaction. Keep module configuration and callback code trusted.
+
+Request-body reads retain only their own native listeners, remove them on every
+terminal outcome and pause oversized/failed sources without taking socket ownership.
+State JSON uses bounded descriptor reads, exclusive same-directory temporary files
+and private file permissions. Missing files may use an explicit fallback; corrupt,
+oversized and unsafe leaves reject. Parsed state still requires consumer-owned schema
+validation. Log inspection reads at most the trailing 256 KiB and returns a bounded
+line suffix rather than a complete log export.
+
+Optional module hosts own actual native transport startup, rollback and awaited
+teardown; diagnostics stores independently own their retained records. Experiment
+inspection definitions remain inert until setup acquires their evaluator. These
+scoped contracts differ from the legacy browser client: that client retains caches,
+listeners, native sockets and trusted module mounts for the page lifetime and exposes
+no aggregate teardown API. A module socket facade borrows the page socket, so its
+`close()` is intentionally inert. Do not treat these facades as independent owners or
+claim that shadow DOM isolates executable plugin code.
+
+The package examples use public imports and explicit host callbacks. Focused Node
+fixtures cover denied policies, dependency failures, socket/iterator cleanup,
+private file boundaries and generation fencing. DOM/VM fixtures execute only known
+package-authored programs and do not qualify remote browser, TLS or assistive
+technology behavior. Source comments distinguish these ownership limits from
+future features; the component/import panels remain informational placeholders.
 
 
 ## Implementation sources
