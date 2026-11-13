@@ -1,8 +1,8 @@
-import {readStateFile} from './state-file.js';
-import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
-import * as fs from "node:fs";
-import * as path from "node:path";
+import { readStateFile } from './state-file.js';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 // ---------------------------------------------------------------------------
 // Hostname sanitization
@@ -11,35 +11,37 @@ import * as path from "node:path";
 /** Maximum length of a single DNS label per RFC 1035. */
 const MAX_DNS_LABEL_LENGTH = 63;
 
-/**
- * Truncate a DNS label to fit within the 63-character limit (RFC 1035).
- * When truncation is needed, a short hash suffix is appended to preserve
- * uniqueness (e.g. "very-long-name" → "very-long-na-a1b2c3").
- * The hash is derived from the full (pre-truncated) label.
+/** Bound one hostname label, appending a short deterministic hash when truncation is required; suffix collisions remain possible.
+ * @param {string} label - Already sanitized label text.
+ * @returns {string} Label within the 63-character budget; not a globally unique identity.
  */
 export function truncateLabel(label: string): string {
-  if (label.length <= MAX_DNS_LABEL_LENGTH) return label;
+  if (label.length <= MAX_DNS_LABEL_LENGTH) {
+    return label;
+  }
 
   // 6-char hex hash from the full label for uniqueness after truncation
-  const hash = createHash("sha256").update(label).digest("hex").slice(0, 6);
+  /** Short deterministic suffix reducing truncation collisions; never an authentication or uniqueness guarantee. */
+  const hash = createHash('sha256').update(label).digest('hex').slice(0, 6);
   // Reserve space for "-" separator + 6-char hash = 7 chars
+  /** Remaining label budget after the fixed separator/hash suffix. */
   const maxPrefixLength = MAX_DNS_LABEL_LENGTH - 7;
-  const prefix = label.slice(0, maxPrefixLength).replace(/-+$/, "");
+  /** Bounded sanitized project/branch prefix, with empty names excluded by its caller. */
+  const prefix = label.slice(0, maxPrefixLength).replace(/-+$/, '');
   return `${prefix}-${hash}`;
 }
 
-/**
- * Sanitize a string for use as a .localhost hostname label.
- * Lowercases, replaces invalid characters with hyphens, collapses consecutive
- * hyphens, trims leading/trailing hyphens, and enforces the 63-character DNS
- * label limit (RFC 1035).
+/** Normalize an operator project/branch name to supported lowercase hostname characters and enforce the existing label limit.
+ * @param {string} name - Local trusted project or branch label; this is not URL authorization.
+ * @returns {string} Sanitized bounded label, possibly empty when no supported characters remain.
  */
 export function sanitizeForHostname(name: string): string {
+  /** Supported lowercase name candidate; an empty candidate falls through to another source. */
   const sanitized = name
     .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "-")
-    .replace(/-{2,}/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '');
   return truncateLabel(sanitized);
 }
 
@@ -48,85 +50,99 @@ export function sanitizeForHostname(name: string): string {
 // ---------------------------------------------------------------------------
 
 export interface InferredName {
+  /** Sanitized inferred project label; not an authorization identity. */
   name: string;
+  /** Human-readable local metadata source used for naming. */
   source: string;
 }
 
-/**
- * Infer the project name by walking up from `cwd`:
- *   1. package.json `name` field (strips `@scope/` prefix)
- *   2. Git repo root directory name
- *   3. Current directory basename
- *
- * First match that yields a non-empty sanitized name wins.
+/** Infer local project naming from inert package metadata, Git-root naming or the supplied directory basename, in that order.
+ * @param {string} cwd - Trusted local project directory, defaulting to process.cwd().
+ * @returns {InferredName} First nonempty sanitized name with its source label; no package modules are executed.
  */
 export function inferProjectName(cwd: string = process.cwd()): InferredName {
   // 1. Walk up looking for package.json
+  /** First inert package name found during trusted local parent traversal. */
   const pkgResult = findPackageJsonName(cwd);
   if (pkgResult) {
+    /** Supported lowercase name candidate; an empty candidate falls through to another source. */
     const sanitized = sanitizeForHostname(pkgResult);
     if (sanitized) {
-      return { name: sanitized, source: "package.json" };
+      return { name: sanitized, source: 'package.json' };
     }
   }
 
   // 2. Git repo root directory name
+  /** Read-only local Git-root observation used only for naming. */
   const gitRoot = findGitRoot(cwd);
   if (gitRoot) {
+    /** Supported lowercase name candidate; an empty candidate falls through to another source. */
     const sanitized = sanitizeForHostname(path.basename(gitRoot));
     if (sanitized) {
-      return { name: sanitized, source: "git root" };
+      return { name: sanitized, source: 'git root' };
     }
   }
 
   // 3. Current directory basename
+  /** Supported lowercase name candidate; an empty candidate falls through to another source. */
   const sanitized = sanitizeForHostname(path.basename(cwd));
   if (sanitized) {
-    return { name: sanitized, source: "directory name" };
+    return { name: sanitized, source: 'directory name' };
   }
 
-  throw new Error("Could not infer a project name from package.json, git root, or directory name");
+  throw new Error(
+    'Could not infer a project name from package.json, git root, or directory name'
+  );
 }
 
-/**
- * Walk up from `startDir` looking for a package.json with a `name` field.
- * Returns the name (with `@scope/` prefix stripped) or null.
+/** Walk parent paths looking only for an inert package.json name, ignoring unreadable or invalid files.
+ * @param {string} startDir - Trusted local starting directory.
+ * @returns {string | null} First nonempty package name with its scope prefix removed, or null.
  */
 function findPackageJsonName(startDir: string): string | null {
   let dir = startDir;
   for (;;) {
-    const pkgPath = path.join(dir, "package.json");
+    /** Fixed package.json leaf beneath the current trusted ancestor. */
+    const pkgPath = path.join(dir, 'package.json');
     try {
-      const raw = fs.readFileSync(pkgPath, "utf-8");
+      /** Local manifest text parsed as JSON, never loaded as an executable module. */
+      const raw = fs.readFileSync(pkgPath, 'utf-8');
+      /** Parsed metadata inspected only for a nonempty string name. */
       const pkg = JSON.parse(raw);
-      if (typeof pkg.name === "string" && pkg.name) {
+      if (typeof pkg.name === 'string' && pkg.name) {
         // Strip scoped prefix: @org/myapp → myapp
-        return pkg.name.replace(/^@[^/]+\//, "");
+        return pkg.name.replace(/^@[^/]+\//, '');
       }
     } catch {
       // No package.json here or invalid JSON; keep walking
     }
+    /** Next local ancestor; equality stops traversal at the root. */
     const parent = path.dirname(dir);
-    if (parent === dir) break;
+    if (parent === dir) {
+      break;
+    }
     dir = parent;
   }
   return null;
 }
 
-/**
- * Find the git repo root by trying `git rev-parse --show-toplevel` first,
- * then falling back to walking up and looking for a `.git` directory.
+/** Try fixed read-only Git arguments with a finite native timeout, then inspect parent .git entries without shell interpolation.
+ * @param {string} startDir - Trusted local working directory; executable/environment trust remains host-owned.
+ * @returns {string | null} Observed repository-root directory or filesystem fallback, or null.
  */
 function findGitRoot(startDir: string): string | null {
   // Try git CLI
   try {
-    const toplevel = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+    /** Trimmed output from a fixed read-only Git command with a finite timeout. */
+    const toplevel = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd: startDir,
-      encoding: "utf-8",
+      encoding: 'utf-8',
       timeout: 5000,
-      stdio: ["ignore", "pipe", "ignore"],
+      stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
-    if (toplevel) return toplevel;
+    if (toplevel) {
+      return toplevel;
+    }
   } catch {
     // git binary unavailable or not a git repo
   }
@@ -134,18 +150,27 @@ function findGitRoot(startDir: string): string | null {
   // Fallback: walk up looking for .git directory
   let dir = startDir;
   for (;;) {
-    const gitPath = path.join(dir, ".git");
+    /** Fixed .git candidate beneath the current trusted ancestor. */
+    const gitPath = path.join(dir, '.git');
     try {
+      /** Local .git entry metadata used only to distinguish a directory from pointer file. */
       const stat = fs.statSync(gitPath);
-      if (stat.isDirectory()) return dir;
+      if (stat.isDirectory()) {
+        return dir;
+      }
       // .git file (worktree or submodule) — the actual repo root is elsewhere,
       // but this directory is inside a git repo so it's a reasonable fallback
-      if (stat.isFile()) return dir;
+      if (stat.isFile()) {
+        return dir;
+      }
     } catch {
       // No .git here; keep walking
     }
+    /** Next local ancestor; equality stops traversal at the root. */
     const parent = path.dirname(dir);
-    if (parent === dir) break;
+    if (parent === dir) {
+      break;
+    }
     dir = parent;
   }
   return null;
@@ -156,65 +181,74 @@ function findGitRoot(startDir: string): string | null {
 // ---------------------------------------------------------------------------
 
 export interface WorktreePrefix {
+  /** Sanitized linked-worktree branch suffix; finite naming collisions remain possible. */
   prefix: string;
+  /** Human-readable local metadata source used for naming. */
   source: string;
 }
 
 /** Branch names that represent the default/primary checkout — no prefix needed. */
-const DEFAULT_BRANCHES = new Set(["main", "master"]);
+const DEFAULT_BRANCHES = new Set(['main', 'master']);
 
-/**
- * Convert a branch name to a worktree prefix. Uses only the last segment
- * after the final `/` (e.g. `feature/auth` → `auth`). Returns null for
- * default branches, detached HEAD, or names that sanitize to empty.
+/** Use the last branch segment as a sanitized worktree prefix, excluding detached/default branches.
+ * @param {string} branch - Local Git branch metadata, not a role or permission claim.
+ * @returns {string | null} Sanitized nonempty prefix, or null when no prefix should be applied.
  */
 function branchToPrefix(branch: string): string | null {
-  if (!branch || branch === "HEAD" || DEFAULT_BRANCHES.has(branch)) return null;
-  const lastSegment = branch.split("/").pop()!;
+  if (!branch || branch === 'HEAD' || DEFAULT_BRANCHES.has(branch)) {
+    return null;
+  }
+  /** Final slash-separated branch segment; splitting always supplies one element. */
+  const lastSegment = branch.split('/').pop()!;
+  /** Bounded sanitized project/branch prefix, with empty names excluded by its caller. */
   const prefix = sanitizeForHostname(lastSegment);
   return prefix || null;
 }
 
-/**
- * Detect if the current directory is inside a multi-worktree git repo and
- * return the current branch name as a prefix for hostname composition.
- *
- * Heuristic:
- *   1. `git worktree list` — if there are multiple worktrees, this repo
- *      uses worktrees and checkouts need distinguishing.
- *   2. `git rev-parse --abbrev-ref HEAD` — get the current branch name.
- *   3. If the branch is `main` or `master`, no prefix (primary checkout).
- *   4. Otherwise, the sanitized branch name is the prefix.
- *
- * Falls back to parsing `.git` file + HEAD when git CLI is unavailable.
+/** Distinguish a linked nondefault-branch worktree using fixed Git commands, with a local-file fallback only when CLI inspection fails.
+ * @param {string} cwd - Trusted local project directory, defaulting to process.cwd().
+ * @returns {WorktreePrefix | null} Observed naming prefix/source, or null for primary/default/detached/unknown state.
  */
-export function detectWorktreePrefix(cwd: string = process.cwd()): WorktreePrefix | null {
+export function detectWorktreePrefix(
+  cwd: string = process.cwd()
+): WorktreePrefix | null {
   // Primary: git CLI
+  /** CLI observation distinguishing explicit no-prefix from failed CLI inspection. */
   const cliResult = detectWorktreeViaCli(cwd);
-  if (cliResult !== undefined) return cliResult;
+  if (cliResult !== undefined) {
+    return cliResult;
+  }
 
   // Fallback: parse .git file and HEAD when git binary is unavailable
   return detectWorktreeViaFilesystem(cwd);
 }
 
-/**
- * Use git CLI to detect worktree prefix. Returns:
- *   - `{ prefix, source }` if in a linked worktree on a non-default branch
- *   - `null` if not in a linked worktree, or on main/master
- *   - `undefined` if git CLI is unavailable (caller should try fallback)
+/** Read fixed worktree/branch metadata, distinguishing the main checkout from a linked worktree before naming it.
+ * @param {string} cwd - Trusted local Git working directory.
+ * @returns {WorktreePrefix | null | undefined} Prefix, explicit no-prefix result, or undefined when the local CLI path cannot be inspected.
  */
 function detectWorktreeViaCli(cwd: string): WorktreePrefix | null | undefined {
   try {
-    const listOutput = execFileSync("git", ["worktree", "list", "--porcelain"], {
-      cwd,
-      encoding: "utf-8",
-      timeout: 5000,
-      stdio: ["ignore", "pipe", "ignore"],
-    });
+    /** Fixed Git worktree-list output, bounded by the native exec helper defaults and timeout. */
+    const listOutput = execFileSync(
+      'git',
+      ['worktree', 'list', '--porcelain'],
+      {
+        cwd,
+        encoding: 'utf-8',
+        timeout: 5000,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }
+    );
 
     // Count worktrees — each block starts with "worktree "
-    const worktreeCount = listOutput.split("\n").filter((l) => l.startsWith("worktree ")).length;
-    if (worktreeCount <= 1) return null;
+    /** Observed checkout blocks; a single checkout needs no disambiguating prefix. */
+    const worktreeCount = listOutput
+      .split('\n')
+      .filter((l) => l.startsWith('worktree ')).length;
+    if (worktreeCount <= 1) {
+      return null;
+    }
 
     // Multiple worktrees exist, but only add a prefix if the current
     // directory is a *linked* worktree (created via `git worktree add`),
@@ -224,95 +258,122 @@ function detectWorktreeViaCli(cwd: string): WorktreePrefix | null | undefined {
     // In a linked worktree, --git-dir points to .git/worktrees/<name>
     // while --git-common-dir points to the shared .git directory. In the
     // root worktree they resolve to the same path.
+    /** Resolved current checkout metadata directory from fixed Git arguments. */
     const gitDir = path.resolve(
       cwd,
-      execFileSync("git", ["rev-parse", "--git-dir"], {
+      execFileSync('git', ['rev-parse', '--git-dir'], {
         cwd,
-        encoding: "utf-8",
+        encoding: 'utf-8',
         timeout: 5000,
-        stdio: ["ignore", "pipe", "ignore"],
+        stdio: ['ignore', 'pipe', 'ignore'],
       }).trim()
     );
 
+    /** Resolved shared metadata directory used to distinguish a linked worktree. */
     const gitCommonDir = path.resolve(
       cwd,
-      execFileSync("git", ["rev-parse", "--git-common-dir"], {
+      execFileSync('git', ['rev-parse', '--git-common-dir'], {
         cwd,
-        encoding: "utf-8",
+        encoding: 'utf-8',
         timeout: 5000,
-        stdio: ["ignore", "pipe", "ignore"],
+        stdio: ['ignore', 'pipe', 'ignore'],
       }).trim()
     );
 
-    if (gitDir === gitCommonDir) return null;
+    if (gitDir === gitCommonDir) {
+      return null;
+    }
 
-    const branch = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+    /** Observed local branch name or parsed HEAD reference, never an executable command. */
+    const branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
       cwd,
-      encoding: "utf-8",
+      encoding: 'utf-8',
       timeout: 5000,
-      stdio: ["ignore", "pipe", "ignore"],
+      stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
 
+    /** Bounded sanitized project/branch prefix, with empty names excluded by its caller. */
     const prefix = branchToPrefix(branch);
-    if (!prefix) return null;
+    if (!prefix) {
+      return null;
+    }
 
-    return { prefix, source: "git branch" };
+    return { prefix, source: 'git branch' };
   } catch {
     return undefined;
   }
 }
 
-/**
- * Fallback worktree detection when git CLI is unavailable. Walks up from
- * `startDir` looking for a `.git` file (worktrees have a file, not a
- * directory) and reads the branch name from the gitdir's HEAD file.
+/** Inspect local .git pointer/HEAD metadata without evaluating repository contents; submodule pointers do not become worktree prefixes.
+ * @param {string} startDir - Trusted local starting directory; parent traversal stops at a stable root.
+ * @returns {WorktreePrefix | null} Linked-worktree naming metadata, or null when unavailable/unsupported.
  */
 function detectWorktreeViaFilesystem(startDir: string): WorktreePrefix | null {
   let dir = startDir;
   for (;;) {
-    const gitPath = path.join(dir, ".git");
+    /** Fixed .git candidate beneath the current trusted ancestor. */
+    const gitPath = path.join(dir, '.git');
     try {
+      /** Local .git entry metadata used only to distinguish a directory from pointer file. */
       const stat = fs.statSync(gitPath);
       if (stat.isDirectory()) {
         // Regular .git directory — not a worktree
         return null;
       }
       if (stat.isFile()) {
-        const content = readStateFile(gitPath,65536).bytes.toString('utf8').trim();
+        /** Bounded inert .git pointer-file text from the opened inode. */
+        const content = readStateFile(gitPath, 65536)
+          .bytes.toString('utf8')
+          .trim();
+        /** Anchored gitdir-pointer match whose required first capture exists on success. */
         const match = content.match(/^gitdir:\s*(.+)$/);
-        if (!match) return null;
+        if (!match) {
+          return null;
+        }
 
-        const gitdir = match[1];
+        /** Required validated-position pointer capture, resolved as local metadata by the existing heuristic. */
+        const gitdir = match[1]!;
         // Only treat as a worktree if gitdir points into a /worktrees/ path.
         // Submodules point to /modules/ instead.
-        if (!gitdir.match(/[/\\]worktrees[/\\][^/\\]+$/)) return null;
+        if (!gitdir.match(/[/\\]worktrees[/\\][^/\\]+$/)) {
+          return null;
+        }
 
         // Read the branch name from the worktree's HEAD file
+        /** Observed local branch name or parsed HEAD reference, never an executable command. */
         const branch = readBranchFromHead(path.resolve(dir, gitdir));
-        const prefix = branchToPrefix(branch ?? "");
-        if (!prefix) return null;
+        /** Bounded sanitized project/branch prefix, with empty names excluded by its caller. */
+        const prefix = branchToPrefix(branch ?? '');
+        if (!prefix) {
+          return null;
+        }
 
-        return { prefix, source: "git branch" };
+        return { prefix, source: 'git branch' };
       }
     } catch {
       // No .git here; keep walking
     }
+    /** Next local ancestor; equality stops traversal at the root. */
     const parent = path.dirname(dir);
-    if (parent === dir) break;
+    if (parent === dir) {
+      break;
+    }
     dir = parent;
   }
   return null;
 }
 
-/**
- * Read the current branch name from a gitdir's HEAD file.
- * Returns null for detached HEAD or unreadable files.
+/** Read an inert local HEAD reference, retaining detached/unreadable state as unavailable.
+ * @param {string} gitdir - Trusted resolved Git metadata directory.
+ * @returns {string | null} Required branch-name capture from a symbolic HEAD, or null.
  */
 function readBranchFromHead(gitdir: string): string | null {
   try {
-    const head = fs.readFileSync(path.join(gitdir, "HEAD"), "utf-8").trim();
+    /** Trimmed inert local HEAD text; no source files or hooks are loaded. */
+    const head = fs.readFileSync(path.join(gitdir, 'HEAD'), 'utf-8').trim();
+    /** Anchored symbolic-HEAD match whose required branch capture exists on success. */
     const refMatch = head.match(/^ref: refs\/heads\/(.+)$/);
-    return refMatch ? refMatch[1] : null;
+    return refMatch ? refMatch[1]! : null;
   } catch {
     return null;
   }

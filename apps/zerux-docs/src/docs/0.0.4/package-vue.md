@@ -128,26 +128,26 @@ These tables list fields declared directly on the named public contract. Referen
 
 Core Vue runtime injection loads no UI runtime on import; optional native entries load peers only when called.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `shallowRef` | `{value:T}` | No |
-| `getCurrentScope` | `unknown` | No |
-| `onScopeDispose` | `void` | No |
-| `readonly` | `(value:{value:any}) => {readonly value:any}` | Yes |
-| `watch` | `()=>void` | Yes |
+| Field             | Accepted type/value                           | Optional |
+| ----------------- | --------------------------------------------- | -------- |
+| `shallowRef`      | `{value:T}`                                   | No       |
+| `getCurrentScope` | `unknown`                                     | No       |
+| `onScopeDispose`  | `void`                                        | No       |
+| `readonly`        | `(value:{value:any}) => {readonly value:any}` | Yes      |
+| `watch`           | `()=>void`                                    | Yes      |
 
 ### VueStore
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `getSnapshot` | `T` | No |
-| `subscribe` | `()=>void` | No |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `getSnapshot` | `T`                 | No       |
+| `subscribe`   | `()=>void`          | No       |
 
 ### SubscribableRef
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `subscribe` | `()=>void` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `subscribe` | `()=>void`          | No       |
 
 ## Ownership and compatibility details
 

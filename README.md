@@ -4,22 +4,22 @@ An npm monorepo for the ZeruxJS Node.js application framework, ZyroJS reactive/D
 
 ## Packages
 
-| Package | Purpose |
-| --- | --- |
-| [zeruxjs](packages/zeruxjs/README.md) | Application runtime, routing, plugins, services and workers |
-| [zyrojs](packages/zyrojs/README.md) | Standalone reactivity, DOM rendering and network clients |
-| [@zeruxjs packages](packages/@zeruxjs/README.md) | Database, cache, authentication, files, email, analytics and other modular APIs |
-| [zhost](packages/zhost/README.md) | Hosting, protocol gateway, proxy and process supervision |
-| [zclivo](packages/zclivo/README.md) | Composable commands, explicit CLI plugins and minimal app starter |
-| [zlook](packages/zlook/README.md) | Shared filesystem watching |
-| [zforge](packages/zforge/README.md) | Development tools and runtime inspection |
-| [ztrial](packages/ztrial/README.md) | Test runner, assertions and optional environment adapters |
-| [zlocale](packages/zlocale/README.md) | Gettext-style localization and native Intl formatting |
-| [zuixs](packages/zuixs/README.md) | Utility CSS compiler and framework integrations |
-| [zenixjs](packages/zenixjs/README.md), [@zenixjs/core](packages/@zenixjs/core/README.md) | Minimal SQLite domain core and initial ZyroJS/ZeruxJS CMS application |
-| [create-zerux-js](packages/create/create-zerux-app/README.md) | Safe ZyroJS/React/Vue HTML-only SSR project generator |
-| [create-zyro-app](packages/create/create-zyro-app/README.md) | Standalone client/static/SSR/hydrated ZyroJS generator |
-| [create-zenix-js](packages/create/create-zenix-app/README.md) | Host-configured SQLite CMS integration generator |
+| Package                                                                                  | Purpose                                                                         |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [zeruxjs](packages/zeruxjs/README.md)                                                    | Application runtime, routing, plugins, services and workers                     |
+| [zyrojs](packages/zyrojs/README.md)                                                      | Standalone reactivity, DOM rendering and network clients                        |
+| [@zeruxjs packages](packages/@zeruxjs/README.md)                                         | Database, cache, authentication, files, email, analytics and other modular APIs |
+| [zhost](packages/zhost/README.md)                                                        | Hosting, protocol gateway, proxy and process supervision                        |
+| [zclivo](packages/zclivo/README.md)                                                      | Composable commands, explicit CLI plugins and minimal app starter               |
+| [zlook](packages/zlook/README.md)                                                        | Shared filesystem watching                                                      |
+| [zforge](packages/zforge/README.md)                                                      | Development tools and runtime inspection                                        |
+| [ztrial](packages/ztrial/README.md)                                                      | Test runner, assertions and optional environment adapters                       |
+| [zlocale](packages/zlocale/README.md)                                                    | Gettext-style localization and native Intl formatting                           |
+| [zuixs](packages/zuixs/README.md)                                                        | Utility CSS compiler and framework integrations                                 |
+| [zenixjs](packages/zenixjs/README.md), [@zenixjs/core](packages/@zenixjs/core/README.md) | Minimal SQLite domain core and initial ZyroJS/ZeruxJS CMS application           |
+| [create-zerux-js](packages/create/create-zerux-app/README.md)                            | Safe ZyroJS/React/Vue HTML-only SSR project generator                           |
+| [create-zyro-app](packages/create/create-zyro-app/README.md)                             | Standalone client/static/SSR/hydrated ZyroJS generator                          |
+| [create-zenix-js](packages/create/create-zenix-app/README.md)                            | Host-configured SQLite CMS integration generator                                |
 
 Package manifests define current versions, supported Node.js versions, exports and dependencies. Read a package's README for setup, examples and limitations before using it. Frontend adapters do not imply a complete React/Vue rendering or hydration pipeline in ZeruxJS.
 
@@ -147,18 +147,18 @@ These are repository standards inspired by consistent review practices, not WPCS
 compatibility or a claim that static checks prove runtime correctness. They apply
 to completed scopes across libraries, framework code, CMS and applications.
 
-| Area | Enforcement and review boundary |
-| --- | --- |
-| Documentation | JSDoc presence for functions/classes, standalone constants and named interface fields; parameter names/types/descriptions, return types/descriptions, tag/type syntax and nonempty descriptions. Meaning, accuracy, throws and lifecycle coverage are reviewed manually. |
-| Control flow | Required braces, one statement per line, no nested ternaries, sequence expressions, labels or `with`. |
-| Values and language hazards | Strict equality, no `var`, prefer `const`, explicit parseInt radix, no primitive wrappers or prototype/iterator mutation. |
-| Security and ownership | Existing package preset rules remain errors: eval/dynamic functions, proven client/server import violations, unsafe public configuration and missing cleanup ownership. Authorization/tenant isolation remain runtime responsibilities. |
-| Complexity | Cyclomatic complexity above 25 and nesting beyond 4 produce review warnings. Validation-heavy APIs may need an explicit follow-up; do not hide findings or refactor without behavior checks. |
-| TypeScript | Keep signatures and docs consistent; typecheck/build in the owner. Do not add `any`, assertions or suppressions merely to silence quality checks. |
-| Node/browser boundaries | Preserve import maps and optional peers; no blanket bans on valid native APIs, DOM usage in browser entries, console in CLIs, or process lifecycle in owned entry points. Never infer server execution rights from documentation. |
-| CSS/HTML | Existing standard/SCSS/semantic/accessibility rules plus comment/attribute spacing and quoted attributes; Prettier owns wrapping. Embedded templates and dynamic DOM relationships need focused review. |
-| Runtime reliability | Review cancellation versus settlement, borrowed versus owned resources, structured errors, bounded queues, sensitive logs and cleanup. Static documentation rules cannot prove these guarantees. |
-| Tests and fixtures | Same readability and const-comment standards; preserve negative cases, exact protocol bytes, snapshots and public-import consumer coverage. |
+| Area                        | Enforcement and review boundary                                                                                                                                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Documentation               | JSDoc presence for functions/classes, standalone constants and named interface fields; parameter names/types/descriptions, return types/descriptions, tag/type syntax and nonempty descriptions. Meaning, accuracy, throws and lifecycle coverage are reviewed manually. |
+| Control flow                | Required braces, one statement per line, no nested ternaries, sequence expressions, labels or `with`.                                                                                                                                                                    |
+| Values and language hazards | Strict equality, no `var`, prefer `const`, explicit parseInt radix, no primitive wrappers or prototype/iterator mutation.                                                                                                                                                |
+| Security and ownership      | Existing package preset rules remain errors: eval/dynamic functions, proven client/server import violations, unsafe public configuration and missing cleanup ownership. Authorization/tenant isolation remain runtime responsibilities.                                  |
+| Complexity                  | Cyclomatic complexity above 25 and nesting beyond 4 produce review warnings. Validation-heavy APIs may need an explicit follow-up; do not hide findings or refactor without behavior checks.                                                                             |
+| TypeScript                  | Keep signatures and docs consistent; typecheck/build in the owner. Do not add `any`, assertions or suppressions merely to silence quality checks.                                                                                                                        |
+| Node/browser boundaries     | Preserve import maps and optional peers; no blanket bans on valid native APIs, DOM usage in browser entries, console in CLIs, or process lifecycle in owned entry points. Never infer server execution rights from documentation.                                        |
+| CSS/HTML                    | Existing standard/SCSS/semantic/accessibility rules plus comment/attribute spacing and quoted attributes; Prettier owns wrapping. Embedded templates and dynamic DOM relationships need focused review.                                                                  |
+| Runtime reliability         | Review cancellation versus settlement, borrowed versus owned resources, structured errors, bounded queues, sensitive logs and cleanup. Static documentation rules cannot prove these guarantees.                                                                         |
+| Tests and fixtures          | Same readability and const-comment standards; preserve negative cases, exact protocol bytes, snapshots and public-import consumer coverage.                                                                                                                              |
 
 Do not enable every available rule indiscriminately: line-length/indent rules
 conflict with Prettier; mandatory comments on every anonymous callback add noise;

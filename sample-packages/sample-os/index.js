@@ -1,5 +1,10 @@
-import { defineDevtoolsModule } from "zforge";
+import { defineDevtoolsModule } from 'zforge';
 
+/**
+ * Render one progress bar used by the system dashboard cards.
+ *
+ * @returns {string} Static bar markup with a fill element.
+ */
 const bar = () => `
   <div class="bar">
     <div class="bar-fill"></div>
@@ -7,15 +12,15 @@ const bar = () => `
 `;
 
 export default defineDevtoolsModule({
-  id: "sample-os",
-  title: "System Monitor",
-  badge: "system",
+  id: 'sample-os',
+  title: 'System Monitor',
+  badge: 'system',
 
   sections: [
     {
-      id: "sample-os",
-      title: "System Monitor",
-      icon: "🖥️",
+      id: 'sample-os',
+      title: 'System Monitor',
+      icon: '🖥️',
       order: 50,
 
       render() {
@@ -77,7 +82,7 @@ export default defineDevtoolsModule({
 
         </section>
         `;
-      }
-    }
-  ]
+      },
+    },
+  ],
 });

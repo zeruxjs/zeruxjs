@@ -24,10 +24,10 @@
 
 `ZeruxConfig.type` accepts **`fix`**, **`dynamic`** and **`function`**. The resolver defaults to `fix`. These are accepted structure labels, not browser rendering modes, static-export flags, automatic serverless deployment adapters or separate authorization policies.
 
-| Type | Verified behavior | Start here |
-| --- | --- | --- |
-| `fix` | Default structure mode, explicit discovery directories and entry module | [Fixed structure](structure-fix.md) |
-| `dynamic` | Accepted/resolved mode; shares current directory discovery and request runtime | [Dynamic structure](structure-dynamic.md) |
+| Type       | Verified behavior                                                                                | Start here                                  |
+| ---------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| `fix`      | Default structure mode, explicit discovery directories and entry module                          | [Fixed structure](structure-fix.md)         |
+| `dynamic`  | Accepted/resolved mode; shares current directory discovery and request runtime                   | [Dynamic structure](structure-dynamic.md)   |
 | `function` | Accepted/resolved mode; resolver selects production environment fallback when NODE_ENV is absent | [Function structure](structure-function.md) |
 
 The current runtime does not branch its route/module discovery on `structure.mode`. Do not promise automatic function-per-route packaging or request-time module rescanning from these names. `dev`/`start` lifecycle mode, hosting configuration and explicit registrations are separate choices.

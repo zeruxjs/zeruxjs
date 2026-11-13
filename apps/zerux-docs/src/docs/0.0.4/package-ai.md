@@ -94,31 +94,31 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### ProviderConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `apiKey` | `string` | No |
-| `baseUrl` | `string` | No |
-| `model` | `string` | No |
-| `fetch` | `typeof fetch` | Yes |
-| `timeoutMs` | `number` | Yes |
-| `headers` | `Record<string,string>` | Yes |
-| `maxResponseBytes` | `number` | Yes |
+| Field              | Accepted type/value     | Optional |
+| ------------------ | ----------------------- | -------- |
+| `apiKey`           | `string`                | No       |
+| `baseUrl`          | `string`                | No       |
+| `model`            | `string`                | No       |
+| `fetch`            | `typeof fetch`          | Yes      |
+| `timeoutMs`        | `number`                | Yes      |
+| `headers`          | `Record<string,string>` | Yes      |
+| `maxResponseBytes` | `number`                | Yes      |
 
 ### ChatOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `signal` | `AbortSignal` | Yes |
-| `temperature` | `number` | Yes |
-| `maxTokens` | `number` | Yes |
-| `topP` | `number` | Yes |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `signal`      | `AbortSignal`       | Yes      |
+| `temperature` | `number`            | Yes      |
+| `maxTokens`   | `number`            | Yes      |
+| `topP`        | `number`            | Yes      |
 
 ### AiConcurrencyOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxConcurrent` | `number` | No |
-| `maxQueued` | `number` | Yes |
+| Field           | Accepted type/value | Optional |
+| --------------- | ------------------- | -------- |
+| `maxConcurrent` | `number`            | No       |
+| `maxQueued`     | `number`            | Yes      |
 
 ## Dedicated model adapters
 
@@ -165,7 +165,6 @@ require per-operation approval and return inert descriptors only. No package,
 command, URL or remote schema is executed from model input. See the package README
 and `examples/tools.mjs` for limits, cancellation and deployment prerequisites.
 
-
 ## Inert media and source data
 
 Optional `chatContent`/`streamContent` accept bounded typed parts. Anthropic maps
@@ -180,7 +179,6 @@ markup, and hosts must authorize and obtain consent before sharing private files
 with a provider. See README capability/MIME/budget details and the content example.
 Opaque-byte fixtures verify transport and inertness; live media/model decoding is
 not qualified.
-
 
 ## Structured request budgets and local evaluation
 
@@ -200,7 +198,6 @@ metrics separately from truthfulness/quality (unmeasured). It uses deterministic
 local providers, no external requests and no private repository evidence. Live
 model evaluations need separate explicit data-disclosure authorization and actual
 model/configuration reporting.
-
 
 ## Maintaining the transport and execution boundaries
 

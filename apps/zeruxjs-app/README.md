@@ -16,7 +16,7 @@ required library dependencies first if their `dist` output is missing; the works
 build script resolves that ordering. Do not run the complete workspace test suite.
 
 1. From this application directory, run `npm run workspace:configure -- --origin
-   http://localhost:3010 --username operator --tenant local --site main` on one line.
+http://localhost:3010 --username operator --tenant local --site main` on one line.
    The zclivo-backed operator helper reads a hidden password (at least 16 characters),
    generates independent session/pepper keys and atomically creates `.env.local` at
    mode `0600`. It never overwrites an existing file, prints credentials, installs
@@ -76,23 +76,23 @@ become available only after configuration, explicit initialization and startup.
 
 ## Implemented local workflows
 
-| Page | Actual behavior and package owners |
-| --- | --- |
-| `/workspace/login` | Operator login using auth scrypt verification, application-owned SQLite `auth-cas-v1` persistence, one-hour opaque sessions, persisted attempt admission and session-bound CSRF. |
-| `/workspace/notes` | SQLite notebook, bounded plain text, at most 100 notes per tenant/site, optimistic edit conflicts, private by default and explicit public visibility. Ordinary POST forms work without JavaScript. This is not the Zenix CMS. |
-| `/workspace/files` | Named files manager with a local provider, tenant/site object prefixes, private create-only text objects and authenticated attachment downloads. Local S3-style addressing is not an AWS wire server. |
-| `/workspace/assets` | Asset-manager/files integration: storage before metadata, SHA-256 verified downloads, immutable version IDs and SQLite catalog snapshot CAS. At most 100 returned version records; concurrent metadata conflict retains a recorded orphan candidate. |
-| `/workspace/search` | Weighted Unicode local search over explicitly public notes, deterministic package ranking and bounded query/results. No remote engine or private-note fallback. |
-| `/workspace/public` | Escaped public-note board, with `/workspace/feed.xml`, `/workspace/feed.json` and `/workspace/sitemap.xml` derived from persisted public facts and timestamps. Feed ETags, HEAD and conditional GET are supported. |
-| `/workspace/share` | Persistent short-link reservations through the share SQLite adapter. Generated high-entropy slugs, fixed public-board destinations, 302 redirects and one-day expiry. Click analytics are disabled. |
-| `/workspace/reports` | Explicitly consented sample events, versioned analytics dimensions/units, SQLite numeric facts, exact database aggregate counts, native table fallback and a replaceable Reports browser view. No automatic visitor collection. |
-| `/workspace/tags` | A fixed trusted version-1 container, explicit consent and durable request-ID reservation; only a local analytics sink. No remote destination, executable configuration, draft editor or publish endpoint is enabled. |
-| `/workspace/email` | Escaped email-template composition and inert source/plain-text previews. No SMTP connection, marketing send, tracking pixel or inbox operation. |
-| `/workspace/experiments` | Authenticated local evaluation with three named variants and a pinned salt/version. Consent is required, identity is server-bound and assignment is stateless. No exposure recording or statistical significance claim. |
-| `/workspace/lab` | ZyroJS signals/computed values, an explicit observable renderer bridge, standalone React/Vue store interoperability, English/Hindi/Arabic demo messages with RTL, scoped accessibility preferences and user-triggered generated PCM/WAV playback. No React/Vue DOM runtime is started. |
-| `/workspace/performance` | Bounded process-local cache counters and observations from the single zhost compression owner. `/workspace/measure-response` serves a repeatable synthetic payload via performance's response integration. No browser-vitals collection or guaranteed performance gain. |
-| `/workspace/diagnostics` | Actual framework lifecycle counters from hooks, with generation-owned registrations. No retained headers, bodies, raw paths or user traits. |
-| `/playground`, `/plugin/runtime`, `/plugin/workers` | Existing framework routing, middleware, controller, composable, plugin, startup-worker and Node thread-worker demonstrations. |
+| Page                                                | Actual behavior and package owners                                                                                                                                                                                                                                                     |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/workspace/login`                                  | Operator login using auth scrypt verification, application-owned SQLite `auth-cas-v1` persistence, one-hour opaque sessions, persisted attempt admission and session-bound CSRF.                                                                                                       |
+| `/workspace/notes`                                  | SQLite notebook, bounded plain text, at most 100 notes per tenant/site, optimistic edit conflicts, private by default and explicit public visibility. Ordinary POST forms work without JavaScript. This is not the Zenix CMS.                                                          |
+| `/workspace/files`                                  | Named files manager with a local provider, tenant/site object prefixes, private create-only text objects and authenticated attachment downloads. Local S3-style addressing is not an AWS wire server.                                                                                  |
+| `/workspace/assets`                                 | Asset-manager/files integration: storage before metadata, SHA-256 verified downloads, immutable version IDs and SQLite catalog snapshot CAS. At most 100 returned version records; concurrent metadata conflict retains a recorded orphan candidate.                                   |
+| `/workspace/search`                                 | Weighted Unicode local search over explicitly public notes, deterministic package ranking and bounded query/results. No remote engine or private-note fallback.                                                                                                                        |
+| `/workspace/public`                                 | Escaped public-note board, with `/workspace/feed.xml`, `/workspace/feed.json` and `/workspace/sitemap.xml` derived from persisted public facts and timestamps. Feed ETags, HEAD and conditional GET are supported.                                                                     |
+| `/workspace/share`                                  | Persistent short-link reservations through the share SQLite adapter. Generated high-entropy slugs, fixed public-board destinations, 302 redirects and one-day expiry. Click analytics are disabled.                                                                                    |
+| `/workspace/reports`                                | Explicitly consented sample events, versioned analytics dimensions/units, SQLite numeric facts, exact database aggregate counts, native table fallback and a replaceable Reports browser view. No automatic visitor collection.                                                        |
+| `/workspace/tags`                                   | A fixed trusted version-1 container, explicit consent and durable request-ID reservation; only a local analytics sink. No remote destination, executable configuration, draft editor or publish endpoint is enabled.                                                                   |
+| `/workspace/email`                                  | Escaped email-template composition and inert source/plain-text previews. No SMTP connection, marketing send, tracking pixel or inbox operation.                                                                                                                                        |
+| `/workspace/experiments`                            | Authenticated local evaluation with three named variants and a pinned salt/version. Consent is required, identity is server-bound and assignment is stateless. No exposure recording or statistical significance claim.                                                                |
+| `/workspace/lab`                                    | ZyroJS signals/computed values, an explicit observable renderer bridge, standalone React/Vue store interoperability, English/Hindi/Arabic demo messages with RTL, scoped accessibility preferences and user-triggered generated PCM/WAV playback. No React/Vue DOM runtime is started. |
+| `/workspace/performance`                            | Bounded process-local cache counters and observations from the single zhost compression owner. `/workspace/measure-response` serves a repeatable synthetic payload via performance's response integration. No browser-vitals collection or guaranteed performance gain.                |
+| `/workspace/diagnostics`                            | Actual framework lifecycle counters from hooks, with generation-owned registrations. No retained headers, bodies, raw paths or user traits.                                                                                                                                            |
+| `/playground`, `/plugin/runtime`, `/plugin/workers` | Existing framework routing, middleware, controller, composable, plugin, startup-worker and Node thread-worker demonstrations.                                                                                                                                                          |
 
 The browser lab uses `@zeruxjs/react` and `@zeruxjs/vue` **standalone stores only**.
 Its page is rendered by ZyroJS. It does not claim framework hydration, SFC compilation,
@@ -112,14 +112,14 @@ fixed origin, fresh session check, at most eight active requests, 16 KiB input l
 and a five-second deadline. POST also requires the exact `Origin` and
 `X-CSRF-Token`; loopback does not bypass authorization.
 
-| Endpoint | Implemented protocol |
-| --- | --- |
-| `/rpc` | JSON-RPC 2.0, `workspace.summary`, empty arguments only. |
-| `/mcp` | MCP initialization, `workspace_summary` tool and a fixed capability resource. `Accept` must include both `application/json` and `text/event-stream`. |
-| `/events` | SSE, bounded package backlog, metadata-only `note.saved` events; clients must reconnect after the finite connection deadline. |
-| `/workspace.Notebook/Summary` | Connect unary JSON subset. |
-| `/workspace.Notebook/SummaryStream` | Connect framed JSON subset, at most four input messages. |
-| `/trpc/workspace.summary` | tRPC-style JSON subset, not the complete tRPC framework. |
+| Endpoint                            | Implemented protocol                                                                                                                                 |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/rpc`                              | JSON-RPC 2.0, `workspace.summary`, empty arguments only.                                                                                             |
+| `/mcp`                              | MCP initialization, `workspace_summary` tool and a fixed capability resource. `Accept` must include both `application/json` and `text/event-stream`. |
+| `/events`                           | SSE, bounded package backlog, metadata-only `note.saved` events; clients must reconnect after the finite connection deadline.                        |
+| `/workspace.Notebook/Summary`       | Connect unary JSON subset.                                                                                                                           |
+| `/workspace.Notebook/SummaryStream` | Connect framed JSON subset, at most four input messages.                                                                                             |
+| `/trpc/workspace.summary`           | tRPC-style JSON subset, not the complete tRPC framework.                                                                                             |
 
 These are read-only registered operations. They cannot run commands, import
 packages, fetch model-provided URLs or evaluate stored content. Native gRPC, QUIC,

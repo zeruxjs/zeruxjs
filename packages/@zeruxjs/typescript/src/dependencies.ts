@@ -132,7 +132,7 @@ export function dependencyDiagnostics(
       /** Top-level package name; subpaths share their package dependency declaration. */
       const name = specifier.startsWith('@')
         ? specifier.split('/').slice(0, 2).join('/')
-        : specifier.split('/')[0];
+        : (specifier.split('/')[0] ?? specifier);
       if (name === manifest.name || manifest.declared.has(name)) {
         continue;
       }

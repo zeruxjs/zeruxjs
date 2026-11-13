@@ -23,11 +23,11 @@ Explain which file controls a behavior, configure a simple application and avoid
 
 ## Three files with different jobs
 
-| File | What it controls | What it does not do |
-| --- | --- | --- |
-| `package.json` | Dependencies, module mode and npm script commands | Automatically discover a missing build script |
-| `zerux.config.ts` / `.js` | Framework options and explicitly consumed application settings | Turn every custom key into a managed service |
-| `tsconfig.json` | TypeScript compiler/checker behavior | Validate incoming HTTP JSON |
+| File                      | What it controls                                               | What it does not do                           |
+| ------------------------- | -------------------------------------------------------------- | --------------------------------------------- |
+| `package.json`            | Dependencies, module mode and npm script commands              | Automatically discover a missing build script |
+| `zerux.config.ts` / `.js` | Framework options and explicitly consumed application settings | Turn every custom key into a managed service  |
+| `tsconfig.json`           | TypeScript compiler/checker behavior                           | Validate incoming HTTP JSON                   |
 
 Keep one active Zerux config. A TypeScript config takes precedence over JavaScript, then `.mjs`, then `.cjs`; they are not merged. A stale higher-priority file can explain why editing another file has no effect.
 

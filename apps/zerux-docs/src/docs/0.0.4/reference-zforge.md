@@ -31,7 +31,7 @@ This package has its own public API. Installing it does not create an automatic 
 import { registerSharedDevApp } from 'zforge';
 type Registration = Parameters<typeof registerSharedDevApp>[0];
 const options = { appName: 'example', appPort: 3000, rootDir: process.cwd() } satisfies Registration;
-// The host owns startup and teardown when registering this application. 
+// The host owns startup and teardown when registering this application.
 ```
 
 JavaScript can use the same runtime APIs without type-only statements. Enable JSDoc checking if editor validation is desired; a transpilation step alone does not typecheck the input.
@@ -64,33 +64,33 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 ### SharedDevRegistrationOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `appName` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `appPort` | `number` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `rootDir` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `preferredPort` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `dataFilePath` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `logFilePath` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `runtimeManifestPath` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `allowedDomains` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `allowedDevDomain` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `serviceName` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `devtools` | `{ modules: Array<string \| { package: string; enabled?: boolean; options?: Record<string, unknown> }>; }` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option                | Accepted TypeScript value                                                                                  | Required | Meaning                                                                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `appName`             | `string`                                                                                                   | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `appPort`             | `number`                                                                                                   | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `rootDir`             | `string`                                                                                                   | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `preferredPort`       | `number`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `dataFilePath`        | `string`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `logFilePath`         | `string`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `runtimeManifestPath` | `string`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowedDomains`      | `string \| string[]`                                                                                       | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowedDevDomain`    | `string`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `serviceName`         | `string`                                                                                                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `devtools`            | `{ modules: Array<string \| { package: string; enabled?: boolean; options?: Record<string, unknown> }>; }` | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ### DevtoolsModuleConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `id` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `title` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `version` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `description` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `entry` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `assets` | `DevtoolsModuleAssetConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `server` | `DevtoolsModuleServerConfig` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `dependencies` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `meta` | `Record<string, unknown>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option         | Accepted TypeScript value    | Required | Meaning                                                                          |
+| -------------- | ---------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `id`           | `string`                     | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `title`        | `string`                     | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `version`      | `string`                     | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `description`  | `string`                     | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `entry`        | `string`                     | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `assets`       | `DevtoolsModuleAssetConfig`  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `server`       | `DevtoolsModuleServerConfig` | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `dependencies` | `string[]`                   | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `meta`         | `Record<string, unknown>`    | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ## Explicit transport module ownership
 
@@ -130,7 +130,6 @@ raw callback output. Dispose/reload drains the generation and closes the evaluat
 The package's `examples/experiments.mjs` demonstrates public imports and explicit
 policies. Host authentication/audit durability and browser UI remain integrations
 that require their own acceptance checks.
-
 
 ## Clean source builds
 

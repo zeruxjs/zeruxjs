@@ -9,14 +9,45 @@ import path from 'node:path';
  * @param options Optional executable, platform and CLI locations for controlled callers.
  * @returns Command and argument array suitable for spawn or spawnSync.
  */
-export function npmCommand(args, { execPath = process.execPath, platform = process.platform, npmExecPath = process.env.npm_execpath } = {}) {
+/** Perform the npm command operation.
+ * @param {unknown} args - Input value for args.
+ * @param {unknown} root1 - Input value for root1.
+ * @param {unknown} root1.execPath - Input value for exec path.
+ * @param {unknown} root1.platform - Input value for platform.
+ * @param {unknown} root1.npmExecPath - Input value for npm exec path.
+ * @returns {unknown} Result produced by npm command.
+ */
+export function npmCommand(
+  args,
+  {
+    execPath = process.execPath,
+    platform = process.platform,
+    npmExecPath = process.env.npm_execpath,
+  } = {}
+) {
+  /** Local value for candidates. */
   const candidates = [
     npmExecPath,
     path.join(path.dirname(execPath), 'node_modules/npm/bin/npm-cli.js'),
-    path.resolve(path.dirname(execPath), '../lib/node_modules/npm/bin/npm-cli.js'),
+    path.resolve(
+      path.dirname(execPath),
+      '../lib/node_modules/npm/bin/npm-cli.js'
+    ),
   ];
-  const cli = candidates.find(candidate => candidate && path.basename(candidate) === 'npm-cli.js' && fs.statSync(candidate, { throwIfNoEntry: false })?.isFile());
-  if (cli) return { command: execPath, args: [cli, ...args] };
-  if (platform === 'win32') throw new Error('Cannot locate npm-cli.js; run this command through npm run or install npm alongside Node');
+  /** Local value for cli. */
+  const cli = candidates.find(
+    (candidate) =>
+      candidate &&
+      path.basename(candidate) === 'npm-cli.js' &&
+      fs.statSync(candidate, { throwIfNoEntry: false })?.isFile()
+  );
+  if (cli) {
+    return { command: execPath, args: [cli, ...args] };
+  }
+  if (platform === 'win32') {
+    throw new Error(
+      'Cannot locate npm-cli.js; run this command through npm run or install npm alongside Node'
+    );
+  }
   return { command: 'npm', args };
 }

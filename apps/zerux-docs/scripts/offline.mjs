@@ -1,7 +1,7 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import { createHash } from "node:crypto";
-import { buildTypescript } from "@zeruxjs/typescript";
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { buildTypescript } from '@zeruxjs/typescript';
 
 /** Emit a docs-scoped, opt-in PWA worker after production asset hashing. @param {string} directory Owned output root. @param {object} site Public mount configuration. @param {object[]} pages Validated route metadata. @param {object} assets Asset report. @returns {Promise<void>} Writes only static app artifacts. No environment/credential reads. */
 export async function emitOffline(
@@ -9,27 +9,27 @@ export async function emitOffline(
   site,
   pages,
   assets,
-  { production = true } = {},
+  { production = true } = {}
 ) {
   const relative = (url) => url.slice(site.basePath.length + 1);
-  const searchHash = createHash("sha256")
-    .update(await fs.readFile(path.join(directory, "assets/search.json")))
-    .digest("hex")
+  const searchHash = createHash('sha256')
+    .update(await fs.readFile(path.join(directory, 'assets/search.json')))
+    .digest('hex')
     .slice(0, 12);
   const resourceUrls = assets.assets.map(
-    (item) => `${relative(item.url)}?v=${item.version}`,
+    (item) => `${relative(item.url)}?v=${item.version}`
   );
   resourceUrls.push(`assets/search.json?v=${searchHash}`);
-  const version = createHash("sha256")
+  const version = createHash('sha256')
     .update(
-      JSON.stringify({ pages: pages.map((p) => [p.url, p.body]), assets }),
+      JSON.stringify({ pages: pages.map((p) => [p.url, p.body]), assets })
     )
-    .digest("hex")
+    .digest('hex')
     .slice(0, 16);
   const routes = [
-    "",
+    '',
     ...pages.map((page) => relative(page.url)),
-    "offline.html",
+    'offline.html',
   ];
   const worker = `/* Generated docs-only offline reader. Installed only after explicit visitor consent. */
 const ROOT = new URL('./', self.location.href);
@@ -100,54 +100,54 @@ self.addEventListener('fetch', event => {
   })());
 });
 `;
-  const workerFile = path.join(directory, "sw.js");
+  const workerFile = path.join(directory, 'sw.js');
   await fs.writeFile(workerFile, worker);
   if (production) {
-    const temporary = await fs.mkdtemp(path.join(directory, ".worker-build-"));
+    const temporary = await fs.mkdtemp(path.join(directory, '.worker-build-'));
     try {
       await buildTypescript({
         entryPoints: [workerFile],
         outdir: temporary,
-        platform: "browser",
-        format: "iife",
-        target: "es2022",
+        platform: 'browser',
+        format: 'iife',
+        target: 'es2022',
         bundle: true,
         minify: true,
         sourcemap: false,
       });
-      await fs.copyFile(path.join(temporary, "sw.js"), workerFile);
+      await fs.copyFile(path.join(temporary, 'sw.js'), workerFile);
     } finally {
       await fs.rm(temporary, { recursive: true, force: true });
     }
   }
   await fs.writeFile(
-    path.join(directory, "manifest.webmanifest"),
+    path.join(directory, 'manifest.webmanifest'),
     JSON.stringify({
-      id: "./",
-      name: "ZeruxJS Field Guide",
-      short_name: "ZeruxJS Docs",
+      id: './',
+      name: 'ZeruxJS Field Guide',
+      short_name: 'ZeruxJS Docs',
       description:
-        "Learn, build and solve with source-backed ZeruxJS documentation.",
-      start_url: "./",
-      scope: "./",
-      display: "standalone",
-      lang: "en",
-      background_color: "#f8f9fd",
-      theme_color: "#263b74",
+        'Learn, build and solve with source-backed ZeruxJS documentation.',
+      start_url: './',
+      scope: './',
+      display: 'standalone',
+      lang: 'en',
+      background_color: '#f8f9fd',
+      theme_color: '#263b74',
       icons: [
         {
-          src: "icons/icon-192.png",
-          sizes: "192x192",
-          type: "image/png",
-          purpose: "any",
+          src: 'icons/icon-192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any',
         },
         {
-          src: "icons/icon-512.png",
-          sizes: "512x512",
-          type: "image/png",
-          purpose: "any",
+          src: 'icons/icon-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any',
         },
       ],
-    }),
+    })
   );
 }

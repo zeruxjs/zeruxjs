@@ -4,12 +4,12 @@
 
 ZeruxJS ecosystem packages are versioned independently. **No stable 1.x release is certified yet.** Current alpha/beta packages are under active development and receive fixes on a best-effort basis, not a guaranteed stable security-support SLA. Do not interpret a successful local source test as stable publication approval.
 
-| Package versions | Security support |
-| --- | --- |
-| Current prerelease branches (for example `0.0.1-alpha.x`) | Best effort; no guaranteed support window |
-| Current released `0.x` packages | Best effort until an explicit support matrix is published |
-| `1.x` (not released/certified yet) | Not applicable |
-| Older prereleases | Not supported |
+| Package versions                                          | Security support                                          |
+| --------------------------------------------------------- | --------------------------------------------------------- |
+| Current prerelease branches (for example `0.0.1-alpha.x`) | Best effort; no guaranteed support window                 |
+| Current released `0.x` packages                           | Best effort until an explicit support matrix is published |
+| `1.x` (not released/certified yet)                        | Not applicable                                            |
+| Older prereleases                                         | Not supported                                             |
 
 After the first stable npm publication, replace this table with exact supported version lines and EOL dates. See `RELEASE_DECISION_85.md` for the current release state.
 

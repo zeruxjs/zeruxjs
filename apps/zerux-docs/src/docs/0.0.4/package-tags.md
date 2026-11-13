@@ -22,7 +22,7 @@ Tags connect browser ttag, request-scoped server astag, trigger definitions and 
 
 ## Browser collection
 
-Load the configured /_tags/ttag.js route after establishing an intentional consent policy. Use ttag event/set/get/consent operations. Denied consent discards queued events. Browser events are delivered asynchronously and best effort; a generated request ID does not prove delivery or legal consent.
+Load the configured /\_tags/ttag.js route after establishing an intentional consent policy. Use ttag event/set/get/consent operations. Denied consent discards queued events. Browser events are delivered asynchronously and best effort; a generated request ID does not prove delivery or legal consent.
 
 ## Server context
 
@@ -78,93 +78,93 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### TagRuntimeOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `analytics` | `AnalyticsManager` | No |
-| `requestIds` | `RequestIdStore` | No |
-| `store` | `TagContainerStore` | Yes |
-| `container` | `TagContainer` | Yes |
-| `prefix` | `string` | Yes |
-| `administration` | `TagAdminMount` | Yes |
-| `publicOrigin` | `string` | Yes |
-| `site` | `string` | Yes |
-| `allowedOrigins` | `string[]` | Yes |
-| `serverToken` | `string` | Yes |
-| `credentials` | `Record<string,{secret:string}>` | Yes |
-| `destinations` | `Record<string,{url:string;headers?:Record<string,string>}>` | Yes |
-| `fetch` | `typeof fetch` | Yes |
-| `authorizeAdmin` | `(request:Request)=>boolean\|Promise<boolean>` | Yes |
-| `authorizePublish` | `(request:Request)=>boolean\|Promise<boolean>` | Yes |
-| `requireBrowserConsent` | `boolean` | Yes |
-| `siteByOrigin` | `Record<string,string>` | Yes |
-| `botPolicy` | `'allow'\|'drop-known'` | Yes |
-| `dashboardHost` | `string` | Yes |
-| `debug` | `boolean` | Yes |
-| `defaultConsent` | `'granted'\|'denied'` | Yes |
-| `onDebug` | `(data:{requestId:string;event:string;matchedTriggers:string[];firedTags:string[];failures:string[]})=>void` | Yes |
-| `onWarning` | `(message:string)=>void` | Yes |
-| `providers` | `TagProviderRegistry` | Yes |
-| `ownProviders` | `boolean` | Yes |
-| `maxConcurrentDispatches` | `number` | Yes |
-| `dispatchTimeoutMs` | `number` | Yes |
-| `allowDispatch` | `(event: Readonly<TagEvent>) => boolean \| Promise<boolean>` | Yes |
-| `maxBodyBytes` | `number` | Yes |
-| `maxEventsPerMinute` | `number` | Yes |
+| Field                     | Accepted type/value                                                                                          | Optional |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ | -------- |
+| `analytics`               | `AnalyticsManager`                                                                                           | No       |
+| `requestIds`              | `RequestIdStore`                                                                                             | No       |
+| `store`                   | `TagContainerStore`                                                                                          | Yes      |
+| `container`               | `TagContainer`                                                                                               | Yes      |
+| `prefix`                  | `string`                                                                                                     | Yes      |
+| `administration`          | `TagAdminMount`                                                                                              | Yes      |
+| `publicOrigin`            | `string`                                                                                                     | Yes      |
+| `site`                    | `string`                                                                                                     | Yes      |
+| `allowedOrigins`          | `string[]`                                                                                                   | Yes      |
+| `serverToken`             | `string`                                                                                                     | Yes      |
+| `credentials`             | `Record<string,{secret:string}>`                                                                             | Yes      |
+| `destinations`            | `Record<string,{url:string;headers?:Record<string,string>}>`                                                 | Yes      |
+| `fetch`                   | `typeof fetch`                                                                                               | Yes      |
+| `authorizeAdmin`          | `(request:Request)=>boolean\|Promise<boolean>`                                                               | Yes      |
+| `authorizePublish`        | `(request:Request)=>boolean\|Promise<boolean>`                                                               | Yes      |
+| `requireBrowserConsent`   | `boolean`                                                                                                    | Yes      |
+| `siteByOrigin`            | `Record<string,string>`                                                                                      | Yes      |
+| `botPolicy`               | `'allow'\|'drop-known'`                                                                                      | Yes      |
+| `dashboardHost`           | `string`                                                                                                     | Yes      |
+| `debug`                   | `boolean`                                                                                                    | Yes      |
+| `defaultConsent`          | `'granted'\|'denied'`                                                                                        | Yes      |
+| `onDebug`                 | `(data:{requestId:string;event:string;matchedTriggers:string[];firedTags:string[];failures:string[]})=>void` | Yes      |
+| `onWarning`               | `(message:string)=>void`                                                                                     | Yes      |
+| `providers`               | `TagProviderRegistry`                                                                                        | Yes      |
+| `ownProviders`            | `boolean`                                                                                                    | Yes      |
+| `maxConcurrentDispatches` | `number`                                                                                                     | Yes      |
+| `dispatchTimeoutMs`       | `number`                                                                                                     | Yes      |
+| `allowDispatch`           | `(event: Readonly<TagEvent>) => boolean \| Promise<boolean>`                                                 | Yes      |
+| `maxBodyBytes`            | `number`                                                                                                     | Yes      |
+| `maxEventsPerMinute`      | `number`                                                                                                     | Yes      |
 
 ### TagContainer
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `version` | `number` | No |
-| `name` | `string` | No |
-| `triggers` | `Trigger[]` | No |
-| `tags` | `TagDefinition[]` | No |
-| `variables` | `Variable[]` | No |
-| `governance` | `TagGovernance` | Yes |
+| Field        | Accepted type/value | Optional |
+| ------------ | ------------------- | -------- |
+| `id`         | `string`            | No       |
+| `version`    | `number`            | No       |
+| `name`       | `string`            | No       |
+| `triggers`   | `Trigger[]`         | No       |
+| `tags`       | `TagDefinition[]`   | No       |
+| `variables`  | `Variable[]`        | No       |
+| `governance` | `TagGovernance`     | Yes      |
 
 ### TagDefinition
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `name` | `string` | No |
-| `type` | `'analytics'\|'ga4'\|'webhook'\|'provider'` | No |
-| `providerRef` | `string` | Yes |
-| `providerVersion` | `number` | Yes |
-| `publicConfig` | `Values` | Yes |
-| `triggerIds` | `string[]` | No |
-| `enabled` | `boolean` | Yes |
-| `eventName` | `string` | Yes |
-| `measurementId` | `string` | Yes |
-| `credentialRef` | `string` | Yes |
-| `destinationRef` | `string` | Yes |
-| `clientIdVariable` | `string` | Yes |
-| `parameters` | `Record<string,Scalar\|string>` | Yes |
+| Field              | Accepted type/value                         | Optional |
+| ------------------ | ------------------------------------------- | -------- |
+| `id`               | `string`                                    | No       |
+| `name`             | `string`                                    | No       |
+| `type`             | `'analytics'\|'ga4'\|'webhook'\|'provider'` | No       |
+| `providerRef`      | `string`                                    | Yes      |
+| `providerVersion`  | `number`                                    | Yes      |
+| `publicConfig`     | `Values`                                    | Yes      |
+| `triggerIds`       | `string[]`                                  | No       |
+| `enabled`          | `boolean`                                   | Yes      |
+| `eventName`        | `string`                                    | Yes      |
+| `measurementId`    | `string`                                    | Yes      |
+| `credentialRef`    | `string`                                    | Yes      |
+| `destinationRef`   | `string`                                    | Yes      |
+| `clientIdVariable` | `string`                                    | Yes      |
+| `parameters`       | `Record<string,Scalar\|string>`             | Yes      |
 
 ### Trigger
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `name` | `string` | No |
-| `type` | `'event'\|'all'\|'pageview'\|'click'\|'form'\|'history'\|'group'` | No |
-| `schemaVersion` | `1` | Yes |
-| `composition` | `{mode: 'all' \| 'any' \| 'not'; triggerIds: string[]}` | Yes |
-| `event` | `string` | Yes |
-| `conditions` | `Condition[]` | Yes |
-| `enabled` | `boolean` | Yes |
+| Field           | Accepted type/value                                               | Optional |
+| --------------- | ----------------------------------------------------------------- | -------- |
+| `id`            | `string`                                                          | No       |
+| `name`          | `string`                                                          | No       |
+| `type`          | `'event'\|'all'\|'pageview'\|'click'\|'form'\|'history'\|'group'` | No       |
+| `schemaVersion` | `1`                                                               | Yes      |
+| `composition`   | `{mode: 'all' \| 'any' \| 'not'; triggerIds: string[]}`           | Yes      |
+| `event`         | `string`                                                          | Yes      |
+| `conditions`    | `Condition[]`                                                     | Yes      |
+| `enabled`       | `boolean`                                                         | Yes      |
 
 ### Variable
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `name` | `string` | No |
-| `type` | `'constant'\|'event'\|'dataLayer'\|'context'` | No |
-| `schemaVersion` | `1` | Yes |
-| `key` | `string` | Yes |
-| `value` | `Scalar` | Yes |
+| Field           | Accepted type/value                           | Optional |
+| --------------- | --------------------------------------------- | -------- |
+| `id`            | `string`                                      | No       |
+| `name`          | `string`                                      | No       |
+| `type`          | `'constant'\|'event'\|'dataLayer'\|'context'` | No       |
+| `schemaVersion` | `1`                                           | Yes      |
+| `key`           | `string`                                      | Yes      |
+| `value`         | `Scalar`                                      | Yes      |
 
 ## Explicit owners and public imports
 

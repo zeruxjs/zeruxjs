@@ -6,9 +6,9 @@
 
 ## Reproduction before the fix
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 **Observed behavior:**
 

@@ -156,11 +156,9 @@ Every public package now has an authored setup/status page. Preserve established
 
 Primary collections are defined once in `src/lib/navigation.mjs` and shared by the HTML and raw Markdown portal; course learning paths remain in `src/lib/learning-paths.mjs`. Validate self-contained examples with the installed public declarations; report real integration/browser checks separately from typechecks.
 
-
 Documentation retention: keep major/minor documentation lines, with only the latest patch for each retained line. The current 0.0 line is documented at 0.0.4; 0.0.2 is removed rather than duplicated.
 
 This branch previews docs 0.0.4 with `packageVersion: "0.0.4"`, so package installation examples and generated references remain truthful without a package release. Source links target `version/v0.0.4`.
-
 
 ## Learning, task finding and browser-local progress
 
@@ -181,7 +179,6 @@ Offline support is explicitly opt-in: `offline.js` registers `sw.js` only after 
 The worker keeps at most a bounded set of previously read eligible pages/assets, with a 1 MiB per-response budget and an explicit offline fallback. Unvisited/oversized pages are not promised offline. It waits for an explicit update action before replacing an active worker, and cleanup touches only this mount's cache prefix. Removal keeps learning progress. Installation is browser-dependent; no push notifications or account background services are used. `manifest.webmanifest` and code-native PNG/SVG icons support install prompts on eligible secure origins. Preview server MIME types include manifest/PNG files.
 
 Run the static validator after every build. It now checks one main heading, landmarks, structured metadata, PWA scope/icons and existing raw Markdown/link/search integrity. For interactive changes, verify a real browser: storage denial/corruption, duplicate points, resume/reset/bookmarks, keyboard opt-out/focus, reduced motion, mobile overflow, dark contrast, no-JavaScript reading and actual offline requests. Performance scores are environment-specific measurements, not blanket production certification.
-
 
 ## Reconciled navigation and presentation
 

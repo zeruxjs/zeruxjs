@@ -1,8 +1,9 @@
+/** Sample package value or fixture named sections. */
 export const sections = [
   {
-    id: "parent-main",
-    title: "Parent Overview",
-    icon: "P",
+    id: 'parent-main',
+    title: 'Parent Overview',
+    icon: 'P',
     render() {
       return `
         <article class="zdev-card">
@@ -15,6 +16,6 @@ export const sections = [
           <pre id="parent-result" class="zdev-code-block" style="margin-top: 1rem; display:none"></pre>
         </article>
       `;
-    }
-  }
+    },
+  },
 ];

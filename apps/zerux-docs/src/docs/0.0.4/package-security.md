@@ -93,64 +93,63 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### SecureHeadersOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `hsts` | `boolean \| { maxAgeSeconds: number; includeSubDomains?: boolean; preload?: boolean }` | Yes |
-| `csp` | `string` | Yes |
-| `referrerPolicy` | `"no-referrer" \| "strict-origin-when-cross-origin" \| "same-origin"` | Yes |
-| `frameOptions` | `"DENY" \| "SAMEORIGIN"` | Yes |
+| Field            | Accepted type/value                                                                    | Optional |
+| ---------------- | -------------------------------------------------------------------------------------- | -------- |
+| `hsts`           | `boolean \| { maxAgeSeconds: number; includeSubDomains?: boolean; preload?: boolean }` | Yes      |
+| `csp`            | `string`                                                                               | Yes      |
+| `referrerPolicy` | `"no-referrer" \| "strict-origin-when-cross-origin" \| "same-origin"`                  | Yes      |
+| `frameOptions`   | `"DENY" \| "SAMEORIGIN"`                                                               | Yes      |
 
 ### CsrfOptions
 
 Double-submit friendly, session-bound signed token. The caller must store the session identifier securely.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `secret` | `string \| Buffer` | No |
-| `ttlSeconds` | `number` | Yes |
-| `now` | `() => number` | Yes |
+| Field        | Accepted type/value | Optional |
+| ------------ | ------------------- | -------- |
+| `secret`     | `string \| Buffer`  | No       |
+| `ttlSeconds` | `number`            | Yes      |
+| `now`        | `() => number`      | Yes      |
 
 ### CorsOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `origins` | `readonly string[] \| ((origin: string) => boolean)` | No |
-| `methods` | `readonly string[]` | Yes |
-| `headers` | `readonly string[]` | Yes |
-| `exposeHeaders` | `readonly string[]` | Yes |
-| `credentials` | `boolean` | Yes |
-| `maxAgeSeconds` | `number` | Yes |
+| Field           | Accepted type/value                                  | Optional |
+| --------------- | ---------------------------------------------------- | -------- |
+| `origins`       | `readonly string[] \| ((origin: string) => boolean)` | No       |
+| `methods`       | `readonly string[]`                                  | Yes      |
+| `headers`       | `readonly string[]`                                  | Yes      |
+| `exposeHeaders` | `readonly string[]`                                  | Yes      |
+| `credentials`   | `boolean`                                            | Yes      |
+| `maxAgeSeconds` | `number`                                             | Yes      |
 
 ### RateLimitOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `windowMs` | `number` | No |
-| `max` | `number` | No |
-| `maxKeys` | `number` | Yes |
-| `now` | `() => number` | Yes |
+| Field      | Accepted type/value | Optional |
+| ---------- | ------------------- | -------- |
+| `windowMs` | `number`            | No       |
+| `max`      | `number`            | No       |
+| `maxKeys`  | `number`            | Yes      |
+| `now`      | `() => number`      | Yes      |
 
 ### CookieOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxAgeSeconds` | `number` | Yes |
-| `path` | `string` | Yes |
-| `domain` | `string` | Yes |
-| `httpOnly` | `boolean` | Yes |
-| `secure` | `boolean` | Yes |
-| `sameSite` | `"Strict" \| "Lax" \| "None"` | Yes |
-
+| Field           | Accepted type/value           | Optional |
+| --------------- | ----------------------------- | -------- |
+| `maxAgeSeconds` | `number`                      | Yes      |
+| `path`          | `string`                      | Yes      |
+| `domain`        | `string`                      | Yes      |
+| `httpOnly`      | `boolean`                     | Yes      |
+| `secure`        | `boolean`                     | Yes      |
+| `sameSite`      | `"Strict" \| "Lax" \| "None"` | Yes      |
 
 ## Match encoding to the destination
 
-| Helper | Supported destination |
-| --- | --- |
-| escapeHtmlText | HTML text source |
-| escapeHtmlAttribute | Fixed, quoted, inert HTML attribute values |
-| validateNavigationUrl | Validated HTTP(S) navigation, then attribute-encode at an HTML sink |
-| serializeJavaScriptValue | One JSON-compatible JS value inside an HTML script block |
-| serializeCssString | One quoted CSS string token for a fixed inert string property |
+| Helper                   | Supported destination                                               |
+| ------------------------ | ------------------------------------------------------------------- |
+| escapeHtmlText           | HTML text source                                                    |
+| escapeHtmlAttribute      | Fixed, quoted, inert HTML attribute values                          |
+| validateNavigationUrl    | Validated HTTP(S) navigation, then attribute-encode at an HTML sink |
+| serializeJavaScriptValue | One JSON-compatible JS value inside an HTML script block            |
+| serializeCssString       | One quoted CSS string token for a fixed inert string property       |
 
 Import these pure helpers from `@zeruxjs/security/encoding`, or the root. None is a
 universal sanitizer. Never use HTML encoding as JavaScript, CSS or URL validation,
@@ -188,13 +187,13 @@ try {
 } finally { ring.destroy(); }
 ```
 
-| Purpose | API/policy |
-| --- | --- |
-| Reversible encryption | createEncryptionKeyring: AES-256-GCM, 32-byte key, random 12-byte IV, 16-byte tag |
-| Shared-secret authentication | createMessageAuthenticator: HMAC-SHA-256 with independent 32-byte keys |
-| Data digest | hashData: SHA-256 default, SHA-384 or SHA-512 only, hex output |
-| Byte comparison | timingSafeEqualBytes: native equal-length comparison; lengths remain observable |
-| Password KDF | Existing auth-owned scrypt API, separate from these primitives |
+| Purpose                      | API/policy                                                                        |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| Reversible encryption        | createEncryptionKeyring: AES-256-GCM, 32-byte key, random 12-byte IV, 16-byte tag |
+| Shared-secret authentication | createMessageAuthenticator: HMAC-SHA-256 with independent 32-byte keys            |
+| Data digest                  | hashData: SHA-256 default, SHA-384 or SHA-512 only, hex output                    |
+| Byte comparison              | timingSafeEqualBytes: native equal-length comparison; lengths remain observable   |
+| Password KDF                 | Existing auth-owned scrypt API, separate from these primitives                    |
 
 All cryptographic operations use Node crypto/OpenSSL. There are no custom ciphers,
 weak password hashes or noncryptographic checksum aliases, and no full Node/JOSE
@@ -265,7 +264,6 @@ results, owned cleanup, runtime policy rejection and offline installed public
 exports/declarations through the shared TypeScript tooling. No live browser/proxy,
 distributed rotation, timing measurement or full-system security certification is
 claimed. Only installed tooling and native Node crypto are local prerequisites.
-
 
 JavaScript-value serialization returns a `JSON.parse(...)` expression, preserving
 JSON own-property semantics for names such as `__proto__`. It requires the ordinary

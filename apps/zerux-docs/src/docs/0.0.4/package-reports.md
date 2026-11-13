@@ -78,54 +78,53 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### ReportsOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `analytics` | `AnalyticsManager` | No |
-| `store` | `ReportsStore` | Yes |
-| `source` | `AnalyticsReportSource` | Yes |
-| `prefix` | `string` | Yes |
-| `authorize` | `(request:Request,action?:ReportAction,resourceId?:string)=>boolean\|Promise<boolean>` | No |
-| `dashboardHost` | `string` | Yes |
-| `maxSourceRows` | `number` | Yes |
-| `site` | `string` | Yes |
-| `resolveScope` | `(request:Request)=>Promise<ReportTenantScope>\|ReportTenantScope` | Yes |
-| `campaigns` | `CampaignReportsSource` | Yes |
+| Field           | Accepted type/value                                                                    | Optional |
+| --------------- | -------------------------------------------------------------------------------------- | -------- |
+| `analytics`     | `AnalyticsManager`                                                                     | No       |
+| `store`         | `ReportsStore`                                                                         | Yes      |
+| `source`        | `AnalyticsReportSource`                                                                | Yes      |
+| `prefix`        | `string`                                                                               | Yes      |
+| `authorize`     | `(request:Request,action?:ReportAction,resourceId?:string)=>boolean\|Promise<boolean>` | No       |
+| `dashboardHost` | `string`                                                                               | Yes      |
+| `maxSourceRows` | `number`                                                                               | Yes      |
+| `site`          | `string`                                                                               | Yes      |
+| `resolveScope`  | `(request:Request)=>Promise<ReportTenantScope>\|ReportTenantScope`                     | Yes      |
+| `campaigns`     | `CampaignReportsSource`                                                                | Yes      |
 
 ### ChartDefinition
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `title` | `string` | No |
-| `type` | `ChartKind` | No |
-| `groupBy` | `` 'event'\|'day'\|'source'\|'site'\|'pathname'\|`property:${string}` `` | No |
-| `metric` | `Metric` | No |
-| `valueField` | `string` | Yes |
-| `eventName` | `string` | Yes |
-| `source` | `string` | Yes |
-| `site` | `string` | Yes |
-| `since` | `number` | Yes |
-| `until` | `number` | Yes |
-| `limit` | `number` | Yes |
+| Field        | Accepted type/value                                                      | Optional |
+| ------------ | ------------------------------------------------------------------------ | -------- |
+| `id`         | `string`                                                                 | No       |
+| `title`      | `string`                                                                 | No       |
+| `type`       | `ChartKind`                                                              | No       |
+| `groupBy`    | `` 'event'\|'day'\|'source'\|'site'\|'pathname'\|`property:${string}` `` | No       |
+| `metric`     | `Metric`                                                                 | No       |
+| `valueField` | `string`                                                                 | Yes      |
+| `eventName`  | `string`                                                                 | Yes      |
+| `source`     | `string`                                                                 | Yes      |
+| `site`       | `string`                                                                 | Yes      |
+| `since`      | `number`                                                                 | Yes      |
+| `until`      | `number`                                                                 | Yes      |
+| `limit`      | `number`                                                                 | Yes      |
 
 ### AnalyticsReportSource
 
 Native `aggregate`/`aggregateNumeric` adapters can count persisted facts beyond the raw sampling cap. Custom `events` callbacks still return at most 500 raw rows; display groups and provenance remain independently bounded.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `events` | `Promise<AnalyticsRow[]>` | No |
-| `aggregate` | `Promise<AnalyticsAggregateResult>` | Yes |
-| `aggregateNumeric` | `Promise<AnalyticsNumericAggregateResult>` | Yes |
-| `supportsNumericField` | `boolean` | Yes |
+| Field                  | Accepted type/value                        | Optional |
+| ---------------------- | ------------------------------------------ | -------- |
+| `events`               | `Promise<AnalyticsRow[]>`                  | No       |
+| `aggregate`            | `Promise<AnalyticsAggregateResult>`        | Yes      |
+| `aggregateNumeric`     | `Promise<AnalyticsNumericAggregateResult>` | Yes      |
+| `supportsNumericField` | `boolean`                                  | Yes      |
 
 ### ReportsStore
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `load` | `Promise<ReportsDocument>` | No |
-| `save` | `Promise<boolean>` | No |
-
+| Field  | Accepted type/value        | Optional |
+| ------ | -------------------------- | -------- |
+| `load` | `Promise<ReportsDocument>` | No       |
+| `save` | `Promise<boolean>`         | No       |
 
 ## Explicit external sources and browser views
 

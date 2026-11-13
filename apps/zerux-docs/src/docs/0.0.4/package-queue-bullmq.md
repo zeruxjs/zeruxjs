@@ -16,7 +16,6 @@
 }
 ---
 
-
 BullMQ-backed named job queues, durable Redis storage, optional worker processors, delayed/retried/repeatable jobs, and generation-scoped ZeruxJS startup/shutdown. This is a **Redis-backed queue** and does not use the SQL/Mongo analytics storage as a queue backend.
 
 ## Dependencies
@@ -167,7 +166,7 @@ State transitions:
 
 `pending -> claimed -> suppressed` (marketing opted out)
 
-`claimed -> pending` (consent store unavailable *before* SMTP begins; safe to retry)
+`claimed -> pending` (consent store unavailable _before_ SMTP begins; safe to retry)
 
 `sending -> uncertain` (SMTP error, timeout, crash, or expired sending lease; **never resend automatically**)
 
@@ -230,7 +229,6 @@ Use dedicated throwaway test Redis instances, correct authentication and TLS as 
 ## Compatibility and development
 
 This package owns the extracted BullMQ implementation. `@zeruxjs/queue` reexports its existing API for backward compatibility; there is no dependency back to the facade. Historical queue test paths remain in `packages/@zeruxjs/queue/test`. Build this package before the facade and run the focused existing facade tests to check compatibility. This package does not implement RabbitMQ or MemcacheQ.
-
 
 ## Reporting and resource ownership
 

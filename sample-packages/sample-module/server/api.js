@@ -1,4 +1,4 @@
-import { defineDevtoolsModuleApiHandlers } from "zforge";
+import { defineDevtoolsModuleApiHandlers } from 'zforge';
 
 export default defineDevtoolsModuleApiHandlers({
   inspect({ app, snapshot, identifier, body, module }) {
@@ -7,13 +7,14 @@ export default defineDevtoolsModuleApiHandlers({
       packageName: module.packageName,
       routeName: app.routeName,
       identifier: identifier ?? null,
-      requestedAt: body && typeof body === "object" ? body.requestedAt ?? null : null,
+      requestedAt:
+        body && typeof body === 'object' ? (body.requestedAt ?? null) : null,
       snapshot: {
         mode: snapshot.mode,
         appPort: snapshot.appPort,
         routes: snapshot.routes.length,
-        updatedAt: snapshot.updatedAt
-      }
+        updatedAt: snapshot.updatedAt,
+      },
     };
-  }
+  },
 });

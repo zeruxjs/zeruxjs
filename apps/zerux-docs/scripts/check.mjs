@@ -1,14 +1,14 @@
-import { markdownDigest } from "../src/lib/raw-markdown.mjs";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { sitePath } from "../src/site.config.mjs";
-import { root } from "../src/lib/content.mjs";
+import { markdownDigest } from '../src/lib/raw-markdown.mjs';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { sitePath } from '../src/site.config.mjs';
+import { root } from '../src/lib/content.mjs';
 
 /** Validate emitted routes, anchors, asset links and search coverage.
  * @param {string} directory Generated export. @returns {Promise<object>} Validation counts. Reads generated output only.
  */
-export async function check(directory = path.join(root, "dist")) {
+export async function check(directory = path.join(root, 'dist')) {
   const files = new Map();
   async function walk(base) {
     for (const entry of await fs.readdir(base, { withFileTypes: true })) {
@@ -18,27 +18,27 @@ export async function check(directory = path.join(root, "dist")) {
       if (entry.isDirectory()) await walk(file);
       else if (entry.isFile())
         files.set(
-          "/" + path.relative(directory, file).split(path.sep).join("/"),
-          await fs.readFile(file, "utf8"),
+          '/' + path.relative(directory, file).split(path.sep).join('/'),
+          await fs.readFile(file, 'utf8')
         );
     }
   }
   await walk(directory);
-  const html = [...files].filter(([name]) => name.endsWith(".html"));
+  const html = [...files].filter(([name]) => name.endsWith('.html'));
   const ids = new Map();
   for (const [name, content] of html) {
     if (
-      !content.startsWith("<!doctype html>") ||
-      !content.includes("<h1>") ||
-      !content.includes("<article")
+      !content.startsWith('<!doctype html>') ||
+      !content.includes('<h1>') ||
+      !content.includes('<article')
     )
       throw new Error(`Incomplete static HTML: ${name}`);
     if (
       [...content.matchAll(/<h1(?:\s[^>]*)?>/g)].length !== 1 ||
-      !content.includes("<main")
+      !content.includes('<main')
     )
       throw new Error(`Invalid main heading/landmark: ${name}`);
-    if (!name.endsWith("/offline.html")) {
+    if (!name.endsWith('/offline.html')) {
       if (
         !content.includes('name="description"') ||
         !content.includes('name="viewport"')
@@ -46,29 +46,29 @@ export async function check(directory = path.join(root, "dist")) {
         throw new Error(`Missing metadata: ${name}`);
       const structured =
         /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(
-          content,
+          content
         );
       if (!structured || !JSON.parse(structured[1]).name)
         throw new Error(`Invalid structured data: ${name}`);
     }
     const found = [...content.matchAll(/\bid="([^"]+)"/g)].map(
-      (match) => match[1],
+      (match) => match[1]
     );
     if (new Set(found).size !== found.length)
       throw new Error(`Duplicate heading/element IDs: ${name}`);
     ids.set(name, new Set(found));
   }
   const resolve = (pathname) =>
-    pathname.endsWith("/") ? pathname + "index.html" : pathname;
+    pathname.endsWith('/') ? pathname + 'index.html' : pathname;
   let links = 0;
   for (const [name, content] of html) {
     for (const match of content.matchAll(
-      /(data-site-root )?\b(?:href|src)="([^"]+)"/g,
+      /(data-site-root )?\b(?:href|src)="([^"]+)"/g
     )) {
-      const href = match[2].replaceAll("&amp;", "&");
-      if (match[1] && href === "/") continue; // The ecosystem root is owned by the combined builder.
-      if (!href.startsWith("/") && !href.startsWith("#")) continue;
-      const url = new URL(href, "https://docs.invalid" + name);
+      const href = match[2].replaceAll('&amp;', '&');
+      if (match[1] && href === '/') continue; // The ecosystem root is owned by the combined builder.
+      if (!href.startsWith('/') && !href.startsWith('#')) continue;
+      const url = new URL(href, 'https://docs.invalid' + name);
       const target = resolve(decodeURIComponent(url.pathname));
       if (!files.has(target)) throw new Error(`Broken link ${href} in ${name}`);
       if (
@@ -80,9 +80,9 @@ export async function check(directory = path.join(root, "dist")) {
       links++;
     }
   }
-  const manifest = JSON.parse(files.get(sitePath("/build-manifest.json")));
-  if (!files.has(sitePath("/.nojekyll")))
-    throw new Error("Raw Markdown requires .nojekyll");
+  const manifest = JSON.parse(files.get(sitePath('/build-manifest.json')));
+  if (!files.has(sitePath('/.nojekyll')))
+    throw new Error('Raw Markdown requires .nojekyll');
   for (const [url, digest] of Object.entries(manifest.markdownFiles ?? {})) {
     const text = files.get(url);
     if (
@@ -94,41 +94,41 @@ export async function check(directory = path.join(root, "dist")) {
   }
   for (const page of manifest.pages) {
     if (
-      !manifest.markdownFiles?.[page.slice(0, -1) + ".md"] ||
-      !manifest.markdownFiles?.[page + "index.md"]
+      !manifest.markdownFiles?.[page.slice(0, -1) + '.md'] ||
+      !manifest.markdownFiles?.[page + 'index.md']
     )
       throw new Error(`Missing Markdown alternatives: ${page}`);
   }
-  const appManifest = JSON.parse(files.get(sitePath("/manifest.webmanifest")));
+  const appManifest = JSON.parse(files.get(sitePath('/manifest.webmanifest')));
   if (
-    appManifest.scope !== "./" ||
-    appManifest.start_url !== "./" ||
-    !files.has(sitePath("/sw.js"))
+    appManifest.scope !== './' ||
+    appManifest.start_url !== './' ||
+    !files.has(sitePath('/sw.js'))
   )
-    throw new Error("Offline support must stay within the docs mount");
+    throw new Error('Offline support must stay within the docs mount');
   for (const icon of appManifest.icons ?? [])
-    if (!files.has(sitePath("/" + icon.src)))
+    if (!files.has(sitePath('/' + icon.src)))
       throw new Error(`Missing PWA icon: ${icon.src}`);
-  const search = JSON.parse(files.get(sitePath("/assets/search.json")));
+  const search = JSON.parse(files.get(sitePath('/assets/search.json')));
   if (
     search.schema !== 2 ||
     !Array.isArray(search.pages) ||
     !Array.isArray(search.sections)
   )
-    throw new Error("Invalid compact search schema");
+    throw new Error('Invalid compact search schema');
   const entries = [
     ...search.pages.map((row) => ({ url: row[3] })),
     ...search.sections.map((row) => ({
-      url: search.pages[row[0]][3] + "#" + row[2],
+      url: search.pages[row[0]][3] + '#' + row[2],
     })),
   ];
   for (const page of manifest.pages) {
     if (!files.has(resolve(page))) throw new Error(`Missing page ${page}`);
-    if (!entries.some((entry) => entry.url.split("#")[0] === page))
+    if (!entries.some((entry) => entry.url.split('#')[0] === page))
       throw new Error(`Page absent from search: ${page}`);
   }
   for (const entry of entries) {
-    const url = new URL(entry.url, "https://docs.invalid");
+    const url = new URL(entry.url, 'https://docs.invalid');
     const target = resolve(url.pathname);
     if (
       !files.has(target) ||
@@ -142,4 +142,4 @@ if (
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 )
-  console.info("[docs] Verified", await check());
+  console.info('[docs] Verified', await check());

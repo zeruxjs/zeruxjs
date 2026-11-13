@@ -1,27 +1,33 @@
-import { getActiveDatabaseManager } from "@zeruxjs/db";
-import { HttpError } from "zeruxjs";
+import { getActiveDatabaseManager } from '@zeruxjs/db';
+import { HttpError } from 'zeruxjs';
 
 export const getDbDemoConnection = () => {
-    if (process.env.ENABLE_MYSQL_DEMO !== "true") throw new HttpError(503, "Optional MySQL demo is disabled");
-    return getActiveDatabaseManager().getConnectionFacade("something");
+  if (process.env.ENABLE_MYSQL_DEMO !== 'true')
+    throw new HttpError(503, 'Optional MySQL demo is disabled');
+  return getActiveDatabaseManager().getConnectionFacade('something');
 };
 
-const DB_DEMO_TABLE_FALLBACK = "contact_submissions";
-export const DB_DEMO_CONNECTION_SLUG = "something";
+const DB_DEMO_TABLE_FALLBACK = 'contact_submissions';
+export const DB_DEMO_CONNECTION_SLUG = 'something';
 const IDENTIFIER_CHAR_PATTERN = /[^A-Za-z0-9_]/g;
 
 const isIgnorableIndexError = (error: unknown): boolean => {
-    if (!(error instanceof Error)) return false;
+  if (!(error instanceof Error)) return false;
 
-    const details = "details" in error && typeof error.details === "object" && error.details !== null
-        ? error.details as Record<string, unknown>
-        : null;
-    const code = typeof details?.code === "string" ? details.code : "";
-    const message = error.message.toLowerCase();
+  const details =
+    'details' in error &&
+    typeof error.details === 'object' &&
+    error.details !== null
+      ? (error.details as Record<string, unknown>)
+      : null;
+  const code = typeof details?.code === 'string' ? details.code : '';
+  const message = error.message.toLowerCase();
 
-    return code === "ER_DUP_KEYNAME" ||
-        message.includes("duplicate key name") ||
-        message.includes("already exists");
+  return (
+    code === 'ER_DUP_KEYNAME' ||
+    message.includes('duplicate key name') ||
+    message.includes('already exists')
+  );
 };
 
 /**
@@ -31,11 +37,16 @@ const isIgnorableIndexError = (error: unknown): boolean => {
  * @returns Safe table name.
  */
 export const getDbDemoTableName = (): string => {
-    const db = getDbDemoConnection();
-    const rawPrefix = typeof db.options.prefix === "string" ? db.options.prefix : "";
-    const safePrefix = rawPrefix.replace(IDENTIFIER_CHAR_PATTERN, "_").replace(/^_+|_+$/g, "");
+  const db = getDbDemoConnection();
+  const rawPrefix =
+    typeof db.options.prefix === 'string' ? db.options.prefix : '';
+  const safePrefix = rawPrefix
+    .replace(IDENTIFIER_CHAR_PATTERN, '_')
+    .replace(/^_+|_+$/g, '');
 
-    return safePrefix ? `${safePrefix}_${DB_DEMO_TABLE_FALLBACK}` : DB_DEMO_TABLE_FALLBACK;
+  return safePrefix
+    ? `${safePrefix}_${DB_DEMO_TABLE_FALLBACK}`
+    : DB_DEMO_TABLE_FALLBACK;
 };
 
 /**
@@ -45,61 +56,61 @@ export const getDbDemoTableName = (): string => {
  * @returns Create table result.
  */
 export const ensureDbDemoTable = async () => {
-    const db = getDbDemoConnection();
-    const table = getDbDemoTableName();
+  const db = getDbDemoConnection();
+  const table = getDbDemoTableName();
 
-    const createTableResult = await db.createTable({
-        table,
-        ifNotExists: true,
-        columns: [
-            {
-                name: "id",
-                type: "integer",
-                primary: true,
-                autoIncrement: true
-            },
-            {
-                name: "name",
-                type: "varchar",
-                length: 120,
-                notNull: true
-            },
-            {
-                name: "email",
-                type: "varchar",
-                length: 190,
-                notNull: true
-            },
-            {
-                name: "message",
-                type: "text",
-                notNull: true
-            },
-            {
-                name: "created_at",
-                type: "datetime",
-                notNull: true,
-                default: {
-                    kind: "function",
-                    name: "CURRENT_TIMESTAMP"
-                }
-            }
-        ]
+  const createTableResult = await db.createTable({
+    table,
+    ifNotExists: true,
+    columns: [
+      {
+        name: 'id',
+        type: 'integer',
+        primary: true,
+        autoIncrement: true,
+      },
+      {
+        name: 'name',
+        type: 'varchar',
+        length: 120,
+        notNull: true,
+      },
+      {
+        name: 'email',
+        type: 'varchar',
+        length: 190,
+        notNull: true,
+      },
+      {
+        name: 'message',
+        type: 'text',
+        notNull: true,
+      },
+      {
+        name: 'created_at',
+        type: 'datetime',
+        notNull: true,
+        default: {
+          kind: 'function',
+          name: 'CURRENT_TIMESTAMP',
+        },
+      },
+    ],
+  });
+
+  try {
+    await db.createIndex({
+      table,
+      name: `${table}_email_idx`,
+      columns: ['email'],
     });
-
-    try {
-        await db.createIndex({
-            table,
-            name: `${table}_email_idx`,
-            columns: ["email"]
-        });
-    } catch (error) {
-        if (!isIgnorableIndexError(error)) {
-            throw error;
-        }
+  } catch (error) {
+    if (!isIgnorableIndexError(error)) {
+      throw error;
     }
+  }
 
-    return createTableResult;
+  return createTableResult;
 };
 
 /**
@@ -110,30 +121,35 @@ export const ensureDbDemoTable = async () => {
  * @returns Normalized submission payload.
  */
 export const normalizeDbDemoInput = (
-    input: unknown
-): { name: string; email: string; message: string; } => {
-    const body = typeof input === "object" && input !== null ? input as Record<string, unknown> : {};
-    const name = String(body.name ?? "").trim();
-    const email = String(body.email ?? "").trim().toLowerCase();
-    const message = String(body.message ?? "").trim();
+  input: unknown
+): { name: string; email: string; message: string } => {
+  const body =
+    typeof input === 'object' && input !== null
+      ? (input as Record<string, unknown>)
+      : {};
+  const name = String(body.name ?? '').trim();
+  const email = String(body.email ?? '')
+    .trim()
+    .toLowerCase();
+  const message = String(body.message ?? '').trim();
 
-    if (name.length < 2) {
-        throw new Error("Name must be at least 2 characters long");
-    }
+  if (name.length < 2) {
+    throw new Error('Name must be at least 2 characters long');
+  }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        throw new Error("Email must be a valid email address");
-    }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('Email must be a valid email address');
+  }
 
-    if (message.length < 5) {
-        throw new Error("Message must be at least 5 characters long");
-    }
+  if (message.length < 5) {
+    throw new Error('Message must be at least 5 characters long');
+  }
 
-    return {
-        name: name.slice(0, 120),
-        email: email.slice(0, 190),
-        message: message.slice(0, 2000)
-    };
+  return {
+    name: name.slice(0, 120),
+    email: email.slice(0, 190),
+    message: message.slice(0, 2000),
+  };
 };
 
 /**
@@ -144,15 +160,14 @@ export const normalizeDbDemoInput = (
  * @returns Database select result.
  */
 export const listDbDemoSubmissions = async (limit = 20) =>
-    getDbDemoConnection().select({
-        table: getDbDemoTableName(),
-        columns: ["id", "name", "email", "message", "created_at"],
-        orderBy: [
-            {
-                by: "id",
-                direction: "desc"
-            }
-        ],
-        limit
-    });
-
+  getDbDemoConnection().select({
+    table: getDbDemoTableName(),
+    columns: ['id', 'name', 'email', 'message', 'created_at'],
+    orderBy: [
+      {
+        by: 'id',
+        direction: 'desc',
+      },
+    ],
+    limit,
+  });

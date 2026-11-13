@@ -93,129 +93,129 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### StorageManagerOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `stores` | `StorageDefinition[]` | No |
-| `defaultStorage` | `string` | Yes |
-| `cache` | `{ maxEntries?: number; maxBytes?: number; ttlMs?: number }` | Yes |
+| Field            | Accepted type/value                                          | Optional |
+| ---------------- | ------------------------------------------------------------ | -------- |
+| `stores`         | `StorageDefinition[]`                                        | No       |
+| `defaultStorage` | `string`                                                     | Yes      |
+| `cache`          | `{ maxEntries?: number; maxBytes?: number; ttlMs?: number }` | Yes      |
 
 ### StorageDefinition
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `name` | `string` | No |
-| `driver` | `StorageDriver` | No |
-| `readonly` | `boolean` | Yes |
-| `allowedTypes` | `string[]` | Yes |
-| `allowedBuckets` | `string[]` | Yes |
-| `keyPrefix` | `string` | Yes |
-| `maxBytes` | `number` | Yes |
+| Field            | Accepted type/value | Optional |
+| ---------------- | ------------------- | -------- |
+| `name`           | `string`            | No       |
+| `driver`         | `StorageDriver`     | No       |
+| `readonly`       | `boolean`           | Yes      |
+| `allowedTypes`   | `string[]`          | Yes      |
+| `allowedBuckets` | `string[]`          | Yes      |
+| `keyPrefix`      | `string`            | Yes      |
+| `maxBytes`       | `number`            | Yes      |
 
 ### LocalStorageOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `root` | `string` | No |
-| `encryptionKey` | `Uint8Array \| string` | Yes |
+| Field           | Accepted type/value    | Optional |
+| --------------- | ---------------------- | -------- |
+| `root`          | `string`               | No       |
+| `encryptionKey` | `Uint8Array \| string` | Yes      |
 
 ### S3StorageOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `region` | `string` | Yes |
-| `endpoint` | `string` | Yes |
-| `forcePathStyle` | `boolean` | Yes |
-| `allowInsecureHttp` | `boolean` | Yes |
-| `useArnRegion` | `boolean` | Yes |
-| `maxAttempts` | `number` | Yes |
-| `encryption` | `S3Encryption` | Yes |
-| `publicBaseUrl` | `string` | Yes |
-| `cloudFrontSigning` | `{ keyPairId: string; privateKey: string }` | Yes |
-| `publicPathStyle` | `'bucket-key'\|'key-only'` | Yes |
-| `client` | `{ send(command: any): Promise<any>; destroy?(): void }` | Yes |
-| `ownClient` | `boolean` | Yes |
-| `multipart` | `{ partSize?: number; queueSize?: number }` | Yes |
+| Field               | Accepted type/value                                      | Optional |
+| ------------------- | -------------------------------------------------------- | -------- |
+| `region`            | `string`                                                 | Yes      |
+| `endpoint`          | `string`                                                 | Yes      |
+| `forcePathStyle`    | `boolean`                                                | Yes      |
+| `allowInsecureHttp` | `boolean`                                                | Yes      |
+| `useArnRegion`      | `boolean`                                                | Yes      |
+| `maxAttempts`       | `number`                                                 | Yes      |
+| `encryption`        | `S3Encryption`                                           | Yes      |
+| `publicBaseUrl`     | `string`                                                 | Yes      |
+| `cloudFrontSigning` | `{ keyPairId: string; privateKey: string }`              | Yes      |
+| `publicPathStyle`   | `'bucket-key'\|'key-only'`                               | Yes      |
+| `client`            | `{ send(command: any): Promise<any>; destroy?(): void }` | Yes      |
+| `ownClient`         | `boolean`                                                | Yes      |
+| `multipart`         | `{ partSize?: number; queueSize?: number }`              | Yes      |
 
 ### PutFileOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `contentType` | `string` | Yes |
-| `contentDisposition` | `string` | Yes |
-| `visibility` | `FileVisibility` | Yes |
-| `cacheControl` | `string` | Yes |
-| `metadata` | `Record<string,string>` | Yes |
-| `maxBytes` | `number` | Yes |
-| `ifNoneMatch` | `boolean` | Yes |
-| `expiresAt` | `string` | Yes |
-| `signal` | `AbortSignal` | Yes |
+| Field                | Accepted type/value     | Optional |
+| -------------------- | ----------------------- | -------- |
+| `contentType`        | `string`                | Yes      |
+| `contentDisposition` | `string`                | Yes      |
+| `visibility`         | `FileVisibility`        | Yes      |
+| `cacheControl`       | `string`                | Yes      |
+| `metadata`           | `Record<string,string>` | Yes      |
+| `maxBytes`           | `number`                | Yes      |
+| `ifNoneMatch`        | `boolean`               | Yes      |
+| `expiresAt`          | `string`                | Yes      |
+| `signal`             | `AbortSignal`           | Yes      |
 
 ### FileHttpOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `authorize` | `(request:Request,address:FileAddress,operation:'read'\|'write'\|'delete',info?:FileInfo) => boolean\|Promise<boolean>` | Yes |
-| `storage` | `string` | Yes |
-| `bucket` | `string` | No |
-| `prefix` | `string` | Yes |
-| `maxUploadBytes` | `number` | Yes |
-| `cacheControl` | `string` | Yes |
-| `allowDelete` | `boolean` | Yes |
+| Field            | Accepted type/value                                                                                                     | Optional |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- | -------- |
+| `authorize`      | `(request:Request,address:FileAddress,operation:'read'\|'write'\|'delete',info?:FileInfo) => boolean\|Promise<boolean>` | Yes      |
+| `storage`        | `string`                                                                                                                | Yes      |
+| `bucket`         | `string`                                                                                                                | No       |
+| `prefix`         | `string`                                                                                                                | Yes      |
+| `maxUploadBytes` | `number`                                                                                                                | Yes      |
+| `cacheControl`   | `string`                                                                                                                | Yes      |
+| `allowDelete`    | `boolean`                                                                                                               | Yes      |
 
 ### ReadFileOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `start` | `number` | Yes |
-| `end` | `number` | Yes |
-| `signal` | `AbortSignal` | Yes |
+| Field    | Accepted type/value | Optional |
+| -------- | ------------------- | -------- |
+| `start`  | `number`            | Yes      |
+| `end`    | `number`            | Yes      |
+| `signal` | `AbortSignal`       | Yes      |
 
 ### ListFileOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `prefix` | `string` | Yes |
-| `limit` | `number` | Yes |
-| `cursor` | `string` | Yes |
+| Field    | Accepted type/value | Optional |
+| -------- | ------------------- | -------- |
+| `prefix` | `string`            | Yes      |
+| `limit`  | `number`            | Yes      |
+| `cursor` | `string`            | Yes      |
 
 ### AssumeRoleOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `roleArn` | `string` | No |
-| `sessionName` | `string` | Yes |
-| `externalId` | `string` | Yes |
-| `durationSeconds` | `number` | Yes |
-| `mfa` | `{ serial: string; tokenCode: string }` | Yes |
-| `sourceCredentials` | `AwsKeyCredentials \| AwsCredentialProvider` | Yes |
-| `sourceProfile` | `string` | Yes |
-| `stsRegion` | `string` | Yes |
+| Field               | Accepted type/value                          | Optional |
+| ------------------- | -------------------------------------------- | -------- |
+| `roleArn`           | `string`                                     | No       |
+| `sessionName`       | `string`                                     | Yes      |
+| `externalId`        | `string`                                     | Yes      |
+| `durationSeconds`   | `number`                                     | Yes      |
+| `mfa`               | `{ serial: string; tokenCode: string }`      | Yes      |
+| `sourceCredentials` | `AwsKeyCredentials \| AwsCredentialProvider` | Yes      |
+| `sourceProfile`     | `string`                                     | Yes      |
+| `stsRegion`         | `string`                                     | Yes      |
 
 ### WebIdentityOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `roleArn` | `string` | No |
-| `tokenFile` | `string` | No |
-| `sessionName` | `string` | Yes |
-| `stsRegion` | `string` | Yes |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `roleArn`     | `string`            | No       |
+| `tokenFile`   | `string`            | No       |
+| `sessionName` | `string`            | Yes      |
+| `stsRegion`   | `string`            | Yes      |
 
 ### AwsCredentialOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `credentials` | `AwsKeyCredentials \| AwsCredentialProvider` | Yes |
-| `profile` | `string` | Yes |
-| `assumeRole` | `AssumeRoleOptions` | Yes |
-| `webIdentity` | `WebIdentityOptions` | Yes |
+| Field         | Accepted type/value                          | Optional |
+| ------------- | -------------------------------------------- | -------- |
+| `credentials` | `AwsKeyCredentials \| AwsCredentialProvider` | Yes      |
+| `profile`     | `string`                                     | Yes      |
+| `assumeRole`  | `AssumeRoleOptions`                          | Yes      |
+| `webIdentity` | `WebIdentityOptions`                         | Yes      |
 
 ### StorageTokenAuthOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `scopePrefix` | `string` | Yes |
-| `publicRead` | `boolean` | Yes |
-| `allow` | `(subject: string, address: FileAddress, action: 'read'\|'write'\|'delete', info?: FileInfo) => boolean \| Promise<boolean>` | Yes |
+| Field         | Accepted type/value                                                                                                          | Optional |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `scopePrefix` | `string`                                                                                                                     | Yes      |
+| `publicRead`  | `boolean`                                                                                                                    | Yes      |
+| `allow`       | `(subject: string, address: FileAddress, action: 'read'\|'write'\|'delete', info?: FileInfo) => boolean \| Promise<boolean>` | Yes      |
 
 ### Fetch client and ownership
 
@@ -225,15 +225,15 @@ The token-authorizer factory borrows its verifier. Persistence, expiry, revocati
 
 ### Resource limits and shutdown
 
-| Owner | Actual default/boundary |
-| --- | --- |
-| Manager `get` / client `bytes` | 16 MiB materialization ceiling; use streaming APIs for larger objects |
-| Public byte cache | Opt-in; 64 entries, 8 MiB, 15000 ms TTL; copied bytes, process-local only |
-| HTTP raw upload | 16 MiB default; exact declared length checked while streaming; create-only required |
-| Local/S3 list page | Default 100, permitted 1–1000; local implementation scans bucket sidecars before paging |
-| Resumable session | 1 GiB total, 8 MiB per part (64 MiB ceiling), 1000 parts |
-| Resumable admission | 100 sessions (10000 ceiling), 8 actual pending calls (64 ceiling), one-hour TTL (seven-day ceiling) |
-| Cleanup | Preview pages default 50 (100 ceiling), approved batches at most 100; revision/lease rechecked |
+| Owner                          | Actual default/boundary                                                                             |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Manager `get` / client `bytes` | 16 MiB materialization ceiling; use streaming APIs for larger objects                               |
+| Public byte cache              | Opt-in; 64 entries, 8 MiB, 15000 ms TTL; copied bytes, process-local only                           |
+| HTTP raw upload                | 16 MiB default; exact declared length checked while streaming; create-only required                 |
+| Local/S3 list page             | Default 100, permitted 1–1000; local implementation scans bucket sidecars before paging             |
+| Resumable session              | 1 GiB total, 8 MiB per part (64 MiB ceiling), 1000 parts                                            |
+| Resumable admission            | 100 sessions (10000 ceiling), 8 actual pending calls (64 ceiling), one-hour TTL (seven-day ceiling) |
+| Cleanup                        | Preview pages default 50 (100 ceiling), approved batches at most 100; revision/lease rechecked      |
 
 Drain/close the resumable coordinator before its borrowed file manager. Manager
 close invokes distinct configured drivers and clears its cache, without tracking

@@ -78,6 +78,14 @@ Install the optional `zlocale@0.0.4` peer for strict localization checks, with i
 
 Both presets retain `no-eval`, `no-implied-eval`, `no-new-func` and all shared `zerux/*` security/ownership rules at **error** level. Light means fewer style/type restrictions, not reduced security policy. Generated/dependency directories are ignored. Select one preset per overlapping file set, then append ordinary file-scoped overrides rather than combining separate `zerux` plugin instances. Factories return application-owned arrays; use a fresh factory when customizing instead of mutating the shared default export. Presets follow ESLint's [flat-config model](https://eslint.org/docs/latest/use/configure/configuration-files).
 
+The cleanup rule also recognizes directly discarded `zhost` child scopes from
+`launchSupervisedCommand`, `launchManagedApplication` and
+`launchRollingApplication`. Retaining a handle is only a static ownership hint;
+the host must still await shutdown. Inert protocol registries, watch predicates
+and diagnostic-writer factories are excluded. SSE/compression factories acquire
+transport resources only when subsequently used; this narrow rule does not
+infer those later method calls or certify their cleanup.
+
 ### Initial named rule contracts
 
 | Rule                                | Reported violation                                                                                                                                                      | Deliberate boundary / escape hatch                                                                                                                                                                                                                                                                                                    |
@@ -315,3 +323,22 @@ Share ownership checks recognize `createShortLinkService` only on `/server`: ret
 Tags ownership checks recognize root `createTagManager`/`createTagProviderRegistry`, `/admin-client` `createTagAdminClient` and `/admin-view` `mountTagAdmin`. Retain their actual close/destroy owners. Root imports are server-only; the browser subpaths remain client-importable. Memory document stores and inert definition/transfer helpers gain no invented disposal requirement. Static binding retention does not prove drain or authorization.
 
 Validator ownership includes `createHttpInputAdapter` and `validatedJsonHandler` on both the root compatibility barrel and `/http`. Both retain an explicit close owner; standalone parse/read calls own only their operation and do not gain a disposal API. Browser feedback retains its separate destroy contract. Native Fetch/DOM usage remains valid, and static ownership checks never grant HTTP authorization or CSRF protection.
+
+Framework ownership checks also recognize explicit service/application/renderer/protocol,
+client, action/form, browser router, route-data cache, privacy and tab owners
+at their documented public entries. Retain, return or pass these owners to host
+lifecycle code. Pure renderer factories, asset projections, variable registries and
+transactional outbox wrappers do not acquire an independent disposal contract.
+The rule does not prove eventual cleanup or runtime tenant/authorization policy.
+Browser-safe framework helpers stay admissible in client modules; Node-only
+response, loader, cache, renderer, protocol, privacy and route-cache entries reject.
+
+Module, service-endpoint and GraphQL registrations install cleanup on the supplied
+generation API with `onDispose`. Their optional returned handles need not be retained
+separately; standalone client and scope factories still require an explicit owner.
+
+Zforge checks distinguish the explicit `/modules` host (`close`) and `/diagnostics`
+store (`close`) from inert module/experiment definitions. Root and these optional
+entries import Node owners and reject in client modules. Legacy shared registration
+uses explicit unregister/server shutdown operations; it gains no invented returned
+disposer. Static retention checks do not prove teardown or host authorization.

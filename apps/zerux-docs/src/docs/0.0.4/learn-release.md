@@ -23,12 +23,12 @@ Verify the application you built, understand its deployment shape and create a r
 
 ## Check the application in layers
 
-| Check | Evidence | What it does not prove |
-| --- | --- | --- |
-| Typecheck | Public imports and declared types fit | Incoming data or authorization is safe |
-| Build | Source compilation succeeds | The production server starts correctly |
-| Run compiled server | Startup succeeds in that environment | Every route/dependency/failure path works |
-| Inspect real requests | Expected responses/errors occur | All tenants, load levels and browsers are certified |
+| Check                 | Evidence                              | What it does not prove                              |
+| --------------------- | ------------------------------------- | --------------------------------------------------- |
+| Typecheck             | Public imports and declared types fit | Incoming data or authorization is safe              |
+| Build                 | Source compilation succeeds           | The production server starts correctly              |
+| Run compiled server   | Startup succeeds in that environment  | Every route/dependency/failure path works           |
+| Inspect real requests | Expected responses/errors occur       | All tenants, load levels and browsers are certified |
 
 A useful check states its boundary. Avoid “all safe” or “production-ready” claims based only on one green command.
 

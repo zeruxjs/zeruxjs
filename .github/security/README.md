@@ -6,18 +6,18 @@ it does not replace those workflows or run application code.
 
 ## Checks and results
 
-| Owner | Scope | Finding behavior |
-| --- | --- | --- |
-| `workflows/codeql.yml`: CodeQL | JavaScript/TypeScript and GitHub Actions, security-and-quality queries | Uploads findings; successful execution is not a zero-alert guarantee. |
-| `workflows/security.yml`: Semgrep CE | Public `p/security-audit` rules over source | Findings fail the job (`--error`); metrics/version telemetry disabled. |
-| Trivy | Filesystem lockfile vulnerabilities, configuration and current-file secrets; HIGH/CRITICAL, including unfixed findings | Findings fail; no repository npm install or application startup. |
-| Gitleaks | All Git history fetched by checkout | Findings fail; CLI and SARIF use 100% secret redaction. Historical leaks still require revocation. |
-| Zizmor | Local workflow/action configuration, offline | SARIF reporting; SARIF mode can succeed with findings. Online checks are intentionally absent. |
-| ESLint | Root `eslint.config.mjs`, JS/JSX/TS/TSX and CommonJS; public light preset | `npm run lint:js:report`, read-only; errors fail and JSON is retained. |
-| HTML-validate | Root `htmlvalidate.config.json`; authored HTML, including reference previews | Locked CLI, private/generated ignores, explicit reviewed inline-style exceptions; errors fail. |
-| Stylelint | Root `stylelint.config.mjs`, authored CSS/SCSS | `npm run lint:css:report`, read-only; errors fail and JSON is retained. |
-| Dependency Review | Changes introduced by a pull request | New HIGH/CRITICAL dependencies fail; unavailable dependency graph/API access is an error, not an empty result. |
-| `.github/dependabot.yml` | Root npm workspace, separate private Stylelint bundle, standalone `pages`, Actions | Weekly review PRs; no automatic merge or release. Internal package versions are excluded. |
+| Owner                                | Scope                                                                                                                  | Finding behavior                                                                                               |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `workflows/codeql.yml`: CodeQL       | JavaScript/TypeScript and GitHub Actions, security-and-quality queries                                                 | Uploads findings; successful execution is not a zero-alert guarantee.                                          |
+| `workflows/security.yml`: Semgrep CE | Public `p/security-audit` rules over source                                                                            | Findings fail the job (`--error`); metrics/version telemetry disabled.                                         |
+| Trivy                                | Filesystem lockfile vulnerabilities, configuration and current-file secrets; HIGH/CRITICAL, including unfixed findings | Findings fail; no repository npm install or application startup.                                               |
+| Gitleaks                             | All Git history fetched by checkout                                                                                    | Findings fail; CLI and SARIF use 100% secret redaction. Historical leaks still require revocation.             |
+| Zizmor                               | Local workflow/action configuration, offline                                                                           | SARIF reporting; SARIF mode can succeed with findings. Online checks are intentionally absent.                 |
+| ESLint                               | Root `eslint.config.mjs`, JS/JSX/TS/TSX and CommonJS; public light preset                                              | `npm run lint:js:report`, read-only; errors fail and JSON is retained.                                         |
+| HTML-validate                        | Root `htmlvalidate.config.json`; authored HTML, including reference previews                                           | Locked CLI, private/generated ignores, explicit reviewed inline-style exceptions; errors fail.                 |
+| Stylelint                            | Root `stylelint.config.mjs`, authored CSS/SCSS                                                                         | `npm run lint:css:report`, read-only; errors fail and JSON is retained.                                        |
+| Dependency Review                    | Changes introduced by a pull request                                                                                   | New HIGH/CRITICAL dependencies fail; unavailable dependency graph/API access is an error, not an empty result. |
+| `.github/dependabot.yml`             | Root npm workspace, separate private Stylelint bundle, standalone `pages`, Actions                                     | Weekly review PRs; no automatic merge or release. Internal package versions are excluded.                      |
 
 Static security validation runs on PR updates and pushes to `master`, plus its
 existing merge-queue, manual and daily scheduled events. Feature branch pushes do
@@ -28,7 +28,7 @@ Scorecard listens only to master pushes, its weekly schedule and manual dispatch
 on the default branch; it creates no PR check. Runtime/API and RESTler workflows
 are manual-only and keep their enable-flag conditions. An intentional optional
 job skip means no scan occurred; it is not a clean security assessment.
- Security scans use restricted
+Security scans use restricted
 per-job tokens, no persisted checkout credentials and no repository secrets.
 Semgrep, Trivy and Gitleaks findings fail their jobs without suppressing report
 upload. Download/install/database failures also fail; they are not clean scans.

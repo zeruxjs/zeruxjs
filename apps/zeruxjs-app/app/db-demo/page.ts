@@ -1,6 +1,7 @@
-export default () => process.env.ENABLE_MYSQL_DEMO !== 'true'
-  ? `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Optional MySQL demo</title></head><body><main><h1>Optional MySQL demo</h1><p>This example requires a real MySQL server. Configure ENABLE_MYSQL_DEMO=true and DB_HOST, DB_USER, DB_PASSWORD, DB_NAME and DB_PORT in your private environment, then start the app with those settings.</p><p>The local SQLite notebook works without MySQL.</p><p><a href="/workspace/notes">Open SQLite notebook</a> · <a href="/">Back to examples</a></p></main></body></html>`
-  : `<!DOCTYPE html>
+export default () =>
+  process.env.ENABLE_MYSQL_DEMO !== 'true'
+    ? `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Optional MySQL demo</title></head><body><main><h1>Optional MySQL demo</h1><p>This example requires a real MySQL server. Configure ENABLE_MYSQL_DEMO=true and DB_HOST, DB_USER, DB_PASSWORD, DB_NAME and DB_PORT in your private environment, then start the app with those settings.</p><p>The local SQLite notebook works without MySQL.</p><p><a href="/workspace/notes">Open SQLite notebook</a> · <a href="/">Back to examples</a></p></main></body></html>`
+    : `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />

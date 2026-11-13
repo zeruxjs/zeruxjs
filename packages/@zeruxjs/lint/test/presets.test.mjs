@@ -1779,3 +1779,156 @@ test('reactive locale subscriptions retain disposal while translator values and 
     );
   }
 });
+
+test('framework ownership and server subpaths follow implemented lifecycle boundaries', () => {
+  // These registrations install cleanup on the explicit generation owner.
+  for (const [entry, registration] of [
+    ['zeruxjs', 'registerModule'],
+    ['zeruxjs', 'registerServiceEndpoints'],
+    ['zeruxjs/modules', 'registerModule'],
+    ['zeruxjs/service-endpoints', 'registerServiceEndpoints'],
+    ['zeruxjs/graphql', 'registerGraphQL'],
+  ]) {
+    assert.ok(
+      !rules(
+        `import {${registration}} from '${entry}'; await ${registration}(api, options);`
+      ).includes('zerux/cleanup-ownership')
+    );
+  }
+  for (const [entry, factory] of [
+    ['zeruxjs', 'createApplicationLifecycle'],
+    ['zeruxjs/services', 'initializeRuntimeServices'],
+    ['zeruxjs/service-endpoints', 'createServiceClient'],
+    ['zeruxjs/renderers', 'createRendererRegistry'],
+    ['zeruxjs/protocols', 'createZeruxProtocols'],
+    ['zeruxjs/actions', 'createActionRegistry'],
+    ['zeruxjs/action-form', 'enhanceActionForm'],
+    ['zeruxjs/browser-navigation', 'createBrowserRouter'],
+    ['zeruxjs/route-data-cache', 'createRouteDataCache'],
+    ['zeruxjs/privacy', 'createPrivacyCoordinator'],
+    ['zeruxjs/accessibility', 'bindAccessibleTabs'],
+  ]) {
+    assert.ok(
+      rules(
+        `import {${factory}} from '${entry}'; ${factory}(options);`
+      ).includes('zerux/cleanup-ownership')
+    );
+    assert.ok(
+      !rules(
+        `import {${factory}} from '${entry}'; own(${factory}(options));`
+      ).includes('zerux/cleanup-ownership')
+    );
+  }
+  for (const entry of [
+    'zeruxjs/privacy',
+    'zeruxjs/route-data-cache',
+    'zeruxjs/renderers',
+    'zeruxjs/protocols',
+    'zeruxjs/response',
+    'zeruxjs/fetch-route',
+    'zeruxjs/cache',
+    'zeruxjs/loader',
+  ]) {
+    assert.ok(
+      rules(`'use client'; import '${entry}';`).includes(
+        'zerux/client-server-import'
+      )
+    );
+  }
+  for (const entry of [
+    'zeruxjs/action-form',
+    'zeruxjs/browser-navigation',
+    'zeruxjs/navigation-manifest',
+    'zeruxjs/navigation',
+    'zeruxjs/theme',
+    'zeruxjs/variables',
+    'zeruxjs/accessibility',
+  ]) {
+    assert.ok(
+      !rules(`'use client'; import '${entry}';`).includes(
+        'zerux/client-server-import'
+      )
+    );
+  }
+  assert.ok(
+    !rules(
+      "import {createTransactionalOutbox} from 'zeruxjs/service-endpoints'; createTransactionalOutbox(db, writer);"
+    ).includes('zerux/cleanup-ownership')
+  );
+  assert.ok(
+    !rules(
+      "import {createRenderAssets,createZyroRenderer} from 'zeruxjs/renderers'; createRenderAssets(manifest); createZyroRenderer(render);"
+    ).includes('zerux/cleanup-ownership')
+  );
+});
+
+test('devtools scopes own cleanup while inert module definitions and legacy registration stay distinct', () => {
+  for (const [entry, factory] of [
+    ['zforge/modules', 'createDevtoolsModuleHost'],
+    ['zforge/diagnostics', 'createRequestDiagnostics'],
+  ]) {
+    assert.ok(
+      rules(
+        `import {${factory}} from '${entry}'; ${factory}(options);`
+      ).includes('zerux/cleanup-ownership')
+    );
+    assert.ok(
+      !rules(
+        `import {${factory}} from '${entry}'; own(${factory}(options));`
+      ).includes('zerux/cleanup-ownership')
+    );
+  }
+  for (const entry of [
+    'zforge',
+    'zforge/modules',
+    'zforge/diagnostics',
+    'zforge/experiments',
+  ]) {
+    assert.ok(
+      rules(`'use client'; import '${entry}';`).includes(
+        'zerux/client-server-import'
+      )
+    );
+  }
+  for (const source of [
+    "import {defineTransportDevtoolsModule} from 'zforge/modules'; defineTransportDevtoolsModule(definition);",
+    "import {createExperimentInspectionModule} from 'zforge/experiments'; createExperimentInspectionModule(options);",
+    "import {registerSharedDevApp,createDevtoolsApiClient} from 'zforge'; await registerSharedDevApp(options); createDevtoolsApiClient(options);",
+  ]) {
+    assert.ok(!rules(source).includes('zerux/cleanup-ownership'));
+  }
+});
+
+test('hosting child scopes require retained handles while inert registries do not acquire transports', () => {
+  for (const factory of [
+    'launchSupervisedCommand',
+    'launchManagedApplication',
+    'launchRollingApplication',
+  ]) {
+    assert.ok(
+      rules(
+        `import {${factory}} from 'zhost'; ${factory}(command, options);`
+      ).includes('zerux/cleanup-ownership')
+    );
+    assert.ok(
+      !rules(
+        `import {${factory}} from 'zhost'; const owned = await ${factory}(command, options);`
+      ).includes('zerux/cleanup-ownership')
+    );
+  }
+  for (const source of [
+    "import {createDevelopmentWatchIgnore, createRuntimeStatusWriter} from 'zhost'; createDevelopmentWatchIgnore(paths); createRuntimeStatusWriter(directory, name);",
+    "import {createJsonRpcRouter, createConnectRouter, createTrpcRouter, createConnectStreamRouter, createWebTransportRouter} from 'zhost/protocols'; createJsonRpcRouter(); createConnectRouter(); createTrpcRouter(); createConnectStreamRouter(); createWebTransportRouter();",
+    "import {createSseHub} from 'zhost/protocols'; createSseHub();",
+    "import {createCompressionOwner} from 'zhost/compression'; createCompressionOwner();",
+  ]) {
+    assert.ok(!rules(source).includes('zerux/cleanup-ownership'));
+  }
+  for (const entry of ['zhost', 'zhost/protocols', 'zhost/compression']) {
+    assert.ok(
+      rules(`'use client'; import '${entry}';`).includes(
+        'zerux/client-server-import'
+      )
+    );
+  }
+});

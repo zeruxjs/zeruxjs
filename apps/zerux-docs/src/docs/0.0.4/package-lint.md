@@ -82,36 +82,36 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### LintOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `cwd` | `string` | Yes |
-| `fix` | `boolean` | Yes |
-| `files` | `string[]` | Yes |
-| `maxFiles` | `number` | Yes |
-| `quiet` | `boolean` | Yes |
-| `configFile` | `string` | Yes |
-| `cssConfigFile` | `string` | Yes |
+| Field           | Accepted type/value | Optional |
+| --------------- | ------------------- | -------- |
+| `cwd`           | `string`            | Yes      |
+| `fix`           | `boolean`           | Yes      |
+| `files`         | `string[]`          | Yes      |
+| `maxFiles`      | `number`            | Yes      |
+| `quiet`         | `boolean`           | Yes      |
+| `configFile`    | `string`            | Yes      |
+| `cssConfigFile` | `string`            | Yes      |
 
 ### LintResult
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `engine` | `'eslint' \| 'stylelint' \| 'prettier'` | No |
-| `scanned` | `number` | No |
-| `errors` | `number` | No |
-| `warnings` | `number` | No |
-| `changed` | `number` | No |
-| `output` | `string` | No |
-| `ok` | `boolean` | No |
+| Field      | Accepted type/value                     | Optional |
+| ---------- | --------------------------------------- | -------- |
+| `engine`   | `'eslint' \| 'stylelint' \| 'prettier'` | No       |
+| `scanned`  | `number`                                | No       |
+| `errors`   | `number`                                | No       |
+| `warnings` | `number`                                | No       |
+| `changed`  | `number`                                | No       |
+| `output`   | `string`                                | No       |
+| `ok`       | `boolean`                               | No       |
 
 ### CombinedLintResult
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `results` | `LintResult[]` | No |
-| `ok` | `boolean` | No |
-| `errors` | `number` | No |
-| `warnings` | `number` | No |
+| Field      | Accepted type/value | Optional |
+| ---------- | ------------------- | -------- |
+| `results`  | `LintResult[]`      | No       |
+| `ok`       | `boolean`           | No       |
+| `errors`   | `number`            | No       |
+| `warnings` | `number`            | No       |
 
 ## Managed package policy
 

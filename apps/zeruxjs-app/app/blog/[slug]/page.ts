@@ -2,7 +2,9 @@ import { escapeHtmlText } from '@zeruxjs/security/encoding';
 
 export default ({ params, services, state }: any) => {
   const formatSlug = services.composables.formatSlug;
-  const title = escapeHtmlText(typeof formatSlug === "function" ? formatSlug(params.slug) : params.slug);
+  const title = escapeHtmlText(
+    typeof formatSlug === 'function' ? formatSlug(params.slug) : params.slug
+  );
 
   return `<!DOCTYPE html>
   <html lang="en">

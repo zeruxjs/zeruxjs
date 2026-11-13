@@ -134,11 +134,10 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### ExternalStore
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `getSnapshot` | `T` | No |
-| `subscribe` | `() => void` | No |
-| `getServerSnapshot` | `T` | Yes |
-
+| Field               | Accepted type/value | Optional |
+| ------------------- | ------------------- | -------- |
+| `getSnapshot`       | `T`                 | No       |
+| `subscribe`         | `() => void`        | No       |
+| `getServerSnapshot` | `T`                 | Yes      |
 
 Root teardown must run before its DOM/container owner disappears. A store is borrowed by native hooks unless the host explicitly transfers cleanup using `onDispose`. Hydration state uses `dispose()`, and ordinary subscriptions return independent unsubscribe callbacks; none of these operations implies forced cancellation of synchronous component code. See the package README for the separately checked server/client examples and fixed peer/error budgets.

@@ -4,140 +4,358 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { buildProjectSources, resolveProductionStructure } from '../dist/commands/project-builder.js';
+import {
+  buildProjectSources,
+  resolveProductionStructure,
+} from '../dist/commands/project-builder.js';
 
+/** Create an isolated source/static project for staged build assertions.
+ * @returns {Promise<{rootDir: string, close: () => Promise<void>}>} Temporary project owner; await close after all build reads.
+ */
 async function fixture() {
+  /** Temporary authored source tree owning all generated build candidates. */
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'zerux-production-'));
   await fs.mkdir(path.join(rootDir, 'app'), { recursive: true });
   await fs.mkdir(path.join(rootDir, 'public'), { recursive: true });
-  await fs.writeFile(path.join(rootDir, 'app', 'route.ts'), 'export const answer: number = 42;');
+  await fs.writeFile(
+    path.join(rootDir, 'app', 'route.ts'),
+    'export const answer: number = 42;'
+  );
   await fs.writeFile(path.join(rootDir, 'public', 'site.txt'), 'static');
-  return { rootDir, close: () => fs.rm(rootDir, { recursive: true, force: true }) };
+  return {
+    rootDir,
+    close: () => fs.rm(rootDir, { recursive: true, force: true }),
+  };
 }
 
 test('build stages compiled source, assets and manifest, production selects staged folders', async () => {
+  /** Isolated project fixture removed after build/output boundary assertions. */
   const f = await fixture();
   try {
-    const manifest = await buildProjectSources({ rootDir: f.rootDir, transform: source => source.replace(': number', '') });
+    /** Completed build receipt checked only after staged promotion succeeds. */
+    const manifest = await buildProjectSources({
+      rootDir: f.rootDir,
+      transform: (source) => source.replace(': number', ''),
+    });
     assert.equal(manifest.files, 2);
-    assert.equal((await fs.readFile(path.join(f.rootDir, '.zerux/build/app/route.js'), 'utf8')), 'export const answer = 42;');
-    assert.equal((await fs.readFile(path.join(f.rootDir, '.zerux/build/public/site.txt'), 'utf8')), 'static');
+    assert.equal(
+      await fs.readFile(
+        path.join(f.rootDir, '.zerux/build/app/route.js'),
+        'utf8'
+      ),
+      'export const answer = 42;'
+    );
+    assert.equal(
+      await fs.readFile(
+        path.join(f.rootDir, '.zerux/build/public/site.txt'),
+        'utf8'
+      ),
+      'static'
+    );
+    /** Explicit production output settings checked against staged source selection. */
     const config = await resolveProductionStructure(f.rootDir, 'zerux', {});
     assert.equal(config.structure.app, '.zerux/build/app');
     assert.equal(config.structure.public, '.zerux/build/public');
     assert.ok(!JSON.stringify(manifest).includes('secret'));
-  } finally { await f.close(); }
+  } finally {
+    await f.close();
+  }
 });
 
 test('failed compilation retains previous complete build and removes staging directories', async () => {
+  /** Isolated project fixture removed after build/output boundary assertions. */
   const f = await fixture();
   try {
-    await buildProjectSources({ rootDir: f.rootDir, transform: () => 'previous' });
-    await assert.rejects(buildProjectSources({ rootDir: f.rootDir, transform: () => { throw Error('syntax invalid'); } }), /syntax invalid/);
-    assert.equal(await fs.readFile(path.join(f.rootDir, '.zerux/build/app/route.js'), 'utf8'), 'previous');
+    await buildProjectSources({
+      rootDir: f.rootDir,
+      transform: () => 'previous',
+    });
+    await assert.rejects(
+      buildProjectSources({
+        rootDir: f.rootDir,
+        transform: () => {
+          throw Error('syntax invalid');
+        },
+      }),
+      /syntax invalid/
+    );
+    assert.equal(
+      await fs.readFile(
+        path.join(f.rootDir, '.zerux/build/app/route.js'),
+        'utf8'
+      ),
+      'previous'
+    );
+    /** Output directory listing proving failed staging leaves only the last good build. */
     const listing = await fs.readdir(path.join(f.rootDir, '.zerux'));
     assert.deepEqual(listing, ['build']);
-  } finally { await f.close(); }
+  } finally {
+    await f.close();
+  }
 });
 
 test('symlink build sources are blocked; project traversal is rejected', async () => {
+  /** Isolated project fixture removed after build/output boundary assertions. */
   const f = await fixture();
   try {
-    await fs.symlink('/etc/hosts', path.join(f.rootDir, 'app', 'untrusted.txt'));
-    await assert.rejects(buildProjectSources({ rootDir: f.rootDir, transform: s => s }), /Symlink/);
-    await assert.rejects(buildProjectSources({ rootDir: f.rootDir, config: { structure: { app: '../outside' } }, transform: s => s }), /Invalid project source/);
-  } finally { await f.close(); }
+    await fs.symlink(
+      '/etc/hosts',
+      path.join(f.rootDir, 'app', 'untrusted.txt')
+    );
+    await assert.rejects(
+      buildProjectSources({ rootDir: f.rootDir, transform: (s) => s }),
+      /Symlink/
+    );
+    await assert.rejects(
+      buildProjectSources({
+        rootDir: f.rootDir,
+        config: { structure: { app: '../outside' } },
+        transform: (s) => s,
+      }),
+      /Invalid project source/
+    );
+  } finally {
+    await f.close();
+  }
 });
 
 test('missing manifest uses source directories; malformed manifest fails closed', async () => {
+  /** Isolated project fixture removed after build/output boundary assertions. */
   const f = await fixture();
   try {
-    assert.deepEqual(await resolveProductionStructure(f.rootDir, 'zerux', {}), {});
+    assert.deepEqual(
+      await resolveProductionStructure(f.rootDir, 'zerux', {}),
+      {}
+    );
     await fs.mkdir(path.join(f.rootDir, '.zerux/build'), { recursive: true });
-    await fs.writeFile(path.join(f.rootDir, '.zerux/build/build-manifest.json'), '{"schema":2}');
-    await assert.rejects(resolveProductionStructure(f.rootDir, 'zerux', {}), /Invalid production build manifest/);
-  } finally { await f.close(); }
+    await fs.writeFile(
+      path.join(f.rootDir, '.zerux/build/build-manifest.json'),
+      '{"schema":2}'
+    );
+    await assert.rejects(
+      resolveProductionStructure(f.rootDir, 'zerux', {}),
+      /Invalid production build manifest/
+    );
+  } finally {
+    await f.close();
+  }
 });
 
 test('custom output directory and source entry point are supported without activating source in production', async () => {
+  /** Isolated project fixture removed after build/output boundary assertions. */
   const f = await fixture();
   try {
-    await fs.writeFile(path.join(f.rootDir, 'index.ts'), 'export default function start() { return 1; }');
+    await fs.writeFile(
+      path.join(f.rootDir, 'index.ts'),
+      'export default function start() { return 1; }'
+    );
+    /** Explicit production output settings checked against staged source selection. */
     const config = { outDir: '.local-runtime' };
-    await buildProjectSources({ rootDir: f.rootDir, config, transform: src => src });
-    const resolved = await resolveProductionStructure(f.rootDir, 'zerux', config);
+    await buildProjectSources({
+      rootDir: f.rootDir,
+      config,
+      transform: (src) => src,
+    });
+    /** Production configuration resolving exclusively to completed generated directories. */
+    const resolved = await resolveProductionStructure(
+      f.rootDir,
+      'zerux',
+      config
+    );
     assert.equal(resolved.entryPoint, '.local-runtime/build/index');
     assert.equal(resolved.structure.app, '.local-runtime/build/app');
-    assert.equal(await fs.readFile(path.join(f.rootDir, '.local-runtime/build/index.js'), 'utf8'), 'export default function start() { return 1; }');
-  } finally { await f.close(); }
+    assert.equal(
+      await fs.readFile(
+        path.join(f.rootDir, '.local-runtime/build/index.js'),
+        'utf8'
+      ),
+      'export default function start() { return 1; }'
+    );
+  } finally {
+    await f.close();
+  }
 });
 
 test('production build never follows linked output directories or manifest files', async () => {
-  const f = await fixture(); const other = await fixture();
+  /** Isolated project fixture removed after build/output boundary assertions. */
+  const f = await fixture();
+  /** Independent temporary project used as a symlink escape destination. */
+  const other = await fixture();
   try {
     await fs.symlink(other.rootDir, path.join(f.rootDir, '.zerux'));
-    await assert.rejects(buildProjectSources({ rootDir: f.rootDir, transform: src => src }), /Unsafe build output/);
+    await assert.rejects(
+      buildProjectSources({ rootDir: f.rootDir, transform: (src) => src }),
+      /Unsafe build output/
+    );
     await fs.unlink(path.join(f.rootDir, '.zerux'));
-    await buildProjectSources({ rootDir: f.rootDir, transform: src => src });
+    await buildProjectSources({ rootDir: f.rootDir, transform: (src) => src });
+    /** Generated manifest leaf replaced with a symlink to test safe production reads. */
     const file = path.join(f.rootDir, '.zerux/build/build-manifest.json');
     await fs.unlink(file);
     await fs.symlink('/etc/hosts', file);
-    await assert.rejects(resolveProductionStructure(f.rootDir, 'zerux', {}), /Unsafe production build manifest/);
-  } finally { await f.close(); await other.close(); }
+    await assert.rejects(
+      resolveProductionStructure(f.rootDir, 'zerux', {}),
+      /Unsafe production build manifest/
+    );
+  } finally {
+    await f.close();
+    await other.close();
+  }
 });
 
-test('real installed TypeScript compiler emits executable JS, not just a manifest', async t => {
+test('real installed TypeScript compiler emits executable JS, not just a manifest', async (t) => {
   let installedTs;
-  try { installedTs = path.dirname(createRequire(import.meta.url).resolve('typescript/package.json')); }
-  catch { return t.skip('Installed TypeScript package unavailable'); }
+  try {
+    installedTs = path.dirname(
+      createRequire(import.meta.url).resolve('typescript/package.json')
+    );
+  } catch {
+    return t.skip('Installed TypeScript package unavailable');
+  }
+  /** Isolated project fixture removed after build/output boundary assertions. */
   const f = await fixture();
   try {
-    await fs.writeFile(path.join(f.rootDir, 'package.json'), JSON.stringify({ type: 'module' }));
+    await fs.writeFile(
+      path.join(f.rootDir, 'package.json'),
+      JSON.stringify({ type: 'module' })
+    );
     await fs.mkdir(path.join(f.rootDir, 'node_modules'), { recursive: true });
-    await fs.symlink(installedTs, path.join(f.rootDir, 'node_modules', 'typescript'));
+    await fs.symlink(
+      installedTs,
+      path.join(f.rootDir, 'node_modules', 'typescript')
+    );
+    /** Real installed-compiler build receipt, distinct from injected transform fixtures. */
     const built = await buildProjectSources({ rootDir: f.rootDir });
     assert.equal(built.files, 2);
-    const { answer } = await import('file://' + path.join(f.rootDir, '.zerux/build/app/route.js'));
+    /** Executable value imported from the actual generated JavaScript module. */
+    const { answer } = await import(
+      'file://' + path.join(f.rootDir, '.zerux/build/app/route.js')
+    );
     assert.equal(answer, 42);
-  } finally { await f.close(); }
+  } finally {
+    await f.close();
+  }
 });
 
 test('output nested inside a source tree is refused without modifying that tree', async () => {
+  /** Isolated project fixture removed after build/output boundary assertions. */
   const f = await fixture();
   try {
     await assert.rejects(
-      buildProjectSources({ rootDir: f.rootDir, config: { outDir: 'public/generated' }, transform: s => s }),
+      buildProjectSources({
+        rootDir: f.rootDir,
+        config: { outDir: 'public/generated' },
+        transform: (s) => s,
+      }),
       /overlaps application source/
     );
-    assert.equal(await fs.readFile(path.join(f.rootDir, 'public/site.txt'), 'utf8'), 'static');
-    assert.equal(await fs.stat(path.join(f.rootDir, 'public/generated')).catch(() => null), null);
-  } finally { await f.close(); }
+    assert.equal(
+      await fs.readFile(path.join(f.rootDir, 'public/site.txt'), 'utf8'),
+      'static'
+    );
+    assert.equal(
+      await fs.stat(path.join(f.rootDir, 'public/generated')).catch(() => null),
+      null
+    );
+  } finally {
+    await f.close();
+  }
 });
 
 test('nested symlink output parents are rejected in build and production modes', async () => {
-  const f = await fixture(); const external = await fixture();
+  /** Isolated project fixture removed after build/output boundary assertions. */
+  const f = await fixture();
+  /** Isolated escape destination whose files must remain untouched. */
+  const external = await fixture();
   try {
     await fs.mkdir(path.join(f.rootDir, '.artifacts'));
-    await fs.symlink(external.rootDir, path.join(f.rootDir, '.artifacts', 'linked'));
+    await fs.symlink(
+      external.rootDir,
+      path.join(f.rootDir, '.artifacts', 'linked')
+    );
+    /** Explicit production output settings checked against staged source selection. */
     const config = { outDir: '.artifacts/linked/output' };
-    await assert.rejects(buildProjectSources({ rootDir: f.rootDir, config, transform: s => s }), /Unsafe build output directory/);
-    await assert.rejects(resolveProductionStructure(f.rootDir, 'zerux', config), /Unsafe build output directory/);
-    assert.equal((await fs.readdir(external.rootDir)).includes('output'), false);
-  } finally { await f.close(); await external.close(); }
+    await assert.rejects(
+      buildProjectSources({ rootDir: f.rootDir, config, transform: (s) => s }),
+      /Unsafe build output directory/
+    );
+    await assert.rejects(
+      resolveProductionStructure(f.rootDir, 'zerux', config),
+      /Unsafe build output directory/
+    );
+    assert.equal(
+      (await fs.readdir(external.rootDir)).includes('output'),
+      false
+    );
+  } finally {
+    await f.close();
+    await external.close();
+  }
 });
 
-test('source roots cannot escape through a symlinked parent',async()=>{
- const f=await fixture(),other=await fixture();try{await fs.symlink(other.rootDir,path.join(f.rootDir,'linked'),'dir');await assert.rejects(buildProjectSources({rootDir:f.rootDir,config:{structure:{app:'linked/app'}},transform:source=>source}),/Unsafe build source/);}finally{await f.close();await other.close();}
+test('source roots cannot escape through a symlinked parent', async () => {
+  /** Isolated project fixture removed after build/output boundary assertions. */
+  const f = await fixture();
+  /** Independent temporary project used as a symlink escape destination. */
+  const other = await fixture();
+  try {
+    await fs.symlink(other.rootDir, path.join(f.rootDir, 'linked'), 'dir');
+    await assert.rejects(
+      buildProjectSources({
+        rootDir: f.rootDir,
+        config: { structure: { app: 'linked/app' } },
+        transform: (source) => source,
+      }),
+      /Unsafe build source/
+    );
+  } finally {
+    await f.close();
+    await other.close();
+  }
 });
 
 test('browser bundles may use local exports data while Node/global exports remain forbidden', async () => {
-  const { classifyModules } = await import('../dist/compiler/module-boundaries.js');
+  /** Boundary classifier imported directly for authored browser-wrapper fixtures. */
+  const { classifyModules } =
+    await import('../dist/compiler/module-boundaries.js');
+  /** Installed TypeScript parser used without evaluating fixture source strings. */
   const ts = await import('typescript');
-  const fixture = source => [{ relative: 'public/client.js', source, publicPath: 'client.js' }];
-  const wrapped = 'const wrap=(factory,state)=>()=>{state ||= {exports:{}}; factory(state.exports,state); return state.exports}; const value=wrap((target)=>{target.answer=42}); value();';
-  assert.ok(classifyModules(ts, fixture(wrapped)).clientModules.has('public/client.js'));
-  assert.ok(classifyModules(ts, fixture('const wrap=(fn,s)=>()=>{return s||fn((s={exports:{}}).exports,s),s.exports};')).clientModules.has('public/client.js'));
-  for (const source of ['exports.secret=1;', 'module.exports={};', 'require("node:fs");', 'globalThis.exports;', 'window.exports;', 'self.exports;', 'globalThis["exports"];', 'missing.exports;', 'const data={exports:process.env.SECRET};']) {
-    assert.throws(() => classifyModules(ts, fixture(source)), error => error.code === 'CLIENT_USES_SERVER_GLOBAL', source);
+  /** Create a public module descriptor for static boundary classification.
+   * @param {string} source - Fixed authored wrapper or forbidden-global fixture.
+   * @returns {object[]} Single public client module descriptor.
+   */
+  const fixture = (source) => [
+    { relative: 'public/client.js', source, publicPath: 'client.js' },
+  ];
+  /** Known browser wrapper using local exports data, which must not imply Node module access. */
+  const wrapped =
+    'const wrap=(factory,state)=>()=>{state ||= {exports:{}}; factory(state.exports,state); return state.exports}; const value=wrap((target)=>{target.answer=42}); value();';
+  assert.ok(
+    classifyModules(ts, fixture(wrapped)).clientModules.has('public/client.js')
+  );
+  assert.ok(
+    classifyModules(
+      ts,
+      fixture(
+        'const wrap=(fn,s)=>()=>{return s||fn((s={exports:{}}).exports,s),s.exports};'
+      )
+    ).clientModules.has('public/client.js')
+  );
+  for (const source of [
+    'exports.secret=1;',
+    'module.exports={};',
+    'require("node:fs");',
+    'globalThis.exports;',
+    'window.exports;',
+    'self.exports;',
+    'globalThis["exports"];',
+    'missing.exports;',
+    'const data={exports:process.env.SECRET};',
+  ]) {
+    assert.throws(
+      () => classifyModules(ts, fixture(source)),
+      (error) => error.code === 'CLIENT_USES_SERVER_GLOBAL',
+      source
+    );
   }
 });

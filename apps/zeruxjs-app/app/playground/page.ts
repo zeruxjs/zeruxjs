@@ -8,7 +8,7 @@ export default ({ state, services, runtime, env, pathname }: any) => {
     middleware: state.middleware,
     note: services.composables.runtimeSummary
       ? services.composables.runtimeSummary(runtime, env)
-      : "missing composable"
+      : 'missing composable',
   };
 
   return `<!DOCTYPE html>

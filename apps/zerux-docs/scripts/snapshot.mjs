@@ -15,8 +15,8 @@ const target = path.join(root, 'src/docs', id, 'reference.snapshot.json');
 await fs.writeFile(
   target,
   JSON.stringify({ schema: 1, version: id, packages }, null, 2) + '\n',
-  { flag: 'wx' },
+  { flag: 'wx' }
 );
 console.info(
-  `[docs] Frozen references for ${id}. Commit the snapshot, set reference: 'snapshot' and pin the Git source ref before adding the next version.`,
+  `[docs] Frozen references for ${id}. Commit the snapshot, set reference: 'snapshot' and pin the Git source ref before adding the next version.`
 );

@@ -68,25 +68,25 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 ### ZuixConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `limits` | `ZuixLimits` | No | Upper bounds for filesystem scanning and CSS token generation. |
-| `content` | `string[]` | No | Source globs; omitted values use the documented finite source-extension defaults. |
-| `exclude` | `string[]` | No | Additional source exclusion globs; built-in build/private directories remain pruned. |
-| `output` | `string` | No | Contained shared CSS destination; defaults to zuix.css. |
-| `prefix` | `string` | No | Literal prefix required before each base utility lookup. |
-| `important` | `boolean` | No | Apply !important to generated utility declarations. |
-| `darkMode` | `'class' \| 'media'` | No | Choose class selectors or prefers-color-scheme media conditions. |
-| `preflight` | `boolean` | No | Emit the built-in reset unless explicitly false. |
-| `minify` | `boolean` | No | Omit section-joining newlines; not a general CSS optimizer. |
-| `safelist` | `string[]` | No | Explicit literal tokens retained even when scanning cannot discover them. |
-| `theme` | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No | Scale values merged over copied default scales. |
-| `extend` | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No | Scale values merged after theme overrides. |
-| `plugins` | `ZuixPlugin[]` | No | Explicit trusted registration functions executed during compiler construction. |
-| `recipes` | `readonly ZuixRecipe[]` | No | Ordered utility recipes, emitted before scanned utility classes. |
-| `perFile` | `boolean \| {dir?: string; shared?: boolean}` | No | Emit CSS for each matching source file, with optional shared CSS. |
-| `optimize` | `boolean` | No | Reserved compatibility field; currently not consumed. Exact duplicate rules are always removed. |
-| `keyframes` | `Record<string,string>` | No | Custom reusable animation keyframes (name -> CSS frames body). |
+| Option      | Accepted TypeScript value                       | Required | Meaning                                                                                         |
+| ----------- | ----------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `limits`    | `ZuixLimits`                                    | No       | Upper bounds for filesystem scanning and CSS token generation.                                  |
+| `content`   | `string[]`                                      | No       | Source globs; omitted values use the documented finite source-extension defaults.               |
+| `exclude`   | `string[]`                                      | No       | Additional source exclusion globs; built-in build/private directories remain pruned.            |
+| `output`    | `string`                                        | No       | Contained shared CSS destination; defaults to zuix.css.                                         |
+| `prefix`    | `string`                                        | No       | Literal prefix required before each base utility lookup.                                        |
+| `important` | `boolean`                                       | No       | Apply !important to generated utility declarations.                                             |
+| `darkMode`  | `'class' \| 'media'`                            | No       | Choose class selectors or prefers-color-scheme media conditions.                                |
+| `preflight` | `boolean`                                       | No       | Emit the built-in reset unless explicitly false.                                                |
+| `minify`    | `boolean`                                       | No       | Omit section-joining newlines; not a general CSS optimizer.                                     |
+| `safelist`  | `string[]`                                      | No       | Explicit literal tokens retained even when scanning cannot discover them.                       |
+| `theme`     | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No       | Scale values merged over copied default scales.                                                 |
+| `extend`    | `Partial<{[K in keyof ZuixTheme]: ThemeScale}>` | No       | Scale values merged after theme overrides.                                                      |
+| `plugins`   | `ZuixPlugin[]`                                  | No       | Explicit trusted registration functions executed during compiler construction.                  |
+| `recipes`   | `readonly ZuixRecipe[]`                         | No       | Ordered utility recipes, emitted before scanned utility classes.                                |
+| `perFile`   | `boolean \| {dir?: string; shared?: boolean}`   | No       | Emit CSS for each matching source file, with optional shared CSS.                               |
+| `optimize`  | `boolean`                                       | No       | Reserved compatibility field; currently not consumed. Exact duplicate rules are always removed. |
+| `keyframes` | `Record<string,string>`                         | No       | Custom reusable animation keyframes (name -> CSS frames body).                                  |
 
 ## CSS entry without configuration files
 
@@ -110,7 +110,6 @@ npx zuix watch -i src/styles.css -o public/zuix.css
 Link the generated stylesheet. Native variables, keyframes, layers, media/supports/container conditions and overrides are preserved. The compiler discovers literal class attributes and supported class helpers in templates/components. Runtime-built class strings need an optional safelist. `@apply` accepts base utilities; write responsive/state conditions as CSS around the rule. The docs application keeps its optional recipes for Markdown typography; application authors do not need recipe/config files for classes-first styling.
 
 For Vite, register `zuixVite()` and import the stylesheet from the application entry. For TypeScript build integrations, import `compileStylesheet` from `zuixs` or `buildZuixStylesheet` from `zuixs/node`; the latter reads/scans files and writes output. CSS entries and generated output must be distinct paths inside the project. Other CSS imports are resolved by your bundler, not by this CLI. Tailwind-specific `@theme`, `@utility`, `@source` and custom variant directives are not supported; this is not a complete Tailwind compatibility implementation.
-
 
 ## Source build dependency
 

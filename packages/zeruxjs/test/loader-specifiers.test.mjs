@@ -7,11 +7,18 @@ import { resolve } from '../dist/loader/loader.js';
 import { register, unregister } from '../dist/loader/registry.js';
 import { registerPath } from '@zeruxjs/hooks';
 test('standard URLs, builtins and ordinary modules delegate unchanged; custom aliases remain validated', async () => {
+  /** Native resolution context reused to assert transparent forwarding. */
   const context = {
-      parentURL: 'file:///tmp/parent.mjs',
-      conditions: ['node', 'import'],
-    },
-    calls = [];
+    parentURL: 'file:///tmp/parent.mjs',
+    conditions: ['node', 'import'],
+  };
+  /** Ordered specifiers passed to the injected native continuation. */
+  const calls = [];
+  /** Record native delegation and assert that context identity is preserved.
+   * @param {string} s - Delegated specifier.
+   * @param {object} c - Borrowed resolution context.
+   * @returns {Promise<object>} Minimal native resolution fixture.
+   */
   const next = async (s, c) => {
     calls.push(s);
     assert.equal(c, context);
@@ -30,16 +37,19 @@ test('standard URLs, builtins and ordinary modules delegate unchanged; custom al
       '@zeruxjs/react/server',
       './view.mjs',
       '../entry.ts',
-    ])
+    ]) {
       assert.deepEqual(await resolve(specifier, context, next), {
         url: specifier,
       });
+    }
     assert.equal(calls.length, 8);
   } finally {
     unregister('file');
   }
-  const previous = process.cwd(),
-    root = mkdtempSync(join(tmpdir(), 'zx086-loader-'));
+  /** Original working directory restored before removing the fixture tree. */
+  const previous = process.cwd();
+  /** Owned isolated alias fixture directory; never an operator application. */
+  const root = mkdtempSync(join(tmpdir(), 'zx086-loader-'));
   try {
     process.chdir(root);
     writeFileSync(join(root, 'entry.mjs'), 'export default 1');
@@ -49,7 +59,7 @@ test('standard URLs, builtins and ordinary modules delegate unchanged; custom al
     });
     await assert.rejects(
       resolve('app:../secret', context, next),
-      /Invalid path alias/,
+      /Invalid path alias/
     );
   } finally {
     process.chdir(previous);

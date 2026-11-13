@@ -1,23 +1,56 @@
 import { assertSecurityNonce, escapeHtmlAttribute } from '@zeruxjs/security';
-import type { IncomingMessage } from "node:http";
+import type { IncomingMessage } from 'node:http';
 
 export interface DevClientScriptOptions {
   /** From the host response policy; never extracted from untrusted HTML/headers. */
   nonce?: string;
+  /** Trusted application registry namespace injected as encoded data. */
   routeName: string;
+  /** Explicit trusted shared development server URL. */
   devServerUrl: string;
+  /** Optional host-configured development domain, not derived from request headers. */
   allowedDevDomain?: string | null;
-  devPortLessAlias: { value: string | null | false };
+  /** Host-provided portless alias state; this legacy program owns no alias lifecycle. */
+  devPortLessAlias: {
+    /** Explicit alias URL, null or false sentinel retained for compatible client behavior. */
+    value: string | null | false;
+  };
+  /** Trusted namespace used to construct development endpoint paths. */
   serviceName: string;
 }
 
-/** Escape JS expression and HTML script boundaries, not only JavaScript quotes. */
-const scriptValue = (value: unknown) => JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, char => ({
-  '<': '\\u003c', '>': '\\u003e', '&': '\\u0026',
-  '\u2028': '\\u2028', '\u2029': '\\u2029'
-} as Record<string, string>)[char]);
+/** Escape JSON expression values for the fixed HTML script context.
+ * @param {unknown} value - Host setting serialized as JSON, never evaluated on the server.
+ * @returns {string} JSON text with script-breaking characters encoded; callers provide JSON-serializable values.
+ * The replacement regex admits only keys present in the fixed table below.
+ */
+const scriptValue = (value: unknown) =>
+  JSON.stringify(value).replace(
+    /[<>&\u2028\u2029]/g,
+    (char) =>
+      (
+        ({
+          '<': '\\u003c',
+          '>': '\\u003e',
+          '&': '\\u0026',
+          '\u2028': '\\u2028',
+          '\u2029': '\\u2029',
+        }) as Record<string, string>
+      )[char]!
+  );
 
-const buildInjectedClient = ({ nonce, routeName, devServerUrl, allowedDevDomain, devPortLessAlias, serviceName }: DevClientScriptOptions) => `<script data-zdev-client="true"${nonce ? ` nonce="${escapeHtmlAttribute(nonce)}"` : ''}>
+/** Serialize the fixed page-lifetime development client with script-context encoded host settings.
+ * @param {DevClientScriptOptions} options - Trusted host routes and optional response-owned nonce.
+ * @returns {string} Authored script markup; no server-side evaluation occurs. The injected page client owns listeners, console interception and reconnect state until page teardown, with no independent disposer API.
+ */
+const buildInjectedClient = ({
+  nonce,
+  routeName,
+  devServerUrl,
+  allowedDevDomain,
+  devPortLessAlias,
+  serviceName,
+}: DevClientScriptOptions) => `<script data-zdev-client="true"${nonce ? ` nonce="${escapeHtmlAttribute(nonce)}"` : ''}>
 (() => {
   if (window.__ZDEV_CLIENT__) return;
   window.__ZDEV_CLIENT__ = true;
@@ -784,29 +817,70 @@ const buildInjectedClient = ({ nonce, routeName, devServerUrl, allowedDevDomain,
 </script>
 `;
 
+/** Classify an explicitly negotiated top-level document request for optional development injection.
+ * @param {IncomingMessage} req - Native request headers/method; classification is not authorization.
+ * @returns {boolean} Whether the implemented method/Accept/fetch-destination checks admit a document request.
+ */
 export const isPrimaryHtmlRequest = (req: IncomingMessage) => {
-  if ((req.method || "GET").toUpperCase() !== "GET") return false;
+  if ((req.method || 'GET').toUpperCase() !== 'GET') {
+    return false;
+  }
 
-  const accept = String(req.headers.accept || "");
-  if (!accept.includes("text/html")) return false;
+  /** Declared Accept value checked only for the legacy HTML negotiation marker. */
+  const accept = String(req.headers.accept || '');
+  if (!accept.includes('text/html')) {
+    return false;
+  }
 
-  const requestedWith = String(req.headers["x-requested-with"] || "").toLowerCase();
-  if (requestedWith === "xmlhttprequest") return false;
+  /** Legacy XHR marker preventing document injection into ordinary AJAX responses. */
+  const requestedWith = String(
+    req.headers['x-requested-with'] || ''
+  ).toLowerCase();
+  if (requestedWith === 'xmlhttprequest') {
+    return false;
+  }
 
-  const secFetchDest = String(req.headers["sec-fetch-dest"] || "").toLowerCase();
-  if (secFetchDest && secFetchDest !== "document" && secFetchDest !== "iframe") return false;
+  /** Native fetch destination used only to restrict document/iframe classification. */
+  const secFetchDest = String(
+    req.headers['sec-fetch-dest'] || ''
+  ).toLowerCase();
+  if (
+    secFetchDest &&
+    secFetchDest !== 'document' &&
+    secFetchDest !== 'iframe'
+  ) {
+    return false;
+  }
 
-  const secFetchMode = String(req.headers["sec-fetch-mode"] || "").toLowerCase();
-  if (secFetchMode && secFetchMode !== "navigate") return false;
+  /** Native fetch mode used only to restrict navigation classification. */
+  const secFetchMode = String(
+    req.headers['sec-fetch-mode'] || ''
+  ).toLowerCase();
+  if (secFetchMode && secFetchMode !== 'navigate') {
+    return false;
+  }
 
   return true;
 };
 
-export const injectDevClient = (html: string, options: DevClientScriptOptions) => {
-  if (options.nonce !== undefined) assertSecurityNonce(options.nonce);
-  if (/data-zdev-client=["']true["']/.test(html)) return html;
+/** Inject the fixed development script once using only explicit host response settings.
+ * @param {string} html - Trusted application document belonging to the controlled development environment.
+ * @param {DevClientScriptOptions} options - Explicit host settings; nonce validation never replaces or grants CSP.
+ * @returns {string} Existing marked document or document plus one script; caller retains response ownership.
+ */
+export const injectDevClient = (
+  html: string,
+  options: DevClientScriptOptions
+) => {
+  if (options.nonce !== undefined) {
+    assertSecurityNonce(options.nonce);
+  }
+  if (/data-zdev-client=["']true["']/.test(html)) {
+    return html;
+  }
+  /** Single fixed client script generated after validating an explicitly supplied nonce. */
   const snippet = buildInjectedClient(options);
   return /<\/body\s*>/i.test(html)
-    ? html.replace(/<\/body\s*>/i, match => `${snippet}${match}`)
+    ? html.replace(/<\/body\s*>/i, (match) => `${snippet}${match}`)
     : `${html}${snippet}`;
 };

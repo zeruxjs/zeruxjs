@@ -61,12 +61,12 @@ The fields below come from the current source declarations. Optional is not a de
 
 ### ZeruxStructureConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `app` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `middleware` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `controllers` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `composables` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `plugins` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `public` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `env` | `string \| string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option        | Accepted TypeScript value | Required | Meaning                                                                          |
+| ------------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `app`         | `string`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `middleware`  | `string \| string[]`      | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `controllers` | `string \| string[]`      | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `composables` | `string \| string[]`      | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `plugins`     | `string \| string[]`      | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `public`      | `string \| string[]`      | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `env`         | `string \| string[]`      | No       | Passed using this declared shape; omission is allowed only when marked optional. |

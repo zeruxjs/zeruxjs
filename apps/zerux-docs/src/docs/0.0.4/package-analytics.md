@@ -52,11 +52,11 @@ Use explicit origins, bounded body readers, timeouts and concurrency. Browser co
 
 ## Query coverage
 
-| Query | Meaning |
-| --- | --- |
-| Bounded raw events | A limited event page, not a global total |
-| Native aggregate/count | Exact for persisted matching event rows |
-| Numeric materialization | Indexed-only facts; historical/failed writes can be missing |
+| Query                     | Meaning                                                          |
+| ------------------------- | ---------------------------------------------------------------- |
+| Bounded raw events        | A limited event page, not a global total                         |
+| Native aggregate/count    | Exact for persisted matching event rows                          |
+| Numeric materialization   | Indexed-only facts; historical/failed writes can be missing      |
 | Reconciliation completion | A bounded scan exhausted, not a transactional completeness proof |
 
 ## Request IDs and control-plane storage
@@ -109,113 +109,112 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### AnalyticsConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `analytics` | `string` | Yes |
-| `database` | `DatabaseManagerLike` | Yes |
-| `enabled` | `boolean` | Yes |
-| `onWarning` | `(message:string)=>void` | Yes |
-| `table` | `string` | Yes |
-| `indexes` | `boolean` | Yes |
-| `numericFields` | `string[]` | Yes |
-| `numericUniqueIndexManagedExternally` | `boolean` | Yes |
-| `webConsent` | `'optional'\|'required'` | Yes |
-| `eventSchemas` | `Record<string,{properties:Record<string,'string'\|'number'\|'boolean'\|'null'>;allowAdditionalProperties?:boolean}>` | Yes |
-| `approveRetention` | `(scope:{site:string;before:number})=>boolean\|Promise<boolean>` | Yes |
-| `filter` | `(input:Readonly<AnalyticsEventInput>)=>AnalyticsEventInput\|null\|Promise<AnalyticsEventInput\|null>` | Yes |
+| Field                                 | Accepted type/value                                                                                                   | Optional |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| `analytics`                           | `string`                                                                                                              | Yes      |
+| `database`                            | `DatabaseManagerLike`                                                                                                 | Yes      |
+| `enabled`                             | `boolean`                                                                                                             | Yes      |
+| `onWarning`                           | `(message:string)=>void`                                                                                              | Yes      |
+| `table`                               | `string`                                                                                                              | Yes      |
+| `indexes`                             | `boolean`                                                                                                             | Yes      |
+| `numericFields`                       | `string[]`                                                                                                            | Yes      |
+| `numericUniqueIndexManagedExternally` | `boolean`                                                                                                             | Yes      |
+| `webConsent`                          | `'optional'\|'required'`                                                                                              | Yes      |
+| `eventSchemas`                        | `Record<string,{properties:Record<string,'string'\|'number'\|'boolean'\|'null'>;allowAdditionalProperties?:boolean}>` | Yes      |
+| `approveRetention`                    | `(scope:{site:string;before:number})=>boolean\|Promise<boolean>`                                                      | Yes      |
+| `filter`                              | `(input:Readonly<AnalyticsEventInput>)=>AnalyticsEventInput\|null\|Promise<AnalyticsEventInput\|null>`                | Yes      |
 
 ### CollectorOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `analytics` | `AnalyticsManager` | No |
-| `requestIdStore` | `RequestIdStore` | Yes |
-| `requireRequestId` | `boolean` | Yes |
-| `allowTextPlainBeacon` | `boolean` | Yes |
-| `dispatch` | `(input:AnalyticsEventInput,context:{requestId:string;utcDay:string;origin?:string})=>Promise<unknown>` | Yes |
-| `prefix` | `string` | Yes |
-| `allowedOrigins` | `readonly string[]` | Yes |
-| `serverToken` | `string` | Yes |
-| `maxBodyBytes` | `number` | Yes |
-| `bodyTimeoutMs` | `number` | Yes |
-| `maxConcurrentReads` | `number` | Yes |
-| `maxEventsPerMinute` | `number` | Yes |
-| `storageTimeoutMs` | `number` | Yes |
-| `maxPendingEvents` | `number` | Yes |
-| `siteByOrigin` | `Record<string,string>` | Yes |
-| `requireBrowserConsent` | `boolean` | Yes |
-| `botPolicy` | `'allow'\|'drop-known'` | Yes |
+| Field                   | Accepted type/value                                                                                     | Optional |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- | -------- |
+| `analytics`             | `AnalyticsManager`                                                                                      | No       |
+| `requestIdStore`        | `RequestIdStore`                                                                                        | Yes      |
+| `requireRequestId`      | `boolean`                                                                                               | Yes      |
+| `allowTextPlainBeacon`  | `boolean`                                                                                               | Yes      |
+| `dispatch`              | `(input:AnalyticsEventInput,context:{requestId:string;utcDay:string;origin?:string})=>Promise<unknown>` | Yes      |
+| `prefix`                | `string`                                                                                                | Yes      |
+| `allowedOrigins`        | `readonly string[]`                                                                                     | Yes      |
+| `serverToken`           | `string`                                                                                                | Yes      |
+| `maxBodyBytes`          | `number`                                                                                                | Yes      |
+| `bodyTimeoutMs`         | `number`                                                                                                | Yes      |
+| `maxConcurrentReads`    | `number`                                                                                                | Yes      |
+| `maxEventsPerMinute`    | `number`                                                                                                | Yes      |
+| `storageTimeoutMs`      | `number`                                                                                                | Yes      |
+| `maxPendingEvents`      | `number`                                                                                                | Yes      |
+| `siteByOrigin`          | `Record<string,string>`                                                                                 | Yes      |
+| `requireBrowserConsent` | `boolean`                                                                                               | Yes      |
+| `botPolicy`             | `'allow'\|'drop-known'`                                                                                 | Yes      |
 
 ### AnalyticsSummaryQuery
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `name` | `string` | Yes |
-| `source` | `string` | Yes |
-| `site` | `string` | Yes |
-| `since` | `number` | Yes |
-| `until` | `number` | Yes |
-| `limit` | `number` | Yes |
+| Field    | Accepted type/value | Optional |
+| -------- | ------------------- | -------- |
+| `name`   | `string`            | Yes      |
+| `source` | `string`            | Yes      |
+| `site`   | `string`            | Yes      |
+| `since`  | `number`            | Yes      |
+| `until`  | `number`            | Yes      |
+| `limit`  | `number`            | Yes      |
 
 ### AnalyticsAggregateQuery
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `groupBy` | `'event'\|'source'\|'site'\|'pathname'\|'day'` | No |
+| Field     | Accepted type/value                            | Optional |
+| --------- | ---------------------------------------------- | -------- |
+| `groupBy` | `'event'\|'source'\|'site'\|'pathname'\|'day'` | No       |
 
 ### AnalyticsNumericAggregateQuery
 
 Values cover successfully materialized numeric facts, not necessarily all historical events. Native reports reject storage failures rather than inventing zero totals. Totals and groups use separate reads and can differ under concurrent writes; they are not a shared transactional snapshot. Group limits default to 100 (maximum 500). Daily queries require explicit bounds spanning at most 366 UTC days, with at most six bucket reads per batch. The host owns authorization and tenant/site binding before calling these borrowed-connection helpers.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `metric` | `'sum'\|'average'\|'min'\|'max'` | No |
-| `valueField` | `string` | No |
+| Field        | Accepted type/value              | Optional |
+| ------------ | -------------------------------- | -------- |
+| `metric`     | `'sum'\|'average'\|'min'\|'max'` | No       |
+| `valueField` | `string`                         | No       |
 
 ### AnalyticsRetentionQuery
 
 Bounded site-scoped, keyset-paged purge. Rerun from the beginning to catch late historical writes.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `site` | `string` | No |
-| `before` | `number` | No |
-| `cursor` | `string` | Yes |
-| `limit` | `number` | Yes |
-| `dryRun` | `boolean` | Yes |
-| `numericSidecar` | `'present'\|'absent'` | Yes |
+| Field            | Accepted type/value   | Optional |
+| ---------------- | --------------------- | -------- |
+| `site`           | `string`              | No       |
+| `before`         | `number`              | No       |
+| `cursor`         | `string`              | Yes      |
+| `limit`          | `number`              | Yes      |
+| `dryRun`         | `boolean`             | Yes      |
+| `numericSidecar` | `'present'\|'absent'` | Yes      |
 
 ### EmailTrackingOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `analytics` | `AnalyticsManager` | No |
-| `baseUrl` | `string` | No |
-| `secret` | `string` | Yes |
-| `keyRing` | `EmailTrackingKeyRing` | Yes |
-| `acceptLegacyHmac` | `boolean` | Yes |
-| `path` | `string` | Yes |
-| `ttlMs` | `number` | Yes |
-| `allowedLinkHosts` | `readonly string[]` | Yes |
-| `activityStore` | `EmailActivityStore` | Yes |
-| `onEvent` | `(event:EmailActivityEvent)=>void\|Promise<void>` | Yes |
-| `enabled` | `boolean` | Yes |
-| `telemetryTimeoutMs` | `number` | Yes |
-| `maxPendingTelemetry` | `number` | Yes |
-| `onWarning` | `(message:string)=>void` | Yes |
+| Field                 | Accepted type/value                               | Optional |
+| --------------------- | ------------------------------------------------- | -------- |
+| `analytics`           | `AnalyticsManager`                                | No       |
+| `baseUrl`             | `string`                                          | No       |
+| `secret`              | `string`                                          | Yes      |
+| `keyRing`             | `EmailTrackingKeyRing`                            | Yes      |
+| `acceptLegacyHmac`    | `boolean`                                         | Yes      |
+| `path`                | `string`                                          | Yes      |
+| `ttlMs`               | `number`                                          | Yes      |
+| `allowedLinkHosts`    | `readonly string[]`                               | Yes      |
+| `activityStore`       | `EmailActivityStore`                              | Yes      |
+| `onEvent`             | `(event:EmailActivityEvent)=>void\|Promise<void>` | Yes      |
+| `enabled`             | `boolean`                                         | Yes      |
+| `telemetryTimeoutMs`  | `number`                                          | Yes      |
+| `maxPendingTelemetry` | `number`                                          | Yes      |
+| `onWarning`           | `(message:string)=>void`                          | Yes      |
 
 ### NumericReconciliationJobOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `query` | `NumericReconciliationQuery` | No |
-| `store` | `VersionedStore<NumericReconciliationJobDocument>` | No |
-| `projectionKey` | `string` | Yes |
-| `reconcile` | `(query:NumericReconciliationQuery)=>Promise<NumericReconciliationResult>` | No |
-| `leaseMs` | `number` | Yes |
-| `now` | `()=>number` | Yes |
-
+| Field           | Accepted type/value                                                        | Optional |
+| --------------- | -------------------------------------------------------------------------- | -------- |
+| `id`            | `string`                                                                   | No       |
+| `query`         | `NumericReconciliationQuery`                                               | No       |
+| `store`         | `VersionedStore<NumericReconciliationJobDocument>`                         | No       |
+| `projectionKey` | `string`                                                                   | Yes      |
+| `reconcile`     | `(query:NumericReconciliationQuery)=>Promise<NumericReconciliationResult>` | No       |
+| `leaseMs`       | `number`                                                                   | Yes      |
+| `now`           | `()=>number`                                                               | Yes      |
 
 ## Browser and collector ownership
 

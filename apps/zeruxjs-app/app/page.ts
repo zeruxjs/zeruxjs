@@ -1,21 +1,61 @@
 const sections = [
-  { href: "/workspace", title: "Local Integration Workspace", body: "ZyroJS UI, SQLite notes, local objects/assets, search, protocols, analytics, reports and consent-controlled tools." },
-  { href: "/playground", title: "Playground", body: "HTML page route with middleware state and controller data." },
-  { href: "/index.html", title: "Standalone ZyroJS Counter", body: "Interactive component using the installed ZyroJS runtime." },
-  { href: "/blog/zerux-runtime", title: "Dynamic Blog Route", body: "Checks `[slug]` route params and composable formatting." },
-  { href: "/api/health", title: "API Health", body: "JSON route handler using middleware and controller references." },
-  { href: "/api/echo", title: "API Echo", body: "POST endpoint for request body and query parsing." },
-  { href: "/db-demo", title: "Optional MySQL Demo", body: "Requires ENABLE_MYSQL_DEMO and a real MySQL connection. SQLite examples are in the workspace." },
-  { href: "/plugin/runtime", title: "Plugin Route", body: "Route added at runtime by a Zerux plugin." },
-  { href: "/plugin/workers", title: "Worker Demo", body: "Heartbeat state and a real worker-thread calculation." },
-  { href: "/boom", title: "Intentional Error", body: "Throws an `HttpError` so error handling and logs are visible." }
+  {
+    href: '/workspace',
+    title: 'Local Integration Workspace',
+    body: 'ZyroJS UI, SQLite notes, local objects/assets, search, protocols, analytics, reports and consent-controlled tools.',
+  },
+  {
+    href: '/playground',
+    title: 'Playground',
+    body: 'HTML page route with middleware state and controller data.',
+  },
+  {
+    href: '/index.html',
+    title: 'Standalone ZyroJS Counter',
+    body: 'Interactive component using the installed ZyroJS runtime.',
+  },
+  {
+    href: '/blog/zerux-runtime',
+    title: 'Dynamic Blog Route',
+    body: 'Checks `[slug]` route params and composable formatting.',
+  },
+  {
+    href: '/api/health',
+    title: 'API Health',
+    body: 'JSON route handler using middleware and controller references.',
+  },
+  {
+    href: '/api/echo',
+    title: 'API Echo',
+    body: 'POST endpoint for request body and query parsing.',
+  },
+  {
+    href: '/db-demo',
+    title: 'Optional MySQL Demo',
+    body: 'Requires ENABLE_MYSQL_DEMO and a real MySQL connection. SQLite examples are in the workspace.',
+  },
+  {
+    href: '/plugin/runtime',
+    title: 'Plugin Route',
+    body: 'Route added at runtime by a Zerux plugin.',
+  },
+  {
+    href: '/plugin/workers',
+    title: 'Worker Demo',
+    body: 'Heartbeat state and a real worker-thread calculation.',
+  },
+  {
+    href: '/boom',
+    title: 'Intentional Error',
+    body: 'Throws an `HttpError` so error handling and logs are visible.',
+  },
 ];
 
 const stats = [
-  { label: "pages", value: "nested app routes" },
-  { label: "middleware", value: "request context + headers" },
-  { label: "controllers", value: "string references" },
-  { label: "plugins", value: "runtime route injection" }
+  { label: 'pages', value: 'nested app routes' },
+  { label: 'middleware', value: 'request context + headers' },
+  { label: 'controllers', value: 'string references' },
+  { label: 'plugins', value: 'runtime route injection' },
 ];
 
 export default () => `<!DOCTYPE html>
@@ -215,23 +255,31 @@ export default () => `<!DOCTYPE html>
         </div>
 
         <div class="stats">
-          ${stats.map((item) => `
+          ${stats
+            .map(
+              (item) => `
             <article class="card">
               <div class="pill">${item.label}</div>
               <strong>${item.value}</strong>
             </article>
-          `).join("")}
+          `
+            )
+            .join('')}
         </div>
       </section>
 
       <section class="routes">
-        ${sections.map((item) => `
+        ${sections
+          .map(
+            (item) => `
           <a class="route-card" href="${item.href}">
             <div class="pill">${item.href}</div>
             <h2>${item.title}</h2>
             <p>${item.body}</p>
           </a>
-        `).join("")}
+        `
+          )
+          .join('')}
       </section>
 
       <section class="footer">

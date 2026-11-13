@@ -1,60 +1,536 @@
-import test from 'node:test';import assert from 'node:assert/strict';
-import {createRunner} from 'ztrial';
-import {createExperimentCatalog,evolveExperimentCatalog,createExperimentEvaluator,experimentAnalyticsSchema} from 'ztrial/experiments';
-import {createEventSchemaRegistry,validateRegisteredEvent} from '@zeruxjs/analytics';
-const tenant='tenant_0123456789',subject='subject_0123456789',salt=Buffer.alloc(32,7);
-const initial={id:'checkout',version:1,salt:'allocation_salt_v1',environments:['production'],migration:'initial',variants:[{name:'control',weight:3000},{name:'compact',weight:3000},{name:'express',weight:4000}]};
-const catalog=()=>createExperimentCatalog([initial]);
-const context=(extra={})=>({tenant,subject,environment:'production',consent:'granted',...extra});
-const evaluator=(cat=catalog(),extra={})=>createExperimentEvaluator({catalog:cat,tenant,tenantSalt:salt,resolveContext:principal=>context(principal),...extra});
-function storeFixture(){const definitions=new Map(),assignments=new Map();return {definitions,assignments,contract:'ztrial-experiment-store-v1',durability:'durable',async register(d){const key=JSON.stringify([d.scope,d.experiment,d.version]),old=definitions.get(key);if(old!==undefined)return old===d.fingerprint?'same':'conflict';definitions.set(key,d.fingerprint);return 'registered';},async get(key){return structuredClone(assignments.get(key)??null);},async cas(key,revision,next){const old=assignments.get(key);if((old?.revision??null)!==revision)return false;assignments.set(key,structuredClone(next));return true;}};}
-test('stable named multi-variant assignment, detached configuration, and no test-runner registration',async()=>{
- const config=structuredClone(initial),cat=createExperimentCatalog([config]),a=evaluator(cat),b=evaluator(cat);config.variants[0].weight=9999;
- try{const result=await a.evaluate('checkout',{});assert.equal(result.status,'assigned');assert.equal(result.variant,'compact');assert.deepEqual(await a.evaluate('checkout',{}),result);assert.deepEqual(await b.evaluate('checkout',{}),result);assert.ok(initial.variants.some(v=>v.name===result.variant));assert.equal(result.explanation.algorithm,'hmac-sha256-basis-points-v1');assert.doesNotMatch(JSON.stringify(result),/subject_0123456789|tenant_0123456789/);assert.ok(Object.isFrozen(cat.definitions[0].variants));
- const runner=createRunner();runner.test('independent',()=>{});await a.evaluate('checkout',{});const summary=await runner.runTests();assert.equal(summary.results.length,1);assert.equal(summary.passed,1);
- const seen=new Set();for(let i=0;i<60;i++)seen.add((await a.evaluate('checkout',{subject:'subject_'+String(i).padStart(12,'0')})).variant);assert.equal(seen.size,3);
- }finally{await a.close();await b.close();}assert.deepEqual(salt,Buffer.alloc(32,7));
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createRunner } from 'ztrial';
+import {
+  createExperimentCatalog,
+  evolveExperimentCatalog,
+  createExperimentEvaluator,
+  experimentAnalyticsSchema,
+} from 'ztrial/experiments';
+import {
+  createEventSchemaRegistry,
+  validateRegisteredEvent,
+} from '@zeruxjs/analytics';
+const tenant = 'tenant_0123456789',
+  subject = 'subject_0123456789',
+  salt = Buffer.alloc(32, 7);
+const initial = {
+  id: 'checkout',
+  version: 1,
+  salt: 'allocation_salt_v1',
+  environments: ['production'],
+  migration: 'initial',
+  variants: [
+    { name: 'control', weight: 3000 },
+    { name: 'compact', weight: 3000 },
+    { name: 'express', weight: 4000 },
+  ],
+};
+const catalog = () => createExperimentCatalog([initial]);
+const context = (extra = {}) => ({
+  tenant,
+  subject,
+  environment: 'production',
+  consent: 'granted',
+  ...extra,
 });
-test('weights, duplicate names, uncontrolled rollouts, environment/config accessors and overrides reject',()=>{
- for(const definition of [{...initial,variants:[{name:'a',weight:100},{name:'b',weight:100}]},{...initial,variants:[{name:'a',weight:-1},{name:'b',weight:10001}]},{...initial,variants:[{name:'a',weight:0.5},{name:'b',weight:9999.5}]},{...initial,variants:[{name:'a',weight:5000},{name:'a',weight:5000}]},{...initial,environments:['production','production']},{...initial,version:2},{...initial,migration:'preserve'}])assert.throws(()=>createExperimentCatalog([definition]));
- assert.throws(()=>evolveExperimentCatalog(catalog(),[{...initial,version:1,migration:'rebucket'}]),e=>e.code==='MIGRATION_REQUIRED');
- assert.throws(()=>evolveExperimentCatalog(catalog(),[{...initial,version:2,migration:'preserve',variants:[{name:'control',weight:5000},{name:'compact',weight:5000}]}]),e=>e.code==='PRESERVED_VARIANT_REMOVED');
- assert.throws(()=>evaluator(catalog(),{tenantSalt:new Uint8Array(16)}));assert.throws(()=>evaluator(catalog(),{overrides:[{experiment:'checkout',version:1,subject,variant:'invented'}]}));let called=0;assert.throws(()=>createExperimentCatalog([{...initial,get variants(){called++;return [];}}]));assert.equal(called,0);
+const evaluator = (cat = catalog(), extra = {}) =>
+  createExperimentEvaluator({
+    catalog: cat,
+    tenant,
+    tenantSalt: salt,
+    resolveContext: (principal) => context(principal),
+    ...extra,
+  });
+function storeFixture() {
+  const definitions = new Map(),
+    assignments = new Map();
+  return {
+    definitions,
+    assignments,
+    contract: 'ztrial-experiment-store-v1',
+    durability: 'durable',
+    async register(d) {
+      const key = JSON.stringify([d.scope, d.experiment, d.version]),
+        old = definitions.get(key);
+      if (old !== undefined) return old === d.fingerprint ? 'same' : 'conflict';
+      definitions.set(key, d.fingerprint);
+      return 'registered';
+    },
+    async get(key) {
+      return structuredClone(assignments.get(key) ?? null);
+    },
+    async cas(key, revision, next) {
+      const old = assignments.get(key);
+      if ((old?.revision ?? null) !== revision) return false;
+      assignments.set(key, structuredClone(next));
+      return true;
+    },
+  };
+}
+test('stable named multi-variant assignment, detached configuration, and no test-runner registration', async () => {
+  const config = structuredClone(initial),
+    cat = createExperimentCatalog([config]),
+    a = evaluator(cat),
+    b = evaluator(cat);
+  config.variants[0].weight = 9999;
+  try {
+    const result = await a.evaluate('checkout', {});
+    assert.equal(result.status, 'assigned');
+    assert.equal(result.variant, 'compact');
+    assert.deepEqual(await a.evaluate('checkout', {}), result);
+    assert.deepEqual(await b.evaluate('checkout', {}), result);
+    assert.ok(initial.variants.some((v) => v.name === result.variant));
+    assert.equal(result.explanation.algorithm, 'hmac-sha256-basis-points-v1');
+    assert.doesNotMatch(
+      JSON.stringify(result),
+      /subject_0123456789|tenant_0123456789/
+    );
+    assert.ok(Object.isFrozen(cat.definitions[0].variants));
+    const runner = createRunner();
+    runner.test('independent', () => {});
+    await a.evaluate('checkout', {});
+    const summary = await runner.runTests();
+    assert.equal(summary.results.length, 1);
+    assert.equal(summary.passed, 1);
+    const seen = new Set();
+    for (let i = 0; i < 60; i++)
+      seen.add(
+        (
+          await a.evaluate('checkout', {
+            subject: 'subject_' + String(i).padStart(12, '0'),
+          })
+        ).variant
+      );
+    assert.equal(seen.size, 3);
+  } finally {
+    await a.close();
+    await b.close();
+  }
+  assert.deepEqual(salt, Buffer.alloc(32, 7));
 });
-test('verified tenant, consent and environment denial occur before store/recorder effects',async()=>{
- let calls=0;const store=storeFixture(),native=store.register;store.register=async(...args)=>{calls++;return native(...args);};const a=evaluator(catalog(),{store});try{
- for(const [extra,reason] of [[{tenant:'tenant_9876543210'},'tenant'],[{consent:'denied'},'consent'],[{consent:'unknown'},'consent'],[{environment:'staging'},'environment']])assert.deepEqual(await a.evaluate('checkout',extra),{status:'denied',reason});assert.equal(calls,0);
- await assert.rejects(a.evaluate('checkout',{subject:'email@example.com'}),e=>e.code==='INVALID_IDENTITY');assert.equal(calls,0);
- }finally{await a.close();}
+test('weights, duplicate names, uncontrolled rollouts, environment/config accessors and overrides reject', () => {
+  for (const definition of [
+    {
+      ...initial,
+      variants: [
+        { name: 'a', weight: 100 },
+        { name: 'b', weight: 100 },
+      ],
+    },
+    {
+      ...initial,
+      variants: [
+        { name: 'a', weight: -1 },
+        { name: 'b', weight: 10001 },
+      ],
+    },
+    {
+      ...initial,
+      variants: [
+        { name: 'a', weight: 0.5 },
+        { name: 'b', weight: 9999.5 },
+      ],
+    },
+    {
+      ...initial,
+      variants: [
+        { name: 'a', weight: 5000 },
+        { name: 'a', weight: 5000 },
+      ],
+    },
+    { ...initial, environments: ['production', 'production'] },
+    { ...initial, version: 2 },
+    { ...initial, migration: 'preserve' },
+  ])
+    assert.throws(() => createExperimentCatalog([definition]));
+  assert.throws(
+    () =>
+      evolveExperimentCatalog(catalog(), [
+        { ...initial, version: 1, migration: 'rebucket' },
+      ]),
+    (e) => e.code === 'MIGRATION_REQUIRED'
+  );
+  assert.throws(
+    () =>
+      evolveExperimentCatalog(catalog(), [
+        {
+          ...initial,
+          version: 2,
+          migration: 'preserve',
+          variants: [
+            { name: 'control', weight: 5000 },
+            { name: 'compact', weight: 5000 },
+          ],
+        },
+      ]),
+    (e) => e.code === 'PRESERVED_VARIANT_REMOVED'
+  );
+  assert.throws(() => evaluator(catalog(), { tenantSalt: new Uint8Array(16) }));
+  assert.throws(() =>
+    evaluator(catalog(), {
+      overrides: [
+        { experiment: 'checkout', version: 1, subject, variant: 'invented' },
+      ],
+    })
+  );
+  let called = 0;
+  assert.throws(() =>
+    createExperimentCatalog([
+      {
+        ...initial,
+        get variants() {
+          called++;
+          return [];
+        },
+      },
+    ])
+  );
+  assert.equal(called, 0);
 });
-test('tenant isolation, deterministic trusted overrides and sticky existing assignments',async()=>{
- const shared=storeFixture(),a=evaluator(catalog(),{store:shared,overrides:[{experiment:'checkout',version:1,subject,variant:'express'}]});try{const assigned=await a.evaluate('checkout',{});assert.equal(assigned.variant,'express');assert.equal(assigned.explanation.reason,'override');const second=evaluator(catalog(),{store:shared,overrides:[{experiment:'checkout',version:1,subject,variant:'compact'}]});try{assert.equal((await second.evaluate('checkout',{})).variant,'express');}finally{await second.close();}
- const otherTenant='tenant_9876543210';const other=createExperimentEvaluator({catalog:catalog(),tenant:otherTenant,tenantSalt:Buffer.alloc(32,8),store:shared,resolveContext:()=>context({tenant:otherTenant})});try{await other.evaluate('checkout',{});assert.equal(shared.assignments.size,2);const rows=[...shared.assignments.values()];assert.notEqual(rows[0].key,rows[1].key);assert.notEqual(rows[0].scope,rows[1].scope);assert.doesNotMatch(JSON.stringify(rows),/subject_0123456789|tenant_0123456789/);}finally{await other.close();}
- }finally{await a.close();}
+test('verified tenant, consent and environment denial occur before store/recorder effects', async () => {
+  let calls = 0;
+  const store = storeFixture(),
+    native = store.register;
+  store.register = async (...args) => {
+    calls++;
+    return native(...args);
+  };
+  const a = evaluator(catalog(), { store });
+  try {
+    for (const [extra, reason] of [
+      [{ tenant: 'tenant_9876543210' }, 'tenant'],
+      [{ consent: 'denied' }, 'consent'],
+      [{ consent: 'unknown' }, 'consent'],
+      [{ environment: 'staging' }, 'environment'],
+    ])
+      assert.deepEqual(await a.evaluate('checkout', extra), {
+        status: 'denied',
+        reason,
+      });
+    assert.equal(calls, 0);
+    await assert.rejects(
+      a.evaluate('checkout', { subject: 'email@example.com' }),
+      (e) => e.code === 'INVALID_IDENTITY'
+    );
+    assert.equal(calls, 0);
+  } finally {
+    await a.close();
+  }
 });
-test('preserve/rebucket migrations require explicit versions and durable history; same-version changes and salt rotation fail closed',async()=>{
- const shared=storeFixture(),a=evaluator(catalog(),{store:shared,overrides:[{experiment:'checkout',version:1,subject,variant:'express'}]});await a.evaluate('checkout',{});await a.close();
- const preserve=evolveExperimentCatalog(catalog(),[{...initial,version:2,migration:'preserve',variants:[{name:'control',weight:10000},{name:'compact',weight:0},{name:'express',weight:0}]}]);assert.throws(()=>evaluator(preserve),e=>e.code==='PRESERVE_REQUIRES_DURABLE_STORE');const b=evaluator(preserve,{store:shared});try{const result=await b.evaluate('checkout',{});assert.equal(result.variant,'express');assert.equal(result.version,2);assert.equal(result.explanation.reason,'preserved');}finally{await b.close();}
- const rebucket=evolveExperimentCatalog(preserve,[{...initial,version:3,migration:'rebucket',variants:[{name:'control',weight:10000},{name:'express',weight:0}]}]);const c=evaluator(rebucket,{store:shared});try{const result=await c.evaluate('checkout',{});assert.equal(result.variant,'control');assert.equal(result.version,3);assert.equal(result.explanation.reason,'rebucketed');}finally{await c.close();}
- const rollback=evaluator(catalog(),{store:shared});await assert.rejects(rollback.evaluate('checkout',{}),e=>e.code==='ROLLBACK_OR_UNKNOWN_VERSION');await rollback.close();
- const changed=evaluator(createExperimentCatalog([{...initial,variants:[{name:'control',weight:5000},{name:'express',weight:5000}]}]),{store:shared});await assert.rejects(changed.evaluate('checkout',{}),e=>e.code==='VERSION_CONFLICT');await changed.close();
- const rotated=evaluator(catalog(),{store:shared,tenantSalt:Buffer.alloc(32,9)});await assert.rejects(rotated.evaluate('checkout',{}),e=>e.code==='VERSION_CONFLICT');await rotated.close();
+test('tenant isolation, deterministic trusted overrides and sticky existing assignments', async () => {
+  const shared = storeFixture(),
+    a = evaluator(catalog(), {
+      store: shared,
+      overrides: [
+        { experiment: 'checkout', version: 1, subject, variant: 'express' },
+      ],
+    });
+  try {
+    const assigned = await a.evaluate('checkout', {});
+    assert.equal(assigned.variant, 'express');
+    assert.equal(assigned.explanation.reason, 'override');
+    const second = evaluator(catalog(), {
+      store: shared,
+      overrides: [
+        { experiment: 'checkout', version: 1, subject, variant: 'compact' },
+      ],
+    });
+    try {
+      assert.equal((await second.evaluate('checkout', {})).variant, 'express');
+    } finally {
+      await second.close();
+    }
+    const otherTenant = 'tenant_9876543210';
+    const other = createExperimentEvaluator({
+      catalog: catalog(),
+      tenant: otherTenant,
+      tenantSalt: Buffer.alloc(32, 8),
+      store: shared,
+      resolveContext: () => context({ tenant: otherTenant }),
+    });
+    try {
+      await other.evaluate('checkout', {});
+      assert.equal(shared.assignments.size, 2);
+      const rows = [...shared.assignments.values()];
+      assert.notEqual(rows[0].key, rows[1].key);
+      assert.notEqual(rows[0].scope, rows[1].scope);
+      assert.doesNotMatch(
+        JSON.stringify(rows),
+        /subject_0123456789|tenant_0123456789/
+      );
+    } finally {
+      await other.close();
+    }
+  } finally {
+    await a.close();
+  }
 });
-test('parallel CAS assignment and idempotent analytics recording contain no traits and validate against public schema',async()=>{
- const assignments=storeFixture(),receipts=new Map(),schema=experimentAnalyticsSchema(catalog()),registry=createEventSchemaRegistry([schema]);
- const recorder={contract:'ztrial-experiment-recorder-v1',async recordOnce(receipt){const old=receipts.get(receipt.id);if(old){assert.deepEqual(old,receipt);return 'duplicate';}receipts.set(receipt.id,structuredClone(receipt));validateRegisteredEvent({name:schema.name,source:'server',site:tenant,consent:'granted',properties:{experiment:receipt.experiment,version:receipt.version,variant:receipt.variant}},registry);return 'recorded';}};
- const a=evaluator(catalog(),{store:assignments,maxRecordPending:16,recording:{recorder,failure:'error'}});try{const replies=await Promise.all(Array.from({length:10},()=>a.evaluate('checkout',{})));assert.equal(new Set(replies.map(r=>r.variant)).size,1);assert.equal(assignments.assignments.size,1);assert.equal(receipts.size,1);assert.equal(replies.filter(r=>r.recording==='recorded').length,1);assert.doesNotMatch(JSON.stringify([...receipts.values()]),/subject_0123456789|tenant_0123456789/);}finally{await a.close();}
+test('preserve/rebucket migrations require explicit versions and durable history; same-version changes and salt rotation fail closed', async () => {
+  const shared = storeFixture(),
+    a = evaluator(catalog(), {
+      store: shared,
+      overrides: [
+        { experiment: 'checkout', version: 1, subject, variant: 'express' },
+      ],
+    });
+  await a.evaluate('checkout', {});
+  await a.close();
+  const preserve = evolveExperimentCatalog(catalog(), [
+    {
+      ...initial,
+      version: 2,
+      migration: 'preserve',
+      variants: [
+        { name: 'control', weight: 10000 },
+        { name: 'compact', weight: 0 },
+        { name: 'express', weight: 0 },
+      ],
+    },
+  ]);
+  assert.throws(
+    () => evaluator(preserve),
+    (e) => e.code === 'PRESERVE_REQUIRES_DURABLE_STORE'
+  );
+  const b = evaluator(preserve, { store: shared });
+  try {
+    const result = await b.evaluate('checkout', {});
+    assert.equal(result.variant, 'express');
+    assert.equal(result.version, 2);
+    assert.equal(result.explanation.reason, 'preserved');
+  } finally {
+    await b.close();
+  }
+  const rebucket = evolveExperimentCatalog(preserve, [
+    {
+      ...initial,
+      version: 3,
+      migration: 'rebucket',
+      variants: [
+        { name: 'control', weight: 10000 },
+        { name: 'express', weight: 0 },
+      ],
+    },
+  ]);
+  const c = evaluator(rebucket, { store: shared });
+  try {
+    const result = await c.evaluate('checkout', {});
+    assert.equal(result.variant, 'control');
+    assert.equal(result.version, 3);
+    assert.equal(result.explanation.reason, 'rebucketed');
+  } finally {
+    await c.close();
+  }
+  const rollback = evaluator(catalog(), { store: shared });
+  await assert.rejects(
+    rollback.evaluate('checkout', {}),
+    (e) => e.code === 'ROLLBACK_OR_UNKNOWN_VERSION'
+  );
+  await rollback.close();
+  const changed = evaluator(
+    createExperimentCatalog([
+      {
+        ...initial,
+        variants: [
+          { name: 'control', weight: 5000 },
+          { name: 'express', weight: 5000 },
+        ],
+      },
+    ]),
+    { store: shared }
+  );
+  await assert.rejects(
+    changed.evaluate('checkout', {}),
+    (e) => e.code === 'VERSION_CONFLICT'
+  );
+  await changed.close();
+  const rotated = evaluator(catalog(), {
+    store: shared,
+    tenantSalt: Buffer.alloc(32, 9),
+  });
+  await assert.rejects(
+    rotated.evaluate('checkout', {}),
+    (e) => e.code === 'VERSION_CONFLICT'
+  );
+  await rotated.close();
 });
-test('dependency failure never silently falls back or leaks private diagnostics; explicit recorder failure policy',async()=>{
- const store=storeFixture();store.get=async()=>{throw Error('PRIVATE subject token');};const a=evaluator(catalog(),{store});try{await assert.rejects(a.evaluate('checkout',{}),e=>e.code==='DEPENDENCY_UNAVAILABLE'&&!e.message.includes('PRIVATE'));}finally{await a.close();}
- const recorder={contract:'ztrial-experiment-recorder-v1',async recordOnce(){throw Error('PRIVATE analytics unavailable');}};const b=evaluator(catalog(),{recording:{recorder,failure:'error'}}),c=evaluator(catalog(),{recording:{recorder,failure:'ignore'}});try{await assert.rejects(b.evaluate('checkout',{}),e=>e.code==='RECORDING_UNCERTAIN'&&!e.message.includes('PRIVATE'));assert.equal((await c.evaluate('checkout',{})).recording,'failed');}finally{await b.close();await c.close();}
+test('parallel CAS assignment and idempotent analytics recording contain no traits and validate against public schema', async () => {
+  const assignments = storeFixture(),
+    receipts = new Map(),
+    schema = experimentAnalyticsSchema(catalog()),
+    registry = createEventSchemaRegistry([schema]);
+  const recorder = {
+    contract: 'ztrial-experiment-recorder-v1',
+    async recordOnce(receipt) {
+      const old = receipts.get(receipt.id);
+      if (old) {
+        assert.deepEqual(old, receipt);
+        return 'duplicate';
+      }
+      receipts.set(receipt.id, structuredClone(receipt));
+      validateRegisteredEvent(
+        {
+          name: schema.name,
+          source: 'server',
+          site: tenant,
+          consent: 'granted',
+          properties: {
+            experiment: receipt.experiment,
+            version: receipt.version,
+            variant: receipt.variant,
+          },
+        },
+        registry
+      );
+      return 'recorded';
+    },
+  };
+  const a = evaluator(catalog(), {
+    store: assignments,
+    maxRecordPending: 16,
+    recording: { recorder, failure: 'error' },
+  });
+  try {
+    const replies = await Promise.all(
+      Array.from({ length: 10 }, () => a.evaluate('checkout', {}))
+    );
+    assert.equal(new Set(replies.map((r) => r.variant)).size, 1);
+    assert.equal(assignments.assignments.size, 1);
+    assert.equal(receipts.size, 1);
+    assert.equal(replies.filter((r) => r.recording === 'recorded').length, 1);
+    assert.doesNotMatch(
+      JSON.stringify([...receipts.values()]),
+      /subject_0123456789|tenant_0123456789/
+    );
+  } finally {
+    await a.close();
+  }
 });
-test('timeout/cancellation retains actual pending capacity and close drains borrowed dependencies',async()=>{
- let finish,closed=0;const a=evaluator(catalog(),{timeoutMs:10,maxConcurrent:1,resolveContext:()=>new Promise(resolve=>finish=resolve)});await assert.rejects(a.evaluate('checkout',{}),e=>e.code==='DEADLINE');assert.equal(a.diagnostics().pending,1);await assert.rejects(a.evaluate('checkout',{}),e=>e.code==='OVERLOAD');let done=false;const closing=a.close().then(()=>done=true);await new Promise(resolve=>setTimeout(resolve,2));assert.equal(done,false);finish(context());await closing;assert.equal(a.diagnostics().pending,0);await assert.rejects(a.evaluate('checkout',{}),e=>e.code==='CLOSED');
- const store={...storeFixture(),close(){closed++;}};const b=evaluator(catalog(),{store});await b.evaluate('checkout',{});await b.close();assert.equal(closed,0);const controller=new AbortController();controller.abort('PRIVATE');const c=evaluator();try{await assert.rejects(c.evaluate('checkout',{}, {signal:controller.signal}),e=>e.code==='CANCELLED'&&!e.message.includes('PRIVATE'));}finally{await c.close();}
+test('dependency failure never silently falls back or leaks private diagnostics; explicit recorder failure policy', async () => {
+  const store = storeFixture();
+  store.get = async () => {
+    throw Error('PRIVATE subject token');
+  };
+  const a = evaluator(catalog(), { store });
+  try {
+    await assert.rejects(
+      a.evaluate('checkout', {}),
+      (e) =>
+        e.code === 'DEPENDENCY_UNAVAILABLE' && !e.message.includes('PRIVATE')
+    );
+  } finally {
+    await a.close();
+  }
+  const recorder = {
+    contract: 'ztrial-experiment-recorder-v1',
+    async recordOnce() {
+      throw Error('PRIVATE analytics unavailable');
+    },
+  };
+  const b = evaluator(catalog(), { recording: { recorder, failure: 'error' } }),
+    c = evaluator(catalog(), { recording: { recorder, failure: 'ignore' } });
+  try {
+    await assert.rejects(
+      b.evaluate('checkout', {}),
+      (e) => e.code === 'RECORDING_UNCERTAIN' && !e.message.includes('PRIVATE')
+    );
+    assert.equal((await c.evaluate('checkout', {})).recording, 'failed');
+  } finally {
+    await b.close();
+    await c.close();
+  }
 });
-test('recording capacity is explicit and recording concurrency never queues unlimited callbacks',async()=>{
- const receipts=new Map();const recorder={contract:'ztrial-experiment-recorder-v1',async recordOnce(receipt,context){if(receipts.has(receipt.id))return 'duplicate';if(receipts.size>=context.limit)return 'capacity';receipts.set(receipt.id,receipt);return 'recorded';}};
- const a=evaluator(catalog(),{recording:{recorder,failure:'error',maxRecords:1}});try{assert.equal((await a.evaluate('checkout',{})).recording,'recorded');assert.equal((await a.evaluate('checkout',{})).recording,'duplicate');await assert.rejects(a.evaluate('checkout',{subject:'subject_9876543210'}),e=>e.code==='RECORDING_CAPACITY');assert.equal(receipts.size,1);}finally{await a.close();}
- let finish;const b=evaluator(catalog(),{maxRecordPending:1,recording:{failure:'error',recorder:{contract:'ztrial-experiment-recorder-v1',recordOnce:()=>new Promise(resolve=>finish=resolve)}}});const first=b.evaluate('checkout',{});await new Promise(resolve=>setImmediate(resolve));await assert.rejects(b.evaluate('checkout',{subject:'subject_9876543210'}),e=>e.code==='RECORDING_OVERLOAD');finish('recorded');await first;await b.close();assert.equal(b.diagnostics().recordPending,0);
+test('timeout/cancellation retains actual pending capacity and close drains borrowed dependencies', async () => {
+  let finish,
+    closed = 0;
+  const a = evaluator(catalog(), {
+    timeoutMs: 10,
+    maxConcurrent: 1,
+    resolveContext: () => new Promise((resolve) => (finish = resolve)),
+  });
+  await assert.rejects(
+    a.evaluate('checkout', {}),
+    (e) => e.code === 'DEADLINE'
+  );
+  assert.equal(a.diagnostics().pending, 1);
+  await assert.rejects(
+    a.evaluate('checkout', {}),
+    (e) => e.code === 'OVERLOAD'
+  );
+  let done = false;
+  const closing = a.close().then(() => (done = true));
+  await new Promise((resolve) => setTimeout(resolve, 2));
+  assert.equal(done, false);
+  finish(context());
+  await closing;
+  assert.equal(a.diagnostics().pending, 0);
+  await assert.rejects(a.evaluate('checkout', {}), (e) => e.code === 'CLOSED');
+  const store = {
+    ...storeFixture(),
+    close() {
+      closed++;
+    },
+  };
+  const b = evaluator(catalog(), { store });
+  await b.evaluate('checkout', {});
+  await b.close();
+  assert.equal(closed, 0);
+  const controller = new AbortController();
+  controller.abort('PRIVATE');
+  const c = evaluator();
+  try {
+    await assert.rejects(
+      c.evaluate('checkout', {}, { signal: controller.signal }),
+      (e) => e.code === 'CANCELLED' && !e.message.includes('PRIVATE')
+    );
+  } finally {
+    await c.close();
+  }
+});
+test('recording capacity is explicit and recording concurrency never queues unlimited callbacks', async () => {
+  const receipts = new Map();
+  const recorder = {
+    contract: 'ztrial-experiment-recorder-v1',
+    async recordOnce(receipt, context) {
+      if (receipts.has(receipt.id)) return 'duplicate';
+      if (receipts.size >= context.limit) return 'capacity';
+      receipts.set(receipt.id, receipt);
+      return 'recorded';
+    },
+  };
+  const a = evaluator(catalog(), {
+    recording: { recorder, failure: 'error', maxRecords: 1 },
+  });
+  try {
+    assert.equal((await a.evaluate('checkout', {})).recording, 'recorded');
+    assert.equal((await a.evaluate('checkout', {})).recording, 'duplicate');
+    await assert.rejects(
+      a.evaluate('checkout', { subject: 'subject_9876543210' }),
+      (e) => e.code === 'RECORDING_CAPACITY'
+    );
+    assert.equal(receipts.size, 1);
+  } finally {
+    await a.close();
+  }
+  let finish;
+  const b = evaluator(catalog(), {
+    maxRecordPending: 1,
+    recording: {
+      failure: 'error',
+      recorder: {
+        contract: 'ztrial-experiment-recorder-v1',
+        recordOnce: () => new Promise((resolve) => (finish = resolve)),
+      },
+    },
+  });
+  const first = b.evaluate('checkout', {});
+  await new Promise((resolve) => setImmediate(resolve));
+  await assert.rejects(
+    b.evaluate('checkout', { subject: 'subject_9876543210' }),
+    (e) => e.code === 'RECORDING_OVERLOAD'
+  );
+  finish('recorded');
+  await first;
+  await b.close();
+  assert.equal(b.diagnostics().recordPending, 0);
 });

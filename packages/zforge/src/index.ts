@@ -4,8 +4,8 @@ export type {
   SharedDevRegistrationOptions,
   SharedDevServerHandle,
   SharedDevSnapshot,
-  SharedDevStartResult
-} from "./types.js";
+  SharedDevStartResult,
+} from './types.js';
 
 export type {
   DevtoolsApiModuleHandlers,
@@ -13,19 +13,16 @@ export type {
   DevtoolsModuleConfig,
   DevtoolsSectionDefinition,
   DevtoolsSectionContext,
-  DevtoolsSocketModuleHandlers
-} from "./module-registry.js";
+  DevtoolsSocketModuleHandlers,
+} from './module-registry.js';
 
-export type {
-  DevtoolsApiContext,
-  DevtoolsApiHandler
-} from "./api/registry.js";
+export type { DevtoolsApiContext, DevtoolsApiHandler } from './api/registry.js';
 
 export type {
   DevtoolsServerChannelHandler,
   DevtoolsSocketEnvelope,
-  DevtoolsSocketContext
-} from "./api/ws.js";
+  DevtoolsSocketContext,
+} from './api/ws.js';
 
 export {
   closeSharedDevServer,
@@ -36,10 +33,10 @@ export {
   registerSharedDevApp,
   resolveSharedDevModuleSocketRequest,
   setSharedDevEventBroadcaster,
-  unregisterSharedDevApp
-} from "./server.js";
+  unregisterSharedDevApp,
+} from './server.js';
 
-export { injectDevClient, isPrimaryHtmlRequest } from "./inject.js";
+export { injectDevClient, isPrimaryHtmlRequest } from './inject.js';
 export {
   defineDevtoolsModule,
   defineDevtoolsModuleApiHandlers,
@@ -47,22 +44,25 @@ export {
   defineDevtoolsModuleSocketHandlers,
   registerDevtoolsModule,
   unregisterDevtoolsModule,
-  getRegisteredDevtoolsModules as getDevtoolsModules
-} from "./module-registry.js";
+  getRegisteredDevtoolsModules as getDevtoolsModules,
+} from './module-registry.js';
 export {
   registerDevtoolsApiHandler,
   unregisterDevtoolsApiHandler,
-  getDevtoolsApiHandler
-} from "./api/registry.js";
-export { createDevtoolsApiClient, createDevtoolsModuleApiClient } from "./api/http.js";
+  getDevtoolsApiHandler,
+} from './api/registry.js';
+export {
+  createDevtoolsApiClient,
+  createDevtoolsModuleApiClient,
+} from './api/http.js';
 export {
   createPeerChannelMessage,
   createServerChannelMessage,
   createWebSocketUrl,
   getDevtoolsServerChannelHandler,
   registerDevtoolsServerChannel,
-  unregisterDevtoolsServerChannel
-} from "./api/ws.js";
+  unregisterDevtoolsServerChannel,
+} from './api/ws.js';
 
 export { createDevtoolsDocumentPolicy } from './framing.js';
 export type { DevtoolsDocumentPolicyOptions } from './framing.js';

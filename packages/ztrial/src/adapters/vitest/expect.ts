@@ -1,1 +1,1 @@
-export {expect} from '../../assert/expect.js';
+export { expect } from '../../assert/expect.js';

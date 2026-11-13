@@ -18,12 +18,12 @@
 
 ## Choose a helper
 
-| API | Responsibility |
-| --- | --- |
-| createFocusTrap | Topmost trap keyboard capture and focus restoration |
-| createAccessibleDialog | Dialog roles, labels, Escape and show/close/destroy |
-| createRovingTabIndex | Arrow/Home/End navigation, orientation, RTL and disabled items |
-| createLiveAnnouncer | Polite/urgent live-region messages and cleanup |
+| API                    | Responsibility                                                 |
+| ---------------------- | -------------------------------------------------------------- |
+| createFocusTrap        | Topmost trap keyboard capture and focus restoration            |
+| createAccessibleDialog | Dialog roles, labels, Escape and show/close/destroy            |
+| createRovingTabIndex   | Arrow/Home/End navigation, orientation, RTL and disabled items |
+| createLiveAnnouncer    | Polite/urgent live-region messages and cleanup                 |
 
 ## Lifecycle
 
@@ -83,19 +83,19 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### FocusTrapOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `initialFocus` | `()=>HTMLElement\|null` | Yes |
-| `fallbackFocus` | `()=>HTMLElement\|null` | Yes |
-| `returnFocus` | `boolean` | Yes |
-| `escapeDeactivates` | `boolean` | Yes |
-| `onEscape` | `(event:KeyboardEvent)=>void` | Yes |
+| Field               | Accepted type/value           | Optional |
+| ------------------- | ----------------------------- | -------- |
+| `initialFocus`      | `()=>HTMLElement\|null`       | Yes      |
+| `fallbackFocus`     | `()=>HTMLElement\|null`       | Yes      |
+| `returnFocus`       | `boolean`                     | Yes      |
+| `escapeDeactivates` | `boolean`                     | Yes      |
+| `onEscape`          | `(event:KeyboardEvent)=>void` | Yes      |
 
 ### RovingOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `orientation` | `'horizontal'\|'vertical'\|'both'` | Yes |
-| `loop` | `boolean` | Yes |
-| `direction` | `'ltr'\|'rtl'` | Yes |
-| `isDisabled` | `(node:HTMLElement)=>boolean` | Yes |
+| Field         | Accepted type/value                | Optional |
+| ------------- | ---------------------------------- | -------- |
+| `orientation` | `'horizontal'\|'vertical'\|'both'` | Yes      |
+| `loop`        | `boolean`                          | Yes      |
+| `direction`   | `'ltr'\|'rtl'`                     | Yes      |
+| `isDisabled`  | `(node:HTMLElement)=>boolean`      | Yes      |

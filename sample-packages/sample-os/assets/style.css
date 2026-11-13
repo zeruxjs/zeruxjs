@@ -1,7 +1,10 @@
 .sample-module {
   display: grid;
   gap: 18px;
-  font: 400 14px/1.6 Inter, "Segoe UI", sans-serif;
+  font:
+    400 14px/1.6 Inter,
+    'Segoe UI',
+    sans-serif;
 }
 
 .sample-hero,
@@ -68,7 +71,7 @@
   padding: 12px;
   border-radius: 8px;
   overflow: auto;
-  font-family: "JetBrains Mono", monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
 }
 

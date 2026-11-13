@@ -1,4 +1,4 @@
-import { defineDevtoolsModuleSocketHandlers } from "zforge";
+import { defineDevtoolsModuleSocketHandlers } from 'zforge';
 
 export default defineDevtoolsModuleSocketHandlers({
   ping({ app, snapshot, identifier, clientType, payload, module }) {
@@ -10,7 +10,7 @@ export default defineDevtoolsModuleSocketHandlers({
       identifier: identifier ?? null,
       receivedAt: new Date().toISOString(),
       receivedPayload: payload ?? null,
-      routeCount: snapshot.routes.length
+      routeCount: snapshot.routes.length,
     };
-  }
+  },
 });

@@ -8,9 +8,7 @@
     "allowJs": true,
     "checkJs": false,
     "noEmit": true,
-    "types": [
-      "node"
-    ]
+    "types": ["node"]
   },
   "include": [
     "app/**/*.ts",

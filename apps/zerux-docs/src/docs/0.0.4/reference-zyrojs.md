@@ -143,68 +143,68 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 ### ProtocolClientOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `baseUrl` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `fetch` | `typeof fetch` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `headers` | `HeadersInit \| (() => HeadersInit \| Promise<HeadersInit>)` | No | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
-| `credentials` | `RequestCredentials` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `timeoutMs` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `maxResponseBytes` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option             | Accepted TypeScript value                                    | Required | Meaning                                                                           |
+| ------------------ | ------------------------------------------------------------ | -------- | --------------------------------------------------------------------------------- |
+| `baseUrl`          | `string`                                                     | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `fetch`            | `typeof fetch`                                               | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `headers`          | `HeadersInit \| (() => HeadersInit \| Promise<HeadersInit>)` | No       | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
+| `credentials`      | `RequestCredentials`                                         | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `timeoutMs`        | `number`                                                     | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `maxResponseBytes` | `number`                                                     | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
 
 ### CallOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `signal` | `AbortSignal` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `headers` | `HeadersInit` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option    | Accepted TypeScript value | Required | Meaning                                                                          |
+| --------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `signal`  | `AbortSignal`             | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `headers` | `HeadersInit`             | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ### EventStreamOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `headers` | `HeadersInit` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `signal` | `AbortSignal` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `fetch` | `typeof fetch` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `lastEventId` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `maxEventBytes` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `credentials` | `RequestCredentials` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option          | Accepted TypeScript value | Required | Meaning                                                                          |
+| --------------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `headers`       | `HeadersInit`             | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `signal`        | `AbortSignal`             | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `fetch`         | `typeof fetch`            | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `lastEventId`   | `string`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `maxEventBytes` | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `credentials`   | `RequestCredentials`      | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ### QueryCacheOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `maxEntries` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `defaultTtlMs` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option         | Accepted TypeScript value | Required | Meaning                                                                          |
+| -------------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `maxEntries`   | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `defaultTtlMs` | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ### CacheQueryOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `ttlMs` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `tags` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `signal` | `AbortSignal` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option   | Accepted TypeScript value | Required | Meaning                                                                          |
+| -------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `ttlMs`  | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `tags`   | `string[]`                | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `signal` | `AbortSignal`             | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ### DiscoveryClientOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `baseUrl` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `fetch` | `typeof fetch` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `searchPath` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `feedPath` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `timeoutMs` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `maxResponseBytes` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option             | Accepted TypeScript value | Required | Meaning                                                                          |
+| ------------------ | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `baseUrl`          | `string`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `fetch`            | `typeof fetch`            | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `searchPath`       | `string`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `feedPath`         | `string`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `timeoutMs`        | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `maxResponseBytes` | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ### DiscoverySearchOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `limit` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `offset` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `mode` | `'any'\|'all'` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `prefix` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `signal` | `AbortSignal` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option   | Accepted TypeScript value | Required | Meaning                                                                          |
+| -------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `limit`  | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `offset` | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `mode`   | `'any'\|'all'`            | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `prefix` | `boolean`                 | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `signal` | `AbortSignal`             | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 The protocol client preserves the native Fetch global receiver. Application hosts
 can still inject a borrowed transport and must own endpoint/authentication policy;

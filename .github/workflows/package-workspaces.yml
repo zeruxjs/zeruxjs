@@ -1,0 +1,50 @@
+name: Validate workspace packages
+
+on:
+  push:
+    branches: [master, dev, test]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'packages/**'
+      - 'scripts/**'
+      - '.github/workflows/package-workspaces.yml'
+      - '.github/workflows/package-lock-recovery.yml'
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'packages/**'
+      - 'scripts/**'
+      - '.github/workflows/package-workspaces.yml'
+      - '.github/workflows/package-lock-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workspace-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.15.0'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Check committed lockfile before scheduling six platform installs
+        run: npm run deps:check
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build all workspaces
+        run: npm run build:workspaces -- --concurrency auto
+      - name: Run workspace tooling tests
+        run: npm run test:workspace-tools

@@ -506,6 +506,14 @@ console.log(pool.status());
 pool.close();
 ```
 
+`BackendPool` owns its periodic probe and checkpoint timers; `close()` stops
+new sweeps, attempts a final checkpoint and clears local state. A probe already
+in flight may still settle, but its result cannot update the closed pool.
+`checkNow()` coalesces overlapping sweeps by returning immediately while one is
+active; it does not return the active sweep's promise. Probe destinations stay
+on IPv4 loopback, HTTP redirects are not followed, and response bodies are not
+buffered. A checkpoint is recovery metadata, not permission to modify a route.
+
 The proxy also serves read-only per-backend status through its authenticated
 local RPC (not over public HTTP):
 

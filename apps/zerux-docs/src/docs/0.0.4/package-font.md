@@ -79,31 +79,31 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### FontDefinition
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `sources` | `FontSource[]` | No |
-| `stretch` | `string` | Yes |
-| `featureSettings` | `string` | Yes |
-| `variationSettings` | `string` | Yes |
+| Field               | Accepted type/value | Optional |
+| ------------------- | ------------------- | -------- |
+| `sources`           | `FontSource[]`      | No       |
+| `stretch`           | `string`            | Yes      |
+| `featureSettings`   | `string`            | Yes      |
+| `variationSettings` | `string`            | Yes      |
 
 ### FontSource
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `url` | `string` | No |
-| `format` | `string` | Yes |
+| Field    | Accepted type/value | Optional |
+| -------- | ------------------- | -------- |
+| `url`    | `string`            | No       |
+| `format` | `string`            | Yes      |
 
 ### FontFaceOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `family` | `string` | No |
-| `src` | `string` | No |
-| `weight` | `string \| number` | Yes |
-| `style` | `string` | Yes |
-| `display` | `'auto'\|'block'\|'swap'\|'fallback'\|'optional'` | Yes |
-| `format` | `string` | Yes |
-| `unicodeRange` | `string` | Yes |
+| Field          | Accepted type/value                               | Optional |
+| -------------- | ------------------------------------------------- | -------- |
+| `family`       | `string`                                          | No       |
+| `src`          | `string`                                          | No       |
+| `weight`       | `string \| number`                                | Yes      |
+| `style`        | `string`                                          | Yes      |
+| `display`      | `'auto'\|'block'\|'swap'\|'fallback'\|'optional'` | Yes      |
+| `format`       | `string`                                          | Yes      |
+| `unicodeRange` | `string`                                          | Yes      |
 
 ## Explicit build assets and provenance
 
@@ -122,14 +122,14 @@ a fixed bounded POSIX Python process with shell disabled, never model/request
 commands. It does not install FontTools. Synthetic header/tool fixtures do not
 prove decoding, shaping or live-provider compatibility.
 
-| Budget | Default / hard ceiling |
-| --- | --- |
-| Build faces / icons | 64 / 256 definitions |
-| One font | 8 MiB / 16 MiB |
-| Whole candidate | 64 MiB / 128 MiB |
-| Preload URLs / bytes | Two / 128 KiB; ceilings 16 / 16 MiB |
-| Remote redirects / deadline | Two / 15000 ms; ceilings five / 120000 ms |
-| Requested subset | Explicit finite Unicode scalars; at most 65536 |
+| Budget                      | Default / hard ceiling                         |
+| --------------------------- | ---------------------------------------------- |
+| Build faces / icons         | 64 / 256 definitions                           |
+| One font                    | 8 MiB / 16 MiB                                 |
+| Whole candidate             | 64 MiB / 128 MiB                               |
+| Preload URLs / bytes        | Two / 128 KiB; ceilings 16 / 16 MiB            |
+| Remote redirects / deadline | Two / 15000 ms; ceilings five / 120000 ms      |
+| Requested subset            | Explicit finite Unicode scalars; at most 65536 |
 
 Each build owns an output lease and private sibling staging directory. Validation,
 acquisition and pre-promotion quota failures preserve the previous directory.

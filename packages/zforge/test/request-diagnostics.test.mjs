@@ -1,4 +1,123 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {createRequestDiagnostics,renderRequestDiagnostics} from 'zforge/diagnostics';import {ApplicationError,normalizeApiError} from 'zeruxjs';import {createRequestObserver} from '../../zeruxjs/dist/observability.js';import http from 'node:http';import {once} from 'node:events';
-const span=(n=0)=>({applicationId:'app',generationId:'gen-one',requestId:'request-'+n,traceId:'trace-'+n,spanId:'span-'+n,startedAt:1000+n,durationMs:2,status:200,outcome:'completed',sampled:true});
-test('redacted previews, retention bounds, generation fencing and safe request views',()=>{let now=1010;const store=createRequestDiagnostics({applications:['app'],routes:['catalog'],maxRecordsPerApp:2,bodyFields:['action','password','email'],normalizeApiError,now:()=>now,retentionMs:100});try{store.activate('app','gen-one');store.record(span(),{route:'catalog',headers:{authorization:'Bearer secret',cookie:'private','content-type':'application/json; secret=x','content-length':'42'},body:{action:'<script>bad()</script>',password:'secret',email:'private@example.test'},error:new ApplicationError(403,new Error('raw secret'))});let records=store.list('app','gen-one');assert.deepEqual(records[0].headers,{'content-type':'application/json','content-length':'42'});assert.deepEqual(records[0].bodyPreview,{action:'<script>bad()</script>'});assert.equal(records[0].errorCode,'FORBIDDEN');const html=renderRequestDiagnostics(records);assert.ok(!html.includes('<script>'));assert.ok(html.includes('&lt;script&gt;'));assert.ok(!JSON.stringify(records).includes('raw secret'));store.record(span(1));store.record(span(2));assert.equal(store.list('app','gen-one').length,2);assert.equal(store.status('app').dropped,1);store.activate('app','gen-two');assert.equal(store.record(span(3)),false);assert.deepEqual(store.list('app','gen-two'),[]);assert.deepEqual(store.list('app','gen-one'),[]);now=2000;store.close();assert.throws(()=>store.list('app','gen-two'));}finally{store.close();}});
-test('actual framework observer exports spans; stale adapter shutdown cannot remove replacement generation',async()=>{const store=createRequestDiagnostics({applications:['app'],routes:[]});const observer=createRequestObserver({applicationId:'app',generationId:'gen-one',adapter:store.adapter('app','gen-one')});const server=http.createServer(observer.wrap((_req,res)=>res.end('ok')));server.listen(0,'127.0.0.1');await once(server,'listening');try{await new Promise((resolve,reject)=>http.get({host:'127.0.0.1',port:server.address().port},res=>{res.resume();res.on('end',resolve);}).on('error',reject));await new Promise(r=>setImmediate(r));const rows=store.list('app','gen-one');assert.equal(rows.length,1);assert.equal(rows[0].status,200);assert.ok(rows[0].requestId);store.activate('app','gen-two');await observer.close();assert.deepEqual(store.list('app','gen-two'),[]);}finally{await observer.close();server.closeAllConnections();await new Promise(r=>server.close(r));store.close();}});
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  createRequestDiagnostics,
+  renderRequestDiagnostics,
+} from 'zforge/diagnostics';
+import { ApplicationError, normalizeApiError } from 'zeruxjs';
+import { createRequestObserver } from '../../zeruxjs/dist/observability.js';
+import http from 'node:http';
+import { once } from 'node:events';
+/** Create a fixed synthetic framework span.
+ * @param {number} [n] - Correlation/timestamp suffix.
+ * @returns {object} Public span fixture without private request content.
+ */
+const span = (n = 0) => ({
+  applicationId: 'app',
+  generationId: 'gen-one',
+  requestId: 'request-' + n,
+  traceId: 'trace-' + n,
+  spanId: 'span-' + n,
+  startedAt: 1000 + n,
+  durationMs: 2,
+  status: 200,
+  outcome: 'completed',
+  sampled: true,
+});
+test('redacted previews, retention bounds, generation fencing and safe request views', () => {
+  let now = 1010;
+  /** Scoped diagnostics owner closed after redaction, generation and retention assertions. */
+  const store = createRequestDiagnostics({
+    applications: ['app'],
+    routes: ['catalog'],
+    maxRecordsPerApp: 2,
+    bodyFields: ['action', 'password', 'email'],
+    normalizeApiError,
+    now: () => now,
+    retentionMs: 100,
+  });
+  try {
+    store.activate('app', 'gen-one');
+    store.record(span(), {
+      route: 'catalog',
+      headers: {
+        authorization: 'Bearer secret',
+        cookie: 'private',
+        'content-type': 'application/json; secret=x',
+        'content-length': '42',
+      },
+      body: {
+        action: '<script>bad()</script>',
+        password: 'secret',
+        email: 'private@example.test',
+      },
+      error: new ApplicationError(403, new Error('raw secret')),
+    });
+    /** Detached retained data checked independently of private preview inputs. */
+    const records = store.list('app', 'gen-one');
+    assert.deepEqual(records[0].headers, {
+      'content-type': 'application/json',
+      'content-length': '42',
+    });
+    assert.deepEqual(records[0].bodyPreview, {
+      action: '<script>bad()</script>',
+    });
+    assert.equal(records[0].errorCode, 'FORBIDDEN');
+    /** Escaped diagnostics view checked without executing its hostile text fixture. */
+    const html = renderRequestDiagnostics(records);
+    assert.ok(!html.includes('<script>'));
+    assert.ok(html.includes('&lt;script&gt;'));
+    assert.ok(!JSON.stringify(records).includes('raw secret'));
+    store.record(span(1));
+    store.record(span(2));
+    assert.equal(store.list('app', 'gen-one').length, 2);
+    assert.equal(store.status('app').dropped, 1);
+    store.activate('app', 'gen-two');
+    assert.equal(store.record(span(3)), false);
+    assert.deepEqual(store.list('app', 'gen-two'), []);
+    assert.deepEqual(store.list('app', 'gen-one'), []);
+    now = 2000;
+    store.close();
+    assert.throws(() => store.list('app', 'gen-two'));
+  } finally {
+    store.close();
+  }
+});
+test('actual framework observer exports spans; stale adapter shutdown cannot remove replacement generation', async () => {
+  /** Scoped diagnostics owner closed after redaction, generation and retention assertions. */
+  const store = createRequestDiagnostics({ applications: ['app'], routes: [] });
+  /** Actual framework observer borrowing the generation-fenced diagnostics adapter. */
+  const observer = createRequestObserver({
+    applicationId: 'app',
+    generationId: 'gen-one',
+    adapter: store.adapter('app', 'gen-one'),
+  });
+  /** Owned ephemeral loopback listener closed before the observer/store teardown finishes. */
+  const server = http.createServer(observer.wrap((_req, res) => res.end('ok')));
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  try {
+    await new Promise((resolve, reject) =>
+      http
+        .get({ host: '127.0.0.1', port: server.address().port }, (res) => {
+          res.resume();
+          res.on('end', resolve);
+        })
+        .on('error', reject)
+    );
+    await new Promise((r) => setImmediate(r));
+    /** Detached retained records proving the actual observer exported one successful span. */
+    const rows = store.list('app', 'gen-one');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].status, 200);
+    assert.ok(rows[0].requestId);
+    store.activate('app', 'gen-two');
+    await observer.close();
+    assert.deepEqual(store.list('app', 'gen-two'), []);
+  } finally {
+    await observer.close();
+    server.closeAllConnections();
+    await new Promise((r) => server.close(r));
+    store.close();
+  }
+});

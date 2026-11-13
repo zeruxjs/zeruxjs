@@ -18,16 +18,16 @@
 
 ## Identity, URL and payload
 
-| Property | Contract |
-| --- | --- |
-| `req`, `res` | Node IncomingMessage and ServerResponse; direct access is server-only |
-| `method` | Normalized HTTP method |
-| `url` | Parsed URL, updated by multisite rewrite where applicable |
-| `pathname` | Internal route pathname |
-| `params` | Matched route parameters; do not assume populated before route selection |
-| `query` | URLSearchParams; validate before use |
-| `body` | Buffered parsed body, or request stream for a streaming route |
-| `requestStream` | Original request stream; single consumption |
+| Property        | Contract                                                                 |
+| --------------- | ------------------------------------------------------------------------ |
+| `req`, `res`    | Node IncomingMessage and ServerResponse; direct access is server-only    |
+| `method`        | Normalized HTTP method                                                   |
+| `url`           | Parsed URL, updated by multisite rewrite where applicable                |
+| `pathname`      | Internal route pathname                                                  |
+| `params`        | Matched route parameters; do not assume populated before route selection |
+| `query`         | URLSearchParams; validate before use                                     |
+| `body`          | Buffered parsed body, or request stream for a streaming route            |
+| `requestStream` | Original request stream; single consumption                              |
 
 ## Request state
 
@@ -62,25 +62,25 @@ The following fields/methods are taken from the current source. Method signature
 
 ### ZeruxRequestContext
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `req` | `IncomingMessage` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `res` | `ServerResponse` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `method` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `url` | `URL` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `pathname` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `params` | `Record<string, string>` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `query` | `URLSearchParams` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `body` | `unknown` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `requestStream` | `IncomingMessage` | Yes | Original request stream; use route.meta.streamBody to prevent pre-buffering. |
-| `setCache` | `setCache(policy: import("../response.js").ResponseCachePolicy): void;` | Yes | Cache policy for the current response; defaults to private when explicitly called. |
-| `stream` | `stream(source: import("../response.js").StreamResult['source'], options?: import("../response.js").ResponseStreamOptions): import("../response.js").StreamResult;` | Yes | Convenience factory for a bounded streaming response. |
-| `multisiteRegister` | `multisiteRegister(url: string, folderName: string): void;` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `logger` | `Logger` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `config` | `ZeruxConfig` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `runtime` | `ZeruxRuntime` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `state` | `Record<string, unknown>` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `env` | `NodeJS.ProcessEnv` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `services` | `{ get(name: import("./services.js").ServiceName): unknown; controllers: Record<string, unknown>; composables: Record<string, unknown>; }` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option              | Accepted TypeScript value                                                                                                                                           | Required | Meaning                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `req`               | `IncomingMessage`                                                                                                                                                   | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `res`               | `ServerResponse`                                                                                                                                                    | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `method`            | `string`                                                                                                                                                            | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `url`               | `URL`                                                                                                                                                               | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `pathname`          | `string`                                                                                                                                                            | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `params`            | `Record<string, string>`                                                                                                                                            | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `query`             | `URLSearchParams`                                                                                                                                                   | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `body`              | `unknown`                                                                                                                                                           | No       | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `requestStream`     | `IncomingMessage`                                                                                                                                                   | Yes      | Original request stream; use route.meta.streamBody to prevent pre-buffering.       |
+| `setCache`          | `setCache(policy: import("../response.js").ResponseCachePolicy): void;`                                                                                             | Yes      | Cache policy for the current response; defaults to private when explicitly called. |
+| `stream`            | `stream(source: import("../response.js").StreamResult['source'], options?: import("../response.js").ResponseStreamOptions): import("../response.js").StreamResult;` | Yes      | Convenience factory for a bounded streaming response.                              |
+| `multisiteRegister` | `multisiteRegister(url: string, folderName: string): void;`                                                                                                         | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `logger`            | `Logger`                                                                                                                                                            | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `config`            | `ZeruxConfig`                                                                                                                                                       | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `runtime`           | `ZeruxRuntime`                                                                                                                                                      | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `state`             | `Record<string, unknown>`                                                                                                                                           | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `env`               | `NodeJS.ProcessEnv`                                                                                                                                                 | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
+| `services`          | `{ get(name: import("./services.js").ServiceName): unknown; controllers: Record<string, unknown>; composables: Record<string, unknown>; }`                          | Yes      | Passed using this declared shape; omission is allowed only when marked optional.   |
 
 For strict application checking, option inference, public imports and unknown-data handling, read [TypeScript application development](typescript.md).

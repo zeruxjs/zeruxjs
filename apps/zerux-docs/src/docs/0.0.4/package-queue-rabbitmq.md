@@ -89,7 +89,6 @@ Close rejects new publishes, cancels consumer tags, lets existing handlers/confi
 
 Focused tests use injected amqplib-shaped connections for return/nack/backpressure, broker TTL declarations, malformed inputs, retry limits, callback deadlines, generation ack fencing, finite reconnect and late cleanup. Simulated disconnect/redelivery is **not live worker crash recovery**. Live acceptance needs a dedicated disposable RabbitMQ 4.x vhost/cluster, quorum support and credentials authorized for these exact declarations; provider failover, process kill, broker disk/network failure and DLX retention still need operational qualification. No live broker is configured for the offline checks. The injected connector is trusted test/host code, must return a fresh service-owned connection for each attempt (never a borrowed/shared connection), and must honor handshake limits; late returned connections are closed, while a never-settling connector can retain incomplete cleanup.
 
-
 ## Ownership and local verification
 
 Keep the basic pull service and supervised push service as separate owners. The basic client has no automatic reconnect or handler drain. The supervised service retains old-generation handlers and native promises after caller deadlines; inspect `status()` for incomplete settlement. Acknowledgements always belong to the original delivering channel. A reconnect, publisher confirmation or successful `close()` receipt cannot certify exactly-once application side effects.

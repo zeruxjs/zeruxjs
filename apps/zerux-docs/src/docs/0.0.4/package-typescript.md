@@ -81,49 +81,49 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### TypeScriptBuildOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `entryPoints` | `string[]` | No |
-| `outdir` | `string` | No |
-| `cwd` | `string` | Yes |
-| `format` | `"esm" \| "cjs" \| "iife"` | Yes |
-| `platform` | `"node" \| "browser" \| "neutral"` | Yes |
-| `target` | `string` | Yes |
-| `bundle` | `boolean` | Yes |
-| `minify` | `boolean` | Yes |
-| `sourcemap` | `boolean` | Yes |
-| `external` | `string[]` | Yes |
-| `signal` | `AbortSignal` | Yes |
+| Field         | Accepted type/value                | Optional |
+| ------------- | ---------------------------------- | -------- |
+| `entryPoints` | `string[]`                         | No       |
+| `outdir`      | `string`                           | No       |
+| `cwd`         | `string`                           | Yes      |
+| `format`      | `"esm" \| "cjs" \| "iife"`         | Yes      |
+| `platform`    | `"node" \| "browser" \| "neutral"` | Yes      |
+| `target`      | `string`                           | Yes      |
+| `bundle`      | `boolean`                          | Yes      |
+| `minify`      | `boolean`                          | Yes      |
+| `sourcemap`   | `boolean`                          | Yes      |
+| `external`    | `string[]`                         | Yes      |
+| `signal`      | `AbortSignal`                      | Yes      |
 
 ### TransformOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `filename` | `string` | Yes |
-| `format` | `ScriptFormat` | Yes |
-| `sourceMap` | `boolean` | Yes |
-| `target` | `ts.ScriptTarget` | Yes |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `filename`  | `string`            | Yes      |
+| `format`    | `ScriptFormat`      | Yes      |
+| `sourceMap` | `boolean`           | Yes      |
+| `target`    | `ts.ScriptTarget`   | Yes      |
 
 ### TsConfigOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `preset` | `TypeScriptPresetName` | Yes |
-| `overwrite` | `boolean` | Yes |
-| `compilerOptions` | `Record<string, unknown>` | Yes |
-| `include` | `string[]` | Yes |
-| `exclude` | `string[]` | Yes |
+| Field             | Accepted type/value       | Optional |
+| ----------------- | ------------------------- | -------- |
+| `preset`          | `TypeScriptPresetName`    | Yes      |
+| `overwrite`       | `boolean`                 | Yes      |
+| `compilerOptions` | `Record<string, unknown>` | Yes      |
+| `include`         | `string[]`                | Yes      |
+| `exclude`         | `string[]`                | Yes      |
 
 ### TypecheckOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `files` | `string[]` | No |
-| `cwd` | `string` | Yes |
-| `configFile` | `string` | Yes |
-| `checkDependencies` | `boolean` | Yes |
-| `signal` | `AbortSignal` | Yes |
-| `cancellationToken` | `ts.CancellationToken` | Yes |
+| Field               | Accepted type/value    | Optional |
+| ------------------- | ---------------------- | -------- |
+| `files`             | `string[]`             | No       |
+| `cwd`               | `string`               | Yes      |
+| `configFile`        | `string`               | Yes      |
+| `checkDependencies` | `boolean`              | Yes      |
+| `signal`            | `AbortSignal`          | Yes      |
+| `cancellationToken` | `ts.CancellationToken` | Yes      |
 
 ## Environment presets and declaration ownership
 
@@ -149,11 +149,11 @@ paths and export-map-aware resolution. Run `tsc -p tsconfig.json` in the owning
 package to emit declarations. Neither checkTypes nor esbuild emits declarations.
 The tooling package does not collect or reexport other packages' public types.
 
-| Preset | Modules/resolution | Globals and conditions |
-| --- | --- | --- |
-| `node-server` | NodeNext/NodeNext | ES2022, explicit Node types; implicit node/types/import-or-require conditions |
-| `browser-library` | ESNext/Bundler | ES2022 + DOM/DOM.Iterable, `types:[]`, additional browser condition |
-| `mixed-exports` | NodeNext/NodeNext | Portable ES2022 only, `types:[]`; implicit NodeNext conditions |
+| Preset            | Modules/resolution | Globals and conditions                                                        |
+| ----------------- | ------------------ | ----------------------------------------------------------------------------- |
+| `node-server`     | NodeNext/NodeNext  | ES2022, explicit Node types; implicit node/types/import-or-require conditions |
+| `browser-library` | ESNext/Bundler     | ES2022 + DOM/DOM.Iterable, `types:[]`, additional browser condition           |
+| `mixed-exports`   | NodeNext/NodeNext  | Portable ES2022 only, `types:[]`; implicit NodeNext conditions                |
 
 Install the Node typings in the server owner. Mixed packages should separately
 check server/browser trees and maintain their own conditional exports and matching

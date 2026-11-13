@@ -83,26 +83,26 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### ShareData
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `url` | `string` | No |
-| `title` | `string` | Yes |
-| `text` | `string` | Yes |
+| Field   | Accepted type/value | Optional |
+| ------- | ------------------- | -------- |
+| `url`   | `string`            | No       |
+| `title` | `string`            | Yes      |
+| `text`  | `string`            | Yes      |
 
 ### ShareEnvironment
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `share` | `(data:ShareData)=>Promise<void>` | Yes |
-| `writeText` | `(text:string)=>Promise<void>` | Yes |
-| `open` | `(url:string)=>void` | Yes |
+| Field       | Accepted type/value               | Optional |
+| ----------- | --------------------------------- | -------- |
+| `share`     | `(data:ShareData)=>Promise<void>` | Yes      |
+| `writeText` | `(text:string)=>Promise<void>`    | Yes      |
+| `open`      | `(url:string)=>void`              | Yes      |
 
 ### ShareCapabilities
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `native` | `boolean` | No |
-| `clipboard` | `boolean` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `native`    | `boolean`           | No       |
+| `clipboard` | `boolean`           | No       |
 
 ## Add persistent short links separately
 

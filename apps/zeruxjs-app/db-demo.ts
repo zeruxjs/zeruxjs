@@ -1,1 +1,1 @@
-export * from "./lib/db-demo.js";
+export * from './lib/db-demo.js';

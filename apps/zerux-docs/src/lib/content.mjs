@@ -11,7 +11,7 @@ export const repositoryRoot = path.resolve(root, '../..');
  * @param {string} directory Package directory. @returns {Promise<object[]>} Sorted manifests. Reads repository files only.
  */
 export async function discoverPackages(
-  directory = path.join(repositoryRoot, 'packages'),
+  directory = path.join(repositoryRoot, 'packages')
 ) {
   const records = [];
   for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
@@ -25,7 +25,7 @@ export async function discoverPackages(
     let manifest;
     try {
       manifest = JSON.parse(
-        await fs.readFile(path.join(child, 'package.json'), 'utf8'),
+        await fs.readFile(path.join(child, 'package.json'), 'utf8')
       );
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
@@ -105,6 +105,6 @@ export async function loadContent() {
     (a, b) =>
       site.sections.indexOf(a.section) - site.sections.indexOf(b.section) ||
       a.order - b.order ||
-      a.title.localeCompare(b.title),
+      a.title.localeCompare(b.title)
   );
 }

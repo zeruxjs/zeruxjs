@@ -19,16 +19,16 @@
 
 ## Normal return values
 
-| Return | Runtime behavior |
-| --- | --- |
-| Object/array | JSON serialization |
-| HTML-looking string | HTML content type and configured theme processing |
-| Other string | Plain text |
-| Buffer | Binary bytes |
-| undefined | Empty response |
-| redirect result | Status and Location |
-| cached result | Cache policy applied before serializing its inner value |
-| stream result | Disconnect-aware streaming with backpressure |
+| Return              | Runtime behavior                                        |
+| ------------------- | ------------------------------------------------------- |
+| Object/array        | JSON serialization                                      |
+| HTML-looking string | HTML content type and configured theme processing       |
+| Other string        | Plain text                                              |
+| Buffer              | Binary bytes                                            |
+| undefined           | Empty response                                          |
+| redirect result     | Status and Location                                     |
+| cached result       | Cache policy applied before serializing its inner value |
+| stream result       | Disconnect-aware streaming with backpressure            |
 
 A Web Response requires the Fetch adapter; do not assume returning a Response from an ordinary file handler is equivalent to createFetchRoute.
 
@@ -43,15 +43,15 @@ import { HttpError } from 'zeruxjs';
 
 ## ResponseCachePolicy
 
-| Field | Behavior |
-| --- | --- |
-| visibility | public, private or no-store; private default |
-| maxAge | Browser freshness seconds |
-| sharedMaxAge | s-maxage, only emitted for public policy |
-| staleWhileRevalidate | Stale-while-revalidate seconds |
-| immutable / mustRevalidate | Additional cache directives |
-| vary | Validated header field names, merged with existing Vary |
-| etag | Strong content-derived validator for non-streaming payloads |
+| Field                      | Behavior                                                    |
+| -------------------------- | ----------------------------------------------------------- |
+| visibility                 | public, private or no-store; private default                |
+| maxAge                     | Browser freshness seconds                                   |
+| sharedMaxAge               | s-maxage, only emitted for public policy                    |
+| staleWhileRevalidate       | Stale-while-revalidate seconds                              |
+| immutable / mustRevalidate | Additional cache directives                                 |
+| vary                       | Validated header field names, merged with existing Vary     |
+| etag                       | Strong content-derived validator for non-streaming payloads |
 
 Age values must be safe integers from zero through one year. `cached(value, policy)` creates a wrapped result; `context.setCache(policy)` applies headers directly. Header mutation after headers are sent rejects. Never mark tenant/user-specific responses public.
 
@@ -69,24 +69,24 @@ The following fields/methods are taken from the current source. Method signature
 
 ### ResponseCachePolicy
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `visibility` | `'public' \| 'private' \| 'no-store'` | No | Defaults to private; public requires an explicit opt-in. |
-| `maxAge` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `sharedMaxAge` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `staleWhileRevalidate` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `immutable` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `mustRevalidate` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `vary` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `etag` | `boolean` | No | Generate a content-derived strong ETag for non-streaming bodies. |
+| Option                 | Accepted TypeScript value             | Required | Meaning                                                                          |
+| ---------------------- | ------------------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `visibility`           | `'public' \| 'private' \| 'no-store'` | No       | Defaults to private; public requires an explicit opt-in.                         |
+| `maxAge`               | `number`                              | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `sharedMaxAge`         | `number`                              | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `staleWhileRevalidate` | `number`                              | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `immutable`            | `boolean`                             | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `mustRevalidate`       | `boolean`                             | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `vary`                 | `string[]`                            | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `etag`                 | `boolean`                             | No       | Generate a content-derived strong ETag for non-streaming bodies.                 |
 
 ### ResponseStreamOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `status` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `headers` | `Record<string, string>` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `contentType` | `string` | No | Streaming responses are never implicitly cacheable. |
-| `maxBytes` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option        | Accepted TypeScript value | Required | Meaning                                                                          |
+| ------------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `status`      | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `headers`     | `Record<string, string>`  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `contentType` | `string`                  | No       | Streaming responses are never implicitly cacheable.                              |
+| `maxBytes`    | `number`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 For strict application checking, option inference, public imports and unknown-data handling, read [TypeScript application development](typescript.md).

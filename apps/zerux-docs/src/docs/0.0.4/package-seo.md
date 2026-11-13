@@ -83,32 +83,31 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### SitemapEntry
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `loc` | `string` | No |
-| `lastmod` | `string \| Date` | Yes |
-| `changefreq` | `'always'\|'hourly'\|'daily'\|'weekly'\|'monthly'\|'yearly'\|'never'` | Yes |
-| `priority` | `number` | Yes |
-| `alternates` | `Record<string,string>` | Yes |
-| `images` | `string[]` | Yes |
+| Field        | Accepted type/value                                                   | Optional |
+| ------------ | --------------------------------------------------------------------- | -------- |
+| `loc`        | `string`                                                              | No       |
+| `lastmod`    | `string \| Date`                                                      | Yes      |
+| `changefreq` | `'always'\|'hourly'\|'daily'\|'weekly'\|'monthly'\|'yearly'\|'never'` | Yes      |
+| `priority`   | `number`                                                              | Yes      |
+| `alternates` | `Record<string,string>`                                               | Yes      |
+| `images`     | `string[]`                                                            | Yes      |
 
 ### SeoConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `title` | `string` | No |
-| `description` | `string` | Yes |
-| `canonical` | `string` | Yes |
-| `image` | `string` | Yes |
-| `robots` | `string` | Yes |
-| `locale` | `string` | Yes |
-| `type` | `string` | Yes |
-| `siteName` | `string` | Yes |
-| `keywords` | `string[]` | Yes |
-| `twitterSite` | `string` | Yes |
-| `alternates` | `Record<string,string>` | Yes |
-| `jsonLd` | `unknown \| unknown[]` | Yes |
-
+| Field         | Accepted type/value     | Optional |
+| ------------- | ----------------------- | -------- |
+| `title`       | `string`                | No       |
+| `description` | `string`                | Yes      |
+| `canonical`   | `string`                | Yes      |
+| `image`       | `string`                | Yes      |
+| `robots`      | `string`                | Yes      |
+| `locale`      | `string`                | Yes      |
+| `type`        | `string`                | Yes      |
+| `siteName`    | `string`                | Yes      |
+| `keywords`    | `string[]`              | Yes      |
+| `twitterSite` | `string`                | Yes      |
+| `alternates`  | `Record<string,string>` | Yes      |
+| `jsonLd`      | `unknown \| unknown[]`  | Yes      |
 
 ## Compose route/layout metadata explicitly
 

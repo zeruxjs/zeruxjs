@@ -1,4 +1,4 @@
-import { lessons } from "../../src/lib/academy.mjs";
+import { lessons } from '../../src/lib/academy.mjs';
 
 /** Browser-only learning enhancements. Storage is optional, bounded and never sent over the network. */
 const base = document.body.dataset.basePath;
@@ -18,10 +18,10 @@ let persistent = true;
 function readingLink(value) {
   if (
     !value ||
-    typeof value !== "object" ||
-    typeof value.title !== "string" ||
+    typeof value !== 'object' ||
+    typeof value.title !== 'string' ||
     value.title.length > 200 ||
-    typeof value.url !== "string" ||
+    typeof value.url !== 'string' ||
     value.url.length > 500
   )
     return null;
@@ -57,14 +57,14 @@ function parseState(text) {
       .filter(
         (lesson) =>
           Array.isArray(input.exercises) &&
-          input.exercises.includes(lesson.slug),
+          input.exercises.includes(lesson.slug)
       )
       .map((lesson) => lesson.slug);
-    for (const field of ["bookmarks", "recent"]) {
+    for (const field of ['bookmarks', 'recent']) {
       const seen = new Set();
       next[field] = (
         Array.isArray(input[field])
-          ? input[field].slice(0, field === "bookmarks" ? 50 : 12)
+          ? input[field].slice(0, field === 'bookmarks' ? 50 : 12)
           : []
       )
         .map(readingLink)
@@ -102,71 +102,71 @@ function render() {
       lesson.questions.filter((q) => state.correct[lesson.slug]?.includes(q.id))
         .length *
         10,
-    0,
+    0
   );
   const completed = lessons.filter(complete).length;
-  document.querySelectorAll("[data-total-points]").forEach((node) => {
+  document.querySelectorAll('[data-total-points]').forEach((node) => {
     node.textContent = String(points);
   });
-  document.querySelectorAll("[data-completed-count]").forEach((node) => {
+  document.querySelectorAll('[data-completed-count]').forEach((node) => {
     node.textContent = `${completed} / ${lessons.length}`;
   });
-  document.querySelectorAll("[data-course-progress]").forEach((node) => {
+  document.querySelectorAll('[data-course-progress]').forEach((node) => {
     node.value = completed;
   });
-  document.querySelectorAll("[data-progress-panel]").forEach((node) => {
+  document.querySelectorAll('[data-progress-panel]').forEach((node) => {
     node.hidden = false;
   });
-  document.querySelectorAll("[data-storage-status]").forEach((node) => {
+  document.querySelectorAll('[data-storage-status]').forEach((node) => {
     node.textContent = persistent
-      ? "Saved only in this browser. No account, sync or certification."
-      : "Browser storage is unavailable. You can practice now, but changes may not survive this page.";
+      ? 'Saved only in this browser. No account, sync or certification.'
+      : 'Browser storage is unavailable. You can practice now, but changes may not survive this page.';
   });
-  document.querySelectorAll("[data-lesson-card]").forEach((card) => {
+  document.querySelectorAll('[data-lesson-card]').forEach((card) => {
     const lesson = lessons.find(
-      (item) => item.slug === card.dataset.lessonCard,
+      (item) => item.slug === card.dataset.lessonCard
     );
     const done = complete(lesson);
     card.dataset.complete = String(done);
-    card.querySelector("[data-lesson-state]").textContent = done
-      ? "Completed ✓ · Revisit lesson"
+    card.querySelector('[data-lesson-state]').textContent = done
+      ? 'Completed ✓ · Revisit lesson'
       : state.correct[lesson.slug]?.length
-        ? "In progress · Continue →"
-        : "Open lesson →";
+        ? 'In progress · Continue →'
+        : 'Open lesson →';
   });
   const resume = lessons.find((lesson) => !complete(lesson));
-  document.querySelectorAll("[data-resume]").forEach((link) => {
-    link.href = `${base}/docs/${version}/${resume?.slug || "tutorial"}/`;
+  document.querySelectorAll('[data-resume]').forEach((link) => {
+    link.href = `${base}/docs/${version}/${resume?.slug || 'tutorial'}/`;
     link.textContent = resume
       ? `Continue: ${resume.title} →`
-      : "Course complete · Build the notes app →";
+      : 'Course complete · Build the notes app →';
   });
-  document.querySelectorAll("[data-exercise]").forEach((input) => {
+  document.querySelectorAll('[data-exercise]').forEach((input) => {
     input.disabled = false;
     input.checked = state.exercises.includes(input.dataset.exercise);
   });
   for (const [selector, field, empty] of [
     [
-      "[data-bookmark-list]",
-      "bookmarks",
-      "No bookmarks yet. Use Save page on an article.",
+      '[data-bookmark-list]',
+      'bookmarks',
+      'No bookmarks yet. Use Save page on an article.',
     ],
     [
-      "[data-recent-list]",
-      "recent",
-      "Open an article to begin your reading trail.",
+      '[data-recent-list]',
+      'recent',
+      'Open an article to begin your reading trail.',
     ],
   ]) {
     document.querySelectorAll(selector).forEach((list) => {
       list.replaceChildren();
       if (!state[field].length) {
-        const item = document.createElement("li");
+        const item = document.createElement('li');
         item.textContent = empty;
         list.append(item);
       }
       for (const item of state[field]) {
-        const li = document.createElement("li"),
-          link = document.createElement("a");
+        const li = document.createElement('li'),
+          link = document.createElement('a');
         link.href = item.url;
         link.textContent = item.title;
         li.append(link);
@@ -174,30 +174,30 @@ function render() {
       }
     });
   }
-  document.querySelectorAll("[data-saved-reading]").forEach((node) => {
+  document.querySelectorAll('[data-saved-reading]').forEach((node) => {
     node.hidden = false;
   });
   const bookmarked = state.bookmarks.some(
-    (item) => item.url === location.pathname,
+    (item) => item.url === location.pathname
   );
-  document.querySelectorAll("[data-bookmark]").forEach((button) => {
+  document.querySelectorAll('[data-bookmark]').forEach((button) => {
     button.hidden = !page;
-    button.textContent = bookmarked ? "Saved ✓" : "Save page";
-    button.setAttribute("aria-pressed", String(bookmarked));
+    button.textContent = bookmarked ? 'Saved ✓' : 'Save page';
+    button.setAttribute('aria-pressed', String(bookmarked));
   });
 }
 
-for (const form of document.querySelectorAll("[data-quiz]")) {
+for (const form of document.querySelectorAll('[data-quiz]')) {
   const lesson = lessons.find((item) => item.slug === form.dataset.quiz);
   if (!lesson) continue;
-  form.querySelector("[data-check-answers]").hidden = false;
+  form.querySelector('[data-check-answers]').hidden = false;
   for (const question of lesson.questions) {
     if (state.correct[lesson.slug]?.includes(question.id))
       form.querySelector(
-        `input[name="${question.id}"][value="${question.answer}"]`,
+        `input[name="${question.id}"][value="${question.answer}"]`
       ).checked = true;
   }
-  form.addEventListener("submit", (event) => {
+  form.addEventListener('submit', (event) => {
     event.preventDefault();
     let correct = 0,
       earned = 0;
@@ -213,17 +213,17 @@ for (const form of document.querySelectorAll("[data-quiz]")) {
           earned += 10;
         }
       }
-      field.dataset.result = matches ? "correct" : "retry";
-      field.querySelector("[data-feedback]").textContent =
-        `${matches ? "Correct." : "Try again."} ${question.explanation}`;
+      field.dataset.result = matches ? 'correct' : 'retry';
+      field.querySelector('[data-feedback]').textContent =
+        `${matches ? 'Correct.' : 'Try again.'} ${question.explanation}`;
     }
-    form.querySelector("[data-quiz-summary]").textContent =
-      `${correct} of ${lesson.questions.length} correct. ${earned ? `+${earned} new learning points.` : "No duplicate points awarded."} ${correct === lesson.questions.length ? "Confirm your exercise when you have tried it." : "Read the explanation and retry whenever ready."}`;
+    form.querySelector('[data-quiz-summary]').textContent =
+      `${correct} of ${lesson.questions.length} correct. ${earned ? `+${earned} new learning points.` : 'No duplicate points awarded.'} ${correct === lesson.questions.length ? 'Confirm your exercise when you have tried it.' : 'Read the explanation and retry whenever ready.'}`;
     save();
   });
 }
-for (const input of document.querySelectorAll("[data-exercise]"))
-  input.addEventListener("change", () => {
+for (const input of document.querySelectorAll('[data-exercise]'))
+  input.addEventListener('change', () => {
     const slug = input.dataset.exercise;
     state.exercises = state.exercises.filter((item) => item !== slug);
     if (input.checked && lessons.some((lesson) => lesson.slug === slug))
@@ -232,7 +232,7 @@ for (const input of document.querySelectorAll("[data-exercise]"))
   });
 const page = readingLink({
   url: location.pathname,
-  title: document.querySelector("main h1")?.textContent || document.title,
+  title: document.querySelector('main h1')?.textContent || document.title,
 });
 if (page) {
   state.recent = [
@@ -241,44 +241,44 @@ if (page) {
   ].slice(0, 12);
   save();
 }
-for (const button of document.querySelectorAll("[data-bookmark]"))
-  button.addEventListener("click", () => {
+for (const button of document.querySelectorAll('[data-bookmark]'))
+  button.addEventListener('click', () => {
     if (!page) return;
     const exists = state.bookmarks.some((item) => item.url === page.url);
     state.bookmarks = state.bookmarks.filter((item) => item.url !== page.url);
     if (!exists) state.bookmarks = [page, ...state.bookmarks].slice(0, 50);
     save();
-    const notice = document.querySelector("[data-page-notice]");
+    const notice = document.querySelector('[data-page-notice]');
     if (notice)
       notice.textContent = exists
-        ? "Page removed from your local reading list."
+        ? 'Page removed from your local reading list.'
         : persistent
-          ? "Page saved in this browser. Find it on the course/home progress panel."
-          : "Saved for this page only; browser storage is unavailable.";
+          ? 'Page saved in this browser. Find it on the course/home progress panel.'
+          : 'Saved for this page only; browser storage is unavailable.';
   });
-for (const button of document.querySelectorAll("[data-export-progress]"))
-  button.addEventListener("click", () => {
+for (const button of document.querySelectorAll('[data-export-progress]'))
+  button.addEventListener('click', () => {
     const url = URL.createObjectURL(
       new Blob([JSON.stringify({ ...state, docsVersion: version }, null, 2)], {
-        type: "application/json",
-      }),
+        type: 'application/json',
+      })
     );
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
     link.download = `zeruxjs-learning-${version}.json`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
-const reset = document.querySelector("#reset-progress-dialog");
-for (const button of document.querySelectorAll("[data-reset-progress]"))
-  button.addEventListener("click", () => reset.showModal());
-reset?.querySelector("[data-confirm-reset]")?.addEventListener("click", () => {
+const reset = document.querySelector('#reset-progress-dialog');
+for (const button of document.querySelectorAll('[data-reset-progress]'))
+  button.addEventListener('click', () => reset.showModal());
+reset?.querySelector('[data-confirm-reset]')?.addEventListener('click', () => {
   state = blank();
   save();
-  for (const form of document.querySelectorAll("[data-quiz]")) form.reset();
+  for (const form of document.querySelectorAll('[data-quiz]')) form.reset();
   reset.close();
 });
-window.addEventListener("storage", (event) => {
+window.addEventListener('storage', (event) => {
   if (event.key === key) {
     state = parseState(event.newValue);
     render();
@@ -287,10 +287,10 @@ window.addEventListener("storage", (event) => {
 render();
 
 // Symptom matching is a bounded DOM filter, requiring no search index or network requests.
-const filter = document.querySelector("#solution-filter");
+const filter = document.querySelector('#solution-filter');
 if (filter) {
-  const cards = [...document.querySelectorAll("[data-solution]")];
-  filter.addEventListener("input", () => {
+  const cards = [...document.querySelectorAll('[data-solution]')];
+  filter.addEventListener('input', () => {
     const words = filter.value
       .trim()
       .toLowerCase()
@@ -300,37 +300,37 @@ if (filter) {
     let shown = 0;
     for (const card of cards) {
       card.hidden = !words.every((word) =>
-        card.dataset.solution.toLowerCase().includes(word),
+        card.dataset.solution.toLowerCase().includes(word)
       );
       if (!card.hidden) shown++;
     }
-    document.querySelector("#solution-count").textContent =
+    document.querySelector('#solution-count').textContent =
       `${shown} of ${cards.length} starting points`;
-    document.querySelector("[data-no-solutions]").hidden = shown > 0;
+    document.querySelector('[data-no-solutions]').hidden = shown > 0;
   });
 }
 
 // This conceptual walkthrough explains a request; it never executes application server code.
-const trace = document.querySelector("[data-trace]");
+const trace = document.querySelector('[data-trace]');
 if (trace) {
   trace.hidden = false;
   let stage = -1;
   const descriptions = [
-    "1. The browser asks for a URL. No npm install happens in the visitor’s browser.",
-    "2. GET /hello identifies the method and path. Routing selects the matching handler.",
-    "3. The server runs the handler and returns the JSON response shown above.",
+    '1. The browser asks for a URL. No npm install happens in the visitor’s browser.',
+    '2. GET /hello identifies the method and path. Routing selects the matching handler.',
+    '3. The server runs the handler and returns the JSON response shown above.',
   ];
-  trace.addEventListener("click", () => {
+  trace.addEventListener('click', () => {
     stage = (stage + 1) % descriptions.length;
-    document.querySelector("[data-trace-status]").textContent =
+    document.querySelector('[data-trace-status]').textContent =
       descriptions[stage];
-    document.querySelectorAll("[data-trace-stage]").forEach((node, index) => {
-      if (index === stage) node.setAttribute("aria-current", "step");
-      else node.removeAttribute("aria-current");
+    document.querySelectorAll('[data-trace-stage]').forEach((node, index) => {
+      if (index === stage) node.setAttribute('aria-current', 'step');
+      else node.removeAttribute('aria-current');
     });
     trace.textContent =
       stage === descriptions.length - 1
-        ? "Trace it again →"
-        : "Follow the next step →";
+        ? 'Trace it again →'
+        : 'Follow the next step →';
   });
 }

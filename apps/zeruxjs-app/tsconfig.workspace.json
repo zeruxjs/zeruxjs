@@ -1,8 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext",
-    "strict": true, "noEmit": true, "types": ["node"], "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": false
   },
-  "include": ["client/**/*.ts", "lib/workspace/**/*.ts", "plugins/workspace.ts", "scripts/workspace-init.ts"]
+  "include": [
+    "client/**/*.ts",
+    "lib/workspace/**/*.ts",
+    "plugins/workspace.ts",
+    "scripts/workspace-init.ts"
+  ]
 }

@@ -42,17 +42,17 @@ The default folders are at the project root, not under `src`. To use this tree, 
 
 ## Discovery roles
 
-| Setting | Default | Accepted shape | Actual responsibility |
-| --- | --- | --- | --- |
-| `structure.app` | `app` | string | File route discovery; index/page/route conventions |
-| `structure.middleware` | `middleware` | string or string array | Named/global middleware exports |
-| `structure.controllers` | `controllers` | string or string array | Reusable registered controller references, not automatic HTTP routes |
-| `structure.composables` | `composables` | string or string array | Application helper registry, not Vue hooks or automatic browser imports |
-| `structure.plugins` | `plugins` | string or string array | Explicit registration modules; own resources with disposal |
-| `structure.public` | `public` | string or string array | Direct public assets; exclude credentials, backups and private uploads |
-| `structure.env` | empty extra list | string or string array | Additional environment files loaded after config evaluation |
-| `entryPoint` | `index` | string | Optional default/register/setup/boot application registration |
-| `outDir` | `.zerux` | string | Build-owned output, disjoint from source and private data |
+| Setting                 | Default          | Accepted shape         | Actual responsibility                                                   |
+| ----------------------- | ---------------- | ---------------------- | ----------------------------------------------------------------------- |
+| `structure.app`         | `app`            | string                 | File route discovery; index/page/route conventions                      |
+| `structure.middleware`  | `middleware`     | string or string array | Named/global middleware exports                                         |
+| `structure.controllers` | `controllers`    | string or string array | Reusable registered controller references, not automatic HTTP routes    |
+| `structure.composables` | `composables`    | string or string array | Application helper registry, not Vue hooks or automatic browser imports |
+| `structure.plugins`     | `plugins`        | string or string array | Explicit registration modules; own resources with disposal              |
+| `structure.public`      | `public`         | string or string array | Direct public assets; exclude credentials, backups and private uploads  |
+| `structure.env`         | empty extra list | string or string array | Additional environment files loaded after config evaluation             |
+| `entryPoint`            | `index`          | string                 | Optional default/register/setup/boot application registration           |
+| `outDir`                | `.zerux`         | string                 | Build-owned output, disjoint from source and private data               |
 
 Directory lists are resolved and deduplicated. Avoid ambiguous basenames when registries support shorthand names. Public assets have their own serving path; do not rely on ordinary route middleware to protect them.
 

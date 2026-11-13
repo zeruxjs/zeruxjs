@@ -21,11 +21,11 @@ ZeruxJS is a Node server runtime that discovers application modules and combines
 
 ## Three layers
 
-| Layer | Responsibility | Examples |
-| --- | --- | --- |
-| Application | Domain behavior, authentication, authorization and HTML | `app/`, `middleware/`, `plugins/` |
-| Framework | Discovery, request dispatch, build, generation lifecycle | `zeruxjs` |
-| Ecosystem | Focused reusable capabilities, often independently usable | `@zeruxjs/cache`, `@zeruxjs/files`, `@zeruxjs/search` |
+| Layer       | Responsibility                                            | Examples                                              |
+| ----------- | --------------------------------------------------------- | ----------------------------------------------------- |
+| Application | Domain behavior, authentication, authorization and HTML   | `app/`, `middleware/`, `plugins/`                     |
+| Framework   | Discovery, request dispatch, build, generation lifecycle  | `zeruxjs`                                             |
+| Ecosystem   | Focused reusable capabilities, often independently usable | `@zeruxjs/cache`, `@zeruxjs/files`, `@zeruxjs/search` |
 
 Using a package independently does not register it with your runtime. Some services support configuration-driven startup; others are explicitly constructed and registered by application code.
 

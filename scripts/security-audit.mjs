@@ -2,8 +2,15 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspectPackageReleaseSecurity } from './workspace-security-audit.mjs';
+/** Local value for root. */
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-if (process.argv.length > 2) { console.error('Usage: node scripts/security-audit.mjs'); process.exit(2); }
+if (process.argv.length > 2) {
+  console.error('Usage: node scripts/security-audit.mjs');
+  process.exit(2);
+}
+/** Local value for report. */
 const report = inspectPackageReleaseSecurity(root);
 console.log(JSON.stringify(report, null, 2));
-if (!report.ok) process.exitCode = 1;
+if (!report.ok) {
+  process.exitCode = 1;
+}

@@ -86,16 +86,47 @@ function serverImport(specifier: string): boolean {
     /^@zeruxjs\/seo\/(?:fetch|public|composition)$/.test(specifier) ||
     specifier === '@zeruxjs/media' ||
     specifier.startsWith('@zeruxjs/media/') ||
+    /^(?:zforge)(?:$|\/(?:modules|diagnostics|experiments)$)/.test(specifier) ||
     specifier === '@zeruxjs/hooks' ||
     specifier.startsWith('@zeruxjs/hooks/') ||
     /(?:^|\/)\w[^/]*\.server(?:\.[cm]?[jt]sx?)?$/.test(specifier) ||
-    /^(?:@zeruxjs\/(?:db(?:-[\w-]+)?|auth|files|email|queue(?:-[\w-]+)?)(?:\/|$)|@zenixjs\/core\/(?:cms|types)$|@zeruxjs\/feed(?:$|\/fetch$)|@zeruxjs\/cache(?:$|\/policy$)|@zeruxjs\/cache-memcache(?:$|\/protocol$)|@zeruxjs\/cache-redis$|@zeruxjs\/cache-valkey$|@zeruxjs\/asset-manager(?:$|\/(?:storage|brand)$)|@zeruxjs\/analytics(?:$|\/(?:http|email|durable)$)|@zeruxjs\/ai-model(?:$|\/(?:corpus|evidence)$)|@zeruxjs\/ai\/tools$|@zeruxjs\/validator\/http$|zlocale\/(?:node|build)$|zuixs\/node$|zhost(?:\/|$)|zeruxjs(?:$|\/(?:services|database|cache-runtime|actions|action-stores|modules|service-endpoints|graphql|build|static-export)(?:\/|$))|@zeruxjs\/security(?:$|\/(?:crypto|jwt|policy)$))/.test(
+    /^(?:@zeruxjs\/(?:db(?:-[\w-]+)?|auth|files|email|queue(?:-[\w-]+)?)(?:\/|$)|@zenixjs\/core\/(?:cms|types)$|@zeruxjs\/feed(?:$|\/fetch$)|@zeruxjs\/cache(?:$|\/policy$)|@zeruxjs\/cache-memcache(?:$|\/protocol$)|@zeruxjs\/cache-redis$|@zeruxjs\/cache-valkey$|@zeruxjs\/asset-manager(?:$|\/(?:storage|brand)$)|@zeruxjs\/analytics(?:$|\/(?:http|email|durable)$)|@zeruxjs\/ai-model(?:$|\/(?:corpus|evidence)$)|@zeruxjs\/ai\/tools$|@zeruxjs\/validator\/http$|zlocale\/(?:node|build)$|zuixs\/node$|zhost(?:\/|$)|zeruxjs(?:$|\/(?:services|database|cache|cache-runtime|actions|action-stores|modules|service-endpoints|graphql|build|static-export|privacy|route-data-cache|renderers|protocols|response|fetch-route|loader)(?:\/|$))|@zeruxjs\/security(?:$|\/(?:crypto|jwt|policy)$))/.test(
       specifier
     )
   );
 }
-/** Known disposer-producing public APIs; retaining a handle does not prove eventual disposal. */
+/**
+ * Known independently owned disposers; retaining a handle does not prove disposal.
+ * Module, endpoint and GraphQL registrations transfer cleanup to the supplied
+ * generation API through onDispose, so their optional handles are excluded.
+ */
 const acquisitions: Record<string, readonly string[]> = {
+  zeruxjs: [
+    'createServiceScope',
+    'initializeRuntimeServices',
+    'createApplicationLifecycle',
+    'createRequestObserver',
+    'createZeruxProtocols',
+    'createRendererRegistry',
+    'createServiceClient',
+  ],
+  'zeruxjs/services': ['createServiceScope', 'initializeRuntimeServices'],
+  'zeruxjs/service-endpoints': ['createServiceClient'],
+  'zforge/modules': ['createDevtoolsModuleHost'],
+  'zforge/diagnostics': ['createRequestDiagnostics'],
+  zhost: [
+    'launchSupervisedCommand',
+    'launchManagedApplication',
+    'launchRollingApplication',
+  ],
+  'zeruxjs/renderers': ['createRendererRegistry'],
+  'zeruxjs/protocols': ['createZeruxProtocols'],
+  'zeruxjs/actions': ['createActionRegistry'],
+  'zeruxjs/action-form': ['enhanceActionForm'],
+  'zeruxjs/browser-navigation': ['createBrowserRouter'],
+  'zeruxjs/route-data-cache': ['createRouteDataCache'],
+  'zeruxjs/privacy': ['createPrivacyCoordinator'],
+  'zeruxjs/accessibility': ['bindAccessibleTabs'],
   zclivo: [
     'createTerminalGeneratorPrompt',
     'loadPlugins',

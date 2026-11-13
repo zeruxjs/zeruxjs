@@ -141,52 +141,52 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### AuthConfig
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `db` | `{ usersTable: string; rolesTable: string; usermetaTable: string; supportsReturning?: boolean; fields: { userId: string; email: string; passwordHash: string; role: string; }; }` | No |
-| `session` | `{ cookieName: string; expiresIn: number; }` | No |
+| Field     | Accepted type/value                                                                                                                                                               | Optional |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `db`      | `{ usersTable: string; rolesTable: string; usermetaTable: string; supportsReturning?: boolean; fields: { userId: string; email: string; passwordHash: string; role: string; }; }` | No       |
+| `session` | `{ cookieName: string; expiresIn: number; }`                                                                                                                                      | No       |
 
 ### PasswordPolicy
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `minLength` | `number` | Yes |
-| `maxLength` | `number` | Yes |
-| `requireUppercase` | `boolean` | Yes |
-| `requireLowercase` | `boolean` | Yes |
-| `requireDigit` | `boolean` | Yes |
-| `requireSymbol` | `boolean` | Yes |
+| Field              | Accepted type/value | Optional |
+| ------------------ | ------------------- | -------- |
+| `minLength`        | `number`            | Yes      |
+| `maxLength`        | `number`            | Yes      |
+| `requireUppercase` | `boolean`           | Yes      |
+| `requireLowercase` | `boolean`           | Yes      |
+| `requireDigit`     | `boolean`           | Yes      |
+| `requireSymbol`    | `boolean`           | Yes      |
 
 ### TotpOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `period` | `number` | Yes |
-| `digits` | `6 \| 8` | Yes |
-| `algorithm` | `"sha1" \| "sha256" \| "sha512"` | Yes |
-| `now` | `number` | Yes |
+| Field       | Accepted type/value              | Optional |
+| ----------- | -------------------------------- | -------- |
+| `period`    | `number`                         | Yes      |
+| `digits`    | `6 \| 8`                         | Yes      |
+| `algorithm` | `"sha1" \| "sha256" \| "sha512"` | Yes      |
+| `now`       | `number`                         | Yes      |
 
 ### OAuthAuthorizationOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `authorizationEndpoint` | `string` | No |
-| `clientId` | `string` | No |
-| `redirectUri` | `string` | No |
-| `allowedRedirectUris` | `readonly string[]` | No |
-| `scopes` | `readonly string[]` | Yes |
-| `extra` | `Record<string, string>` | Yes |
+| Field                   | Accepted type/value      | Optional |
+| ----------------------- | ------------------------ | -------- |
+| `authorizationEndpoint` | `string`                 | No       |
+| `clientId`              | `string`                 | No       |
+| `redirectUri`           | `string`                 | No       |
+| `allowedRedirectUris`   | `readonly string[]`      | No       |
+| `scopes`                | `readonly string[]`      | Yes      |
+| `extra`                 | `Record<string, string>` | Yes      |
 
 ### TenantPrincipal
 
 Host must obtain this principal only after verifying an authenticated, unexpired session.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `userId` | `string \| number` | No |
-| `tenantId` | `string \| number` | No |
-| `permissions` | `readonly string[]` | No |
-| `siteIds` | `readonly string[]` | Yes |
+| Field         | Accepted type/value | Optional |
+| ------------- | ------------------- | -------- |
+| `userId`      | `string \| number`  | No       |
+| `tenantId`    | `string \| number`  | No       |
+| `permissions` | `readonly string[]` | No       |
+| `siteIds`     | `readonly string[]` | Yes      |
 
 ## Readable source ownership
 

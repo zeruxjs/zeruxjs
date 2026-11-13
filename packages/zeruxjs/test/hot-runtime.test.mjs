@@ -5,11 +5,22 @@ import { createHotRuntime } from '../dist/bootstrap/hot-runtime.js';
 test('failed rebuild preserves serving generation and later retries succeed', async () => {
   let shouldFail = true;
   let active = 'v1';
+  /** Ordered generation disposal receipts used to detect leaks and duplicate cleanup. */
   const disposed = [];
+  /** Reload coordinator owning candidate activation and generation disposal. */
   const runtime = createHotRuntime('v1', {
-    prepare: async () => { if (shouldFail) throw Error('syntax error'); return 'v2'; },
-    activate: v => { active = v; },
-    dispose: v => { disposed.push(v); }
+    prepare: async () => {
+      if (shouldFail) {
+        throw Error('syntax error');
+      }
+      return 'v2';
+    },
+    activate: (v) => {
+      active = v;
+    },
+    dispose: (v) => {
+      disposed.push(v);
+    },
   });
   await assert.rejects(runtime.reload(), /syntax error/);
   assert.equal(active, 'v1');
@@ -26,16 +37,23 @@ test('failed rebuild preserves serving generation and later retries succeed', as
 });
 
 test('concurrent reloads are serialized and close waits for active swap', async () => {
-  let concurrent = 0; let maximum = 0;
+  let concurrent = 0;
+  let maximum = 0;
+  /** Ordered generation disposal receipts used to detect leaks and duplicate cleanup. */
   const disposed = [];
+  /** Reload coordinator owning candidate activation and generation disposal. */
   const runtime = createHotRuntime(0, {
     prepare: async () => {
-      concurrent++; maximum = Math.max(maximum, concurrent);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      concurrent++;
+      maximum = Math.max(maximum, concurrent);
+      await new Promise((resolve) => setTimeout(resolve, 10));
       concurrent--;
       return disposed.length + 1;
     },
-    activate: () => {}, dispose: v => { disposed.push(v); }
+    activate: () => {},
+    dispose: (v) => {
+      disposed.push(v);
+    },
   });
   await Promise.all([runtime.reload(), runtime.reload(), runtime.reload()]);
   assert.equal(maximum, 1);
@@ -45,11 +63,17 @@ test('concurrent reloads are serialized and close waits for active swap', async 
 });
 
 test('activation failure disposes candidate without replacing live runtime', async () => {
+  /** Ordered generation disposal receipts used to detect leaks and duplicate cleanup. */
   const disposed = [];
+  /** Reload coordinator owning candidate activation and generation disposal. */
   const runtime = createHotRuntime('old', {
     prepare: async () => 'bad',
-    activate: () => { throw Error('activate failed'); },
-    dispose: v => { disposed.push(v); }
+    activate: () => {
+      throw Error('activate failed');
+    },
+    dispose: (v) => {
+      disposed.push(v);
+    },
   });
   await assert.rejects(runtime.reload(), /activate failed/);
   assert.equal(runtime.current(), 'old');

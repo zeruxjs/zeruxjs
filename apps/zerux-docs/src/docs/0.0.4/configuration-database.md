@@ -84,11 +84,11 @@ Connection setup does not create an application schema, run migrations, authoriz
 
 The following table is captured from the source contract used by runtime bootstrap. Optional means a property may be omitted; it does not mean every combination is meaningful. Callback and nested adapter shapes must satisfy the full declared type.
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `default` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `connections` | `DatabaseConnection[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `connection` | `DatabaseConnection[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option        | Accepted TypeScript value | Required | Meaning                                                                          |
+| ------------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `default`     | `string`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `connections` | `DatabaseConnection[]`    | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `connection`  | `DatabaseConnection[]`    | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ## Continue with the package
 

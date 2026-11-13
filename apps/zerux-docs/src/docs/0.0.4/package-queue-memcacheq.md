@@ -80,7 +80,6 @@ Capabilities remain `destructiveRead:true`, `acknowledgement:false`, `retry:fals
 
 Focused tests use an ephemeral loopback FIFO protocol fixture, covering V1/legacy handling, byte limits, empty polling/jitter, blocked reads, cancellation, noncooperating handler drain, malformed popped messages, callback failures and capability denial. Packed consumers compile this public-import example and existing basic imports. A FIFO fixture is not a real MemcacheQ/Berkeley DB server. Live broker acceptance requires an isolated actual MemcacheQ instance with known record sizing/TLS configuration; no such server is configured here. Persistent crash/loss behavior, server forks and production network failures remain unqualified.
 
-
 ## Cleanup and inspection
 
 The basic client owns socket requests and needs both `close()` and `whenClosed()` for a full teardown. The worker owns its basic client, polling timers and handler signals; retain its `closed` promise separately from the bounded `close()` receipt. Error hooks and noncooperating handlers can keep that actual-settlement barrier pending. Host handlers remain trusted application code: inert JSON validation is not a sandbox or authorization policy.

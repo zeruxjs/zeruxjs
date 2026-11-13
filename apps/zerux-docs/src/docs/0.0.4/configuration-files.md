@@ -88,11 +88,11 @@ Choose failure behavior deliberately. A storage initialization error is not repo
 
 The following table is captured from the source contract used by runtime bootstrap. Optional means a property may be omitted; it does not mean every combination is meaningful. Callback and nested adapter shapes must satisfy the full declared type.
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `defaultStorage` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `stores` | `Array<{ name: string; type: 'local' \| 's3'; root?: string; options?: Record<string, unknown>; allowedBuckets?: string[]; allowedTypes?: string[]; readonly?: boolean; maxBytes?: number; keyPrefix?: string }>` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `cache` | `{ maxEntries?: number; maxBytes?: number; ttlMs?: number }` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option           | Accepted TypeScript value                                                                                                                                                                                         | Required | Meaning                                                                          |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `defaultStorage` | `string`                                                                                                                                                                                                          | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `stores`         | `Array<{ name: string; type: 'local' \| 's3'; root?: string; options?: Record<string, unknown>; allowedBuckets?: string[]; allowedTypes?: string[]; readonly?: boolean; maxBytes?: number; keyPrefix?: string }>` | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `cache`          | `{ maxEntries?: number; maxBytes?: number; ttlMs?: number }`                                                                                                                                                      | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ## Continue with the package
 

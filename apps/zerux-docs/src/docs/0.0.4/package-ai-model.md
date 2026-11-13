@@ -87,28 +87,27 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### KnowledgeOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `stopWords` | `string[]` | Yes |
-| `maxDocuments` | `number` | Yes |
-| `maxDocumentCharacters` | `number` | Yes |
+| Field                   | Accepted type/value | Optional |
+| ----------------------- | ------------------- | -------- |
+| `stopWords`             | `string[]`          | Yes      |
+| `maxDocuments`          | `number`            | Yes      |
+| `maxDocumentCharacters` | `number`            | Yes      |
 
 ### ChunkingOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxCharacters` | `number` | Yes |
-| `overlapCharacters` | `number` | Yes |
-| `maxChunks` | `number` | Yes |
+| Field               | Accepted type/value | Optional |
+| ------------------- | ------------------- | -------- |
+| `maxCharacters`     | `number`            | Yes      |
+| `overlapCharacters` | `number`            | Yes      |
+| `maxChunks`         | `number`            | Yes      |
 
 ### EvidenceOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `limit` | `number` | Yes |
-| `maxExcerptCharacters` | `number` | Yes |
-| `maxTotalCharacters` | `number` | Yes |
-
+| Field                  | Accepted type/value | Optional |
+| ---------------------- | ------------------- | -------- |
+| `limit`                | `number`            | Yes      |
+| `maxExcerptCharacters` | `number`            | Yes      |
+| `maxTotalCharacters`   | `number`            | Yes      |
 
 ## Reproducible public corpus
 
@@ -128,7 +127,6 @@ to run instructions or tools. Authored docs are labeled claims, not proof of tes
 features. Read the package README and corpus example for source/snapshot budgets,
 Git requirements, stable-checkout assumptions and host privacy/authorization duties.
 
-
 ## Ranked evidence with explicit insufficiency
 
 The optional evidence entry adds configured field-weighted lexical ranking and a
@@ -145,7 +143,6 @@ the provider when evidence is insufficient. This validates IDs, not truth or
 prompt-injection safety. See README and evidence example for exact limits and the
 small reproducible ranking comparison; no live semantic-provider evaluation is
 claimed.
-
 
 ## Ownership and source maintenance
 

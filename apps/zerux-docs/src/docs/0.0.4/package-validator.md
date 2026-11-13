@@ -88,70 +88,69 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### HttpValidationOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxBytes` | `number` | Yes |
-| `maxQueryFields` | `number` | Yes |
-| `maxQueryLength` | `number` | Yes |
-| `maxFields` | `number` | Yes |
-| `maxFieldBytes` | `number` | Yes |
-| `bodyTimeoutMs` | `number` | Yes |
-| `maxConcurrentReads` | `number` | Yes |
-| `signal` | `AbortSignal` | Yes |
-| `validation` | `Omit<Config<BaseIssue<unknown>>, "signal">` | Yes |
+| Field                | Accepted type/value                          | Optional |
+| -------------------- | -------------------------------------------- | -------- |
+| `maxBytes`           | `number`                                     | Yes      |
+| `maxQueryFields`     | `number`                                     | Yes      |
+| `maxQueryLength`     | `number`                                     | Yes      |
+| `maxFields`          | `number`                                     | Yes      |
+| `maxFieldBytes`      | `number`                                     | Yes      |
+| `bodyTimeoutMs`      | `number`                                     | Yes      |
+| `maxConcurrentReads` | `number`                                     | Yes      |
+| `signal`             | `AbortSignal`                                | Yes      |
+| `validation`         | `Omit<Config<BaseIssue<unknown>>, "signal">` | Yes      |
 
 ### ToJsonSchemaOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `strict` | `boolean \| undefined` | Yes |
+| Field    | Accepted type/value    | Optional |
+| -------- | ---------------------- | -------- |
+| `strict` | `boolean \| undefined` | Yes      |
 
 ### ParseBooleanConfig
 
 Parse boolean config interface.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `truthy` | `MaybeReadonly<unknown[]> \| undefined` | Yes |
-| `falsy` | `MaybeReadonly<unknown[]> \| undefined` | Yes |
+| Field    | Accepted type/value                     | Optional |
+| -------- | --------------------------------------- | -------- |
+| `truthy` | `MaybeReadonly<unknown[]> \| undefined` | Yes      |
+| `falsy`  | `MaybeReadonly<unknown[]> \| undefined` | Yes      |
 
 ### ParseJsonConfig
 
 Parse JSON config interface.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `reviver` | `(this: any, key: string, value: any) => any` | Yes |
+| Field     | Accepted type/value                           | Optional |
+| --------- | --------------------------------------------- | -------- |
+| `reviver` | `(this: any, key: string, value: any) => any` | Yes      |
 
 ### StringifyJsonConfig
 
 Stringify JSON config interface.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `replacer` | `((this: any, key: string, value: any) => any) \| (number \| string)[]` | Yes |
-| `space` | `string \| number` | Yes |
+| Field      | Accepted type/value                                                     | Optional |
+| ---------- | ----------------------------------------------------------------------- | -------- |
+| `replacer` | `((this: any, key: string, value: any) => any) \| (number \| string)[]` | Yes      |
+| `space`    | `string \| number`                                                      | Yes      |
 
 ### CacheConfig
 
 Cache config type.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `maxSize` | `number` | Yes |
-| `maxAge` | `number` | Yes |
+| Field     | Accepted type/value | Optional |
+| --------- | ------------------- | -------- |
+| `maxSize` | `number`            | Yes      |
+| `maxAge`  | `number`            | Yes      |
 
 ### Config
 
 Config interface.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `lang` | `string \| undefined` | Yes |
-| `message` | `ErrorMessage<TIssue> \| undefined` | Yes |
-| `abortEarly` | `boolean \| undefined` | Yes |
-| `abortPipeEarly` | `boolean \| undefined` | Yes |
-
+| Field            | Accepted type/value                 | Optional |
+| ---------------- | ----------------------------------- | -------- |
+| `lang`           | `string \| undefined`               | Yes      |
+| `message`        | `ErrorMessage<TIssue> \| undefined` | Yes      |
+| `abortEarly`     | `boolean \| undefined`              | Yes      |
+| `abortPipeEarly` | `boolean \| undefined`              | Yes      |
 
 ## Functional inference and explicit compatibility
 
@@ -173,13 +172,13 @@ unions. Public types live in validator. Zero-argument constructor action shortha
 also preserves output inference; other legacy shorthand and `z`/`chain` methods
 can retain broad types. Use functional composition for precise inference.
 
-| Surface | Implemented contract |
-| --- | --- |
-| Functional schemas/actions/parsers | Existing named schema subset, typed pipelines and sync/async parses |
-| Object keys | object strips; looseObject preserves safe extra keys; strictObject rejects; objectWithRest validates extras |
-| `z` / `chain` | Limited convenience API, not full Zod compatibility |
-| Valibot-style names / Standard Schema | Existing subset/adapter, not full Valibot conformance |
-| JSON Schema / ajvSafeParse | Limited local conversion/checking; not the AJV engine or full JSON Schema |
+| Surface                               | Implemented contract                                                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Functional schemas/actions/parsers    | Existing named schema subset, typed pipelines and sync/async parses                                         |
+| Object keys                           | object strips; looseObject preserves safe extra keys; strictObject rejects; objectWithRest validates extras |
+| `z` / `chain`                         | Limited convenience API, not full Zod compatibility                                                         |
+| Valibot-style names / Standard Schema | Existing subset/adapter, not full Valibot conformance                                                       |
+| JSON Schema / ajvSafeParse            | Limited local conversion/checking; not the AJV engine or full JSON Schema                                   |
 
 Object schemas reject arrays, read declared fields only from own properties and
 reject unsafe schema keys. Class instances remain eligible by their own fields.
@@ -226,12 +225,12 @@ divisors and mixed numeric kinds throw, and floating-point values are not rounde
 ## Parse budgets, cancellation and private notifications
 
 | Root parse option | Default | Maximum |
-| --- | --- | --- |
-| maxDepth | 64 | 128 |
-| maxNodes | 10000 | 100000 |
-| maxCollectionSize | 1000 | 10000 |
-| maxIssues | 100 | 1000 |
-| maxConcurrency | 8 | 32 |
+| ----------------- | ------- | ------- |
+| maxDepth          | 64      | 128     |
+| maxNodes          | 10000   | 100000  |
+| maxCollectionSize | 1000    | 10000   |
+| maxIssues         | 100     | 1000    |
+| maxConcurrency    | 8       | 32      |
 
 Limits are positive integers. Depth covers input nesting and schema/action
 nesting (wrappers count); work bounds input scan nodes and schema/callback steps
@@ -292,7 +291,6 @@ limits, async misuse, concurrency, dependency failures, hook exceptions and clea
 Installed shared tooling/TypeScript are required. There are no live-service
 prerequisites, and no live-provider/browser behavior is claimed.
 
-
 ### Message and metadata ownership
 
 Message registries use exact language keys, including a distinct `undefined` key;
@@ -312,7 +310,6 @@ pipeline level. `getMetadata` instead shallowly merges in depth-first source
 order, with later keys winning. Metadata is host-owned, unvalidated and unescaped;
 reading record getters may execute host code. Escape text for its eventual output
 context and keep untrusted records outside this API.
-
 
 ### Local compatibility boundaries
 
@@ -364,15 +361,15 @@ close is idempotent, prevents new operations, aborts owned work and awaits clean
 Schema/provider exceptions propagate; cancellation of noncooperative validation
 can still delay close. Do not share tenant/user-specific mutable callback state.
 
-| HTTP budget | Default | Allowed range |
-| --- | --- | --- |
-| maxBytes | 1 MiB | 1 byte–16 MiB |
-| bodyTimeoutMs | 3000 ms | 10–60000 ms |
-| maxConcurrentReads | 32 | 1–1024 |
-| maxFields | 200 | 1–1000 |
-| maxQueryFields | maxFields | 1–1000 |
-| maxQueryLength | 16384 characters | 1–1048576 |
-| maxFieldBytes | 16384 UTF-8 bytes | 1–1048576 |
+| HTTP budget        | Default           | Allowed range |
+| ------------------ | ----------------- | ------------- |
+| maxBytes           | 1 MiB             | 1 byte–16 MiB |
+| bodyTimeoutMs      | 3000 ms           | 10–60000 ms   |
+| maxConcurrentReads | 32                | 1–1024        |
+| maxFields          | 200               | 1–1000        |
+| maxQueryFields     | maxFields         | 1–1000        |
+| maxQueryLength     | 16384 characters  | 1–1048576     |
+| maxFieldBytes      | 16384 UTF-8 bytes | 1–1048576     |
 
 All budgets are positive safe integers. JSON key inspection additionally caps
 10000 nodes. validation supplies existing parse controls/hooks, excluding signal;
@@ -385,7 +382,7 @@ released. Cancellation rejection remains in the internal cause; an uncooperative
 stream cancel promise does not hold a slot indefinitely. A body locked by another
 consumer is rejected without stealing that lock.
 
-JSON accepts application/json and application/*+json. Forms accept URL-encoded or
+JSON accepts application/json and application/\*+json. Forms accept URL-encoded or
 multipart/form-data with a valid boundary; UTF-8 is required and compressed input
 is rejected. Multipart uses the runtime's Fetch parser after the bounded read;
 field caps apply after native decoding, not as a streaming multipart parser.
@@ -404,17 +401,17 @@ reserved dot/bracket segments, reject before stripping. Keys are literal and no
 nested expansion occurs. Names are nonempty, control-free, at most 256 characters;
 headers also require token syntax and names are lowercased.
 
-| Field option | Contract |
-| --- | --- |
-| duplicates:'array' (default) | Singletons scalar, repeated names arrays |
-| duplicates:'reject' | Reject any repeat, including empty values |
-| duplicates:'first'/'last' | Choose literal first/last before empty handling |
-| empty:'preserve' (default) | Keep empty strings |
-| empty:'omit' | Remove selected empties; all removed means absent/default-eligible |
-| coerce:{name:'number'} | Strict finite JSON-number spelling; no blanks, hex, Infinity or NaN |
-| coerce:{name:'boolean'} | Exact lowercase true/false |
-| coerce:{name:'string'} | Keep strings; do not stringify files |
-| files:'reject' (default)/'preserve' | Explicit bounded File acceptance |
+| Field option                        | Contract                                                            |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| duplicates:'array' (default)        | Singletons scalar, repeated names arrays                            |
+| duplicates:'reject'                 | Reject any repeat, including empty values                           |
+| duplicates:'first'/'last'           | Choose literal first/last before empty handling                     |
+| empty:'preserve' (default)          | Keep empty strings                                                  |
+| empty:'omit'                        | Remove selected empties; all removed means absent/default-eligible  |
+| coerce:{name:'number'}              | Strict finite JSON-number spelling; no blanks, hex, Infinity or NaN |
+| coerce:{name:'boolean'}             | Exact lowercase true/false                                          |
+| coerce:{name:'string'}              | Keep strings; do not stringify files                                |
+| files:'reject' (default)/'preserve' | Explicit bounded File acceptance                                    |
 
 Selected repeated values coerce individually. Arrays stay arrays after empty
 filtering. Coercion does not create absent fields and no schema-based coercion or

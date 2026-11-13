@@ -8,43 +8,151 @@ import http from 'node:http';
 import { spawn } from 'node:child_process';
 import { SlidingRestartBudget } from '../dist/portless/restart-budget.js';
 import { parseFleetRunArguments } from '../dist/bin/parse-fleet.js';
-import { createFleetCheckpointWriter, readFleetCheckpoint, fingerprintFleetConfig, fleetStatePath } from '../dist/portless/fleet-state.js';
+import {
+  createFleetCheckpointWriter,
+  readFleetCheckpoint,
+  fingerprintFleetConfig,
+  fleetStatePath,
+} from '../dist/portless/fleet-state.js';
 import { processIdentity } from '../dist/portless/lifecycle.js';
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+/** Pace bounded fixture observation polling.
+ * @param {number} ms - Delay in milliseconds.
+ * @returns {Promise<void>} Settles when the fixture timer elapses.
+ */
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+/** Own simultaneous ephemeral loopback reservations long enough to obtain distinct fixture ports, then close every temporary listener.
+ * @param {number} n - Small explicit fixture port count.
+ * @returns {Promise<number[]>} Distinct previously free fixture ports, not a cross-process reservation.
+ */
 async function freePorts(n) {
- const servers = Array.from({length:n},()=>net.createServer());
- try {
-  await Promise.all(servers.map(s=>new Promise(r=>s.listen(0,'127.0.0.1',r))));
-  return servers.map(s=>s.address().port);
- } finally {await Promise.all(servers.map(s=>new Promise(r=>s.close(r))));}
+  /** Owned temporary loopback listeners, all closed in finally after port allocation. */
+  const servers = Array.from({ length: n }, () => net.createServer());
+  try {
+    await Promise.all(
+      servers.map((s) => new Promise((r) => s.listen(0, '127.0.0.1', r)))
+    );
+    return servers.map((s) => s.address().port);
+  } finally {
+    await Promise.all(servers.map((s) => new Promise((r) => s.close(r))));
+  }
 }
+/** Start only an explicitly trusted fixture CLI child and capture its small expected diagnostic output.
+ * @param {string[]} argv - Fixed test CLI/script arguments, never request input.
+ * @param {NodeJS.ProcessEnv} env - Fixture environment pointing to private synthetic state.
+ * @returns {object} Owned child/log view and bounded termination/escalation helper.
+ */
 function runner(argv, env) {
- const child=spawn(process.execPath,argv,{env,stdio:['ignore','pipe','pipe']});
- let logs='';for(const stream of [child.stdout,child.stderr])stream.on('data',part=>logs+=part.toString());
- return {child,get logs(){return logs},async end(){
-  if(child.exitCode===null)child.kill('SIGTERM');
-  let timer;await Promise.race([new Promise(r=>child.once('exit',r)),new Promise(r=>{timer=setTimeout(r,2000);})]);clearTimeout(timer);
-  if(child.exitCode===null)child.kill('SIGKILL');
- }};
+  /** Owned synthetic CLI process, never a user-managed application. */
+  const child = spawn(process.execPath, argv, {
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let logs = '';
+  for (const stream of [child.stdout, child.stderr]) {
+    stream.on('data', (part) => (logs += part.toString()));
+  }
+  return {
+    child,
+    get logs() {
+      return logs;
+    },
+    /** Request termination of this owned fixture child and escalate after the fixed grace period.
+     * @returns {Promise<void>} Completes bounded escalation; test assertions separately observe lifecycle recovery/exit state.
+     */ 
+/** Request termination of this owned fixture child and escalate after the fixed grace period.
+     * @returns {Promise<void>} Completes bounded escalation; test assertions separately observe lifecycle recovery/exit state.
+     */
+    async end() {
+      if (child.exitCode === null) {
+        child.kill('SIGTERM');
+      }
+      let timer;
+      await Promise.race([
+        new Promise((r) => child.once('exit', r)),
+        new Promise((r) => {
+          timer = setTimeout(r, 2000);
+        }),
+      ]);
+      clearTimeout(timer);
+      if (child.exitCode === null) {
+        child.kill('SIGKILL');
+      }
+    },
+  };
 }
-async function cli(bin,env,args) {
- const proc=runner([bin,...args],env);
- let timer;const result=await Promise.race([new Promise(r=>proc.child.once('exit',r)),new Promise(r=>timer=setTimeout(()=>r('timeout'),25000))]);
- clearTimeout(timer);
- if(result==='timeout'){await proc.end();throw Error('CLI timeout: '+args.join(' ')+' '+proc.logs);}
- return {code:result,output:proc.logs};
+/** Run one trusted fixture command with a bounded response wait, requesting child cleanup on timeout.
+ * @param {string} bin - Built package CLI entry path.
+ * @param {NodeJS.ProcessEnv} env - Private synthetic fixture environment.
+ * @param {string[]} args - Exact allowlisted fixture command tokens.
+ * @returns {Promise<object>} Observed native exit code and captured expected output; timeout rejects.
+ */
+async function cli(bin, env, args) {
+  /** Owned one-shot fixture command supervised by the finite CLI timeout. */
+  const proc = runner([bin, ...args], env);
+  let timer;
+  /** Observed fixture command exit value or explicit timeout sentinel. */
+  const result = await Promise.race([
+    new Promise((r) => proc.child.once('exit', r)),
+    new Promise((r) => (timer = setTimeout(() => r('timeout'), 25000))),
+  ]);
+  clearTimeout(timer);
+  if (result === 'timeout') {
+    await proc.end();
+    throw Error('CLI timeout: ' + args.join(' ') + ' ' + proc.logs);
+  }
+  return { code: result, output: proc.logs };
 }
-async function poll(fn,ms=10000){
- const until=Date.now()+ms;let error;
- while(Date.now()<until){try{const r=await fn();if(r)return r;}catch(e){error=e;}await delay(75);}
- throw Error('Poll timed out: '+(error?.message??'not ready'));
+/** Poll only synthetic fixture observations until a truthy receipt or a finite deadline.
+ * @param {() => Promise<unknown>} fn - Fixed fixture observation callback.
+ * @param {number} ms - Maximum observation wait in milliseconds, defaulting to 10000.
+ * @returns {Promise<unknown>} First truthy observation, or a fixture deadline error.
+ */
+async function poll(fn, ms = 10000) {
+  /** Absolute finite fixture polling deadline. */
+  const until = Date.now() + ms;
+  let error;
+  while (Date.now() < until) {
+    try {
+      /** Current synthetic observation admitted only when truthy. */
+      const r = await fn();
+      if (r) {
+        return r;
+      }
+    } catch (e) {
+      error = e;
+    }
+    await delay(75);
+  }
+  throw Error('Poll timed out: ' + (error?.message ?? 'not ready'));
 }
-const request=(port,host,route='/')=>new Promise((resolve,reject)=>{
- const req=http.get({host:'127.0.0.1',port,path:route,headers:{Host:host,Connection:'close'}},res=>{
- let body='';res.setEncoding('utf8');res.on('data',chunk=>body+=chunk);res.once('end',()=>resolve({status:res.statusCode,body}));});req.once('error',reject);
-});
-const appCode=String.raw`
+/** Fetch small synthetic fixture content from the owned loopback proxy.
+ * @param {number} port - Ephemeral fixture port.
+ * @param {string} host - Fixed synthetic route hostname.
+ * @param {string} route - Fixed fixture path, default slash.
+ * @returns {Promise<object>} Status and small fixture body.
+ */
+const request = (port, host, route = '/') =>
+  new Promise((resolve, reject) => {
+    /** Owned loopback fixture HTTP request, with native errors rejecting the assertion. */
+    const req = http.get(
+      {
+        host: '127.0.0.1',
+        port,
+        path: route,
+        headers: { Host: host, Connection: 'close' },
+      },
+      (res) => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => (body += chunk));
+        res.once('end', () => resolve({ status: res.statusCode, body }));
+      }
+    );
+    req.once('error', reject);
+  });
+/** Fixed trusted synthetic child program; never derived from untrusted data and retained byte-for-byte. */
+const appCode = String.raw`
 const fs=require('node:fs');const http=require('node:http');const port=Number(process.env.PORT);
 const server=http.createServer((req,res)=>{
  if(req.url==='/health'){res.statusCode=fs.existsSync(process.env.FAIL_DIR+'/fail-'+port)?503:200;res.end('health');return;}
@@ -53,97 +161,432 @@ const server=http.createServer((req,res)=>{
 process.on('SIGTERM',()=>server.close(()=>process.exit(0)));
 `;
 
-test('fleet CLI validates flags, replica capacity and leaves application argv untouched',()=>{
- const base=['--name','api','--ports','4300,4301,4302','--replicas','2'];
- const parsed=parseFleetRunArguments([...base,'--max-replacements','4','--','node','server.js','--port','99']);
- assert.deepEqual(parsed.command,['node','server.js','--port','99']);
- assert.equal(parsed.maxReplacements,4);
- assert.throws(()=>parseFleetRunArguments([...base,'--ports','4400,4401,4402','--','node']),/Repeated/);
- assert.throws(()=>parseFleetRunArguments([...base,'--replicas','3','--','node']),/Repeated/);
- assert.throws(()=>parseFleetRunArguments(['--name','api','--ports','4300,4301,4302','--replicas','3','--','node']),/Usage/);
- assert.throws(()=>parseFleetRunArguments([...base,'--health-path','//evil','--','node']),/health/);
- assert.throws(()=>parseFleetRunArguments([...base,'--bad','10','--','node']),/Unknown/);
+test('fleet CLI validates flags, replica capacity and leaves application argv untouched', () => {
+  /** Explicit synthetic fleet CLI tokens with a required spare port. */
+  const base = [
+    '--name',
+    'api',
+    '--ports',
+    '4300,4301,4302',
+    '--replicas',
+    '2',
+  ];
+  /** Observed parsed fixture configuration or JSON command result under assertion. */
+  const parsed = parseFleetRunArguments([
+    ...base,
+    '--max-replacements',
+    '4',
+    '--',
+    'node',
+    'server.js',
+    '--port',
+    '99',
+  ]);
+  assert.deepEqual(parsed.command, ['node', 'server.js', '--port', '99']);
+  assert.equal(parsed.maxReplacements, 4);
+  assert.throws(
+    () =>
+      parseFleetRunArguments([
+        ...base,
+        '--ports',
+        '4400,4401,4402',
+        '--',
+        'node',
+      ]),
+    /Repeated/
+  );
+  assert.throws(
+    () => parseFleetRunArguments([...base, '--replicas', '3', '--', 'node']),
+    /Repeated/
+  );
+  assert.throws(
+    () =>
+      parseFleetRunArguments([
+        '--name',
+        'api',
+        '--ports',
+        '4300,4301,4302',
+        '--replicas',
+        '3',
+        '--',
+        'node',
+      ]),
+    /Usage/
+  );
+  assert.throws(
+    () =>
+      parseFleetRunArguments([
+        ...base,
+        '--health-path',
+        '//evil',
+        '--',
+        'node',
+      ]),
+    /health/
+  );
+  assert.throws(
+    () => parseFleetRunArguments([...base, '--bad', '10', '--', 'node']),
+    /Unknown/
+  );
 });
 
-test('persistent restart budget survives restore and expires old attempts',()=>{
- const a=new SlidingRestartBudget(2,1000,0,100);a.consume();a.consume();
- const b=new SlidingRestartBudget(2,1000,0,100);b.restore(a.snapshot());assert.equal(b.canAttempt(),false);
- const c=new SlidingRestartBudget(2,1000,0,100);c.restore([Date.now()-2000]);assert.equal(c.used,0);
- assert.throws(()=>c.restore([Date.now(),0]),/Invalid/);
+test('persistent restart budget survives restore and expires old attempts', () => {
+  /** First synthetic restart budget consumed to its configured limit. */
+  const a = new SlidingRestartBudget(2, 1000, 0, 100);
+  a.consume();
+  a.consume();
+  /** Fresh synthetic budget restoring the prior live attempt snapshot. */
+  const b = new SlidingRestartBudget(2, 1000, 0, 100);
+  b.restore(a.snapshot());
+  assert.equal(b.canAttempt(), false);
+  /** Synthetic budget demonstrating expired attempts and malformed order rejection. */
+  const c = new SlidingRestartBudget(2, 1000, 0, 100);
+  c.restore([Date.now() - 2000]);
+  assert.equal(c.used, 0);
+  assert.throws(() => c.restore([Date.now(), 0]), /Invalid/);
 });
 
-test('fleet state is private, atomic, protected against corrupt or symlinked checkpoint',()=>{
- const state=fs.mkdtempSync(path.join(os.tmpdir(),'zhost-fleet-state-'));
- try {
-  const name='app.localhost',config=fingerprintFleetConfig(['node','a'],[4200,4201,4202],2,60000);
-  const writer=createFleetCheckpointWriter(state,name,config,processIdentity(process.pid));
-  const status={phase:'running',hostname:name,desiredReplicas:2,generation:2,replacementAttempts:1,budgetUsed:1,lastError:null,members:[{port:4200,pid:process.pid,healthy:true,routed:true,failures:0,generation:1}],updatedAt:new Date().toISOString()};
-  writer.update(status);writer.attempt([Date.now()]);
-  assert.equal(readFleetCheckpoint(state,name).attempts.length,1);
-  assert.equal(fs.statSync(fleetStatePath(state,name)).mode & 0o077,0);
-  assert.equal(createFleetCheckpointWriter(state,name,config,processIdentity(process.pid)).restoredAttempts.length,1);
-  assert.throws(()=>createFleetCheckpointWriter(state,name,'a'.repeat(64),processIdentity(process.pid)),/differs/);
-  const file=fleetStatePath(state,name);fs.unlinkSync(file);fs.symlinkSync('/etc/passwd',file);
-  assert.throws(()=>readFleetCheckpoint(state,name),/Unsafe/);
-  assert.throws(()=>writer.update(status),/Unsafe/);
- }finally{fs.rmSync(state,{recursive:true,force:true});}
+test('fleet state is private, atomic, protected against corrupt or symlinked checkpoint', () => {
+  /** Owned private temporary checkpoint directory removed after assertions. */
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'zhost-fleet-state-'));
+  try {
+    /** Fixed synthetic control hostname bound to this checkpoint fixture. */
+    const name = 'app.localhost';
+    /** Synthetic deployment fingerprint; not permission to control another process. */
+    const config = fingerprintFleetConfig(
+      ['node', 'a'],
+      [4200, 4201, 4202],
+      2,
+      60000
+    );
+    /** Synchronous fixture checkpoint writer, acquiring no persistent descriptor or background timer. */
+    const writer = createFleetCheckpointWriter(
+      state,
+      name,
+      config,
+      processIdentity(process.pid)
+    );
+    /** Synthetic status/checkpoint or observed CLI receipt used only by these assertions. */
+    const status = {
+      phase: 'running',
+      hostname: name,
+      desiredReplicas: 2,
+      generation: 2,
+      replacementAttempts: 1,
+      budgetUsed: 1,
+      lastError: null,
+      members: [
+        {
+          port: 4200,
+          pid: process.pid,
+          healthy: true,
+          routed: true,
+          failures: 0,
+          generation: 1,
+        },
+      ],
+      updatedAt: new Date().toISOString(),
+    };
+    writer.update(status);
+    writer.attempt([Date.now()]);
+    assert.equal(readFleetCheckpoint(state, name).attempts.length, 1);
+    assert.equal(fs.statSync(fleetStatePath(state, name)).mode & 0o077, 0);
+    assert.equal(
+      createFleetCheckpointWriter(
+        state,
+        name,
+        config,
+        processIdentity(process.pid)
+      ).restoredAttempts.length,
+      1
+    );
+    assert.throws(
+      () =>
+        createFleetCheckpointWriter(
+          state,
+          name,
+          'a'.repeat(64),
+          processIdentity(process.pid)
+        ),
+      /differs/
+    );
+    /** Fixed private fixture checkpoint leaf used for deliberate symlink rejection. */
+    const file = fleetStatePath(state, name);
+    fs.unlinkSync(file);
+    fs.symlinkSync('/etc/passwd', file);
+    assert.throws(() => readFleetCheckpoint(state, name), /Unsafe/);
+    assert.throws(() => writer.update(status), /Unsafe/);
+  } finally {
+    fs.rmSync(state, { recursive: true, force: true });
+  }
 });
 
-test('separate proxy and fleet wrapper expose CLI status, reconcile, backend routing and stop', {timeout:80000},async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'zhost-fleet-cli-'));
- const [proxyPort,a,b,c]=await freePorts(4);
- const bin=new URL('../dist/bin/zerux.js',import.meta.url).pathname;
- const env={...process.env,PORTLESS_PORT:String(proxyPort),PORTLESS_STATE_DIR:dir,FAIL_DIR:dir};
- const proxy=runner([bin,'proxy','start','--port',String(proxyPort)],env);
- let fleet;
- try {
-  await poll(async()=>{try{return (await request(proxyPort,'fleet.localhost')).status===404;}catch{return false;}},13000);
-  fleet=runner([bin,'fleet','run','--name','fleet','--ports',`${a},${b},${c}`,'--replicas','2',
-   '--health-path','/health','--health-interval','30000','--restart-delay','0',
-   '--ready-timeout','2500','--shutdown-timeout','900','--','node','-e',appCode],env);
-  await poll(async()=>{try{return (await request(proxyPort,'fleet.localhost')).status===200;}catch{return false;}},15000);
-  const status=await cli(bin,env,['fleet','status','fleet','--json']);assert.equal(status.code,0,status.output+' '+fleet.logs);
-  const parsed=JSON.parse(status.output);assert.equal(parsed.online,true);assert.equal(parsed.members.length,2);
-  const backends=await cli(bin,env,['fleet','backends','fleet','--json']);assert.equal(backends.code,0,backends.output);
-  assert.equal(JSON.parse(backends.output).length,2);
-  fs.writeFileSync(path.join(dir,'fail-'+a),'yes');
-  const first=await cli(bin,env,['fleet','reconcile','fleet','--json']);assert.equal(first.code,0,first.output);
-  const second=await cli(bin,env,['fleet','reconcile','fleet','--json']);assert.equal(second.code,0,second.output+' '+fleet.logs);
-  await poll(async()=>{try{return (await request(proxyPort,'fleet.localhost')).status===200 && JSON.parse((await cli(bin,env,['fleet','status','fleet','--json'])).output).generation>=3;}catch{return false;}},12000);
-  const persisted=readFleetCheckpoint(dir,'fleet.localhost');assert.ok(persisted.attempts.length>=1);
-  const stopped=await cli(bin,env,['fleet','stop','fleet','--json']);assert.equal(stopped.code,0,stopped.output+' '+fleet.logs);
-  await poll(async()=>{try{return (await request(proxyPort,'fleet.localhost')).status===404;}catch{return false;}});
-  const final=await cli(bin,env,['fleet','status','fleet','--json']);assert.equal(final.code,0,final.output);
-  assert.equal(JSON.parse(final.output).online,false);
-  const reset=await cli(bin,env,['fleet','reset','fleet','--json']);assert.equal(reset.code,0,reset.output);
-  assert.equal(JSON.parse(reset.output).removed,true);
-  assert.equal(readFleetCheckpoint(dir,'fleet.localhost'),null);
- }finally{if(fleet)await fleet.end();await proxy.end();fs.rmSync(dir,{recursive:true,force:true});}
-});
+test(
+  'separate proxy and fleet wrapper expose CLI status, reconcile, backend routing and stop',
+  { timeout: 80000 },
+  async () => {
+    /** Owned private temporary fleet/proxy state root, removed after fixture child cleanup. */
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zhost-fleet-cli-'));
+    /** Distinct ephemeral proxy/application fixture ports; none selects an operator app port. */
+    const [proxyPort, a, b, c] = await freePorts(4);
+    /** Built package CLI path executed only in owned fixture subprocesses. */
+    const bin = new URL('../dist/bin/zerux.js', import.meta.url).pathname;
+    /** Private fixture environment binding proxy/control/health data to its temporary directory. */
+    const env = {
+      ...process.env,
+      PORTLESS_PORT: String(proxyPort),
+      PORTLESS_STATE_DIR: dir,
+      FAIL_DIR: dir,
+    };
+    /** Owned synthetic proxy CLI process, terminated in fixture finally. */
+    const proxy = runner(
+      [bin, 'proxy', 'start', '--port', String(proxyPort)],
+      env
+    );
+    let fleet;
+    try {
+      await poll(async () => {
+        try {
+          return (await request(proxyPort, 'fleet.localhost')).status === 404;
+        } catch {
+          return false;
+        }
+      }, 13000);
+      fleet = runner(
+        [
+          bin,
+          'fleet',
+          'run',
+          '--name',
+          'fleet',
+          '--ports',
+          `${a},${b},${c}`,
+          '--replicas',
+          '2',
+          '--health-path',
+          '/health',
+          '--health-interval',
+          '30000',
+          '--restart-delay',
+          '0',
+          '--ready-timeout',
+          '2500',
+          '--shutdown-timeout',
+          '900',
+          '--',
+          'node',
+          '-e',
+          appCode,
+        ],
+        env
+      );
+      await poll(async () => {
+        try {
+          return (await request(proxyPort, 'fleet.localhost')).status === 200;
+        } catch {
+          return false;
+        }
+      }, 15000);
+      /** Synthetic status/checkpoint or observed CLI receipt used only by these assertions. */
+      const status = await cli(bin, env, [
+        'fleet',
+        'status',
+        'fleet',
+        '--json',
+      ]);
+      assert.equal(status.code, 0, status.output + ' ' + fleet.logs);
+      /** Observed parsed fixture configuration or JSON command result under assertion. */
+      const parsed = JSON.parse(status.output);
+      assert.equal(parsed.online, true);
+      assert.equal(parsed.members.length, 2);
+      /** Observed authenticated fixture backend report. */
+      const backends = await cli(bin, env, [
+        'fleet',
+        'backends',
+        'fleet',
+        '--json',
+      ]);
+      assert.equal(backends.code, 0, backends.output);
+      assert.equal(JSON.parse(backends.output).length, 2);
+      fs.writeFileSync(path.join(dir, 'fail-' + a), 'yes');
+      /** First explicit reconcile receipt after marking a synthetic backend unhealthy. */
+      const first = await cli(bin, env, [
+        'fleet',
+        'reconcile',
+        'fleet',
+        '--json',
+      ]);
+      assert.equal(first.code, 0, first.output);
+      /** Second bounded fixture reconcile receipt while recovery settles. */
+      const second = await cli(bin, env, [
+        'fleet',
+        'reconcile',
+        'fleet',
+        '--json',
+      ]);
+      assert.equal(second.code, 0, second.output + ' ' + fleet.logs);
+      await poll(async () => {
+        try {
+          return (
+            (await request(proxyPort, 'fleet.localhost')).status === 200 &&
+            JSON.parse(
+              (await cli(bin, env, ['fleet', 'status', 'fleet', '--json']))
+                .output
+            ).generation >= 3
+          );
+        } catch {
+          return false;
+        }
+      }, 12000);
+      /** Retained private synthetic restart attempts, read before fixture shutdown. */
+      const persisted = readFleetCheckpoint(dir, 'fleet.localhost');
+      assert.ok(persisted.attempts.length >= 1);
+      /** Observed explicit fixture fleet shutdown receipt. */
+      const stopped = await cli(bin, env, ['fleet', 'stop', 'fleet', '--json']);
+      assert.equal(stopped.code, 0, stopped.output + ' ' + fleet.logs);
+      await poll(async () => {
+        try {
+          return (await request(proxyPort, 'fleet.localhost')).status === 404;
+        } catch {
+          return false;
+        }
+      });
+      /** Observed offline fixture status after stopping its controller. */
+      const final = await cli(bin, env, ['fleet', 'status', 'fleet', '--json']);
+      assert.equal(final.code, 0, final.output);
+      assert.equal(JSON.parse(final.output).online, false);
+      /** Observed explicitly authorized offline fixture checkpoint reset. */
+      const reset = await cli(bin, env, ['fleet', 'reset', 'fleet', '--json']);
+      assert.equal(reset.code, 0, reset.output);
+      assert.equal(JSON.parse(reset.output).removed, true);
+      assert.equal(readFleetCheckpoint(dir, 'fleet.localhost'), null);
+    } finally {
+      if (fleet) {
+        await fleet.end();
+      }
+      await proxy.end();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+);
 
-test('a hard-killed fleet wrapper leaves a verifiable generation registry and recover cleans routes', {timeout:80000},async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'zhost-fleet-orphan-'));
- const [proxyPort,a,b,c]=await freePorts(4);
- const bin=new URL('../dist/bin/zerux.js',import.meta.url).pathname;
- const env={...process.env,PORTLESS_PORT:String(proxyPort),PORTLESS_STATE_DIR:dir,FAIL_DIR:dir};
- const proxy=runner([bin,'proxy','start','--port',String(proxyPort)],env);
- let fleet;
- try {
-  await poll(async()=>{try{return (await request(proxyPort,'orphan.localhost')).status===404;}catch{return false;}},13000);
-  fleet=runner([bin,'fleet','run','--name','orphan','--ports',`${a},${b},${c}`,'--replicas','2',
-    '--health-path','/health','--health-interval','30000','--ready-timeout','2500',
-    '--','node','-e',appCode],env);
-  await poll(async()=>{try{return (await request(proxyPort,'orphan.localhost')).status===200;}catch{return false;}},15000);
-  fleet.child.kill('SIGKILL');
-  await poll(async()=>fleet.child.exitCode!==null || fleet.child.signalCode!==null,4000);
-  const offline=await cli(bin,env,['fleet','status','orphan','--json']);assert.equal(offline.code,0,offline.output);
-  assert.equal(JSON.parse(offline.output).recoveryRequired,true);
-  const preview=await cli(bin,env,['fleet','recover','orphan','--dry-run','--json']);assert.equal(preview.code,0,preview.output);
-  assert.equal(JSON.parse(preview.output).wouldTerminate.length,2);
-  const recovered=await cli(bin,env,['fleet','recover','orphan','--json']);assert.equal(recovered.code,0,recovered.output);
-  assert.equal(JSON.parse(recovered.output).terminated.length,2);
-  await poll(async()=>{try{return (await request(proxyPort,'orphan.localhost')).status===404;}catch{return false;}});
-  const after=await cli(bin,env,['fleet','status','orphan','--json']);
-  assert.equal(JSON.parse(after.output).recoveryRequired,false);
- }finally{if(fleet)await fleet.end();await proxy.end();fs.rmSync(dir,{recursive:true,force:true});}
-});
+test(
+  'a hard-killed fleet wrapper leaves a verifiable generation registry and recover cleans routes',
+  { timeout: 80000 },
+  async () => {
+    /** Owned private temporary fleet/proxy state root, removed after fixture child cleanup. */
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zhost-fleet-orphan-'));
+    /** Distinct ephemeral proxy/application fixture ports; none selects an operator app port. */
+    const [proxyPort, a, b, c] = await freePorts(4);
+    /** Built package CLI path executed only in owned fixture subprocesses. */
+    const bin = new URL('../dist/bin/zerux.js', import.meta.url).pathname;
+    /** Private fixture environment binding proxy/control/health data to its temporary directory. */
+    const env = {
+      ...process.env,
+      PORTLESS_PORT: String(proxyPort),
+      PORTLESS_STATE_DIR: dir,
+      FAIL_DIR: dir,
+    };
+    /** Owned synthetic proxy CLI process, terminated in fixture finally. */
+    const proxy = runner(
+      [bin, 'proxy', 'start', '--port', String(proxyPort)],
+      env
+    );
+    let fleet;
+    try {
+      await poll(async () => {
+        try {
+          return (await request(proxyPort, 'orphan.localhost')).status === 404;
+        } catch {
+          return false;
+        }
+      }, 13000);
+      fleet = runner(
+        [
+          bin,
+          'fleet',
+          'run',
+          '--name',
+          'orphan',
+          '--ports',
+          `${a},${b},${c}`,
+          '--replicas',
+          '2',
+          '--health-path',
+          '/health',
+          '--health-interval',
+          '30000',
+          '--ready-timeout',
+          '2500',
+          '--',
+          'node',
+          '-e',
+          appCode,
+        ],
+        env
+      );
+      await poll(async () => {
+        try {
+          return (await request(proxyPort, 'orphan.localhost')).status === 200;
+        } catch {
+          return false;
+        }
+      }, 15000);
+      fleet.child.kill('SIGKILL');
+      await poll(
+        async () =>
+          fleet.child.exitCode !== null || fleet.child.signalCode !== null,
+        4000
+      );
+      /** Observed orphaned synthetic wrapper status after killing only the fixture wrapper. */
+      const offline = await cli(bin, env, [
+        'fleet',
+        'status',
+        'orphan',
+        '--json',
+      ]);
+      assert.equal(offline.code, 0, offline.output);
+      assert.equal(JSON.parse(offline.output).recoveryRequired, true);
+      /** Read-only recovery preview for owned synthetic generations. */
+      const preview = await cli(bin, env, [
+        'fleet',
+        'recover',
+        'orphan',
+        '--dry-run',
+        '--json',
+      ]);
+      assert.equal(preview.code, 0, preview.output);
+      assert.equal(JSON.parse(preview.output).wouldTerminate.length, 2);
+      /** Observed explicit synthetic orphan recovery receipt. */
+      const recovered = await cli(bin, env, [
+        'fleet',
+        'recover',
+        'orphan',
+        '--json',
+      ]);
+      assert.equal(recovered.code, 0, recovered.output);
+      assert.equal(JSON.parse(recovered.output).terminated.length, 2);
+      await poll(async () => {
+        try {
+          return (await request(proxyPort, 'orphan.localhost')).status === 404;
+        } catch {
+          return false;
+        }
+      });
+      /** Observed fixture status after explicit orphan recovery; it must report the controller offline. */
+      const after = await cli(bin, env, [
+        'fleet',
+        'status',
+        'orphan',
+        '--json',
+      ]);
+      assert.equal(JSON.parse(after.output).recoveryRequired, false);
+    } finally {
+      if (fleet) {
+        await fleet.end();
+      }
+      await proxy.end();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+);

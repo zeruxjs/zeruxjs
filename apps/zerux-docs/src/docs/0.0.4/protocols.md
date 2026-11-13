@@ -56,7 +56,6 @@ Use the public ZeruxProtocols type and registered handler signatures. Validate s
 
 Test actual transport framing, wrong methods, denied origins, missing identity, oversized bodies and cancellation. Handler unit calls do not exercise the gateway boundary. Close the owning gateway and unregister dynamic resources during teardown; a static Pages export cannot host this server gateway.
 
-
 ## One protocol owner
 
 MCP is part of `zhost`, imported through `zhost/protocols` (also re-exported by the root). The separate `@zeruxjs/mcp` package is removed; there is no automatic package discovery or replacement package to install. See [MCP migration](mcp-migration.md) for public imports and teardown.

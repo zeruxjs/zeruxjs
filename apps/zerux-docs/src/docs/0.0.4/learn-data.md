@@ -42,12 +42,12 @@ This store is bounded, but not durable or tenant-safe. It is not a database, not
 
 ## Choose a real persistence layer
 
-| Need | Start with |
-| --- | --- |
-| Understand named connections and startup ownership | [Database configuration](configuration-database.md) |
-| Use queries/transactions deliberately | [Database queries](database-queries.md) |
-| Select a concrete engine | [SQL core](package-db-sql-core.md), [PostgreSQL](package-db-pg.md), [MySQL](package-db-mysql.md), [SQLite](package-db-sqlite.md), or [MongoDB](package-db-mongo.md) |
-| Cache repeated public/scoped computation | [Cache setup](configuration-cache.md) |
+| Need                                               | Start with                                                                                                                                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Understand named connections and startup ownership | [Database configuration](configuration-database.md)                                                                                                                 |
+| Use queries/transactions deliberately              | [Database queries](database-queries.md)                                                                                                                             |
+| Select a concrete engine                           | [SQL core](package-db-sql-core.md), [PostgreSQL](package-db-pg.md), [MySQL](package-db-mysql.md), [SQLite](package-db-sqlite.md), or [MongoDB](package-db-mongo.md) |
+| Cache repeated public/scoped computation           | [Cache setup](configuration-cache.md)                                                                                                                               |
 
 A database choice is a product/deployment decision. Follow the adapter's actual options, migrations and authorization requirements rather than pasting a universal connection example. Confirm the manager was initialized before using it. Disabled/degraded service state should not look like a successful write.
 

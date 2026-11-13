@@ -73,30 +73,30 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 ### CommandOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `rea` | `boolean` | No | Retained compatibility flag; it does not add a dispatch policy. |
-| `description` | `string` | No | Help display text, terminal-sanitized when rendered. |
-| `help` | `{arg:string;'its description':string}[]` | No | Legacy argument descriptions; display text only. |
-| `docs` | `string` | No | Authored documentation returned by --docs; never evaluated. |
-| `example` | `string` | No | Authored example display text; never executed. |
-| `aliases` | `string[]` | No | Alternative command names validated against canonical/alias collisions. |
-| `usage` | `string` | No | Authored usage suffix for command help. |
-| `hidden` | `boolean` | No | Hide from listings/completion; this does not authorize or deny dispatch. |
-| `flags` | `OptionSchema` | No | Strict scalar option schema validated at registration and dispatch. |
-| `allowUnknownFlags` | `boolean` | No | Explicitly retain undeclared flags under a schema instead of rejecting them. |
+| Option              | Accepted TypeScript value                 | Required | Meaning                                                                      |
+| ------------------- | ----------------------------------------- | -------- | ---------------------------------------------------------------------------- |
+| `rea`               | `boolean`                                 | No       | Retained compatibility flag; it does not add a dispatch policy.              |
+| `description`       | `string`                                  | No       | Help display text, terminal-sanitized when rendered.                         |
+| `help`              | `{arg:string;'its description':string}[]` | No       | Legacy argument descriptions; display text only.                             |
+| `docs`              | `string`                                  | No       | Authored documentation returned by --docs; never evaluated.                  |
+| `example`           | `string`                                  | No       | Authored example display text; never executed.                               |
+| `aliases`           | `string[]`                                | No       | Alternative command names validated against canonical/alias collisions.      |
+| `usage`             | `string`                                  | No       | Authored usage suffix for command help.                                      |
+| `hidden`            | `boolean`                                 | No       | Hide from listings/completion; this does not authorize or deny dispatch.     |
+| `flags`             | `OptionSchema`                            | No       | Strict scalar option schema validated at registration and dispatch.          |
+| `allowUnknownFlags` | `boolean`                                 | No       | Explicitly retain undeclared flags under a schema instead of rejecting them. |
 
 ### StarterOptions
 
-| Option | Type | Meaning |
-| --- | --- | --- |
-| `language` | `StarterLanguage` | JavaScript or TypeScript supported by the minimal template. |
-| `dryRun` | `boolean` | Validate and list files without writing the destination. |
-| `name` | `string` | Portable display/package name; defaults from the destination. |
-| `port` | `number` | Integer 1–65535 configuration, never a port reservation. |
-| `renderer` | `string` | Only `none` for this built-in minimal template. |
-| `mode` | `string` | Only `minimal` for this built-in template. |
-| `signal` | `AbortSignal` | Cooperative write cancellation; use the async writer to observe signals between files. |
+| Option     | Type              | Meaning                                                                                |
+| ---------- | ----------------- | -------------------------------------------------------------------------------------- |
+| `language` | `StarterLanguage` | JavaScript or TypeScript supported by the minimal template.                            |
+| `dryRun`   | `boolean`         | Validate and list files without writing the destination.                               |
+| `name`     | `string`          | Portable display/package name; defaults from the destination.                          |
+| `port`     | `number`          | Integer 1–65535 configuration, never a port reservation.                               |
+| `renderer` | `string`          | Only `none` for this built-in minimal template.                                        |
+| `mode`     | `string`          | Only `minimal` for this built-in template.                                             |
+| `signal`   | `AbortSignal`     | Cooperative write cancellation; use the async writer to observe signals between files. |
 
 ## Predictable validation and lifecycle
 
@@ -115,7 +115,7 @@ OptionDefinition.conflicts lists canonical flag names and checks explicit input,
 even false/empty, before defaults. Required flags still require explicit input.
 Defaults must match the declared type/choices; definitions are snapshotted/frozen.
 Argv is bounded to 1024 entries, 8192 code units each, 65536 total; schemas have at
-most 128 flags. No grouped short flags or implicit --no-* negation is provided.
+most 128 flags. No grouped short flags or implicit --no-\* negation is provided.
 
 ```ts
 import { setTimeout as delay } from 'node:timers/promises';

@@ -8,6 +8,6 @@ export default function mathThread(payload: MathThreadPayload) {
   return {
     value,
     squared: value * value,
-    pid: process.pid
+    pid: process.pid,
   };
 }

@@ -53,23 +53,23 @@ The fields below come from the current source declarations. Optional is not a de
 
 ### ThemeConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `default` | `ThemeMode` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `cookieName` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `disablePrefrenceHeader` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `disablePreferenceHeader` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `scriptPosition` | `"head" \| "body-top" \| "body"` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `scriptType` | `"module" \| "nomodule"` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `scriptLoadType` | `"async" \| "defer"` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option                    | Accepted TypeScript value        | Required | Meaning                                                                          |
+| ------------------------- | -------------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `default`                 | `ThemeMode`                      | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `cookieName`              | `string`                         | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `disablePrefrenceHeader`  | `boolean`                        | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `disablePreferenceHeader` | `boolean`                        | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `scriptPosition`          | `"head" \| "body-top" \| "body"` | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `scriptType`              | `"module" \| "nomodule"`         | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `scriptLoadType`          | `"async" \| "defer"`             | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ### ResolvedThemeConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `default` | `ThemeMode` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `cookieName` | `string` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `disablePrefrenceHeader` | `boolean` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `scriptPosition` | `"head" \| "body-top" \| "body"` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `scriptType` | `"module" \| "nomodule"` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
-| `scriptLoadType` | `"async" \| "defer"` | Yes | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option                   | Accepted TypeScript value        | Required | Meaning                                                                          |
+| ------------------------ | -------------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `default`                | `ThemeMode`                      | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `cookieName`             | `string`                         | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `disablePrefrenceHeader` | `boolean`                        | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `scriptPosition`         | `"head" \| "body-top" \| "body"` | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `scriptType`             | `"module" \| "nomodule"`         | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |
+| `scriptLoadType`         | `"async" \| "defer"`             | Yes      | Passed using this declared shape; omission is allowed only when marked optional. |

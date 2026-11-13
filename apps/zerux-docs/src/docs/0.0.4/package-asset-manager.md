@@ -83,43 +83,43 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### Asset
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `brand` | `BrandRules` | Yes |
-| `id` | `string` | No |
-| `name` | `string` | No |
-| `type` | `'image'\|'video'\|'font'\|'color'\|'document'\|'other'` | No |
-| `url` | `string` | Yes |
-| `value` | `string` | Yes |
-| `tags` | `string[]` | Yes |
-| `metadata` | `Record<string,string>` | Yes |
-| `variants` | `Record<string, AssetVariant>` | Yes |
+| Field      | Accepted type/value                                      | Optional |
+| ---------- | -------------------------------------------------------- | -------- |
+| `brand`    | `BrandRules`                                             | Yes      |
+| `id`       | `string`                                                 | No       |
+| `name`     | `string`                                                 | No       |
+| `type`     | `'image'\|'video'\|'font'\|'color'\|'document'\|'other'` | No       |
+| `url`      | `string`                                                 | Yes      |
+| `value`    | `string`                                                 | Yes      |
+| `tags`     | `string[]`                                               | Yes      |
+| `metadata` | `Record<string,string>`                                  | Yes      |
+| `variants` | `Record<string, AssetVariant>`                           | Yes      |
 
 ### AssetVariant
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `url` | `string` | Yes |
-| `value` | `string` | Yes |
-| `metadata` | `Record<string,string>` | Yes |
+| Field      | Accepted type/value     | Optional |
+| ---------- | ----------------------- | -------- |
+| `url`      | `string`                | Yes      |
+| `value`    | `string`                | Yes      |
+| `metadata` | `Record<string,string>` | Yes      |
 
 ### AssetFilter
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `type` | `Asset['type']` | Yes |
-| `tag` | `string` | Yes |
-| `query` | `string` | Yes |
-| `limit` | `number` | Yes |
-| `offset` | `number` | Yes |
+| Field    | Accepted type/value | Optional |
+| -------- | ------------------- | -------- |
+| `type`   | `Asset['type']`     | Yes      |
+| `tag`    | `string`            | Yes      |
+| `query`  | `string`            | Yes      |
+| `limit`  | `number`            | Yes      |
+| `offset` | `number`            | Yes      |
 
 ### AssetSnapshot
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `version` | `1` | No |
-| `assets` | `Asset[]` | No |
-| `revision` | `number` | Yes |
+| Field      | Accepted type/value | Optional |
+| ---------- | ------------------- | -------- |
+| `version`  | `1`                 | No       |
+| `assets`   | `Asset[]`           | No       |
+| `revision` | `number`            | Yes      |
 
 ## Optional workflow boundaries
 

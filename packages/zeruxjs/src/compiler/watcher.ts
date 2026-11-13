@@ -1,3 +1,3 @@
-import { startWatcher } from "zlook";
+import { startWatcher } from 'zlook';
 
 export { startWatcher };

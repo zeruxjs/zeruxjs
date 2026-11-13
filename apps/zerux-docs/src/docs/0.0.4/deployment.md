@@ -62,7 +62,6 @@ Test graceful shutdown while requests, streams and workers are active. Verify ow
 
 The repository docs build renders HTML and raw Markdown, minifies production HTML/CSS/JS and validates links/content hashes. GitHub Pages deploys static files, so no database/cache runtime starts there. The zerux.config documentation namespace configures that exporter only. See the repository SITE_DEPLOYMENT.md for the shared root and per-site mounts.
 
-
 ## Explicit public static export
 
 [General static export](deploy-static.md) uses `zeruxjs/static-export` with opted-in public pages, finite parameters, an explicit renderer/asset manifest and staging limits. It rejects request-dependent/private pages, actions and scripts. Static hosts cannot run unexported Node handlers. The docs app remains its own exporter; its `documentation` namespace is not a generic framework switch.

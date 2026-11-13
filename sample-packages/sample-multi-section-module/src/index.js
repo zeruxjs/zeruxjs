@@ -1,8 +1,9 @@
+/** Sample package value or fixture named sections. */
 export const sections = [
   {
-    id: "section-one",
-    title: "Section One",
-    icon: "①",
+    id: 'section-one',
+    title: 'Section One',
+    icon: '①',
     order: 10,
     render() {
       return `
@@ -11,12 +12,12 @@ export const sections = [
           <p>This is the first test section of the multi-section module.</p>
         </article>
       `;
-    }
+    },
   },
   {
-    id: "section-two",
-    title: "Section Two",
-    icon: "②",
+    id: 'section-two',
+    title: 'Section Two',
+    icon: '②',
     order: 20,
     render() {
       return `
@@ -25,6 +26,6 @@ export const sections = [
           <p>This is the second test section of the multi-section module.</p>
         </article>
       `;
-    }
-  }
+    },
+  },
 ];

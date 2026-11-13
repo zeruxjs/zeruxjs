@@ -128,10 +128,10 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### Context
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `symbol` | No |
-| `defaultValue` | `T` | Yes |
+| Field          | Accepted type/value | Optional |
+| -------------- | ------------------- | -------- |
+| `id`           | `symbol`            | No       |
+| `defaultValue` | `T`                 | Yes      |
 
 ## Explicit lifetime and public entry boundaries
 

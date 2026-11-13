@@ -21,23 +21,23 @@
 
 Start with the application's owning process and the feature you need. `zerux.config.js`/`.ts` is server startup input. Some packages participate in managed service startup; other packages are explicit factories or browser helpers. A property accepted by an open TypeScript type is not proof of a runtime consumer.
 
-| Responsibility | Configuration chapter | What it establishes |
-| --- | --- | --- |
-| Config file/export/precedence | [zerux.config.js](zerux-config.md) | Which module is loaded and when |
-| Paths, modules and environment | [Structure](configuration-structure.md) | Relative discovery paths and environment timing |
-| Listener and hosts | [Server](configuration-server.md) | Actual CLI/config precedence and host policy |
-| Named databases/adapters | [Database](configuration-database.md) | Connection slugs, default manager and ownership |
-| Memory/Redis caching | [Cache](configuration-cache.md) | Adapter, namespace, TTL and required policy |
-| Local/S3 object stores | [Files](configuration-files.md) | Store drivers, access limits and private roots |
-| SMTP, inbound and campaigns | [Email](configuration-email.md) | Account setup and independent opt-in features |
-| Internal events and collector | [Analytics](configuration-analytics.md) | Database binding and bounded ingestion |
-| Browser/server event destinations | [Tags](configuration-tags.md) | Consent, shared stores and protected administration |
-| Charts/studio | [Reports](configuration-reports.md) | Authorization, tenant scope and data coverage |
-| Durable job processing | [Queue](configuration-queue.md) | Redis, named producers/workers and retries |
-| Lifecycle/thread work | [Workers](configuration-workers.md) | Pool defaults and task lifetime |
-| RPC/MCP and other protocols | [Protocols](configuration-protocols.md) | Registration, authorization and body/origin limits |
-| Server/browser appearance helpers | [Theme](configuration-theme.md) | Mode/cookie/script defaults and compatibility |
-| Login/request enforcement | [Auth/security](configuration-auth-security.md) | Explicit setup and current automatic-integration limits |
+| Responsibility                    | Configuration chapter                           | What it establishes                                     |
+| --------------------------------- | ----------------------------------------------- | ------------------------------------------------------- |
+| Config file/export/precedence     | [zerux.config.js](zerux-config.md)              | Which module is loaded and when                         |
+| Paths, modules and environment    | [Structure](configuration-structure.md)         | Relative discovery paths and environment timing         |
+| Listener and hosts                | [Server](configuration-server.md)               | Actual CLI/config precedence and host policy            |
+| Named databases/adapters          | [Database](configuration-database.md)           | Connection slugs, default manager and ownership         |
+| Memory/Redis caching              | [Cache](configuration-cache.md)                 | Adapter, namespace, TTL and required policy             |
+| Local/S3 object stores            | [Files](configuration-files.md)                 | Store drivers, access limits and private roots          |
+| SMTP, inbound and campaigns       | [Email](configuration-email.md)                 | Account setup and independent opt-in features           |
+| Internal events and collector     | [Analytics](configuration-analytics.md)         | Database binding and bounded ingestion                  |
+| Browser/server event destinations | [Tags](configuration-tags.md)                   | Consent, shared stores and protected administration     |
+| Charts/studio                     | [Reports](configuration-reports.md)             | Authorization, tenant scope and data coverage           |
+| Durable job processing            | [Queue](configuration-queue.md)                 | Redis, named producers/workers and retries              |
+| Lifecycle/thread work             | [Workers](configuration-workers.md)             | Pool defaults and task lifetime                         |
+| RPC/MCP and other protocols       | [Protocols](configuration-protocols.md)         | Registration, authorization and body/origin limits      |
+| Server/browser appearance helpers | [Theme](configuration-theme.md)                 | Mode/cookie/script defaults and compatibility           |
+| Login/request enforcement         | [Auth/security](configuration-auth-security.md) | Explicit setup and current automatic-integration limits |
 
 ## Follow a complete setup sequence
 

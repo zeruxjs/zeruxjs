@@ -1,8 +1,6 @@
 {
   "description": "Explicitly reviewed scopes; add a package only after its readability pass and focused checks. No globs outside a completed scope.",
   "completed": [
-    "packages/@zeruxjs/typescript",
-    "packages/@zeruxjs/lint",
     "packages/@zenixjs/core",
     "packages/@zeruxjs/accessibility",
     "packages/@zeruxjs/ai",
@@ -25,6 +23,7 @@
     "packages/@zeruxjs/files",
     "packages/@zeruxjs/font",
     "packages/@zeruxjs/hooks",
+    "packages/@zeruxjs/lint",
     "packages/@zeruxjs/lint/stylelint-bundle",
     "packages/@zeruxjs/media",
     "packages/@zeruxjs/performance",
@@ -41,17 +40,21 @@
     "packages/@zeruxjs/seo",
     "packages/@zeruxjs/share",
     "packages/@zeruxjs/tags",
+    "packages/@zeruxjs/typescript",
     "packages/@zeruxjs/validator",
     "packages/@zeruxjs/vue",
     "packages/@zeruxjs/zyro",
+    "packages/zyrojs",
     "packages/create/create-zenix-app",
     "packages/create/create-zerux-app",
     "packages/create/create-zyro-app",
     "packages/zclivo",
     "packages/zenixjs",
+    "packages/zeruxjs",
     "packages/zlocale",
     "packages/zlook",
-    "packages/zuixs"
+    "packages/zuixs",
+    "packages/zforge"
   ],
   "deferred": []
 }

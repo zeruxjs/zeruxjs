@@ -39,18 +39,18 @@ Import public types and helpers from zeruxjs: ZeruxConfig, ZeruxPluginApi, Zerux
 
 ## Focused entry points
 
-| Import | Responsibility |
-| --- | --- |
-| zeruxjs/navigation | Redirect responses and supported redirect codes |
-| zeruxjs/response | HTTP cache policies and bounded streams |
-| zeruxjs/fetch-route | Web Request/Response interoperability |
-| zeruxjs/theme | Theme preferences and HTML integration |
-| zeruxjs/accessibility | Accessible tab enhancement and reduced-motion helper |
-| zeruxjs/variables | Explicit interpolation registries |
-| zeruxjs/build | Application source compilation and production structure resolution |
-| zeruxjs/services | Service scope and lifecycle startup types/functions |
-| zeruxjs/protocols | Protocol registration facade |
-| zeruxjs/cache | Active cache facade convenience exports |
+| Import                | Responsibility                                                     |
+| --------------------- | ------------------------------------------------------------------ |
+| zeruxjs/navigation    | Redirect responses and supported redirect codes                    |
+| zeruxjs/response      | HTTP cache policies and bounded streams                            |
+| zeruxjs/fetch-route   | Web Request/Response interoperability                              |
+| zeruxjs/theme         | Theme preferences and HTML integration                             |
+| zeruxjs/accessibility | Accessible tab enhancement and reduced-motion helper               |
+| zeruxjs/variables     | Explicit interpolation registries                                  |
+| zeruxjs/build         | Application source compilation and production structure resolution |
+| zeruxjs/services      | Service scope and lifecycle startup types/functions                |
+| zeruxjs/protocols     | Protocol registration facade                                       |
+| zeruxjs/cache         | Active cache facade convenience exports                            |
 
 The complete export map below includes other low-level bootstrap/loader paths and the configuration schema. They are advanced integration surfaces, not additional automatic application features.
 

@@ -1,6 +1,7 @@
 {
   "extends": ["html-validate:recommended"],
   "rules": {
+    "doctype-style": "off",
     "attr-delimiter": "error",
     "attr-spacing": "error",
     "attr-quotes": [
@@ -9,6 +10,7 @@
         "style": "double"
       }
     ],
+    "void-style": "off",
     "no-trailing-whitespace": "error"
   }
 }

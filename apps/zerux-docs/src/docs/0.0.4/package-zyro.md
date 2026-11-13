@@ -116,45 +116,45 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### Observable
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `get` | `T` | No |
-| `subscribe` | `() => void` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `get`       | `T`                 | No       |
+| `subscribe` | `() => void`        | No       |
 
 ### BatchedObservable
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `batch` | `R` | No |
+| Field   | Accepted type/value | Optional |
+| ------- | ------------------- | -------- |
+| `batch` | `R`                 | No       |
 
 ### AsyncState
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `status` | `'idle'\|'loading'\|'success'\|'error'` | No |
-| `data` | `T\|undefined` | No |
-| `error` | `unknown` | No |
-| `updatedAt` | `number` | No |
+| Field       | Accepted type/value                     | Optional |
+| ----------- | --------------------------------------- | -------- |
+| `status`    | `'idle'\|'loading'\|'success'\|'error'` | No       |
+| `data`      | `T\|undefined`                          | No       |
+| `error`     | `unknown`                               | No       |
+| `updatedAt` | `number`                                | No       |
 
 ### AsyncObservable
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `refresh` | `Promise<T\|undefined>` | No |
-| `cancel` | `void` | No |
-| `reset` | `void` | No |
-| `destroy` | `void` | No |
+| Field     | Accepted type/value     | Optional |
+| --------- | ----------------------- | -------- |
+| `refresh` | `Promise<T\|undefined>` | No       |
+| `cancel`  | `void`                  | No       |
+| `reset`   | `void`                  | No       |
+| `destroy` | `void`                  | No       |
 
 ### ZyroSubscriptionScope
 
 An explicit ownership boundary for Zyro-style observable subscriptions.
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `observe` | `()=>void` | No |
-| `add` | `()=>void` | No |
-| `destroy` | `void` | No |
-| `destroyed` | `boolean` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `observe`   | `()=>void`          | No       |
+| `add`       | `()=>void`          | No       |
+| `destroy`   | `void`              | No       |
+| `destroyed` | `boolean`           | No       |
 
 ## Snapshot and cleanup semantics
 

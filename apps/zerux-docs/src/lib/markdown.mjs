@@ -8,19 +8,23 @@ export function escape(value) {
     (char) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
         char
-      ],
+      ]
   );
 }
 /** Make a stable heading identifier. @param {string} text Heading. @returns {string} URL fragment. No globals. */
 export function slugify(text) {
   return (
-    Array.from(text.matchAll(/[^<>]+|[<>]/g)).reduce((state, token) => {
-      if (token[0] === '<') state.tag = true;
-      else if (token[0] === '>') state.tag = false;
-      else if (!state.tag) state.text += token[0];
-      return state;
-    }, {text: '', tag: false}).text
-      .toLowerCase()
+    Array.from(text.matchAll(/[^<>]+|[<>]/g))
+      .reduce(
+        (state, token) => {
+          if (token[0] === '<') state.tag = true;
+          else if (token[0] === '>') state.tag = false;
+          else if (!state.tag) state.text += token[0];
+          return state;
+        },
+        { text: '', tag: false }
+      )
+      .text.toLowerCase()
       .replace(/[^\p{L}\p{N}\s-]/gu, '')
       .trim()
       .replace(/\s+/g, '-') || 'section'
@@ -48,7 +52,7 @@ export function markdown(source, { version, sourceUrl }) {
     if (/^[a-z0-9-]+\.md(?:#[\w-]+)?$/.test(href)) {
       const [name, fragment] = href.split('#');
       return sitePath(
-        `/docs/${version}/${name.slice(0, -3)}/${fragment ? '#' + fragment : ''}`,
+        `/docs/${version}/${name.slice(0, -3)}/${fragment ? '#' + fragment : ''}`
       );
     }
     throw new Error(`Unsupported documentation link: ${href}`);

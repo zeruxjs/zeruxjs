@@ -73,25 +73,25 @@ Run the real owning application/tool with a normal input and a failure input. In
 
 ### RunOptions
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `timeoutMs` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `retries` | `number` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `throwOnFailure` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `match` | `string \| RegExp` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `bail` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `forbidOnly` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `onResult` | `(result: TestResult) => void` | No | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
+| Option           | Accepted TypeScript value      | Required | Meaning                                                                           |
+| ---------------- | ------------------------------ | -------- | --------------------------------------------------------------------------------- |
+| `timeoutMs`      | `number`                       | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `retries`        | `number`                       | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `throwOnFailure` | `boolean`                      | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `match`          | `string \| RegExp`             | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `bail`           | `boolean`                      | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `forbidOnly`     | `boolean`                      | No       | Passed using this declared shape; omission is allowed only when marked optional.  |
+| `onResult`       | `(result: TestResult) => void` | No       | Application-supplied callback or adapter; see the setup and lifecycle discussion. |
 
 ### ZtrialConfig
 
-| Option | Accepted TypeScript value | Required | Meaning |
-| --- | --- | --- | --- |
-| `root` | `string` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `files` | `string[]` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `reporter` | `'pretty'\|'json'\|'tap'` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `bail` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
-| `allowOnly` | `boolean` | No | Passed using this declared shape; omission is allowed only when marked optional. |
+| Option      | Accepted TypeScript value | Required | Meaning                                                                          |
+| ----------- | ------------------------- | -------- | -------------------------------------------------------------------------------- |
+| `root`      | `string`                  | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `files`     | `string[]`                | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `reporter`  | `'pretty'\|'json'\|'tap'` | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `bail`      | `boolean`                 | No       | Passed using this declared shape; omission is allowed only when marked optional. |
+| `allowOnly` | `boolean`                 | No       | Passed using this declared shape; omission is allowed only when marked optional. |
 
 ## Scoped HTTP and provider fixtures
 

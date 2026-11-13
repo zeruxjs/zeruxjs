@@ -81,43 +81,43 @@ These tables list fields declared directly on the named public contract. Referen
 
 ### SearchIndexOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `fields` | `(keyof T & string)[]` | Yes |
-| `weights` | `Partial<Record<keyof T & string, number>>` | Yes |
-| `stopWords` | `Iterable<string>` | Yes |
-| `maxDocuments` | `number` | Yes |
-| `analyzer` / `analyzers` | Default / per-field `SearchAnalyzer` | Yes |
-| `maxDocumentBytes` / `maxBatchBytes` | Serialized byte budgets | Yes |
-| `maxBatchSize` / `maxVocabulary` | Staged document / posting-key caps | Yes |
-| `maxVocabularyScan` / `maxExpansions` | Prefix/fuzzy work caps | Yes |
-| `maxQueryTerms` / `maxQueryLength` | Analyzed clause / UTF-16 caps | Yes |
-| `maxSnapshotBytes` | Complete serialized snapshot byte cap | Yes |
+| Field                                 | Accepted type/value                         | Optional |
+| ------------------------------------- | ------------------------------------------- | -------- |
+| `fields`                              | `(keyof T & string)[]`                      | Yes      |
+| `weights`                             | `Partial<Record<keyof T & string, number>>` | Yes      |
+| `stopWords`                           | `Iterable<string>`                          | Yes      |
+| `maxDocuments`                        | `number`                                    | Yes      |
+| `analyzer` / `analyzers`              | Default / per-field `SearchAnalyzer`        | Yes      |
+| `maxDocumentBytes` / `maxBatchBytes`  | Serialized byte budgets                     | Yes      |
+| `maxBatchSize` / `maxVocabulary`      | Staged document / posting-key caps          | Yes      |
+| `maxVocabularyScan` / `maxExpansions` | Prefix/fuzzy work caps                      | Yes      |
+| `maxQueryTerms` / `maxQueryLength`    | Analyzed clause / UTF-16 caps               | Yes      |
+| `maxSnapshotBytes`                    | Complete serialized snapshot byte cap       | Yes      |
 
 ### SearchOptions
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `limit` | `number` | Yes |
-| `offset` | `number` | Yes |
-| `mode` | `'all' \| 'any'` | Yes |
-| `prefix` | `boolean` | Yes |
-| `filter` | `(document: SearchDocument) => boolean` | Yes |
-| `filters` | Bounded structured scalar clauses | Yes |
-| `match` | `'exact' \| 'prefix' \| 'fuzzy'` | Yes |
-| `fuzzy` | Explicit distance and expansion caps | Yes |
-| `algorithm` | `'bm25' \| 'term-frequency'` | Yes |
+| Field       | Accepted type/value                     | Optional |
+| ----------- | --------------------------------------- | -------- |
+| `limit`     | `number`                                | Yes      |
+| `offset`    | `number`                                | Yes      |
+| `mode`      | `'all' \| 'any'`                        | Yes      |
+| `prefix`    | `boolean`                               | Yes      |
+| `filter`    | `(document: SearchDocument) => boolean` | Yes      |
+| `filters`   | Bounded structured scalar clauses       | Yes      |
+| `match`     | `'exact' \| 'prefix' \| 'fuzzy'`        | Yes      |
+| `fuzzy`     | Explicit distance and expansion caps    | Yes      |
+| `algorithm` | `'bm25' \| 'term-frequency'`            | Yes      |
 
 ### SearchDocument
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `id` | `string` | No |
-| `text` | `string` | No |
+| Field  | Accepted type/value | Optional |
+| ------ | ------------------- | -------- |
+| `id`   | `string`            | No       |
+| `text` | `string`            | No       |
 
 ### SearchSnapshot
 
-| Field | Accepted type/value | Optional |
-| --- | --- | --- |
-| `version` | `1` | No |
-| `documents` | `T[]` | No |
+| Field       | Accepted type/value | Optional |
+| ----------- | ------------------- | -------- |
+| `version`   | `1`                 | No       |
+| `documents` | `T[]`               | No       |

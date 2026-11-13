@@ -1,15 +1,15 @@
-import { defineDevtoolsModule } from "zforge";
+import { defineDevtoolsModule } from 'zforge';
 
 export default defineDevtoolsModule({
-  id: "sample-module",
-  title: "Sample Module",
-  description: "Reference module package for Zerux devtools.",
-  badge: "example",
+  id: 'sample-module',
+  title: 'Sample Module',
+  description: 'Reference module package for Zerux devtools.',
+  badge: 'example',
   sections: [
     {
-      id: "sample-module",
-      title: "Sample Module",
-      icon: "⌘",
+      id: 'sample-module',
+      title: 'Sample Module',
+      icon: '⌘',
       order: 60,
       render({ app, snapshot }) {
         return `
@@ -67,7 +67,7 @@ export default defineDevtoolsModule({
             </div>
           </section>
         `;
-      }
-    }
-  ]
+      },
+    },
+  ],
 });
