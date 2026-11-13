@@ -4,13 +4,13 @@
   "compiler": "zuixs",
   "bundler": "@zeruxjs/typescript",
   "utilities": 10,
-  "recipes": 415,
+  "recipes": 418,
   "assets": [
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/docs.css",
-      "version": "34b76666b0d6",
-      "bytes": 36194,
-      "sourceBytes": 37135
+      "version": "cc9a00301029",
+      "bytes": 36832,
+      "sourceBytes": 37792
     },
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/docs.js",
