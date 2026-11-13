@@ -53,14 +53,43 @@ export default {
       ],
     },
     {
-      selector: '.page-actions a, .copy-page',
+      selector: '.page-actions a, .page-actions button',
       apply: [
         'ui-[font:inherit]',
         'ui-[border:1px_solid_var(--line)]',
         'ui-[background:var(--surface)]',
         'ui-rounded-[8px]',
         'ui-p-[7px_12px]',
-        'ui-text-[var(--accent)]',
+        'ui-text-[var(--text)]',
+        'ui-[text-decoration:none]',
+        'ui-appearance-none',
+        'ui-cursor-pointer',
+        'ui-[transition:transform_180ms_ease,box-shadow_180ms_ease,border-color_180ms_ease,background-color_180ms_ease]',
+      ],
+    },
+    {
+      selector: '.page-actions a:hover, .page-actions button:hover',
+      apply: [
+        'ui-[border-color:var(--accent)]',
+        'ui-[background:var(--accent-soft)]',
+        'ui-shadow-[var(--shadow)]',
+      ],
+      media: '(hover: hover) and (prefers-reduced-motion: no-preference)',
+    },
+    {
+      selector: '.page-actions a:hover, .page-actions button:hover',
+      apply: [
+        'ui-[border-color:var(--accent)]',
+        'ui-[background:var(--accent-soft)]',
+      ],
+      media: '(hover: none), (prefers-reduced-motion: reduce)',
+    },
+    {
+      selector: '.page-actions [data-bookmark][aria-pressed="true"]',
+      apply: [
+        'ui-[background:var(--accent)]',
+        'ui-[border-color:var(--accent)]',
+        'ui-text-[var(--on-accent)]',
       ],
     },
     {
