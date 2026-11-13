@@ -289,9 +289,11 @@ export async function uploadFileRequest(
     throw new RangeError('File exceeds upload limit');
   }
   /** Explicit MIME option or normalized request declaration; not content sniffing. */
+  const requestContentType = request.headers.get('content-type');
+  /** Effective MIME declaration used for the upload request. */
   const contentType =
     options.contentType ??
-    request.headers.get('content-type')?.split(';')[0].trim() ??
+    requestContentType?.split(';')[0]?.trim() ??
     'application/octet-stream';
   // Validate the declared length *during* streaming, before a storage driver
   // commits an object. Deleting after a completed upload is unsafe: another
@@ -374,10 +376,12 @@ export function createFileHttpHandler(
           return new Response('Forbidden', { status: 403 });
         }
         /** Provider metadata observed before authorization/response; not principal identity. */
+        const requestContentType = request.headers.get('content-type');
+        /** Validated upload metadata returned before the response is committed. */
         const info = await uploadFileRequest(manager, address, request, {
           maxBytes: options.maxUploadBytes,
           contentType:
-            request.headers.get('content-type')?.split(';')[0].trim() ||
+            requestContentType?.split(';')[0]?.trim() ||
             'application/octet-stream',
         });
         return Response.json(info, {

@@ -27,7 +27,12 @@ export function inspectWorkspaceContracts(root) {
      */
     const record = (label, value) => {
       if (typeof value === 'string') {
+        if (value.includes('*')) {
+          return;
+        }
         targets.push({ label, value });
+      } else if (value === null) {
+        return;
       } else if (value && typeof value === 'object') {
         for (const [key, target] of Object.entries(value)) {
           record(`${label}.${key}`, target);

@@ -170,7 +170,7 @@ export function createFeedFetchHandler(options: FeedFetchOptions): ((
     [maxBytes, 256, 67108864],
     [timeout, 1, 60000],
     [maxPending, 1, 128],
-  ]) {
+  ] as const) {
     if (!Number.isSafeInteger(value) || value < min || value > max) {
       throw new RangeError('Invalid feed policy');
     }

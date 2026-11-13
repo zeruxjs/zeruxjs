@@ -47,9 +47,11 @@ export function createRssFeed(input: FeedOptions): string {
     .map((i) => {
       /** Validated item authors; no names or mailbox identities are inferred. */
       const people = authors(i);
+      /** Sole validated author used for the RSS mailbox field when exactly one exists. */
+      const firstPerson = people[0];
       /** Only the first validated attachment after the explicit RSS single-enclosure guard. */
       const enclosure = attachments(i)[0];
-      return `<item><guid isPermaLink="false">${x(i.id)}</guid><title>${x(i.title)}</title><link>${x(i.url)}</link>${(i.description ?? i.contentText) ? `<description>${x(i.description ?? i.contentText!)}</description>` : ''}${i.date ? `<pubDate>${new Date(date(i.date)!).toUTCString()}</pubDate>` : ''}${people.map(creator).join('')}${people.length === 1 && people[0].email ? `<author>${x(people[0].email)}</author>` : ''}${i.language ? `<dc:language>${x(i.language)}</dc:language>` : ''}${categories(i).map(cat).join('')}${enclosure ? `<enclosure url="${x(enclosure.url)}" type="${x(enclosure.type)}" length="${enclosure.length}"/>` : ''}${i.contentHtml !== undefined ? `<content:encoded>${x(i.contentHtml)}</content:encoded>` : ''}</item>`;
+      return `<item><guid isPermaLink="false">${x(i.id)}</guid><title>${x(i.title)}</title><link>${x(i.url)}</link>${(i.description ?? i.contentText) ? `<description>${x(i.description ?? i.contentText!)}</description>` : ''}${i.date ? `<pubDate>${new Date(date(i.date)!).toUTCString()}</pubDate>` : ''}${people.map(creator).join('')}${people.length === 1 && firstPerson?.email ? `<author>${x(firstPerson.email)}</author>` : ''}${i.language ? `<dc:language>${x(i.language)}</dc:language>` : ''}${categories(i).map(cat).join('')}${enclosure ? `<enclosure url="${x(enclosure.url)}" type="${x(enclosure.type)}" length="${enclosure.length}"/>` : ''}${i.contentHtml !== undefined ? `<content:encoded>${x(i.contentHtml)}</content:encoded>` : ''}</item>`;
     })
     .join('');
   /** Whether a real supplied date exists; omit lastBuildDate rather than invent a generation time. */

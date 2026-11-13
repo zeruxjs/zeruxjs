@@ -494,7 +494,8 @@ export function createEvidenceRetriever(
         }
         /** Only authorized candidate documents enter ranking, adapter input and ID lookup. */
         const documents = corpus.documents.filter((d) =>
-          allowed.has(d.metadata!.sourcePath)
+          d.metadata?.sourcePath !== undefined &&
+          allowed.has(d.metadata.sourcePath)
         );
         /** Authorized ID table rejects embedding hits outside the submitted candidate scope. */
         const lookup = new Map(documents.map((d) => [d.id, d]));
@@ -676,9 +677,14 @@ export function createEvidenceRetriever(
             continue;
           }
           /** Longest uncovered interval wins, with deterministic earlier-start tie order. */
-          const [start, end] = intervals.sort(
+          const selected = intervals.sort(
             (a, b) => b[1] - b[0] - (a[1] - a[0]) || a[0] - b[0]
           )[0];
+          if (!selected) {
+            continue;
+          }
+          /** Validated character interval selected for the evidence excerpt. */
+          const [start, end] = selected;
           let length = Math.min(end - start, excerptSize),
             accepted: RankedEvidence | undefined;
           /** Minimum admissible fragment prevents tiny budget leftovers masquerading as complete evidence. */
@@ -838,7 +844,9 @@ export function validateEvidenceCitations(
   /** Only explicitly marked evidence IDs are interpreted as citations; arbitrary prose is not. */
   const citations = [
     ...answer.matchAll(/\[evidence:([^\]\r\n]{1,256})\]/g),
-  ].map((m) => m[1]);
+  ]
+    .map((m) => m[1])
+    .filter((id): id is string => id !== undefined);
   if (
     (answer.match(/\[evidence:/g) ?? []).length !== citations.length ||
     !citations.length ||

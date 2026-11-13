@@ -454,7 +454,7 @@ export function validateContainer(data: unknown): TagContainer {
       };
     });
     if (
-      history.some((entry, i) => i > 0 && entry.id <= history[i - 1].id) ||
+      history.some((entry, i) => i > 0 && entry.id <= history[i - 1]!.id) ||
       history.at(-1)?.id !== g.release ||
       JSON.stringify(history.at(-1)?.container) !== JSON.stringify(published)
     ) {

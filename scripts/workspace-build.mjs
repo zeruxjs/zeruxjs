@@ -110,7 +110,7 @@ export function parseBuildOptions(args) {
    */
   const walk = (value) => {
     if (typeof value === 'string') {
-      if (value.startsWith('./')) {
+      if (value.startsWith('./') && !value.includes('*')) {
         files.add(value);
       }
       return;

@@ -1053,7 +1053,7 @@ export function createSharedAuth(options: SharedAuthOptions) {
           if (
             matched <=
             (Object.hasOwn(state.steps, credential)
-              ? state.steps[credential]
+              ? (state.steps[credential] ?? -1)
               : -1)
           ) {
             return false;

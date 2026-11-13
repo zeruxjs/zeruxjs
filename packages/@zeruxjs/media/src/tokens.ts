@@ -51,6 +51,9 @@ export function verifySignedMediaToken(
   }
   /** Untrusted components checked for ID/expiry/MAC syntax before acceptance. */
   const [id, expires, mac] = parts;
+  if (!id || !expires || !mac) {
+    return null;
+  }
   if (
     !/^[0-9]+$/.test(expires) ||
     !Number.isSafeInteger(Number(expires)) ||

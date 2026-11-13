@@ -329,7 +329,7 @@ export function mountReportChart(
             direction *
               (() => {
                 if (sort === 'value') {
-                  return a.value - b.value;
+                  return (a.value ?? 0) - (b.value ?? 0);
                 } else {
                   if (a.label < b.label) {
                     return -1;

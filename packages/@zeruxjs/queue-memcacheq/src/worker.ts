@@ -327,6 +327,9 @@ export function createMemcacheQWorker(options: MemcacheQWorkerOptions) {
       while (!stopping) {
         /** Round-robin trusted registration; incoming data never selects executable code. */
         const definition = definitions[cursor++ % definitions.length];
+        if (!definition) {
+          throw new Error('Queue worker definition is missing');
+        }
         let message: MemcacheQMessage | undefined,
           failedRead = false;
         reads++;

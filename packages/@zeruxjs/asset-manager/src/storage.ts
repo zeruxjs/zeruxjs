@@ -989,6 +989,9 @@ export function createAssetStorage(options: AssetStorageOptions) {
           const versionId = info.metadata['zx-asset-version'];
           /** Expected ownership-marked hash checked again before approved deletion. */
           const sha256 = info.metadata['zx-asset-sha256'];
+          if (!versionId || !sha256) {
+            continue;
+          }
           /** Unique tenant/namespace-bound private object address. */
           const address = {
             storage: target.storage,

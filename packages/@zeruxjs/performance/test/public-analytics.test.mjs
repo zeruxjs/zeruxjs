@@ -6,8 +6,6 @@ import {
   readFileSync,
   writeFileSync,
   rmSync,
-  readdirSync,
-  symlinkSync,
 } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';

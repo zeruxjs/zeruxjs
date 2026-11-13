@@ -377,6 +377,9 @@ export function createLocalStorage(
           }
           /** Stored GCM nonce/tag decoded for verification or the subsequent decryption pass. */
           const [iv, tag] = info.versionId.split('.');
+          if (!iv || !tag) {
+            throw new Error('Storage encryption metadata is malformed');
+          }
           /** First-pass GCM verifier; no plaintext is exposed before final tag verification. */
           const verifier = createDecipheriv(
             'aes-256-gcm',
@@ -432,6 +435,9 @@ export function createLocalStorage(
             }
             /** Stored GCM nonce/tag decoded for verification or the subsequent decryption pass. */
             const [iv, tag] = info!.versionId.split('.');
+            if (!iv || !tag) {
+              throw new Error('Storage encryption metadata is malformed');
+            }
             decipher = createDecipheriv(
               'aes-256-gcm',
               key,

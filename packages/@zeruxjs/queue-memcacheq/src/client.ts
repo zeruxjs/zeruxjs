@@ -162,21 +162,27 @@ export function createMemcacheQ(options: MemcacheQOptions = {}) {
       if (
         reply.line !== 'END' ||
         reply.values.length > 1 ||
-        (reply.values.length === 1 && reply.values[0].key !== destination)
+        (reply.values.length === 1 &&
+          (!reply.values[0] || reply.values[0].key !== destination))
       ) {
         throw invalid('MEMCACHEQ_INVALID_POPPED_MESSAGE');
       }
       if (!reply.values.length) {
         return;
       }
+      /** Single queue item returned by the destructive pop operation. */
+      const value = reply.values[0];
+      if (!value) {
+        throw invalid('MEMCACHEQ_INVALID_POPPED_MESSAGE');
+      }
       try {
-        if (reply.values[0].value.length > maxBytes) {
+        if (value.value.length > maxBytes) {
           throw 0;
         }
         /** Strict UTF-8 parsed popped record; validation failure cannot restore it. */
         const envelope = JSON.parse(
           new TextDecoder('utf-8', { fatal: true }).decode(
-            reply.values[0].value
+            value.value
           )
         );
         optionKeys(envelope, ['version', 'name', 'data']);

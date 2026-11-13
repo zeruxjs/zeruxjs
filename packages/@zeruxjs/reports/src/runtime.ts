@@ -466,7 +466,7 @@ export function createReports(options: ReportsOptions) {
     if (
       req.method === 'POST' &&
       (req.headers.get('origin') !== new URL(req.url).origin ||
-        req.headers.get('content-type')?.split(';')[0].trim() !==
+        req.headers.get('content-type')?.split(';')[0]?.trim() !==
           'application/json')
     ) {
       return error('Same-origin JSON required', 403);

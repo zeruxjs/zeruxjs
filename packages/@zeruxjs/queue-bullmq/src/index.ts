@@ -868,6 +868,9 @@ export async function createQueueService(
     }
     /** Explicit registered worker settings validated before native allocation. */
     const w = config.workers![name];
+    if (!w) {
+      throw new TypeError(`Worker settings missing for queue ${name}`);
+    }
     if (typeof w.processor !== 'function') {
       throw new TypeError('Worker processor must be a function');
     }
@@ -1241,10 +1244,10 @@ export async function createQueueService(
           id: String(job.id ?? ''),
           name: String(job.name),
           state: job.getState
-            ? await job.getState()
+            ? (await job.getState()) ?? 'unknown'
             : (() => {
                 if (states.length === 1) {
-                  return states[0];
+                  return states[0] ?? 'unknown';
                 }
                 return 'unknown';
               })(),
@@ -1991,6 +1994,9 @@ export function createAnalyticsReconciliationProcessor(
     }
     /** Exact code-owned allowlisted reconciliation object. */
     const target = jobs[id];
+    if (!target) {
+      throw new Error('Unknown analytics reconciliation job');
+    }
     /** Observed native operation, counter projection or reconciler result; no private payload logging. */
     const result = await target.runOnce(`bullmq-${randomUUID()}`);
     return { busy: result.busy, status: result.state.status };

@@ -155,7 +155,11 @@ export const normalizeManagerConfig = (
   if (config?.default) {
     defaultSlug = assertIdentifier(config.default, 'Default database slug');
   } else if (connections.length === 1) {
-    defaultSlug = connections[0].slug;
+    /** Sole configured connection used as the implicit default. */
+    const only = connections[0];
+    if (only) {
+      defaultSlug = only.slug;
+    }
   }
 
   if (!defaultSlug) {

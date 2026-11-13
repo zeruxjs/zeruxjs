@@ -1196,7 +1196,7 @@ export function createTagManager(options: TagRuntimeOptions) {
     if (mount.verifyCsrf) {
       if (
         !request.headers.get('x-zerux-csrf') ||
-        request.headers.get('content-type')?.split(';')[0].trim() !==
+        request.headers.get('content-type')?.split(';')[0]?.trim() !==
           'application/json'
       ) {
         return false;
@@ -1296,12 +1296,12 @@ export function createTagManager(options: TagRuntimeOptions) {
       scriptSrc,
     });
     /** Exact emitted inline script bodies hashed for this response policy. */
-    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)];
     /** Exact emitted inline style digests; no unsafe-inline permission is granted. */
     const styleHashes = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)]
       .map(
         (match) =>
-          `'sha256-${createHash('sha256').update(match[1]).digest('base64')}'`
+          `'sha256-${createHash('sha256').update(match[1] ?? '').digest('base64')}'`
       )
       .join(' ');
     /** Derive CSP origin only from validated host asset references, never request input.
@@ -1321,7 +1321,7 @@ export function createTagManager(options: TagRuntimeOptions) {
     const scriptHashes = scripts
       .map(
         (match) =>
-          `'sha256-${createHash('sha256').update(match[1]).digest('base64')}'`
+          `'sha256-${createHash('sha256').update(match[1] ?? '').digest('base64')}'`
       )
       .join(' ');
     return new Response(html, {
@@ -1489,7 +1489,7 @@ export function createTagManager(options: TagRuntimeOptions) {
     if (
       mode === 'import' &&
       (!(await sameOrigin(request)) ||
-        request.headers.get('content-type')?.split(';')[0].trim() !==
+        request.headers.get('content-type')?.split(';')[0]?.trim() !==
           'application/json')
     ) {
       return json({ error: 'Origin required' }, 403);

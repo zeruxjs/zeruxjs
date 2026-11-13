@@ -191,7 +191,7 @@ export function createFontZuixAdapter(options: FontZuixOptions) {
     /** Validated face weight descriptor; range defaults use the first numeric value. */
     const weight = String(face.weight ?? 400);
     // A variable range is a face descriptor, not a valid font-weight property value.
-    weights[name] = weight.includes(' ') ? weight.split(' ')[0] : weight;
+    weights[name] = weight.includes(' ') ? weight.split(' ')[0]! : weight;
   }
   /** Unique manifest icon lookup; duplicate source keys reject before emission. */
   const iconKeys = new Map(
@@ -235,7 +235,7 @@ export function createFontZuixAdapter(options: FontZuixOptions) {
           /(-?\d+(?:\.\d+)?deg)\s+-?\d+(?:\.\d+)?deg$/,
           '$1'
         ),
-        'font-weight': String(face.weight ?? 400).split(' ')[0],
+        'font-weight': String(face.weight ?? 400).split(' ')[0]!,
       };
     } else if (icon.kind === 'svg') {
       fontUrl(icon.url);

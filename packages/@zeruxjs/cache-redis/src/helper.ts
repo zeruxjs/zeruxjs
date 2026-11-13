@@ -537,7 +537,14 @@ export class RedisCacheHelper implements CacheHelper {
     const keys = redisBulk(Object.keys(values));
     /** Prepared JSON bodies keyed by validated logical keys. */
     const encoded = Object.fromEntries(
-      keys.map((key) => [key, serialize(values[key])])
+      keys.map((key) => {
+        /** Caller-provided value paired with this explicit cache key. */
+        const value = values[key];
+        if (value === undefined) {
+          throw redisError('REDIS_INVALID_VALUE');
+        }
+        return [key, serialize(value)];
+      })
     );
     return this.#run(
       'setMany',
@@ -556,7 +563,7 @@ export class RedisCacheHelper implements CacheHelper {
             check();
             await settle(
               keys.slice(i, i + 32).map(async (key) =>
-                this.client.set(key, encoded[key], {
+                this.client.set(key, encoded[key]!, {
                   ...(opts.ttlSeconds === undefined
                     ? {}
                     : { EX: expiration(opts.ttlSeconds) }),

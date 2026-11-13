@@ -948,16 +948,19 @@ export function senderReputationCharts(report: SenderReputationReport) {
   if (
     !Number.isSafeInteger(report.coverage.scanned) ||
     report.coverage.scanned < report.denominator ||
-    report.days.some(
-      (d, i) =>
+    report.days.some((d, i) => {
+      /** Previous daily record used to enforce chronological ordering. */
+      const previous = report.days[i - 1];
+      return (
         !d ||
         typeof d.day !== 'string' ||
         !/^\d{4}-\d\d-\d\d$/.test(d.day) ||
         !Number.isFinite(Date.parse(d.day + 'T00:00:00Z')) ||
         new Date(d.day + 'T00:00:00Z').toISOString().slice(0, 10) !== d.day ||
-        (i > 0 && d.day <= report.days[i - 1].day) ||
+        (i > 0 && previous !== undefined && d.day <= previous.day) ||
         fields.some((k) => !Number.isSafeInteger(d[k]) || d[k] < 0)
-    ) ||
+      );
+    }) ||
     fields.some(
       (k) =>
         report.days.reduce((n, d) => n + d[k], 0) !== report.counts[k] ||

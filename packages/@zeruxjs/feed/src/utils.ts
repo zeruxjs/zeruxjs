@@ -157,11 +157,14 @@ export function date(value?: string | Date): string | undefined {
       30,
       31,
     ];
+    /** Maximum valid day for the selected Gregorian month. */
+    const maxDay = days[month - 1];
     if (
       month < 1 ||
       month > 12 ||
       day < 1 ||
-      day > days[month - 1] ||
+      maxDay === undefined ||
+      day > maxDay ||
       (value.length > 10 &&
         (Number(value.slice(11, 13)) > 23 ||
           Number(value.slice(14, 16)) > 59 ||

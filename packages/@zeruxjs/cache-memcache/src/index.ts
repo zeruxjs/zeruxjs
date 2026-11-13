@@ -180,13 +180,14 @@ export function createMemcacheHelper(
     if (
       reply.line !== 'END' ||
       reply.values.length > 1 ||
-      (reply.values.length === 1 && reply.values[0].key !== key)
+      (reply.values.length === 1 &&
+        (!reply.values[0] || reply.values[0].key !== key))
     ) {
       throw memcacheError('MEMCACHE_PROTOCOL_ERROR');
     }
-    return reply.values.length
-      ? decodeJson(reply.values[0].value, maxBytes, maxDepth)
-      : undefined;
+    /** Single value returned by the bounded Memcache GET operation. */
+    const value = reply.values[0];
+    return value ? decodeJson(value.value, maxBytes, maxDepth) : undefined;
   };
 
   /** Send one prevalidated JSON body with native add/replace/set semantics.

@@ -76,7 +76,8 @@ export function validateReactVersions(
     throw new ReactAdapterError('REACT_PEER_VERSION_MISMATCH');
   }
   /** Parsed stable matching peer version; unqualified prerelease/older versions reject. */
-  const [major, minor, patch] = reactVersion.split('.').map(Number);
+  const [major = Number.NaN, minor = Number.NaN, patch = Number.NaN] =
+    reactVersion.split('.').map(Number);
   if (major === 18 && (minor < 3 || (minor === 3 && patch < 1))) {
     throw new ReactAdapterError('REACT_PEER_VERSION_MISMATCH');
   }

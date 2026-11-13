@@ -1872,13 +1872,18 @@ export function createMarketingCampaignService(
     const providerNumber =
       parseInt(createHash('sha256').update(id).digest('hex').slice(0, 8), 16) %
       campaign.providers.length;
+    /** Rendered subject retained separately from provider/template configuration. */
+    const subject = await render('subject', campaign.subject, 'text');
+    if (subject === undefined) {
+      throw new Error('Marketing subject renderer returned no subject');
+    }
     return {
       to: person.name
         ? { name: person.name, address: person.email }
         : person.email,
       account: campaign.providers[providerNumber],
       purpose: 'marketing',
-      subject: await render('subject', campaign.subject, 'text'),
+      subject,
       html:
         campaign.html === undefined
           ? undefined
@@ -2073,7 +2078,7 @@ export function createMarketingCampaignService(
     // Count only this page and retain missing-state coverage instead of inventing successful delivery.
     for (const row of page.items) {
       if (row.enqueuedAt === null) {
-        states.notQueued++;
+        states.notQueued = (states.notQueued ?? 0) + 1;
         continue;
       }
       /** Borrowed durable delivery record checked against the exact campaign/recipient identity. */
@@ -2083,16 +2088,16 @@ export function createMarketingCampaignService(
         deliveryRow.campaignId !== code ||
         deliveryRow.recipient !== row.email
       ) {
-        states.missing++;
+        states.missing = (states.missing ?? 0) + 1;
         continue;
       }
       /** Persisted delivery state; sending/uncertain outcomes must not be treated as missing work. */
       const state =
         deliveryRow.state === 'sent' ? 'smtpAccepted' : deliveryRow.state;
       if (Object.hasOwn(states, state)) {
-        states[state]++;
+        states[state] = (states[state] ?? 0) + 1;
       } else {
-        states.missing++;
+        states.missing = (states.missing ?? 0) + 1;
       }
     }
     return {

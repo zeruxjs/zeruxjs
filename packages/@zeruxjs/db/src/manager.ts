@@ -427,10 +427,15 @@ class DatabaseManagerImpl implements DatabaseManager {
           }
 
           if (typeof resolved.use === 'string' && dependencies.length === 1) {
+            /** Sole resolved dependency used by the shorthand service configuration. */
+            const dependency = dependencies[0];
+            if (dependency === undefined) {
+              throw new TypeError('Missing query dependency');
+            }
             (
               resolved as QueryOperation & { previousValue?: unknown }
             ).previousValue = (
-              collected[dependencies[0]] as unknown as
+              collected[dependency] as unknown as
                 | Record<string, unknown>
                 | undefined
             )?.[resolved.use];
@@ -1055,6 +1060,9 @@ export function createPinnedTransaction(
   /** Validated detached configuration or operation inventory before dispatch. */
   const normalized = normalizeManagerConfig({ connections: [connection] })
     .connections[0];
+  if (!normalized) {
+    throw new TypeError('Pinned transaction connection is missing');
+  }
   connection = normalized;
   /** Acquired connector with native lifecycle and capability declarations. */
   const connector: DatabaseConnector = {

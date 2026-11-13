@@ -206,7 +206,8 @@ export function validateComponentProps(
   /** Only explicitly supplied or existing supported reference properties are resolved. */
   const requested = idProps.filter(
     (name) =>
-      props[name] !== undefined || element.hasAttribute(attributes[name])
+      props[name] !== undefined ||
+      (attributes[name] !== undefined && element.hasAttribute(attributes[name]))
   );
   if (requested.length) {
     if (!root || typeof root.querySelectorAll !== 'function') {
@@ -236,9 +237,13 @@ export function validateComponentProps(
   const resolved = new Map<string, HTMLElement[]>();
   // name selects a supported authored ID relationship; unknown attributes are not inferred.
   for (const name of requested) {
+    /** Known native attribute corresponding to this validated relationship name. */
+    const attribute = attributes[name];
     /** Literal prop/reference value; validated before it enters relationships or attributes. */
     const value = String(
-      props[name] ?? element.getAttribute(attributes[name]) ?? ''
+      props[name] ??
+        (attribute === undefined ? undefined : element.getAttribute(attribute)) ??
+        ''
     );
     /** Whitespace-separated reference tokens with bounded count, length and uniqueness. */
     const ids = value.trim().split(/\s+/);
@@ -264,7 +269,11 @@ export function validateComponentProps(
       } else if (matches.length > 1) {
         report('DUPLICATE_ID', name);
       } else {
-        targets.push(matches[0]);
+        /** Sole same-root target retained after duplicate and missing-ID checks. */
+        const target = matches[0];
+        if (target) {
+          targets.push(target);
+        }
       }
     }
     resolved.set(name, targets);
@@ -312,7 +321,11 @@ export function applyComponentProps(
   // Apply only validated known props, with owned disabled semantics handled separately.
   for (const [name, value] of Object.entries(props)) {
     if (name !== 'disabled' && value !== undefined) {
-      owner.set(element, attributes[name], String(value));
+      /** Native attribute name for this supported property, if one is defined. */
+      const attribute = attributes[name];
+      if (attribute !== undefined) {
+        owner.set(element, attribute, String(value));
+      }
     }
   }
   /** Whether disabled semantics belong to the native HTML disabled attribute. */

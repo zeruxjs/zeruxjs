@@ -551,7 +551,7 @@ export async function createElasticSearchAdapter(
       throw new SearchAdapterError('UNSUPPORTED');
     }
     /** Single concrete mapping verified against every declared scalar property. */
-    const actual = entries[0].mappings;
+    const actual = entries[0]!.mappings;
     if (
       actual.dynamic !== 'strict' ||
       !actual.properties ||

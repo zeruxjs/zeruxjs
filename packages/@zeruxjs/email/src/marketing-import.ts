@@ -240,7 +240,7 @@ export async function* parseMarketingRecipientCSV(
     const values = cells;
     cells = [];
     recordLength = 0;
-    if (values.length === 1 && !values[0].trim()) {
+    if (values.length === 1 && values[0] !== undefined && !values[0].trim()) {
       return null;
     }
     if (!headers) {
@@ -270,11 +270,16 @@ export async function* parseMarketingRecipientCSV(
     if (values.length !== headers.length) {
       throw new TypeError('CSV row does not match header');
     }
+    /** First CSV field normalized as the imported recipient address. */
+    const email = values[0];
+    if (email === undefined) {
+      throw new TypeError('CSV email field is missing');
+    }
     if (++rows > maxRows) {
       throw new RangeError('CSV row limit exceeded');
     }
     /** Private parsed recipient or completed-row result; never executed as a command/module. */
-    const record: MarketingRecipient = { email: values[0].trim() };
+    const record: MarketingRecipient = { email: email.trim() };
     /** Private inert per-recipient JSON/scalar data; nested schema checks remain with append. */
     const data: Record<string, unknown> = {};
     // Interpret only validated named columns; literal values remain inert private recipient data.
@@ -283,6 +288,9 @@ export async function* parseMarketingRecipientCSV(
       const key = headers[i];
       /** Literal decoded text/cell data, not a raw query or executable expression. */
       const value = values[i];
+      if (key === undefined || value === undefined) {
+        throw new TypeError('CSV row cell is missing');
+      }
       if (key === 'name') {
         record.name = value;
       } else if (key === 'data' && value.trim()) {

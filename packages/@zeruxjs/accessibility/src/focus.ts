@@ -179,6 +179,9 @@ export function createFocusTrap(
     const first = nodes[0];
     /** Last available native tab stop, used for backward wraparound. */
     const last = nodes[nodes.length - 1];
+    if (!first || !last) {
+      return;
+    }
     /** Current document focus, compared before preventing native Tab navigation. */
     const current = doc.activeElement;
     if (event.shiftKey && (current === first || !container.contains(current))) {

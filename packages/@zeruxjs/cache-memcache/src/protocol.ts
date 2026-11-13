@@ -306,16 +306,25 @@ export class MemcacheTextClient {
               if (!match) {
                 throw memcacheError('MEMCACHE_PROTOCOL_ERROR');
               }
-              validateKey(match[1]);
+              /** Validated protocol key captured from the VALUE response line. */
+              const key = match[1];
+              /** Decimal flags captured from the VALUE response line. */
+              const flagsText = match[2];
+              /** Decimal byte length captured from the VALUE response line. */
+              const bytesText = match[3];
+              if (!key || !flagsText || !bytesText) {
+                throw memcacheError('MEMCACHE_PROTOCOL_ERROR');
+              }
+              validateKey(key);
               if (
-                !Number.isSafeInteger(Number(match[2])) ||
-                Number(match[2]) > 4294967295
+                !Number.isSafeInteger(Number(flagsText)) ||
+                Number(flagsText) > 4294967295
               ) {
                 throw memcacheError('MEMCACHE_PROTOCOL_ERROR');
               }
 
               /** Declared body length checked before reading or retaining a value. */
-              const bytes = Number(match[3]);
+              const bytes = Number(bytesText);
               if (
                 !Number.isSafeInteger(bytes) ||
                 (totalBytes += bytes) > maxBytes
@@ -332,8 +341,8 @@ export class MemcacheTextClient {
                 throw memcacheError('MEMCACHE_PROTOCOL_ERROR');
               }
               values.push({
-                key: match[1],
-                flags: Number(match[2]),
+                key,
+                flags: Number(flagsText),
                 value: data.subarray(end + 2, end + 2 + bytes),
               });
               offset = end + 4 + bytes;

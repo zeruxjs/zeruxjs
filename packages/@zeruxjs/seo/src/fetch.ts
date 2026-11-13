@@ -230,7 +230,7 @@ export function createCrawlerService(options: CrawlerRoutesOptions): {
     if (path === '/sitemap.xml') {
       return respond(
         request,
-        snapshot.pages.length === 1 ? snapshot.pages[0] : snapshot.index,
+        snapshot.pages.length === 1 ? (snapshot.pages[0] ?? snapshot.index) : snapshot.index,
         'application/xml; charset=utf-8',
         ttl
       );
@@ -245,9 +245,14 @@ export function createCrawlerService(options: CrawlerRoutesOptions): {
     if (!Number.isSafeInteger(index) || index >= snapshot.pages.length) {
       return new Response(null, { status: 404 });
     }
+    /** Requested XML page retained only after the complete snapshot bounds check. */
+    const pageXml = snapshot.pages[index];
+    if (pageXml === undefined) {
+      return new Response(null, { status: 404 });
+    }
     return respond(
       request,
-      snapshot.pages[index],
+      pageXml,
       'application/xml; charset=utf-8',
       ttl
     );

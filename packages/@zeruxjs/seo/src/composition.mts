@@ -320,7 +320,12 @@ function locale(v: string) {
     if (tags.length !== 1) {
       invalid();
     }
-    return tags[0];
+    /** Canonical locale returned only after the single-tag cardinality check. */
+    const normalized = tags[0];
+    if (!normalized) {
+      return invalid();
+    }
+    return normalized;
   } catch {
     return invalid();
   }
@@ -606,7 +611,7 @@ function sitePolicy(site: MetadataSite, context: MetadataContext) {
     }
   };
   /** Effective explicit route locale prefix, or the base public prefix. */
-  const selected = activeLocale ? bases[activeLocale] : base;
+  const selected = activeLocale ? (bases[activeLocale] ?? base) : base;
   /** Validated factual route URL; it cannot carry arbitrary query/fragment secrets. */
   const route = absolute(context.url);
   within(route, selected);

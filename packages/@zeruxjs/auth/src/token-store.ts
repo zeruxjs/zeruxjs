@@ -109,8 +109,13 @@ export function createTokenStore(
       if (!matched) {
         return null;
       }
+      /** Digest captured from the fixed-format opaque token. */
+      const tokenDigest = matched[1];
+      if (!tokenDigest) {
+        return null;
+      }
       /** Stored local digest/scopes/expiry; revoked or expired records deny. */
-      const record = entries.get(matched[1]);
+      const record = entries.get(tokenDigest);
       if (!record || record.revoked || record.expiresAt <= now()) {
         return null;
       }

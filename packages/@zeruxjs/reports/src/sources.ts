@@ -533,10 +533,10 @@ export function createReportSourceRegistry(options: {
             raw.columns.some(
               (f, i) =>
                 !f ||
-                f.name !== columns[i].name ||
-                f.kind !== columns[i].kind ||
-                f.type !== columns[i].type ||
-                f.unit !== columns[i].unit
+                f.name !== columns[i]!.name ||
+                f.kind !== columns[i]!.kind ||
+                f.type !== columns[i]!.type ||
+                f.unit !== columns[i]!.unit
             ) ||
             !Array.isArray(raw.rows) ||
             raw.rows.length > query.limit ||
@@ -548,7 +548,7 @@ export function createReportSourceRegistry(options: {
                   (v, i) =>
                     typeof v !== 'string' ||
                     Buffer.byteLength(v) > 4096 ||
-                    (columns[i].type === 'decimal' &&
+                    (columns[i]!.type === 'decimal' &&
                       !/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(v))
                 )
             ) ||
@@ -715,7 +715,7 @@ export function createReportSourceHandler(options: {
       /** Frozen verified host identity; shape validation does not authenticate it. */
       const scope = sourceScope(await options.resolveScope(request));
       if (
-        request.headers.get('content-type')?.split(';')[0].trim() !==
+        request.headers.get('content-type')?.split(';')[0]?.trim() !==
         'application/json'
       ) {
         return response({ error: 'INVALID_QUERY' }, 415);

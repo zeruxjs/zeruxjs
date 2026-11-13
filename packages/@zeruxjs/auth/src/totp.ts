@@ -102,7 +102,12 @@ export function generateTotp(
     .update(bytes)
     .digest();
   /** RFC dynamic truncation offset from the final digest nibble. */
-  const offset = digest[digest.length - 1] & 15;
+  const last = digest[digest.length - 1];
+  if (last === undefined) {
+    throw new Error('TOTP digest is empty');
+  }
+  /** Dynamic truncation offset selected from the final digest nibble. */
+  const offset = last & 15;
   return String(
     (digest.readUInt32BE(offset) & 0x7fffffff) % 10 ** digits
   ).padStart(digits, '0');

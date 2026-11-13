@@ -115,12 +115,16 @@ export function createKeysetPage(options: KeysetPageOptions): {
       after.table !== table ||
       !Array.isArray(after.order) ||
       after.order.length !== order.length ||
-      after.order.some(
-        (k, i) =>
+      after.order.some((k, i) => {
+        /** Expected sort key at this position in the continuation token. */
+        const expected = order[i];
+        return (
           !k ||
-          k.column !== order[i].column ||
-          k.direction !== order[i].direction
-      ) ||
+          !expected ||
+          k.column !== expected.column ||
+          k.direction !== expected.direction
+        );
+      }) ||
       !Array.isArray(after.values) ||
       after.values.length !== order.length ||
       !after.values.every(scalar)

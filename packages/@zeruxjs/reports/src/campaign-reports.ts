@@ -46,7 +46,7 @@ export function marketingDeliveryPageCharts(page: MarketingReportPage): {
     typeof page.disclaimer !== 'string' ||
     !page.disclaimer.includes('not confirmed') ||
     deliveryLabels.some((k) => !num(page.states?.[k])) ||
-    deliveryLabels.reduce((n, k) => n + page.states[k], 0) !== page.scanned ||
+    deliveryLabels.reduce((n, k) => n + page.states[k]!, 0) !== page.scanned ||
     (page.scope === 'complete' && (!page.done || page.nextCursor !== null))
   ) {
     throw new TypeError('Invalid marketing delivery page');
@@ -66,7 +66,7 @@ export function marketingDeliveryPageCharts(page: MarketingReportPage): {
       title: 'Recipient states (SMTP acceptance only)',
       type: 'bar',
       labels: [...deliveryLabels],
-      values: deliveryLabels.map((k) => page.states[k]),
+      values: deliveryLabels.map((k) => page.states[k]!),
       total: page.scanned,
       sampledRows: page.scanned,
       truncated: !page.done,

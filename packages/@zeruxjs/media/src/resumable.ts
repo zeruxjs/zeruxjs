@@ -136,7 +136,7 @@ export function createMediaResumableHandler(options: MediaResumableOptions) {
    */
   async function json(request: Request, keys: readonly string[]) {
     if (
-      request.headers.get('content-type')?.split(';')[0].trim() !==
+      request.headers.get('content-type')?.split(';')[0]?.trim() !==
       'application/json'
     ) {
       throw new TypeError('JSON required');
@@ -239,6 +239,9 @@ export function createMediaResumableHandler(options: MediaResumableOptions) {
       }
       /** Opaque session reference; files independently checks initiating identity and session state. */
       const id = match[1];
+      if (!id) {
+        return reply({ code: 'NOT_FOUND' }, 404);
+      }
       if (!match[2] && !match[3] && request.method === 'GET') {
         return reply(
           sessionView(await options.uploads.listParts(identity, id), partBytes)
@@ -265,7 +268,7 @@ export function createMediaResumableHandler(options: MediaResumableOptions) {
         /** Current tenant-authorized journal state used for part planning or final receipt. */
         const existing = await options.uploads.listParts(identity, id);
         /** Validated one-based part number from the restricted route syntax. */
-        const number = Number(match[3]);
+        const number = Number(match[3]!);
         if (
           Number(rawSize) !==
             Math.min(partBytes, existing.size - (number - 1) * partBytes) ||
@@ -283,7 +286,7 @@ export function createMediaResumableHandler(options: MediaResumableOptions) {
         const receipt = await options.uploads.uploadPart(
           identity,
           id,
-          Number(match[3]),
+          Number(match[3]!),
           body.source,
           { size: Number(rawSize), sha256, signal: request.signal }
         );

@@ -475,7 +475,10 @@ test('provider/group editor script remains syntactically valid and public contro
   const { dashboard } = await import('../dist/dashboard.js');
   /** Serialized authenticated dashboard fixture; assertions check safe stored text and explicit mount. */
   const html = dashboard('/_tags');
-  new Script(html.match(/<script>([\s\S]*?)<\/script>/)[1]);
+  /** Script body extracted from the emitted dashboard markup for parser validation. */
+  const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/i);
+  assert(scriptMatch?.[1]);
+  new Script(scriptMatch[1]);
   assert(html.includes('Provider schema version'));
   assert(html.includes('Composition (JSON)'));
 });

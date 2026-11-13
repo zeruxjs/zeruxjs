@@ -232,13 +232,21 @@ function fields(
       names.some(
         (name) =>
           !Object.hasOwn(descriptors, name) ||
+          !descriptors[name] ||
           !Object.hasOwn(descriptors[name], 'value')
       )
     ) {
       return;
     }
     return Object.fromEntries(
-      names.map((name) => [name, descriptors[name].value])
+      names.map((name) => {
+        /** Own descriptor retained after the reflective record validation above. */
+        const descriptor = descriptors[name];
+        if (!descriptor) {
+          throw new TypeError('Missing field descriptor');
+        }
+        return [name, descriptor.value];
+      })
     );
   } catch {
     return;

@@ -31,7 +31,7 @@ export function mediaRequestBody(
     request.headers.get('content-type') ?? 'application/octet-stream'
   )
     .split(';', 1)[0]
-    .trim();
+    ?.trim() ?? 'application/octet-stream';
   if (
     options.contentType !== undefined &&
     contentType !== options.contentType

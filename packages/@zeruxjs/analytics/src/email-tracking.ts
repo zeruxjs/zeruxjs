@@ -317,6 +317,9 @@ export function createEmailTrackingService(config: EmailTrackingOptions) {
   function encrypt(data: SignedPayload) {
     /** Current private encryption key; previous keys never sign newly issued links. */
     const current = keys[0];
+    if (!current) {
+      throw new Error('Tracking key ring is empty');
+    }
     /** Wire token version selected by explicit key-ring versus legacy single-secret configuration. */
     const version = hasRing ? 'v3' : 'v2';
     /** Fresh 96-bit AES-GCM nonce per encrypted tracking token. */
@@ -376,18 +379,28 @@ export function createEmailTrackingService(config: EmailTrackingOptions) {
     /** Bounded syntactically checked wire token components. */
     const parts = token.split('.');
     if (parts.length === 3 && parts[0] === 'v3') {
+      /** Key-ring selector encoded in the signed tracking token. */
+      const keyId = parts[1];
+      /** Base64url payload encoded in the signed tracking token. */
+      const encoded = parts[2];
+      if (!keyId || !encoded) {
+        return null;
+      }
       /** Allowlisted private verification key selected from host rotation configuration. */
-      const key = byId.get(parts[1]);
+      const key = byId.get(keyId);
       if (!key) {
         return null;
       }
-      return decrypt(parts[2], key.v3, `v3.${parts[1]}`);
+      return decrypt(encoded, key.v3, `v3.${keyId}`);
     }
     if (parts.length !== 2) {
       return null;
     }
     /** Legacy two-part wire components; not arbitrary algorithm selection. */
     const [version, encoded] = parts;
+    if (!version || !encoded) {
+      return null;
+    }
     if (version === 'v2') {
       // v2 did not include a key ID. Try the deliberately bounded key ring
       // so migration from the legacy single-secret format is seamless.
@@ -794,8 +807,13 @@ export function createEmailTrackingService(config: EmailTrackingOptions) {
         ...updated.matchAll(/<img\b[^>]*?\bsrc\s*=\s*(["'])(.*?)\1/gi),
       ].some((match) => {
         try {
+          /** Captured link target from the bounded HTML attribute match. */
+          const href = match[2];
+          if (!href) {
+            return false;
+          }
           /** Existing parsed pixel URL used only to avoid duplicate instrumentation. */
-          const existing = new URL(decodeHref(match[2]));
+          const existing = new URL(decodeHref(href));
           return (
             existing.origin === base.origin &&
             existing.pathname.startsWith(path + '/open/')
@@ -868,8 +886,13 @@ export function createEmailTrackingService(config: EmailTrackingOptions) {
       }
       /** Allowlisted open/click route kind. */
       const kind = match[1] as Kind;
+      /** Base64url event reference captured from the validated route. */
+      const encoded = match[2];
+      if (!encoded) {
+        return new Response(null, { status: 404 });
+      }
       /** Verified unexpired payload; signed links do not grant application data access. */
-      const decoded = open(match[2], kind);
+      const decoded = open(encoded, kind);
       if (!decoded) {
         return new Response(null, {
           status: 404,

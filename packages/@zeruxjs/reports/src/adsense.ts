@@ -98,7 +98,7 @@ export function createAdSenseReportSource(
       for (const [prefix, value] of [
         ['startDate', q.from],
         ['endDate', q.to],
-      ]) {
+      ] as const) {
         // Translate only the finite selected catalog/date parts; no arbitrary URLs or executable queries.
         for (const [i, part] of ['year', 'month', 'day'].entries()) {
           url.searchParams.set(
@@ -130,16 +130,16 @@ export function createAdSenseReportSource(
         value.headers.length !== columns.length ||
         value.headers.some(
           (h: any, i: number) =>
-            h.name !== columns[i].name ||
+            h.name !== columns[i]!.name ||
             h.type !==
               (() => {
-                if (columns[i].kind === 'dimension') {
+                if (columns[i]!.kind === 'dimension') {
                   return 'DIMENSION';
                 } else {
-                  if (columns[i].unit === 'count') {
+                  if (columns[i]!.unit === 'count') {
                     return 'METRIC_TALLY';
                   } else {
-                    if (columns[i].unit === 'ratio') {
+                    if (columns[i]!.unit === 'ratio') {
                       return 'METRIC_RATIO';
                     } else {
                       return 'METRIC_CURRENCY';
@@ -147,8 +147,8 @@ export function createAdSenseReportSource(
                   }
                 }
               })() ||
-            (columns[i].unit?.startsWith('currency:') &&
-              columns[i].unit !== `currency:${h.currencyCode}`)
+            (columns[i]!.unit?.startsWith('currency:') &&
+              columns[i]!.unit !== `currency:${h.currencyCode}`)
         ) ||
         !/^\d{1,16}$/.test(value.totalMatchedRows) ||
         !Number.isSafeInteger(Number(value.totalMatchedRows)) ||

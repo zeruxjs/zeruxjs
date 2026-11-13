@@ -296,7 +296,10 @@ export function createShortLinkService(input: ShortLinkOptions) {
     '_actions',
     '.well-known',
   ];
-  if (prefix !== '/' && builtins.includes(prefix.split('/')[1].toLowerCase())) {
+  if (
+    prefix !== '/' &&
+    builtins.includes(prefix.split('/')[1]?.toLowerCase() ?? '')
+  ) {
     fail('DENIED');
   }
   if (

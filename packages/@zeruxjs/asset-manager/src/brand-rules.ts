@@ -199,7 +199,12 @@ export function validateBrandRules(
       }
       let normalized: string;
       try {
-        normalized = Intl.getCanonicalLocales(locale)[0];
+        /** Canonical locale tag returned by the platform parser. */
+        const canonical = Intl.getCanonicalLocales(locale)[0];
+        if (!canonical) {
+          throw new TypeError('Invalid brand locale');
+        }
+        normalized = canonical;
       } catch {
         throw new TypeError('Invalid brand locale');
       }

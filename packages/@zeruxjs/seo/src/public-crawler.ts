@@ -474,7 +474,9 @@ export function createPublicCrawlerService(options: PublicCrawlerOptions) {
       if (suffix === 'sitemap.xml') {
         return response(
           request,
-          snapshot.pages.length === 1 ? snapshot.pages[0] : snapshot.index,
+          snapshot.pages.length === 1
+            ? (snapshot.pages[0] ?? snapshot.index)
+            : snapshot.index,
           'application/xml; charset=utf-8'
         );
       }
@@ -483,9 +485,14 @@ export function createPublicCrawlerService(options: PublicCrawlerOptions) {
       if (!Number.isSafeInteger(page) || page >= snapshot.pages.length) {
         return new Response(null, { status: 404 });
       }
+      /** Requested XML page retained only after the complete snapshot bounds check. */
+      const pageXml = snapshot.pages[page];
+      if (pageXml === undefined) {
+        return new Response(null, { status: 404 });
+      }
       return response(
         request,
-        snapshot.pages[page],
+        pageXml,
         'application/xml; charset=utf-8'
       );
     } catch {

@@ -362,7 +362,11 @@ export function createMediaPlayback(
       (_, index) => media.textTracks[index]
     )
       .map((track, index) => ({ track, index }))
-      .filter(({ track }) => ['captions', 'subtitles'].includes(track.kind));
+      .filter(
+        (entry): entry is { track: TextTrack; index: number } =>
+          entry.track !== undefined &&
+          ['captions', 'subtitles'].includes(entry.track.kind)
+      );
   }
   /** Project bounded native state without source URLs or platform error objects.
    * @returns {PlaybackSnapshot} Fresh state with authored caption labels/languages; unknown duration stays null.

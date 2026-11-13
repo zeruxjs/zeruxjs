@@ -100,7 +100,13 @@ export function rankingTokens(
       /** Code points allow Han bigrams without splitting Unicode surrogate pairs. */
       const chars = Array.from(part);
       for (let i = 0; i + 1 < chars.length; i++) {
-        result.push(chars[i] + chars[i + 1]);
+        /** Adjacent code points used to detect a bounded token boundary. */
+        const first = chars[i];
+        /** Following code point paired with the current boundary candidate. */
+        const second = chars[i + 1];
+        if (first !== undefined && second !== undefined) {
+          result.push(first + second);
+        }
       }
     }
   }

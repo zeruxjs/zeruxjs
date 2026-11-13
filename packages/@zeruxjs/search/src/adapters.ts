@@ -571,7 +571,12 @@ export async function createSearchServices(options: SearchServiceOptions) {
       /** Acquired adapter retained before capability checks so failed startup still owns rollback. */
       const adapter = await bounded(async (call) => {
         /** Factory result whose close ownership transfers to this generation after validation. */
-        const acquired = await options.factories[c.backend](
+        const factory = options.factories[c.backend];
+        if (!factory) {
+          throw new TypeError(`Unknown search backend: ${c.backend}`);
+        }
+        /** Adapter instance acquired under the bounded startup call scope. */
+        const acquired = await factory(
           {
             endpoint: c.endpoint,
             allowedEndpoints: c.allowedEndpoints,

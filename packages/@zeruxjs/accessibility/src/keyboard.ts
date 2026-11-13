@@ -291,6 +291,9 @@ export function createRovingTabIndex(
     event.preventDefault();
     hadFocus = true;
     current = available[next];
+    if (!current) {
+      return;
+    }
     update();
     current.focus();
   };

@@ -230,6 +230,9 @@ export const verifyPassword = (password: string, storedHash: string) => {
   if (parts.length === 3 && parts[0] === 'scrypt') {
     /** Validated current-format salt/hash components; original wire spelling remains compatible. */
     const [, salt, hash] = parts;
+    if (!salt || !hash) {
+      return false;
+    }
     if (!/^[a-f0-9]{32}$/i.test(salt) || !/^[a-f0-9]{128}$/i.test(hash)) {
       return false;
     }
@@ -251,6 +254,9 @@ export const verifyPassword = (password: string, storedHash: string) => {
   if (parts.length === 2) {
     /** Validated legacy salt/hash pair. */
     const [salt, hash] = parts;
+    if (!salt || !hash) {
+      return false;
+    }
     if (!/^[a-f0-9]{32}$/i.test(salt) || !/^[a-f0-9]{128}$/i.test(hash)) {
       return false;
     }

@@ -127,6 +127,8 @@ export function createCsrfProtection(options: CsrfOptions): CsrfTokenManager {
       const parts = token.split('.');
       if (
         parts.length !== 2 ||
+        !parts[0] ||
+        !parts[1] ||
         !/^[A-Za-z0-9_-]+$/.test(parts[0]) ||
         !/^[A-Za-z0-9_-]+$/.test(parts[1])
       ) {
@@ -143,6 +145,8 @@ export function createCsrfProtection(options: CsrfOptions): CsrfTokenManager {
       const [time, nonce, ...extra] = payload.split('.');
       if (
         extra.length ||
+        !time ||
+        !nonce ||
         !/^(0|[1-9][0-9]*)$/.test(time) ||
         !/^[A-Za-z0-9_-]{32}$/.test(nonce)
       ) {

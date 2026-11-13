@@ -38,7 +38,12 @@ export function classifyIncomingDeliveryNotice(
     return null;
   }
   /** Bounded literal mailbox claim normalized for exact downstream verification. */
-  const recipient = candidate[1].toLowerCase();
+  const rawRecipient = candidate[1];
+  if (!rawRecipient) {
+    return null;
+  }
+  /** Normalized recipient address used for feedback correlation. */
+  const recipient = rawRecipient.toLowerCase();
   if (
     recipient.length > 320 ||
     !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(recipient)

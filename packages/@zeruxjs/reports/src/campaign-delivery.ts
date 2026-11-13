@@ -73,11 +73,11 @@ export function campaignDeliveryCharts(report: CampaignDeliverySnapshot): {
     ordered.some(
       (d, i) =>
         !/^\d{4}-\d{2}-\d{2}$/.test(d.day) ||
-        (i > 0 && d.day === ordered[i - 1].day) ||
+        (i > 0 && d.day === ordered[i - 1]!.day) ||
         !['sent', 'suppressed', 'uncertain', 'other'].every(
           (key) =>
             Number.isSafeInteger(d[key as keyof typeof d]) &&
-            Number(d[key as keyof typeof d]) >= 0
+            Number(d[key as keyof typeof d]!) >= 0
         )
     )
   ) {

@@ -91,18 +91,19 @@ function distance(a: string, b: string, max: number): number {
     // Compare insertion, deletion and substitution without allocating a full distance matrix.
     for (let j = 1; j <= y.length; j++) {
       next[j] = Math.min(
-        next[j - 1] + 1,
-        row[j] + 1,
-        row[j - 1] + (x[i - 1] === y[j - 1] ? 0 : 1)
+        (next[j - 1] ?? Infinity) + 1,
+        (row[j] ?? Infinity) + 1,
+        (row[j - 1] ?? Infinity) +
+          (x[i - 1] === y[j - 1] ? 0 : 1)
       );
-      minimum = Math.min(minimum, next[j]);
+      minimum = Math.min(minimum, next[j] ?? Infinity);
     }
     if (minimum > max) {
       return max + 1;
     }
     row = next;
   }
-  return row[y.length];
+  return row[y.length] ?? max + 1;
 }
 /** Standalone bounded local index with staged writes and immutable-by-copy results. */
 export class SearchIndex<T extends SearchDocument = SearchDocument> {
@@ -232,13 +233,18 @@ export class SearchIndex<T extends SearchDocument = SearchDocument> {
     // Resolve each searchable field deterministically; field order remains part of V2 compatibility.
     for (const field of fields) {
       /** Analyzer-prefixed posting identity, or exact serialized analyzer identity during grouping. */
-      const key = JSON.stringify(analyzers[field]);
+      const analyzer = analyzers[field];
+      if (!analyzer) {
+        throw new TypeError(`Missing analyzer for field ${field}`);
+      }
+      /** Stable serialized analyzer identity used to group compatible field postings. */
+      const key = JSON.stringify(analyzer);
       if (!configs.has(key)) {
         configs.set(key, {
           key,
           prefix: String(configs.size),
-          analyzer: analyzers[field],
-          stop: new Set(stops.flatMap((s) => tokenize(s, analyzers[field]))),
+          analyzer,
+          stop: new Set(stops.flatMap((s) => tokenize(s, analyzer))),
         });
       }
     }
@@ -320,12 +326,18 @@ export class SearchIndex<T extends SearchDocument = SearchDocument> {
       }
       /** Resolved field analysis policy, captured before indexing or query expansion. */
       const analyzer = this.configuration.analyzers[field];
+      if (!analyzer) {
+        throw new TypeError(`Missing analyzer for field ${field}`);
+      }
       /** Matching analyzer group; prefixes prevent incompatible normalization vocabularies from merging. */
       const group = this.groups.find(
         (g) => g.key === JSON.stringify(analyzer)
       )!;
       /** Validated nonnegative contribution of this searchable field. */
       const weight = this.configuration.weights[field];
+      if (weight === undefined) {
+        throw new TypeError(`Missing weight for field ${field}`);
+      }
       // Charge every analyzed token before stopword removal to keep work bounded.
       for (const term of tokenize(value, analyzer)) {
         if (++tokens > 100000) {
@@ -618,12 +630,14 @@ export class SearchIndex<T extends SearchDocument = SearchDocument> {
     /** Published generation captured for this synchronous search; candidate writes publish only after validation. */
     const state = this.state;
     /** Distinct original query clauses analyzed per group; all-mode counts these clauses rather than expansion count. */
+    const firstGroup = this.groups[0];
+    /** Query terms after analyzer normalization and stop-word removal. */
     const raw =
-      this.groups.length === 1
+      this.groups.length === 1 && firstGroup
         ? [
             ...new Set(
-              tokenize(query, this.groups[0].analyzer).filter(
-                (t) => !this.groups[0].stop.has(t)
+              tokenize(query, firstGroup.analyzer).filter(
+                (t) => !firstGroup.stop.has(t)
               )
             ),
           ]

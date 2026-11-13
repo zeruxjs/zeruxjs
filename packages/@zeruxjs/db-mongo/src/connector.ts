@@ -1049,8 +1049,13 @@ const executeSelect = async (
       MIN: '$min',
       MAX: '$max',
     };
+    /** MongoDB aggregation operator selected from the fixed metric allowlist. */
+    const metricOperator = mongoMetric[metric];
+    if (!metricOperator) {
+      throw new TypeError('Unsupported aggregation metric');
+    }
     /** Generated numeric_value accumulator; no raw caller operator key. */
-    const accumulator = { [mongoMetric[metric]]: '$numeric_value' };
+    const accumulator = { [metricOperator]: '$numeric_value' };
     /** Generated native stages; never accepts executable caller pipeline strings. */
     const pipeline: unknown[] = [];
     if (operation.where) {

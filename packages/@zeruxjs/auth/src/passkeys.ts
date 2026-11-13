@@ -588,6 +588,11 @@ export function createPasskeyManager(options: PasskeyManagerOptions) {
           });
         /** Fresh random one-attempt ceremony identifier. */
         const id = randomBytes(16).toString('base64url');
+        /** Existing credential candidate checked before creating a new record. */
+        const existingCredential = existing[0];
+        if (!existingCredential) {
+          throw new Error('Passkey authentication credential is missing');
+        }
         await store.putChallenge(
           scope,
           {
@@ -595,7 +600,7 @@ export function createPasskeyManager(options: PasskeyManagerOptions) {
             challenge,
             session,
             kind: 'authentication',
-            userHandle: existing[0].userHandle,
+            userHandle: existingCredential.userHandle,
             expiresAt: time() + ttl,
           },
           time()

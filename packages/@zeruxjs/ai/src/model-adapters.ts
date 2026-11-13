@@ -212,7 +212,7 @@ function adapter(
     [timeout, 300000],
     [maxResponse, 67108864],
     [maxRequest, 16777216],
-  ]) {
+  ] as const) {
     if (!Number.isSafeInteger(value) || value < 1 || value > max) {
       throw new RangeError('Invalid provider budget');
     }

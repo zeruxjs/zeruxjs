@@ -754,6 +754,9 @@ export function createCampaignPlanner(options: CampaignPlannerOptions) {
         ) {
           throw new Error('Campaign paused, cancelled, or lease lost');
         }
+        if (!target) {
+          throw new Error('Campaign target is missing');
+        }
         await options.ensureMessage(clone(target), {
           campaignId: id,
           tracking: clone(current.tracking),

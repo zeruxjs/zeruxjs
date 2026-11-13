@@ -238,6 +238,9 @@ export function validateJwtKey(
     const n = binary(input.n, 1024);
     /** Canonical bounded RSA exponent bytes; exponent must be odd and at least three. */
     const e = binary(input.e, 8);
+    if (!n[0]) {
+      throw jwtRejected();
+    }
     /** Actual RSA modulus bit length rather than nominal encoded byte count. */
     const bits = n.length * 8 - (Math.clz32(n[0]) - 24);
     let exponent = 0n;

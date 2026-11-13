@@ -77,7 +77,8 @@ export function validateFace(face: FontDefinition): void {
           Number(v.slice(0, -1)) < 1 ||
           Number(v.slice(0, -1)) > 1000
       ) ||
-      (values.length === 2 && parseFloat(values[0]) > parseFloat(values[1]))
+      (values.length === 2 &&
+        parseFloat(values[0]!) > parseFloat(values[1]!))
     ) {
       throw new TypeError('Invalid font stretch');
     }
@@ -101,19 +102,32 @@ export function validateFace(face: FontDefinition): void {
           value
         );
         if (match) {
+          /** Inclusive Unicode range start captured from the declaration. */
+          const start = match[1];
+          /** Inclusive Unicode range end captured from the declaration. */
+          const end = match[2];
+          if (!start) {
+            return true;
+          }
           return (
-            parseInt(match[1], 16) > 0x10ffff ||
-            (match[2] !== undefined &&
-              (parseInt(match[2], 16) > 0x10ffff ||
-                parseInt(match[1], 16) > parseInt(match[2], 16)))
+            parseInt(start, 16) > 0x10ffff ||
+            (end !== undefined &&
+              (parseInt(end, 16) > 0x10ffff ||
+                parseInt(start, 16) > parseInt(end, 16)))
           );
         }
         /** Bounded U+ wildcard syntax; expanded maximum must fit Unicode. */
         const wildcard = /^U\+([a-fA-F0-9]{0,5})(\?{1,6})$/.exec(value);
+        /** Hexadecimal prefix captured from the bounded wildcard notation. */
+        const prefix = wildcard?.[1];
+        /** Wildcard suffix captured from the bounded wildcard notation. */
+        const suffix = wildcard?.[2];
         return (
           !wildcard ||
-          wildcard[1].length + wildcard[2].length > 6 ||
-          parseInt((wildcard[1] + wildcard[2]).replaceAll('?', 'F'), 16) >
+          prefix === undefined ||
+          suffix === undefined ||
+          prefix.length + suffix.length > 6 ||
+          parseInt((prefix + suffix).replaceAll('?', 'F'), 16) >
             0x10ffff
         );
       })
@@ -146,6 +160,8 @@ export function validateFace(face: FontDefinition): void {
         /^\s*"([A-Za-z0-9]{4})"\s+(-?\d+(?:\.\d+)?|on|off)\s*$/.exec(entry);
       if (
         !match ||
+        !match[1] ||
+        !match[2] ||
         seen.has(match[1]) ||
         (kind === 'feature' && !/^(?:on|off|\d+)$/.test(match[2])) ||
         (kind === 'feature' && Number(match[2]) > 65535) ||

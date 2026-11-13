@@ -132,7 +132,13 @@ const checkMigrations = (items: DatabaseMigration[]) => {
   }
   /** Authored ordering checked before exposing any runner. */
   const ids = items.map((item) => item.id);
-  if (ids.some((id, i) => i > 0 && ids[i - 1] >= id)) {
+  if (
+    ids.some((id, i) => {
+      /** Previous migration identifier used to enforce strict ordering. */
+      const previous = ids[i - 1];
+      return i > 0 && previous !== undefined && previous >= id;
+    })
+  ) {
     deny('INVALID_MIGRATION', 'Migrations must be sorted by ascending ID');
   }
 };
@@ -278,6 +284,9 @@ export function createDatabaseMigrationRunner(
         }
         /** Last applied definition selected for explicitly approved reversal. */
         const item = items[status.applied - 1];
+        if (!item) {
+          throw new TypeError('Applied migration definition is missing');
+        }
         if ((await authorize(item.id)) !== true) {
           deny(
             'MIGRATION_APPROVAL_REQUIRED',

@@ -182,7 +182,13 @@ export function validateSqlOperation(operation: QueryOperation): void {
       'SQL upsert/conflict clauses are unavailable'
     );
   }
-  sqlObject(operation, [...base, ...keys[operation.op]]);
+  /** Operation-specific validation keys selected from the fixed SQL operation map. */
+  const operationKeys = keys[operation.op];
+  if (!operationKeys) {
+    refuseSql('INVALID_OPERATION');
+    throw new TypeError('SQL operation keys are missing');
+  }
+  sqlObject(operation, [...base, ...operationKeys]);
   /** Validated operation viewed only for fixed generic flag/list checks. */
   const data = operation as unknown as Record<string, unknown>;
   // Require Boolean operation flags rather than truthy coercion.

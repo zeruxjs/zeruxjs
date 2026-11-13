@@ -845,7 +845,9 @@ export async function createCms(options: CmsOptions) {
         !Array.isArray(versions) ||
         versions.length > 1 ||
         (versions.length === 1 &&
-          (versions[0].id !== 1 || versions[0].checksum !== checksum))
+          (!versions[0] ||
+            versions[0].id !== 1 ||
+            versions[0].checksum !== checksum))
       ) {
         throw fail('SCHEMA_VERSION');
       }

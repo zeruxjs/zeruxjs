@@ -389,7 +389,12 @@ export function validateCorpusSnapshot(input: unknown): CorpusSnapshot {
     let priorChars: string[] = [];
     for (let i = 0; i < chunks.length; i++) {
       /** Code-point view used to verify overlap and reconstruct the exact indexed source text. */
-      const chars = Array.from(chunks[i].text);
+      const chunk = chunks[i];
+      if (!chunk) {
+        throw new TypeError('Corpus chunk sequence is incomplete');
+      }
+      /** Unicode code points used to validate the stored chunk length. */
+      const chars = Array.from(chunk.text);
       if (
         i &&
         (value.policy.overlapCharacters
@@ -905,7 +910,12 @@ export async function generateRepositoryCorpus(options: CorpusOptions) {
       );
       // Reapply verified source metadata rather than trusting chunk-supplied provenance.
       for (const chunk of chunks) {
-        chunk.metadata = { ...metadata(source), chunk: chunk.metadata!.chunk };
+        /** Optional source chunk ordinal used to validate contiguous provenance. */
+        const chunkNumber = chunk.metadata?.chunk;
+        if (chunkNumber === undefined) {
+          throw new TypeError('Corpus chunk metadata is incomplete');
+        }
+        chunk.metadata = { ...metadata(source), chunk: chunkNumber };
       }
       documents.push(...chunks);
     }
@@ -1063,7 +1073,11 @@ export function createCorpusReader(
         maxDocumentCharacters: 100000,
       });
       base.addMany(
-        corpus.documents.filter((d) => allowed.has(d.metadata!.sourcePath))
+        corpus.documents.filter((d) => {
+          /** Source path used to apply the explicit corpus allowlist. */
+          const sourcePath = d.metadata?.sourcePath;
+          return sourcePath !== undefined && allowed.has(sourcePath);
+        })
       );
       /** Evidence prompt generated solely from the authorized temporary knowledge base. */
       const result = createEvidencePrompt(base, question, evidenceOptions);

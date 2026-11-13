@@ -275,11 +275,16 @@ export function createPreferencePanel(
     if (options.speech) {
       /** Borrowed capability/status snapshot used to enable actual available controls. */
       const speech = options.speech.getStatus();
-      speechButtons[0].disabled =
+      /** Fixed speech controls selected from the owned panel markup. */
+      const [start, pause, resume, stop] = speechButtons;
+      if (!start || !pause || !resume || !stop) {
+        return;
+      }
+      start.disabled =
         !speech.available || speech.active || !options.speechText;
-      speechButtons[1].disabled = !speech.active || speech.paused;
-      speechButtons[2].disabled = !speech.active || !speech.paused;
-      speechButtons[3].disabled = !speech.active;
+      pause.disabled = !speech.active || speech.paused;
+      resume.disabled = !speech.active || !speech.paused;
+      stop.disabled = !speech.active;
       if (!speech.available) {
         messages.push('Speech is unavailable: a local voice is required.');
       }

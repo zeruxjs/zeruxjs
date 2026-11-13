@@ -123,9 +123,14 @@ export function sessionDatabase(
           ) {
             return value;
           }
+          /** String method name used to select the wrapped session operation. */
+          const methodName = typeof key === 'string' ? key : '';
           return (...args: unknown[]) => {
             /** Reviewed native options argument slot; caller session cannot override the acquired pin. */
-            const position = positions[key];
+            const position = positions[methodName];
+            if (position === undefined) {
+              return Reflect.apply(value, target, args);
+            }
             args[position] = {
               ...(args[position] as Record<string, unknown> | undefined),
               session,

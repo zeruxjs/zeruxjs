@@ -133,11 +133,19 @@ function inspectMarkup(raw: string, flags: Set<InboundSafetyFlag>): void {
         let start = 0,
           end = word.length;
         // Trim leading punctuation with a single monotonic pass over this bounded word.
-        while (start < end && !/[a-z0-9]/i.test(word[start])) {
+        while (
+          start < end &&
+          word[start] !== undefined &&
+          !/[a-z0-9]/i.test(word[start]!)
+        ) {
           start++;
         }
         // Trim trailing punctuation without backtracking or evaluating text.
-        while (end > start && !/[a-z0-9]/i.test(word[end - 1])) {
+        while (
+          end > start &&
+          word[end - 1] !== undefined &&
+          !/[a-z0-9]/i.test(word[end - 1]!)
+        ) {
           end--;
         }
         /** Trimmed bounded apparent displayed-host word or literal attribute value. */
@@ -198,8 +206,13 @@ function inspectMarkup(raw: string, flags: Set<InboundSafetyFlag>): void {
     if (!name) {
       continue;
     }
+    /** Lower-level tag name captured from the bounded HTML fragment. */
+    const tagName = name[2];
+    if (!tagName) {
+      continue;
+    }
     /** Lowercase lexical tag name checked only against fixed advisory sets. */
-    const element = name[2].toLowerCase();
+    const element = tagName.toLowerCase();
     if (name[1]) {
       if (element === 'a') {
         compare();
@@ -216,7 +229,9 @@ function inspectMarkup(raw: string, flags: Set<InboundSafetyFlag>): void {
       href: string | undefined;
     // Keep each sticky attribute attempt within the current bounded tag fragment.
     while (cursor < tag.length) {
-      if (/\s/.test(tag[cursor])) {
+      /** Current tag character used to detect attribute whitespace. */
+      const character = tag[cursor];
+      if (character !== undefined && /\s/.test(character)) {
         cursor++;
         continue;
       }
@@ -229,7 +244,12 @@ function inspectMarkup(raw: string, flags: Set<InboundSafetyFlag>): void {
       }
       cursor = attrs.lastIndex;
       /** Lowercase literal attribute name checked against fixed URL/handler rules. */
-      const key = attr[1].toLowerCase();
+      const rawKey = attr[1];
+      if (!rawKey) {
+        continue;
+      }
+      /** Lowercase attribute key used by the safety allowlist. */
+      const key = rawKey.toLowerCase();
       /** Trimmed bounded apparent displayed-host word or literal attribute value. */
       const value = (attr[2] ?? attr[3] ?? attr[4] ?? '').trim();
       if (key.startsWith('on') && key.length > 2) {

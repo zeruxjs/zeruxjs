@@ -4,7 +4,6 @@ import {
   createVueRef,
   mapVueRef,
   toVueReadable,
-  bindVueRef,
 } from '../dist/index.js';
 test('refs and derived refs notify and detach', () => {
   /** Borrowed standalone input for the derived ref. */

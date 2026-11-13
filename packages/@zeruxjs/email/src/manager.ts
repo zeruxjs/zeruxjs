@@ -317,7 +317,12 @@ export function createEmailManager(options: EmailManagerOptions) {
     accounts.set(account.name, account);
   }
   /** Existing default account name, or first configured account when omitted. */
-  const fallback = options.defaultAccount ?? options.accounts[0].name;
+  const firstAccount = options.accounts[0];
+  if (!firstAccount) {
+    throw new Error('At least one email account is required');
+  }
+  /** Explicit or first configured account used when no account is selected. */
+  const fallback = options.defaultAccount ?? firstAccount.name;
   if (!accounts.has(fallback)) {
     throw new Error('Unknown default email account');
   }
@@ -676,10 +681,17 @@ export function createEmailManager(options: EmailManagerOptions) {
       const evaluation = filter.evaluate(recipient, name);
       if (evaluation.rejected.length) {
         throw Object.assign(
-          new Error(`Recipient rejected: ${evaluation.rejected[0].reason}`),
+          new Error(
+            `Recipient rejected: ${evaluation.rejected[0]?.reason ?? 'unknown'}`
+          ),
           { code: 'EMAIL_FILTERED' }
         );
       }
+    }
+    /** First recipient used for the legacy marketing delivery projection. */
+    const primaryRecipient = to[0];
+    if (marketing && !primaryRecipient) {
+      throw new Error('Marketing delivery requires one recipient');
     }
     if (marketing) {
       if (cc.length || bcc.length || to.length !== 1) {
@@ -699,7 +711,7 @@ export function createEmailManager(options: EmailManagerOptions) {
       // Fail closed when the consent database cannot be read; do not deliver without consent.
       let subscribed = false;
       try {
-        subscribed = await options.preferences.isSubscribed(to[0]);
+        subscribed = await options.preferences.isSubscribed(primaryRecipient!);
       } catch {
         throw Object.assign(new Error('Marketing consent lookup unavailable'), {
           code: 'EMAIL_CONSENT_UNAVAILABLE',
@@ -720,7 +732,9 @@ export function createEmailManager(options: EmailManagerOptions) {
       if (options.marketingSuppression) {
         let blocked;
         try {
-          blocked = await options.marketingSuppression.isSuppressed(to[0]);
+          blocked = await options.marketingSuppression.isSuppressed(
+            primaryRecipient!
+          );
         } catch {
           throw Object.assign(new Error('Marketing suppression unavailable'), {
             code: 'EMAIL_SUPPRESSION_UNAVAILABLE',
@@ -741,7 +755,7 @@ export function createEmailManager(options: EmailManagerOptions) {
       }
       merged.listUnsubscribe = {
         ...merged.listUnsubscribe,
-        url: options.preferences.makeUnsubscribeUrl(to[0]),
+        url: options.preferences.makeUnsubscribeUrl(primaryRecipient!),
       };
     }
     context.check();
@@ -820,7 +834,7 @@ export function createEmailManager(options: EmailManagerOptions) {
       // Fresh pre-SMTP check protects against preference changes during HTML rendering.
       let allowed;
       try {
-        allowed = await options.preferences!.isSubscribed(to[0]);
+        allowed = await options.preferences!.isSubscribed(primaryRecipient!);
       } catch {
         throw Object.assign(new Error('Marketing consent unavailable'), {
           code: 'EMAIL_CONSENT_UNAVAILABLE',
@@ -839,7 +853,9 @@ export function createEmailManager(options: EmailManagerOptions) {
       if (options.marketingSuppression) {
         let blocked;
         try {
-          blocked = await options.marketingSuppression.isSuppressed(to[0]);
+          blocked = await options.marketingSuppression.isSuppressed(
+            primaryRecipient!
+          );
         } catch {
           throw Object.assign(new Error('Marketing suppression unavailable'), {
             code: 'EMAIL_SUPPRESSION_UNAVAILABLE',
@@ -1516,10 +1532,15 @@ export function createEmailManager(options: EmailManagerOptions) {
           while (index < messages.length) {
             /** Exclusively claimed synchronous batch index before yielding to the sender. */
             const i = index++;
+            /** Message selected by the exclusively claimed batch index. */
+            const message = messages[i];
+            if (!message) {
+              throw new Error('Email message batch is incomplete');
+            }
             try {
               results[i] = {
                 ok: true,
-                result: await manager.send(messages[i], {
+                result: await manager.send(message, {
                   signal: settings.signal,
                   deadline,
                 }),

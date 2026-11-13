@@ -234,11 +234,16 @@ class CacheManagerImpl implements CacheManager {
       const mapped: Record<string, CacheValue | undefined> =
         Object.create(null);
       keys.forEach((key, index) => {
+        /** Corresponding prefixed key; the parallel arrays are created from the same validated input. */
+        const namespacedKey = namespaced[index];
+        if (namespacedKey === undefined) {
+          throw new TypeError('Cache namespace mapping is incomplete');
+        }
         Object.defineProperty(mapped, key, {
           value:
-            result[namespaced[index]] === undefined
+            result[namespacedKey] === undefined
               ? undefined
-              : cacheValue(result[namespaced[index]]!, this.#policy),
+              : cacheValue(result[namespacedKey]!, this.#policy),
           enumerable: true,
           configurable: true,
           writable: true,

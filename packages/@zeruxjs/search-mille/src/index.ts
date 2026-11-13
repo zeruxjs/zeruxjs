@@ -636,7 +636,7 @@ export async function createMilleSearchAdapter(
       throw new SearchAdapterError('DENIED');
     }
     /** Native settings or token MAC bytes checked against the captured expected policy. */
-    const actual = Buffer.from(m[2]);
+    const actual = Buffer.from(m[2]!);
     /** Explicit supported index settings; provisioning/migration remains a separate privileged operation. */
     const expected = Buffer.from(mac(Number(m[1]), tenant));
     if (

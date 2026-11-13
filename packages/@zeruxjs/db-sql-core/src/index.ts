@@ -386,8 +386,14 @@ class SqlCompiler {
       };
       if (!action || !Object.hasOwn(fields, action.type)) {
         refuseSql('UNSUPPORTED_ALTER_ACTION');
+        throw new TypeError('SQL alter action fields are missing');
       }
-      sqlObject(action, ['type', ...fields[action.type]]);
+      /** Operation-specific field table selected after validating the action kind. */
+      const actionFields = fields[action.type];
+      if (!actionFields) {
+        throw new TypeError('SQL alter action fields are missing');
+      }
+      sqlObject(action, ['type', ...actionFields]);
       if (
         (action.type === 'addIndex' || action.type === 'dropIndex') &&
         action.table !== undefined &&
@@ -456,8 +462,14 @@ class SqlCompiler {
     if (!rows[0] || typeof rows[0] !== 'object' || Array.isArray(rows[0])) {
       refuseSql('INVALID_INSERT');
     }
+    /** First row used to establish the validated insert column set. */
+    const firstRow = rows[0];
+    if (!firstRow || typeof firstRow !== 'object' || Array.isArray(firstRow)) {
+      refuseSql('INVALID_INSERT');
+      throw new TypeError('Insert row is invalid');
+    }
     /** Validated column inventory compiled in authored order. */
-    const columns = Object.keys(rows[0]);
+    const columns = Object.keys(firstRow);
     if (
       columns.length === 0 ||
       rows.length > 10_000 ||
@@ -1302,8 +1314,14 @@ class SqlCompiler {
     };
     if (!Object.hasOwn(fields, predicate.operator)) {
       refuseSql('INVALID_OPERATOR');
+      throw new TypeError('SQL predicate fields are missing');
     }
-    sqlObject(predicate, ['operator', ...fields[predicate.operator]]);
+    /** Predicate-specific field table selected from the fixed operator union. */
+    const predicateFields = fields[predicate.operator];
+    if (!predicateFields) {
+      throw new TypeError('SQL predicate fields are missing');
+    }
+    sqlObject(predicate, ['operator', ...predicateFields]);
     if (this.#checkLiteral && predicate.query) {
       refuseSql('UNSUPPORTED_CHECK');
     }
@@ -1471,8 +1489,14 @@ class SqlCompiler {
       !Object.hasOwn(expressionFields, input.kind)
     ) {
       refuseSql('INVALID_EXPRESSION');
+      throw new TypeError('SQL expression fields are missing');
     }
-    sqlObject(input, ['kind', ...expressionFields[input.kind]]);
+    /** Expression-specific field table selected from the fixed input kind. */
+    const inputFields = expressionFields[input.kind];
+    if (!inputFields) {
+      throw new TypeError('SQL expression fields are missing');
+    }
+    sqlObject(input, ['kind', ...inputFields]);
     if (input.kind === 'function' && input.args !== undefined) {
       sqlList(input.args, 64);
     }
@@ -1569,8 +1593,14 @@ class SqlCompiler {
       };
       if (!Object.hasOwn(fields, expression.kind)) {
         refuseSql('INVALID_DEFAULT');
+        throw new TypeError('SQL default expression fields are missing');
       }
-      sqlObject(expression, ['kind', ...fields[expression.kind]]);
+      /** Default-expression field table selected from the fixed expression kind. */
+      const defaultFields = fields[expression.kind];
+      if (!defaultFields) {
+        throw new TypeError('SQL default expression fields are missing');
+      }
+      sqlObject(expression, ['kind', ...defaultFields]);
       if (expression.kind === 'function' && expression.args !== undefined) {
         sqlList(expression.args, 64);
       }
@@ -1697,11 +1727,9 @@ class SqlCompiler {
       UPPER: [1, 1],
       YEAR: [1, 1],
     };
-    if (
-      !Object.hasOwn(arity, name) ||
-      count < arity[name][0] ||
-      count > arity[name][1]
-    ) {
+    /** Supported function arity interval selected from the fixed SQL function table. */
+    const bounds = arity[name];
+    if (!bounds || count < bounds[0] || count > bounds[1]) {
       refuseSql('INVALID_FUNCTION');
     }
     /** Supported shared function names, further restricted by dialect and literal context. */
@@ -2093,6 +2121,10 @@ export const createSqlConnector = (
       if (compilation.statements.length === 1) {
         /** Complete generated SQL in lexical placeholder order. */
         const statement = compilation.statements[0];
+        if (!statement) {
+          refuseSql('EMPTY_STATEMENT');
+          throw new TypeError('Compiled SQL statement is missing');
+        }
         /** Detached parameter list corresponding to this exact generated statement. */
         const params = compilation.params[0] ?? [];
         /** Actual native completion; strict synchronous mode rejects thenables without issuing a later tail. */
@@ -2132,8 +2164,13 @@ export const createSqlConnector = (
           }
           return normalizeResult(operation, context, statement, params, native);
         });
+        /** Final normalized result used for the operation-level return value. */
+        const lastResult = results[results.length - 1];
+        if (!lastResult) {
+          throw new TypeError('Compiled SQL result is missing');
+        }
         return {
-          ...results[results.length - 1],
+          ...lastResult,
           native: results.map((result) => result.native),
           warnings: [`Executed ${results.length} SQL statements`],
         };
@@ -2144,6 +2181,9 @@ export const createSqlConnector = (
 
         // Execute async multi-statement output in authored order; no transaction is implied.
         for (const [index, statement] of compilation.statements.entries()) {
+          if (!statement) {
+            throw new TypeError('Compiled SQL statement is missing');
+          }
           /** Detached parameter list corresponding to this exact generated statement. */
           const params = compilation.params[index] ?? [];
           /** Actual native completion; strict synchronous mode rejects thenables without issuing a later tail. */
@@ -2153,8 +2193,13 @@ export const createSqlConnector = (
           );
         }
 
+        /** Final normalized result used for the operation-level return value. */
+        const lastResult = results[results.length - 1];
+        if (!lastResult) {
+          throw new TypeError('Compiled SQL result is missing');
+        }
         return {
-          ...results[results.length - 1],
+          ...lastResult,
           native: results.map((entry) => entry.native),
           warnings: [`Executed ${results.length} SQL statements`],
         };

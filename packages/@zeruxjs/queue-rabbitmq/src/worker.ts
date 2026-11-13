@@ -1182,6 +1182,9 @@ export async function createRabbitMQWorker(
       for (let i = 0; i < workers.length; i++) {
         /** Trusted queue/topology/handler selected from the finite allowlist. */
         const definition = workers[i];
+        if (!definition) {
+          throw fail('GENERATION_LOST');
+        }
         /** Per-consumer prefetch share; total matches service concurrency without global quorum prefetch. */
         const credit =
           Math.floor(concurrency / workers.length) +

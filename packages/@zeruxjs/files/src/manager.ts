@@ -64,7 +64,12 @@ export function createFileManager(
     stores.set(store.name, store);
   }
   /** Configured default connection or the first store; it must exist before use. */
-  const fallback = options.defaultStorage ?? options.stores[0].name;
+  const firstStore = options.stores[0];
+  if (!firstStore) {
+    throw new TypeError('At least one storage provider is required');
+  }
+  /** Explicit or first configured store used when no store is selected. */
+  const fallback = options.defaultStorage ?? firstStore.name;
   if (!stores.has(fallback)) {
     throw new TypeError('Unknown default storage');
   }

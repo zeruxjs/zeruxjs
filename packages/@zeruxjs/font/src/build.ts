@@ -535,7 +535,7 @@ export async function buildFontAssets(
       /** Validated authored style descriptor before separating angles. */
       const styleText = input.style ?? 'normal';
       /** Validated base style name used in overlap comparisons. */
-      const style = styleText.split(' ')[0];
+      const style = styleText.split(' ')[0]!;
       /** Validated authored oblique angles, with compatible default angle. */
       const angleValues = styleText.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? [
         14,
@@ -563,22 +563,34 @@ export async function buildFontAssets(
         : widthText.split(' ').map(parseFloat);
       /** Inclusive stretch interval used with weight/style/family duplicate checks. */
       const stretch = [widths[0], widths.at(-1)!];
+      /** Normalized two-value style angle interval. */
+      const normalizedAngles = [angles[0]!, angles[1]!];
+      /** Normalized two-value stretch interval. */
+      const normalizedStretch = [stretch[0]!, stretch[1]!];
+      /** Normalized two-value numeric range interval. */
+      const normalizedRange = [range[0]!, range[1]!];
       if (
         faces.some(
           (face) =>
             face.family === family &&
             face.style === style &&
-            face.angles[0] <= angles[1] &&
-            angles[0] <= face.angles[1] &&
-            face.stretch[0] <= stretch[1] &&
-            stretch[0] <= face.stretch[1] &&
-            face.range[0] <= range[1] &&
-            range[0] <= face.range[1]
+            face.angles[0]! <= normalizedAngles[1]! &&
+            normalizedAngles[0]! <= face.angles[1]! &&
+            face.stretch[0]! <= normalizedStretch[1]! &&
+            normalizedStretch[0]! <= face.stretch[1]! &&
+            face.range[0]! <= normalizedRange[1]! &&
+            normalizedRange[0]! <= face.range[1]!
         )
       ) {
         throw new TypeError('Overlapping duplicate family/weight/style');
       }
-      faces.push({ family, range, style, angles, stretch });
+      faces.push({
+        family,
+        range: normalizedRange,
+        style,
+        angles: normalizedAngles,
+        stretch: normalizedStretch,
+      });
       /** Sorted validated copied axis declarations requiring an explicit inspector. */
       const declaredAxes = axes(input.axes);
       if (
@@ -593,8 +605,8 @@ export async function buildFontAssets(
         wght &&
         (wght.min < 1 ||
           wght.max > 1000 ||
-          range[0] < wght.min ||
-          range[1] > wght.max)
+          normalizedRange[0]! < wght.min ||
+          normalizedRange[1]! > wght.max)
       ) {
         throw new TypeError('Weight outside variable axis');
       }

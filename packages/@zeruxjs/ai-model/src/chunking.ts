@@ -62,7 +62,9 @@ export function chunkDocument(
       const remaining = chars.slice(start, end);
       let boundary = -1;
       for (let i = remaining.length - 1; i > max * 0.7; i--) {
-        if (/\s/u.test(remaining[i])) {
+        /** Candidate split character used to prefer whitespace boundaries. */
+        const character = remaining[i];
+        if (character !== undefined && /\s/u.test(character)) {
           boundary = i;
           break;
         }

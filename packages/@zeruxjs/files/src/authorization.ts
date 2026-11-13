@@ -65,15 +65,20 @@ export function createFileTokenAuthorizer(
     if (!match) {
       return false;
     }
+    /** Bearer token captured from the validated authorization header. */
+    const token = match[1];
+    if (!token) {
+      return false;
+    }
     /** Bucket-scoped verified identity, when the host verifier accepts the permission. */
     const record = await store.verify(
-      match[1],
+      token,
       `${prefix}:${action}:${address.bucket}`
     );
     // Also permit a global permission explicitly issued by the application.
     /** Bucket-scoped identity or explicitly issued wildcard permission; never a browser role claim. */
     const identity =
-      record ?? (await store.verify(match[1], `${prefix}:${action}:*`));
+      record ?? (await store.verify(token, `${prefix}:${action}:*`));
     if (!identity) {
       return false;
     }
