@@ -402,8 +402,8 @@ test('client graph emits deterministic private/public manifests and executable l
     await once(host, 'listening');
     try {
       /** Compiled public asset response compared with its emitted file bytes. */
-      // lgtm [js/file-access-to-http] -- This test intentionally requests the locally emitted manifest asset.
       const served = await fetch(
+        // codeql[js/file-access-to-http] -- This test intentionally requests the locally emitted manifest asset.
         `http://127.0.0.1:${host.address().port}${assetUrl}`
       );
       assert.equal(served.status, 200);

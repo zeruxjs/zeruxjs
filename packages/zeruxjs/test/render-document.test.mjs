@@ -648,9 +648,9 @@ test('missing candidate document asset rolls back preparation and preserves the 
     await mkdir(path.join(f.root, 'plugins'));
     /** Private fixture receipt path proving the rejected candidate ran its cleanup. */
     const marker = path.join(f.root, 'candidate-disposed');
-    // lgtm [js/bad-code-sanitization] -- This trusted test fixture embeds a JSON-escaped temporary marker path.
     await writeFile(
       path.join(f.root, 'plugins/document.mjs'),
+      // codeql[js/bad-code-sanitization] -- This trusted test fixture embeds a JSON-escaped temporary marker path.
       `import {createRenderAssets,createZyroDocumentRenderer} from 'zeruxjs/renderers';import {writeFile} from 'node:fs/promises';export default function(api){api.onDispose(()=>writeFile(${JSON.stringify(marker)},'closed'));api.renderers().register(createZyroDocumentRenderer({security:()=>({headers:{}}),render:()=>({html:'candidate'}),assets:createRenderAssets({schema:1,assets:[],namedEntries:{}}),clientEntry:'missing'}));}`
     );
     await assert.rejects(

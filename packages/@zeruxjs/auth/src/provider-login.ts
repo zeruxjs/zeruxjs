@@ -380,8 +380,8 @@ export function createProviderLogin(options: ProviderLoginOptions) {
    * @param {unknown[]} values - Exact configured tenant/provider/session/code tuple.
    * @returns {string} HMAC lookup identity, not a password hash or authorization grant. */
   const digest = (domain: string, values: unknown[]) =>
-    // lgtm [js/insufficient-password-hash] -- This is a keyed HMAC lookup identity, not password storage.
     createHmac('sha256', key)
+      // codeql[js/insufficient-password-hash] -- This is a keyed HMAC lookup identity, not password storage.
       .update(JSON.stringify(['zeruxjs.auth.provider.v1', domain, ...values]))
       .digest('base64url');
   /** Validate and detach exact tenant/session labels before binding lookup keys.
