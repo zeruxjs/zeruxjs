@@ -445,6 +445,11 @@ and the child is stopped/reaped. The parent forwards SIGINT/SIGTERM, sends them
 to the entire spawned POSIX process group, waits up to a bounded timeout, and
 uses SIGKILL if necessary. Route cleanup remains ownership-aware.
 
+Diagnostic PID lookup validates a primitive TCP port before using fixed native
+argument arrays for `lsof`/branch/v0.0.4/`netstat`; it never interpolates that port into a
+shell command. A returned PID is diagnostic evidence, not permission to stop
+a process. Native tool availability and platform trust remain host concerns.
+
 ```bash
 zerux-server proxy start --port 1355
 zerux-server run --name web --app-port 4300 --ready-timeout 20000 -- npm run dev
@@ -934,6 +939,10 @@ remaining sliding-window budget, preventing hard crashes from resetting the
 attempt limit. Configuration fingerprints intentionally reject changed commands,
 ports, replica counts and restart windows unless the operator explicitly resets
 the checkpoint with `fleet reset` while offline and fully recovered.
+
+Initial startup rejects if an already-ready replica exits while another is still
+starting. The controller stops its remaining children and publishes no route;
+background reconciliation begins only after the initial route lease exists.
 
 **Operational limits:** This manages local processes, not distributed replicas.
 The proxy must remain accessible via authenticated local control. Recovery

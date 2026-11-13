@@ -264,8 +264,8 @@ Install the optional `zlocale@0.0.4` peer for strict localization checks, with i
 Both presets retain `no-eval`, `no-implied-eval`, `no-new-func` and all shared `zerux/*` security/ownership rules at **error** level. Light means fewer style/type restrictions, not reduced security policy. Generated/dependency directories are ignored. Select one preset per overlapping file set, then append ordinary file-scoped overrides rather than combining separate `zerux` plugin instances. Factories return application-owned arrays; use a fresh factory when customizing instead of mutating the shared default export. Presets follow ESLint's [flat-config model](https://eslint.org/docs/latest/use/configure/configuration-files).
 
 The cleanup rule also recognizes directly discarded `zhost` child scopes from
-`launchSupervisedCommand`, `launchManagedApplication` and
-`launchRollingApplication`. Retaining a handle is only a static ownership hint;
+`launchSupervisedCommand`, `launchManagedApplication`,
+`launchRollingApplication` and `launchInstanceFleet`. Retaining a handle is only a static ownership hint;
 the host must still await shutdown. Inert protocol registries, watch predicates
 and diagnostic-writer factories are excluded. SSE/compression factories acquire
 transport resources only when subsequently used; this narrow rule does not
