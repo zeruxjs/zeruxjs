@@ -54,17 +54,17 @@ No live identity provider or production session adapter is bundled or qualified.
 
 For base `/cms`, installed exact routes are:
 
-| Path | Behavior |
-| --- | --- |
-| `/cms/login` | GET/HEAD host-backed login form; POST checks Origin, anonymous CSRF and admission |
-| `/cms/setup` | Authenticated privileged GET/POST setup; host secret, CSRF, Origin and durable unique claim |
-| `/cms/admin` | Authorized dashboard for the one configured entry |
-| `/cms/editor` | Authorized title/body editor, current optimistic revision and saved-preview action |
-| `/cms/save` | POST validated title/body draft with expected head; no remote executable functions |
-| `/cms/publish` | POST separate authorization and exact expected saved revision |
+| Path           | Behavior                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| `/cms/login`   | GET/HEAD host-backed login form; POST checks Origin, anonymous CSRF and admission                 |
+| `/cms/setup`   | Authenticated privileged GET/POST setup; host secret, CSRF, Origin and durable unique claim       |
+| `/cms/admin`   | Authorized dashboard for the one configured entry                                                 |
+| `/cms/editor`  | Authorized title/body editor, current optimistic revision and saved-preview action                |
+| `/cms/save`    | POST validated title/body draft with expected head; no remote executable functions                |
+| `/cms/publish` | POST separate authorization and exact expected saved revision                                     |
 | `/cms/preview` | POST creates private saved-revision preview; GET/HEAD requires fresh auth and session-bound nonce |
-| `/cms/page` | GET/HEAD only the published revision; drafts are never a fallback |
-| `/cms/logout` | CSRF/Origin-protected POST host session termination |
+| `/cms/page`    | GET/HEAD only the published revision; drafts are never a fallback                                 |
+| `/cms/logout`  | CSRF/Origin-protected POST host session termination                                               |
 
 The initial immutable content type is `article@1` with required title (200 characters)
 and plain-text body (8192 characters). This is one editor/theme, not arbitrary schema

@@ -95,15 +95,15 @@ project directory permissions—these checks are not an OS filesystem sandbox.
 
 ### Tested integration matrix
 
-| Environment | Supported mechanism | Verification |
-| --- | --- | --- |
-| Plain HTML / ZeruxJS templates | `zuix build` or `zuix watch`; link generated CSS | Node filesystem/compiler tests |
-| ZyroJS DOM templates | Same generated CSS; optional `injectZuix()` / `renderZuixStyle()` | API and packed import tests; live browser pending |
-| React + Vite | `zuixVite()` and `import 'virtual:zuix.css'` | Vite hook/transform simulation; real React app pending |
-| Vue + Vite | Same Vite adapter | Vite hook simulation; real Vue app pending |
-| Next.js | External CLI-generated CSS imported by app layout | No official Next adapter or live Next app certification |
-| Nuxt | External CLI-generated CSS through app stylesheet | No official Nuxt adapter or live Nuxt app certification |
-| Browser/SSR | Browser style injection and inline SSR style | Node output validation; Chromium CSS rendering pending |
+| Environment                    | Supported mechanism                                               | Verification                                            |
+| ------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------- |
+| Plain HTML / ZeruxJS templates | `zuix build` or `zuix watch`; link generated CSS                  | Node filesystem/compiler tests                          |
+| ZyroJS DOM templates           | Same generated CSS; optional `injectZuix()` / `renderZuixStyle()` | API and packed import tests; live browser pending       |
+| React + Vite                   | `zuixVite()` and `import 'virtual:zuix.css'`                      | Vite hook/transform simulation; real React app pending  |
+| Vue + Vite                     | Same Vite adapter                                                 | Vite hook simulation; real Vue app pending              |
+| Next.js                        | External CLI-generated CSS imported by app layout                 | No official Next adapter or live Next app certification |
+| Nuxt                           | External CLI-generated CSS through app stylesheet                 | No official Nuxt adapter or live Nuxt app certification |
+| Browser/SSR                    | Browser style injection and inline SSR style                      | Node output validation; Chromium CSS rendering pending  |
 
 ### Reproducible commands
 
@@ -215,16 +215,16 @@ This is Zuixs syntax, not full Tailwind compatibility: Tailwind-specific directi
 
 This is a documented Zuixs subset, not Tailwind feature or plugin compatibility.
 
-| Family | Supported examples | Deliberate limits |
-| --- | --- | --- |
-| Layout | `box-border`, `flow-root`, `flex-wrap-reverse`, `grid-flow-col-dense`, `size-4`, `size-[3rem]`, `w-1/2`, `h-2/3`, `basis-1/4` | Fractions require positive integers up to 999 with numerator no greater than denominator; other sizes use existing theme/arbitrary values |
-| Grid lines | `col-start-2`, `col-end-auto`, `row-start-1` | Emit native `grid-column-start/end` and `grid-row-start/end`; no implicit layout engine |
-| Typography | `text-start`, `text-end`, `wrap-anywhere`, `whitespace-pre-wrap`, `whitespace-pre-line`, `whitespace-break-spaces`, `break-keep`, `leading-6`, `decoration-wavy`, `decoration-2`, `underline-offset-4` | Numeric decoration/underline offsets are 0–16px; no typography plugin or font loading |
-| Forms | `appearance-auto`, `resize-none`, `resize-x`, `resize-y`, `accent-blue-600`, `caret-[var(--caret)]`, `outline-solid` | Native properties only; no automatic form reset, validation, accessible labels or focus-management behavior |
-| Containers | `container-inline-size`, existing `container-inline`, `container-name-[card]`, `cq-md:grid`, `cq-card-md:grid` | Named query syntax is Zuixs-specific; names use ASCII letters/digits/underscore/hyphen, start with a letter and are at most 48 characters; reserved CSS keywords reject |
-| Arbitrary syntax | `w-[calc(100%_-_2rem)]`, `bg-[rgb(0_0_0/0.5)]`, `[--step2:2rem]`, typed `text-[length:var(--heading)]` | Underscores decode to spaces; quotes, escapes, URLs, comments and declaration/rule delimiters reject; no full property/value semantic validator |
-| Variants | `md:dark:hover:`, `motion-reduce:`, `focus-visible:`, `disabled:`, `placeholder:text-slate-500`, named container/state chains | At most 11 variants plus a utility, nesting depth at most 8; no arbitrary variant selectors, named group/peer syntax or user-defined variants |
-| Composition | Recipes, trusted plugin utilities, native CSS and `@apply` | No Tailwind `@theme`, `@utility`, `@source`, plugin loading, slash line-height syntax or automatic vendor prefixing |
+| Family           | Supported examples                                                                                                                                                                                     | Deliberate limits                                                                                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layout           | `box-border`, `flow-root`, `flex-wrap-reverse`, `grid-flow-col-dense`, `size-4`, `size-[3rem]`, `w-1/2`, `h-2/3`, `basis-1/4`                                                                          | Fractions require positive integers up to 999 with numerator no greater than denominator; other sizes use existing theme/arbitrary values                               |
+| Grid lines       | `col-start-2`, `col-end-auto`, `row-start-1`                                                                                                                                                           | Emit native `grid-column-start/end` and `grid-row-start/end`; no implicit layout engine                                                                                 |
+| Typography       | `text-start`, `text-end`, `wrap-anywhere`, `whitespace-pre-wrap`, `whitespace-pre-line`, `whitespace-break-spaces`, `break-keep`, `leading-6`, `decoration-wavy`, `decoration-2`, `underline-offset-4` | Numeric decoration/underline offsets are 0–16px; no typography plugin or font loading                                                                                   |
+| Forms            | `appearance-auto`, `resize-none`, `resize-x`, `resize-y`, `accent-blue-600`, `caret-[var(--caret)]`, `outline-solid`                                                                                   | Native properties only; no automatic form reset, validation, accessible labels or focus-management behavior                                                             |
+| Containers       | `container-inline-size`, existing `container-inline`, `container-name-[card]`, `cq-md:grid`, `cq-card-md:grid`                                                                                         | Named query syntax is Zuixs-specific; names use ASCII letters/digits/underscore/hyphen, start with a letter and are at most 48 characters; reserved CSS keywords reject |
+| Arbitrary syntax | `w-[calc(100%_-_2rem)]`, `bg-[rgb(0_0_0/0.5)]`, `[--step2:2rem]`, typed `text-[length:var(--heading)]`                                                                                                 | Underscores decode to spaces; quotes, escapes, URLs, comments and declaration/rule delimiters reject; no full property/value semantic validator                         |
+| Variants         | `md:dark:hover:`, `motion-reduce:`, `focus-visible:`, `disabled:`, `placeholder:text-slate-500`, named container/state chains                                                                          | At most 11 variants plus a utility, nesting depth at most 8; no arbitrary variant selectors, named group/peer syntax or user-defined variants                           |
+| Composition      | Recipes, trusted plugin utilities, native CSS and `@apply`                                                                                                                                             | No Tailwind `@theme`, `@utility`, `@source`, plugin loading, slash line-height syntax or automatic vendor prefixing                                                     |
 
 Minimal public-import example:
 

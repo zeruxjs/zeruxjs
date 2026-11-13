@@ -493,9 +493,10 @@ export function createEvidenceRetriever(
           }
         }
         /** Only authorized candidate documents enter ranking, adapter input and ID lookup. */
-        const documents = corpus.documents.filter((d) =>
-          d.metadata?.sourcePath !== undefined &&
-          allowed.has(d.metadata.sourcePath)
+        const documents = corpus.documents.filter(
+          (d) =>
+            d.metadata?.sourcePath !== undefined &&
+            allowed.has(d.metadata.sourcePath)
         );
         /** Authorized ID table rejects embedding hits outside the submitted candidate scope. */
         const lookup = new Map(documents.map((d) => [d.id, d]));
@@ -842,9 +843,7 @@ export function validateEvidenceCitations(
   /** Allowed identifiers/paths are derived only from authorized evidence, never generated claims. */
   const allowed = new Set(evidence.map((e) => e.id));
   /** Only explicitly marked evidence IDs are interpreted as citations; arbitrary prose is not. */
-  const citations = [
-    ...answer.matchAll(/\[evidence:([^\]\r\n]{1,256})\]/g),
-  ]
+  const citations = [...answer.matchAll(/\[evidence:([^\]\r\n]{1,256})\]/g)]
     .map((m) => m[1])
     .filter((id): id is string => id !== undefined);
   if (

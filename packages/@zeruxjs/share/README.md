@@ -60,7 +60,7 @@ responses when exposing these methods.
 URL-safe characters. IDs are public locators, **not bearer authorization**. A custom
 slug collision returns CONFLICT; generated collisions retry at most three times,
 and no retry follows an unknown storage acknowledgement. Framework names such as
-api/admin/auth/assets/_actions and host `reservedPaths` are denied. Traversal,
+api/admin/auth/assets/\_actions and host `reservedPaths` are denied. Traversal,
 encoded path separators and nested slug paths reject. Slugs are case-sensitive;
 reserved paths are protected case-insensitively. Names are globally reserved within
 the configured public namespace, not reusable per tenant.
@@ -145,7 +145,6 @@ outage and actual-settlement cleanup. The SQLite fixture touches only a disposab
 temporary file and closes borrowed connectors separately. Real mobile share sheets,
 production durable-store crash recovery, host session/CSRF/consent and deployed
 proxy/cache behavior require separate qualification; no live service was used.
-
 
 ### Optional borrowed SQLite store
 

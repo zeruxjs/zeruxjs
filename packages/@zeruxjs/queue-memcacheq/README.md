@@ -21,7 +21,7 @@ try {
 
 Options match `TextConnectionOptions` in `@zeruxjs/cache-memcache/protocol`: `host`, `port`, `tls`, `timeoutMs`, `maxBytes`, `maxConcurrent`; additionally `prefix` defaults to `zerux`. Default port is 22201. Full prefixed queue keys and job names must be printable ASCII without spaces, at most 250 bytes. The protocol has 3-second absolute deadlines and 32 concurrent sockets by default; see the versioned-envelope/body limits below. Configure the budget no higher than your server's message-size setting. No credentials or environment values are read automatically. Use trusted network access; the basic protocol provides no authentication. TLS requires a supporting endpoint or trusted tunnel.
 
-`close` is idempotent, cancels sockets and rejects new work. Build `cache-memcache` first, then run `npm run build` here. Live MemcacheQ acceptance requires a separate disposable server; a text-protocol fixture verifies framing only. Legacy framework queue configuration remains BullMQ. Opt in through the facade's explicit [`memcacheQBackend` selection](../queue/README.md#opt-in-neutral-backend-selection), or instantiate this adapter from a startup worker and return its cleanup function.
+`close` is idempotent, cancels sockets and rejects new work. Build `cache-memcache` first, then run `npm run build` here. Live MemcacheQ acceptance requires a separate disposable server; a text-protocol fixture verifies framing only. Legacy framework queue configuration remains BullMQ. Opt in through the facade's explicit [`memcacheQBackend` selection](package-queue.md#explicit-neutral-backends-and-durable-webhooks), or instantiate this adapter from a startup worker and return its cleanup function.
 
 ## Opt-in polling worker
 

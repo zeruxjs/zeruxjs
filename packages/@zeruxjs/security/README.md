@@ -16,13 +16,13 @@ CORS is not authentication. The legacy createRateLimiter is in-memory and not di
 
 ## Destination-specific output encoding
 
-| Public helper | Supported destination | Boundary |
-| --- | --- | --- |
-| `escapeHtmlText` | HTML text node source | Encodes markup; does not accept arbitrary HTML |
-| `escapeHtmlAttribute` | Fixed, quoted, inert HTML attribute | Never event handlers, srcdoc or arbitrary style/URL policy |
-| `validateNavigationUrl` | HTTP(S) navigation URL | Validate first, then attribute-encode for an HTML sink |
+| Public helper              | Supported destination                                        | Boundary                                                                 |
+| -------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `escapeHtmlText`           | HTML text node source                                        | Encodes markup; does not accept arbitrary HTML                           |
+| `escapeHtmlAttribute`      | Fixed, quoted, inert HTML attribute                          | Never event handlers, srcdoc or arbitrary style/URL policy               |
+| `validateNavigationUrl`    | HTTP(S) navigation URL                                       | Validate first, then attribute-encode for an HTML sink                   |
 | `serializeJavaScriptValue` | One JSON-compatible JavaScript value in an HTML script block | Never interpolate into an existing JS string/template or event attribute |
-| `serializeCssString` | One quoted CSS string token for an inert string property | Not stylesheet, selector, property-name or url() sanitization |
+| `serializeCssString`       | One quoted CSS string token for an inert string property     | Not stylesheet, selector, property-name or url() sanitization            |
 
 Use public imports from `@zeruxjs/security/encoding` for these pure helpers without
 Node crypto/path dependencies. They are also exported at the root. Output encoding
@@ -72,13 +72,13 @@ unsafe legacy fallback identifiers with deliberate unique application IDs.
 and uses Node crypto/OpenSSL, not custom cipher/hash implementations. No environment
 secret is read and no service starts on import. Callers supply keys explicitly.
 
-| Purpose | API | Policy |
-| --- | --- | --- |
-| Reversible records | `createEncryptionKeyring` | AES-256-GCM only, exactly 32-byte keys, random 12-byte IV, 16-byte tag |
-| Shared-secret message authentication | `createMessageAuthenticator` | HMAC-SHA-256 only, exactly 32-byte keys; not public-key signatures or encryption |
-| Data digest/fingerprint | `hashData` | SHA-256 (default), SHA-384 or SHA-512; hex output; not password hashing or authentication |
-| Equal-length byte comparison | `timingSafeEqualBytes` | Native timingSafeEqual after bounded length/type checks |
-| Password hashing | Existing `@zeruxjs/auth` API | Auth owns scrypt/password pepper, verification and legacy migration |
+| Purpose                              | API                          | Policy                                                                                    |
+| ------------------------------------ | ---------------------------- | ----------------------------------------------------------------------------------------- |
+| Reversible records                   | `createEncryptionKeyring`    | AES-256-GCM only, exactly 32-byte keys, random 12-byte IV, 16-byte tag                    |
+| Shared-secret message authentication | `createMessageAuthenticator` | HMAC-SHA-256 only, exactly 32-byte keys; not public-key signatures or encryption          |
+| Data digest/fingerprint              | `hashData`                   | SHA-256 (default), SHA-384 or SHA-512; hex output; not password hashing or authentication |
+| Equal-length byte comparison         | `timingSafeEqualBytes`       | Native timingSafeEqual after bounded length/type checks                                   |
+| Password hashing                     | Existing `@zeruxjs/auth` API | Auth owns scrypt/password pepper, verification and legacy migration                       |
 
 There are no MD5/SHA-1 password APIs or custom noncryptographic checksums here.
 Do not use a fast data digest or HMAC in place of a password KDF. This allowlist
@@ -180,7 +180,6 @@ The installed tooling and Node crypto support are required; no live provider,
 credentials or browser is needed. Browser/proxy enforcement and distributed key
 rollouts require their own deployment checks. Tests do not measure constant-time
 execution or certify complete XSS/cryptographic system security.
-
 
 JavaScript-value serialization returns a `JSON.parse(...)` expression, preserving
 JSON own-property semantics for names such as `__proto__`. It requires the ordinary

@@ -34,11 +34,11 @@ no registry release availability or deployment is promised.
 
 One explicit `zerux-app` template offers HTML-only server rendering:
 
-| Renderer | Required generated renderer dependencies | Mode |
-| --- | --- | --- |
-| ZyroJS (default) | `zyrojs@0.0.4` | `ssr` |
-| React | `@zeruxjs/react@0.0.4`, matching `react`/`react-dom@19.3.1` | `ssr` |
-| Vue | `@zeruxjs/vue@0.0.4`, matching `vue`/`@vue/runtime-dom`/`@vue/server-renderer@3.5.44` | `ssr` |
+| Renderer         | Required generated renderer dependencies                                              | Mode  |
+| ---------------- | ------------------------------------------------------------------------------------- | ----- |
+| ZyroJS (default) | `zyrojs@0.0.4`                                                                        | `ssr` |
+| React            | `@zeruxjs/react@0.0.4`, matching `react`/`react-dom@19.3.1`                           | `ssr` |
+| Vue              | `@zeruxjs/vue@0.0.4`, matching `vue`/`@vue/runtime-dom`/`@vue/server-renderer@3.5.44` | `ssr` |
 
 Every renderer supports TypeScript (default) or JavaScript. `zeruxjs@0.0.4` is common;
 only the selected renderer's direct dependencies are emitted. TypeScript is included

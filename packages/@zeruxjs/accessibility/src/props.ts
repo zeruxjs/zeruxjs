@@ -242,7 +242,9 @@ export function validateComponentProps(
     /** Literal prop/reference value; validated before it enters relationships or attributes. */
     const value = String(
       props[name] ??
-        (attribute === undefined ? undefined : element.getAttribute(attribute)) ??
+        (attribute === undefined
+          ? undefined
+          : element.getAttribute(attribute)) ??
         ''
     );
     /** Whitespace-separated reference tokens with bounded count, length and uniqueness. */

@@ -88,14 +88,14 @@ host effect scope, never during repeated render (the standalone hook guard rejec
 back and throws. Supply `signal`, `batch`, `untracked`, `onScopeDispose` and `useRef` from
 the same `zyrojs/component` runtime instance that owns the render.
 
-| Method | Behavior |
-| --- | --- |
-| `read(source)` | Immediate read-only conversion with `.value`, `.peek()` and `.dispose()` |
-| `select(source, selector, equal = Object.is)` | Read-only stable projection; equal results retain the previous reference |
-| `write(mutableSource)` | Explicit `.value` write-through to source `.set()`; no projected writes or optimistic state |
-| `batch(fn)` | Synchronous batching of target ZyroJS notifications, including updates across multiple sources/conversions |
-| `resource(loader, options)` | Create an owned async observable; bridge lifetime owns its AbortSignal |
-| `destroy()` | Idempotent unsubscribe/resource teardown; attempts all disposers and aggregates errors |
+| Method                                        | Behavior                                                                                                   |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `read(source)`                                | Immediate read-only conversion with `.value`, `.peek()` and `.dispose()`                                   |
+| `select(source, selector, equal = Object.is)` | Read-only stable projection; equal results retain the previous reference                                   |
+| `write(mutableSource)`                        | Explicit `.value` write-through to source `.set()`; no projected writes or optimistic state                |
+| `batch(fn)`                                   | Synchronous batching of target ZyroJS notifications, including updates across multiple sources/conversions |
+| `resource(loader, options)`                   | Create an owned async observable; bridge lifetime owns its AbortSignal                                     |
+| `destroy()`                                   | Idempotent unsubscribe/resource teardown; attempts all disposers and aggregates errors                     |
 
 Conversions subscribe synchronously and read the latest source snapshot on
 registration. Selectors and initial reads are untracked in the renderer. Sources

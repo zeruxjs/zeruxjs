@@ -1,6 +1,6 @@
 # @zeruxjs/queue
 
-The implementation now lives in [`@zeruxjs/queue-bullmq`](../queue-bullmq/README.md); this package preserves its public API through compatibility exports. [`queue-rabbitmq`](../queue-rabbitmq/README.md) and [`queue-memcacheq`](../queue-memcacheq/README.md) currently provide explicit standalone factories with different capabilities. Legacy framework `queue` configuration still uses BullMQ; the explicit neutral selection below opts into other factories.
+The implementation now lives in [`@zeruxjs/queue-bullmq`](package-queue-bullmq.md); this package preserves its public API through compatibility exports. [`queue-rabbitmq`](package-queue-rabbitmq.md) and [`queue-memcacheq`](package-queue-memcacheq.md) currently provide explicit standalone factories with different capabilities. Legacy framework `queue` configuration still uses BullMQ; the explicit neutral selection below opts into other factories.
 
 BullMQ-backed named job queues, durable Redis storage, optional worker processors, delayed/retried/repeatable jobs, and generation-scoped ZeruxJS startup/shutdown. This is a **Redis-backed queue** and does not use the SQL/Mongo analytics storage as a queue backend.
 

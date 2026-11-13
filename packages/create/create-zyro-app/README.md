@@ -8,12 +8,12 @@ node packages/create/create-zyro-app/dist/index.js my-app --yes --language types
 
 Remove `--dry-run` to create the project. Then explicitly run `npm install`, `npm run typecheck`, `npm test`, `npm run build` and `npm start` inside it. Generation never installs dependencies or executes generated code. With a published compatible release, the equivalent invocation is `npm create zyro-app -- my-app --yes`; these source changes do not publish that release.
 
-| Mode | Output and requirements |
-| --- | --- |
-| `client` (default) | Browser component bundle; JavaScript required for content. Node preview server included. |
-| `static` | General `zeruxjs/static-export` pipeline; HTML, CSS, canonical and real 404, no JavaScript. Deploy the mounted directory with host-specific 404 handling. |
-| `ssr` | Standalone Node HTML server with disabled demo interaction; no hydration. |
-| `hydrated` | Standalone Node SSR plus ZyroJS V1 whole-root hydration and retained form edits. |
+| Mode               | Output and requirements                                                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `client` (default) | Browser component bundle; JavaScript required for content. Node preview server included.                                                                  |
+| `static`           | General `zeruxjs/static-export` pipeline; HTML, CSS, canonical and real 404, no JavaScript. Deploy the mounted directory with host-specific 404 handling. |
+| `ssr`              | Standalone Node HTML server with disabled demo interaction; no hydration.                                                                                 |
+| `hydrated`         | Standalone Node SSR plus ZyroJS V1 whole-root hydration and retained form edits.                                                                          |
 
 All modes support JavaScript or TypeScript. Selective hydration, template compilation, framework routing, React and Vue templates are unavailable. Static exports never embed a server runtime. SSR/hydration use `zyrojs/server`, `/component`, `/hydrate` and `/dom` public APIs, not a claimed complete framework integration.
 

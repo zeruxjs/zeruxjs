@@ -1244,7 +1244,7 @@ export async function createQueueService(
           id: String(job.id ?? ''),
           name: String(job.name),
           state: job.getState
-            ? (await job.getState()) ?? 'unknown'
+            ? ((await job.getState()) ?? 'unknown')
             : (() => {
                 if (states.length === 1) {
                   return states[0] ?? 'unknown';

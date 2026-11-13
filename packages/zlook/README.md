@@ -93,15 +93,15 @@ not wait for arbitrary user callback promises.
 
 ## Bounds, failures and ownership
 
-| Setting/resource | Default | Bound/behavior |
-| --- | --- | --- |
-| maxEntries | 100000 | 1–1000000 directory entries examined per scan, including ignored names but not their pruned descendants |
-| maxPendingEvents | 4096 | 1–100000 retained events per reconciliation |
-| debounceMs | 60 | 0–600000 integer milliseconds |
-| pollIntervalMs | 2000 | 100–600000 integer milliseconds |
-| Scan concurrency | 4 | Process-local limit shared by exported scan and watcher scans |
-| Scan admission queue | 128 | Excess calls fail with SCAN_QUEUE_LIMIT; queued abort removes admission |
-| Reconciliation requests | One active, one trailing per shared identity | Additional requests share a trailing promise, not an unbounded promise chain |
+| Setting/resource        | Default                                      | Bound/behavior                                                                                          |
+| ----------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| maxEntries              | 100000                                       | 1–1000000 directory entries examined per scan, including ignored names but not their pruned descendants |
+| maxPendingEvents        | 4096                                         | 1–100000 retained events per reconciliation                                                             |
+| debounceMs              | 60                                           | 0–600000 integer milliseconds                                                                           |
+| pollIntervalMs          | 2000                                         | 100–600000 integer milliseconds                                                                         |
+| Scan concurrency        | 4                                            | Process-local limit shared by exported scan and watcher scans                                           |
+| Scan admission queue    | 128                                          | Excess calls fail with SCAN_QUEUE_LIMIT; queued abort removes admission                                 |
+| Reconciliation requests | One active, one trailing per shared identity | Additional requests share a trailing promise, not an unbounded promise chain                            |
 
 Traversal uses streaming opendir iteration (directory handles close on completion,
 throw and cancellation), lstat and bounded pending directories. Descendant symlinks

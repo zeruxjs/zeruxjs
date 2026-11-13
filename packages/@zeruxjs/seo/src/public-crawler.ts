@@ -490,11 +490,7 @@ export function createPublicCrawlerService(options: PublicCrawlerOptions) {
       if (pageXml === undefined) {
         return new Response(null, { status: 404 });
       }
-      return response(
-        request,
-        pageXml,
-        'application/xml; charset=utf-8'
-      );
+      return response(request, pageXml, 'application/xml; charset=utf-8');
     } catch {
       return new Response(null, {
         status: 503,

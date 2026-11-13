@@ -6,12 +6,12 @@ plain subscribable object, **not** a native Vue ref/proxy.
 
 ## Entry points and peers
 
-| Public entry | Implemented responsibility |
-| --- | --- |
-| `@zeruxjs/vue` | Standalone ref/store adapters and injected `createVueBindings`; no UI runtime dependency |
+| Public entry             | Implemented responsibility                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `@zeruxjs/vue`           | Standalone ref/store adapters and injected `createVueBindings`; no UI runtime dependency |
 | `@zeruxjs/vue/rendering` | Explicit component/view validation and per-app context key/types; imports Vue types only |
-| `@zeruxjs/vue/browser` | Lazy runtime-only createApp/createSSRApp, mount/update/unmount and native hydration |
-| `@zeruxjs/vue/server` | Lazy fresh-app string SSR through Vue's compiler-free server-renderer build |
+| `@zeruxjs/vue/browser`   | Lazy runtime-only createApp/createSSRApp, mount/update/unmount and native hydration      |
+| `@zeruxjs/vue/server`    | Lazy fresh-app string SSR through Vue's compiler-free server-renderer build              |
 
 Install matching optional peers only when using the native entries:
 

@@ -77,8 +77,7 @@ export function validateFace(face: FontDefinition): void {
           Number(v.slice(0, -1)) < 1 ||
           Number(v.slice(0, -1)) > 1000
       ) ||
-      (values.length === 2 &&
-        parseFloat(values[0]!) > parseFloat(values[1]!))
+      (values.length === 2 && parseFloat(values[0]!) > parseFloat(values[1]!))
     ) {
       throw new TypeError('Invalid font stretch');
     }
@@ -127,8 +126,7 @@ export function validateFace(face: FontDefinition): void {
           prefix === undefined ||
           suffix === undefined ||
           prefix.length + suffix.length > 6 ||
-          parseInt((prefix + suffix).replaceAll('?', 'F'), 16) >
-            0x10ffff
+          parseInt((prefix + suffix).replaceAll('?', 'F'), 16) > 0x10ffff
         );
       })
     ) {

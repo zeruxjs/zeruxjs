@@ -27,11 +27,10 @@ export function mediaRequestBody(
     throw new TypeError('Encoded uploads unsupported');
   }
   /** Normalized declared MIME header; not content sniffing or permission. */
-  const contentType = (
-    request.headers.get('content-type') ?? 'application/octet-stream'
-  )
-    .split(';', 1)[0]
-    ?.trim() ?? 'application/octet-stream';
+  const contentType =
+    (request.headers.get('content-type') ?? 'application/octet-stream')
+      .split(';', 1)[0]
+      ?.trim() ?? 'application/octet-stream';
   if (
     options.contentType !== undefined &&
     contentType !== options.contentType

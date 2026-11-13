@@ -177,7 +177,7 @@ is escaped, and lastmod is emitted only when the source provides a valid content
 modification date. Neither page nor sitemap-index dates are stamped at build time.
 
 Request URL origin and an explicit Host header must match configured public
-settings. Host, Forwarded and X-Forwarded-* **never derive output URLs**. If a
+settings. Host, Forwarded and X-Forwarded-\* **never derive output URLs**. If a
 reverse proxy supplies internal Request URLs, explicitly configure
 `trustedProxy:{peers:['127.0.0.1'],internalOrigins:['http://internal.example']}` and
 pass `{peerAddress}` from the trusted host's **direct socket**, not a request header.
@@ -201,18 +201,18 @@ createSitemapIndex now bound iteration and bytes too, including iterator cleanup
 on failure. They remain general serializers; their legacy query-URL support is
 not the strict public-source privacy policy. New service settings are:
 
-| Setting | Default | Maximum |
-| --- | --- | --- |
-| pageSize | 500 | 1000 records per source call |
-| maxSourcePages | 1000 | 10000 |
-| maxEntries | 100000 | 500000 |
-| maxUrlsPerFile | 10000 | 50000 |
-| maxXmlBytes | 45000000 | 52428800 per file/index |
-| maxSnapshotBytes | 33554432 | 134217728 combined XML bytes |
-| timeoutMs | 5000 | 60000 |
-| maxWaiters | 32 | 256 |
-| snapshotTtlMs | 0 (fresh per settled request) | 86400000 |
-| cacheSeconds | 600 | 31536000 |
+| Setting          | Default                       | Maximum                      |
+| ---------------- | ----------------------------- | ---------------------------- |
+| pageSize         | 500                           | 1000 records per source call |
+| maxSourcePages   | 1000                          | 10000                        |
+| maxEntries       | 100000                        | 500000                       |
+| maxUrlsPerFile   | 10000                         | 50000                        |
+| maxXmlBytes      | 45000000                      | 52428800 per file/index      |
+| maxSnapshotBytes | 33554432                      | 134217728 combined XML bytes |
+| timeoutMs        | 5000                          | 60000                        |
+| maxWaiters       | 32                            | 256                          |
+| snapshotTtlMs    | 0 (fresh per settled request) | 86400000                     |
+| cacheSeconds     | 600                           | 31536000                     |
 
 Repeated/oversized cursors, over-limit pages, single entries that cannot fit,
 private data or dependency failures return a body-free no-store 503. Snapshot

@@ -28,7 +28,7 @@ try {
 
 `close()` is idempotent and closes the connection, requeuing unacknowledged messages. Finish processing before closing if graceful draining is required. An interrupted confirmation/ack is ambiguous; use durable application idempotency. Publisher confirmation is not proof of consumer processing. Acknowledgements permit redelivery after crashes, not exactly-once side effects. Unexpected channel/connection failure rejects subsequent calls; reconstruct the service explicitly. There are no automatic reconnect, recurring/delayed scheduler, admin dashboard or consumer loops. `capabilities` exposes these basic guarantees.
 
-Run `npm run build` here. Live broker tests require an isolated RabbitMQ virtual host. Legacy framework queue config still selects BullMQ. Opt in through the facade's explicit [`rabbitMQBackend` selection](../queue/README.md#opt-in-neutral-backend-selection), or use this standalone factory in a startup worker and return `() => jobs.close()`. See the [amqplib channel API](https://amqp-node.github.io/amqplib/channel_api.html).
+Run `npm run build` here. Live broker tests require an isolated RabbitMQ virtual host. Legacy framework queue config still selects BullMQ. Opt in through the facade's explicit [`rabbitMQBackend` selection](package-queue.md#explicit-neutral-backends-and-durable-webhooks), or use this standalone factory in a startup worker and return `() => jobs.close()`. See the [amqplib channel API](https://amqp-node.github.io/amqplib/channel_api.html).
 
 ## Opt-in supervised worker service
 

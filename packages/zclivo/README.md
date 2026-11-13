@@ -93,12 +93,12 @@ Dispatch returns a result and never calls process.exit or changes process.exitCo
 The entry point owns status selection. The legacy wrapper and standalone binary
 are entry-point conveniences and continue setting/returning status respectively.
 
-| Outcome | exitCode |
-| --- | --- |
-| Success/help/docs/completion | 0 |
-| Handler rejection, invalid handler status, output or cleanup failure | 1 |
-| Unknown keyword/command, malformed argv or invalid typed options | 2 |
-| Observed cooperative cancellation | 130 |
+| Outcome                                                              | exitCode |
+| -------------------------------------------------------------------- | -------- |
+| Success/help/docs/completion                                         | 0        |
+| Handler rejection, invalid handler status, output or cleanup failure | 1        |
+| Unknown keyword/command, malformed argv or invalid typed options     | 2        |
+| Observed cooperative cancellation                                    | 130      |
 
 A handler may return an integer from 0 through 255. Invalid flag usage previously
 returned 1; migrate automation to 2. Typo suggestions cover registered visible
@@ -116,7 +116,7 @@ Typed boolean flags do not consume a following positional unless it is the liter
 true/false. The public parseArguments(argv) keeps legacy value consumption; its
 optional second argument names boolean options. `--` ends all option/help/docs
 recognition, so `run -- --help` passes a positional string to the handler. Grouped
-short flags and implicit --no-* negation are not implemented. Empty --name= is a
+short flags and implicit --no-\* negation are not implemented. Empty --name= is a
 string value; a bare string/number flag without a value is invalid under a schema.
 Without a schema, legacy unknown options remain accepted. Option names must be
 ASCII alphanumeric/underscore/hyphen, starting with alphanumeric; prototype keys
@@ -234,9 +234,9 @@ file maps are validated even though the functions themselves can have side effec
 `minimalProjectGenerator` supplies the existing minimal Zerux starter through this
 engine. Its actual supported matrix is:
 
-| Template | Mode | Renderer | Languages |
-| --- | --- | --- | --- |
-| `zerux-minimal` | `minimal` | `none` | `typescript`, `javascript` |
+| Template        | Mode      | Renderer | Languages                  |
+| --------------- | --------- | -------- | -------------------------- |
+| `zerux-minimal` | `minimal` | `none`   | `typescript`, `javascript` |
 
 There is no built-in React/Vue/Zyro/CMS/static-export template. Such selections reject
 rather than generating files that imply runtime support. Future creator packages

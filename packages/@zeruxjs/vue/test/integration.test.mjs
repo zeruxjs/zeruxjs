@@ -1,10 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  createVueRef,
-  mapVueRef,
-  toVueReadable,
-} from '../dist/index.js';
+import { createVueRef, mapVueRef, toVueReadable } from '../dist/index.js';
 test('refs and derived refs notify and detach', () => {
   /** Borrowed standalone input for the derived ref. */
   const a = createVueRef(2);

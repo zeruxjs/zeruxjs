@@ -109,8 +109,7 @@ immutable conjunctive scope to reads, writes, deletes and IDs. Query text and
 user filters cannot replace it. `tenantIsolation: true` is a required adapter
 contract, not an audit of arbitrary host code. Do not register an engine adapter
 that cannot enforce it. Index documents are inert bounded JSON; batches cap at
-100 items/1 MiB, queries at 4096 characters, pages at 100 hits/1 MiB and offsets at
-10000. Filter validation reuses the local index contract. Controls accept
+100 items/1 MiB, queries at 4096 characters, pages at 100 hits/1 MiB and offsets at 10000. Filter validation reuses the local index contract. Controls accept
 `signal` and a timeout no longer than the configured 1–60000 ms default deadline.
 
 Remote connections require an HTTPS endpoint exactly present in `allowedEndpoints`

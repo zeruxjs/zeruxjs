@@ -1301,7 +1301,9 @@ export function createTagManager(options: TagRuntimeOptions) {
     const styleHashes = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)]
       .map(
         (match) =>
-          `'sha256-${createHash('sha256').update(match[1] ?? '').digest('base64')}'`
+          `'sha256-${createHash('sha256')
+            .update(match[1] ?? '')
+            .digest('base64')}'`
       )
       .join(' ');
     /** Derive CSP origin only from validated host asset references, never request input.
@@ -1321,7 +1323,9 @@ export function createTagManager(options: TagRuntimeOptions) {
     const scriptHashes = scripts
       .map(
         (match) =>
-          `'sha256-${createHash('sha256').update(match[1] ?? '').digest('base64')}'`
+          `'sha256-${createHash('sha256')
+            .update(match[1] ?? '')
+            .digest('base64')}'`
       )
       .join(' ');
     return new Response(html, {

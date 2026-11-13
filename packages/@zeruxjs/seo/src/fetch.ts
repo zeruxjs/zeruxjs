@@ -230,7 +230,9 @@ export function createCrawlerService(options: CrawlerRoutesOptions): {
     if (path === '/sitemap.xml') {
       return respond(
         request,
-        snapshot.pages.length === 1 ? (snapshot.pages[0] ?? snapshot.index) : snapshot.index,
+        snapshot.pages.length === 1
+          ? (snapshot.pages[0] ?? snapshot.index)
+          : snapshot.index,
         'application/xml; charset=utf-8',
         ttl
       );
@@ -250,12 +252,7 @@ export function createCrawlerService(options: CrawlerRoutesOptions): {
     if (pageXml === undefined) {
       return new Response(null, { status: 404 });
     }
-    return respond(
-      request,
-      pageXml,
-      'application/xml; charset=utf-8',
-      ttl
-    );
+    return respond(request, pageXml, 'application/xml; charset=utf-8', ttl);
   };
   // Wildcard route is optional; frameworks supporting dynamic paths can use the dispatch handler.
   return {

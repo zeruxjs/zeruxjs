@@ -93,8 +93,7 @@ function distance(a: string, b: string, max: number): number {
       next[j] = Math.min(
         (next[j - 1] ?? Infinity) + 1,
         (row[j] ?? Infinity) + 1,
-        (row[j - 1] ?? Infinity) +
-          (x[i - 1] === y[j - 1] ? 0 : 1)
+        (row[j - 1] ?? Infinity) + (x[i - 1] === y[j - 1] ? 0 : 1)
       );
       minimum = Math.min(minimum, next[j] ?? Infinity);
     }

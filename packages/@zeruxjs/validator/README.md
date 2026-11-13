@@ -47,12 +47,12 @@ Public types remain owned by this package, not by `@zeruxjs/typescript`.
 
 ## Object, union and default contracts
 
-| Schema | Unknown own keys |
-| --- | --- |
-| `object` / `objectAsync` | Removed |
-| `looseObject` / async equivalent | Preserved, except unsafe prototype keys |
-| `strictObject` / async equivalent | Rejected |
-| `objectWithRest` / async equivalent | Validated with the rest schema |
+| Schema                              | Unknown own keys                        |
+| ----------------------------------- | --------------------------------------- |
+| `object` / `objectAsync`            | Removed                                 |
+| `looseObject` / async equivalent    | Preserved, except unsafe prototype keys |
+| `strictObject` / async equivalent   | Rejected                                |
+| `objectWithRest` / async equivalent | Validated with the rest schema          |
 
 Object schemas require a non-null object that is not an array. Declared fields
 read only own properties; inherited values cannot satisfy required fields. Unsafe
@@ -100,13 +100,13 @@ application-owned values. Do not rely on parsing to isolate mutable private data
 Schema validation use per-call execution state. Internal `~run` methods are not a
 public safety boundary. Limits are positive integers within these hard ceilings:
 
-| Parse option | Default | Maximum | Bound |
-| --- | --- | --- | --- |
-| `maxDepth` | 64 | 128 | Input nesting and nested schema/action dispatch (wrappers also count) |
-| `maxNodes` | 10000 | 100000 | Input scan nodes and, separately, schema/action/callback steps |
-| `maxCollectionSize` | 1000 | 10000 | Array length, map/set size, own object keys and object schema fields |
-| `maxIssues` | 100 | 1000 | Issues generated/reused across actions and attempted union branches |
-| `maxConcurrency` | 8 | 32 | Active built-in async refinement/transform callbacks per parse |
+| Parse option        | Default | Maximum | Bound                                                                 |
+| ------------------- | ------- | ------- | --------------------------------------------------------------------- |
+| `maxDepth`          | 64      | 128     | Input nesting and nested schema/action dispatch (wrappers also count) |
+| `maxNodes`          | 10000   | 100000  | Input scan nodes and, separately, schema/action/callback steps        |
+| `maxCollectionSize` | 1000    | 10000   | Array length, map/set size, own object keys and object schema fields  |
+| `maxIssues`         | 100     | 1000    | Issues generated/reused across actions and attempted union branches   |
+| `maxConcurrency`    | 8       | 32      | Active built-in async refinement/transform callbacks per parse        |
 
 The iterative input scan rejects cycles and enumerable accessors without invoking
 them, including beneath `unknown`/`any`. Strings are scalar; use `maxLength` and
@@ -180,7 +180,6 @@ or signals. Explicit signals or limit overrides bypass schema caches so controll
 work cannot reuse a computation owned by another parse. Cached issues consume the receiving parse's issue budget. Default cache semantics
 (including output identity and stale mutable inputs) remain unchanged.
 
-
 Message registries use exact language keys, including a distinct `undefined` key;
 they provide no locale fallback, expiry, cardinality cap or tenant isolation.
 Configure trusted static messages at bootstrap. Getters return borrowed messages
@@ -245,13 +244,13 @@ functional parse APIs when relying on their own-field and root-budget contracts.
 
 ## Compatibility and verification
 
-| Surface | Compatibility goal |
-| --- | --- |
-| Functional schemas/actions/parsers | Preserve existing named contracts; precise functional inference |
-| Constructor action shorthand | Runtime convenience; typed zero-argument shorthand, broader legacy argument-taking forms |
-| `z` / `chain` | Limited convenience API with broad types; not Zod parity |
-| JSON Schema / `ajvSafeParse` helpers | Existing limited local conversion/checking subset; not the AJV engine or full JSON Schema |
-| Valibot-style names / Standard Schema adapter | Existing named subset; no full Valibot conformance claim |
+| Surface                                       | Compatibility goal                                                                        |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Functional schemas/actions/parsers            | Preserve existing named contracts; precise functional inference                           |
+| Constructor action shorthand                  | Runtime convenience; typed zero-argument shorthand, broader legacy argument-taking forms  |
+| `z` / `chain`                                 | Limited convenience API with broad types; not Zod parity                                  |
+| JSON Schema / `ajvSafeParse` helpers          | Existing limited local conversion/checking subset; not the AJV engine or full JSON Schema |
+| Valibot-style names / Standard Schema adapter | Existing named subset; no full Valibot conformance claim                                  |
 
 After changing source, run `npm run build`, then `node --test test/*.test.mjs` in
 this package. The foundation suite checks normal/denied inputs, inference against
@@ -262,12 +261,12 @@ TypeScript/shared tooling are required; there are no live-service prerequisites.
 
 ## Browser and HTTP entry points
 
-| Public import | Contents |
-| --- | --- |
-| `@zeruxjs/validator/schemas` | Schemas, actions, parsers and existing utilities; no request-parsing dependency |
+| Public import                | Contents                                                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
+| `@zeruxjs/validator/schemas` | Schemas, actions, parsers and existing utilities; no request-parsing dependency        |
 | `@zeruxjs/validator/browser` | Same pure API plus explicit DOM feedback; no HTTP reader, Node imports or Node globals |
-| `@zeruxjs/validator/http` | Fetch JSON/query/header/form adapters and client-safe error types |
-| `@zeruxjs/validator` | Compatibility barrel retaining previous root exports |
+| `@zeruxjs/validator/http`    | Fetch JSON/query/header/form adapters and client-safe error types                      |
+| `@zeruxjs/validator`         | Compatibility barrel retaining previous root exports                                   |
 
 The browser entry can be imported before a DOM exists. Browser-only functions
 access supplied elements only when called. HTTP adapters use Fetch/Web Streams,
@@ -299,15 +298,15 @@ publish/register routes or perform authorization/CSRF checks.
 
 ### HTTP budgets and failures
 
-| Option | Default | Allowed range |
-| --- | --- | --- |
-| `maxBytes` | 1 MiB | 1 byte–16 MiB |
-| `bodyTimeoutMs` | 3000 ms | 10–60000 ms |
-| `maxConcurrentReads` | 32 | 1–1024 |
-| `maxFields` | 200 | 1–1000 |
-| `maxQueryFields` | maxFields | 1–1000 |
-| `maxQueryLength` | 16384 characters | 1–1048576 |
-| `maxFieldBytes` | 16384 UTF-8 bytes | 1–1048576 |
+| Option               | Default           | Allowed range |
+| -------------------- | ----------------- | ------------- |
+| `maxBytes`           | 1 MiB             | 1 byte–16 MiB |
+| `bodyTimeoutMs`      | 3000 ms           | 10–60000 ms   |
+| `maxConcurrentReads` | 32                | 1–1024        |
+| `maxFields`          | 200               | 1–1000        |
+| `maxQueryFields`     | maxFields         | 1–1000        |
+| `maxQueryLength`     | 16384 characters  | 1–1048576     |
+| `maxFieldBytes`      | 16384 UTF-8 bytes | 1–1048576     |
 
 Budgets are positive safe integers. Byte limits count actual streamed bytes before
 JSON/form decoding and compare Content-Length to the final length. Field budgets
@@ -317,7 +316,7 @@ node cap before schema validation. `validation` supplies the existing schema par
 options/limits/hooks, excluding signal. `signal` on the adapter and Request.signal
 both cancel that operation; neither overrides the other.
 
-JSON requires application/json or application/*+json. Form requests require
+JSON requires application/json or application/\*+json. Form requests require
 application/x-www-form-urlencoded or multipart/form-data with a valid boundary.
 UTF-8 is required; content encoding other than identity rejects with 415. FormData
 objects and Headers/pair iterables are already decoded and have no content-type
@@ -358,16 +357,16 @@ prototype names, including reserved dot/bracket segments, reject with 400 before
 schema stripping. Names must be nonempty, at most 256 characters, and contain no
 controls; headers additionally require token syntax and are lowercased.
 
-| Policy | Behavior |
-| --- | --- |
-| `duplicates:'array'` (default) | One occurrence is scalar; repeated occurrences are arrays |
-| `duplicates:'reject'` | Any repeated name rejects, including repeats containing empty values |
-| `duplicates:'first'` / `'last'` | Select the literal first/last occurrence before empty handling |
-| `empty:'preserve'` (default) | Empty strings stay empty; absent fields stay absent |
-| `empty:'omit'` | Remove selected empty strings; if all disappear, the field is absent and schema defaults may run |
-| `coerce:{field:'number'}` | Strict finite JSON-number syntax only; no whitespace, hex, NaN, Infinity or empty conversion |
-| `coerce:{field:'boolean'}` | Exact lowercase true/false only |
-| `coerce:{field:'string'}` | Preserve strings; do not stringify files |
+| Policy                          | Behavior                                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `duplicates:'array'` (default)  | One occurrence is scalar; repeated occurrences are arrays                                        |
+| `duplicates:'reject'`           | Any repeated name rejects, including repeats containing empty values                             |
+| `duplicates:'first'` / `'last'` | Select the literal first/last occurrence before empty handling                                   |
+| `empty:'preserve'` (default)    | Empty strings stay empty; absent fields stay absent                                              |
+| `empty:'omit'`                  | Remove selected empty strings; if all disappear, the field is absent and schema defaults may run |
+| `coerce:{field:'number'}`       | Strict finite JSON-number syntax only; no whitespace, hex, NaN, Infinity or empty conversion     |
+| `coerce:{field:'boolean'}`      | Exact lowercase true/false only                                                                  |
+| `coerce:{field:'string'}`       | Preserve strings; do not stringify files                                                         |
 
 Only named fields coerce, and repeated selected values coerce individually. No
 field is created just because it has a coercion rule. Repeated arrays remain

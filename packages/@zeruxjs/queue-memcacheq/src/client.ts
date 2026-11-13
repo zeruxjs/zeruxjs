@@ -181,9 +181,7 @@ export function createMemcacheQ(options: MemcacheQOptions = {}) {
         }
         /** Strict UTF-8 parsed popped record; validation failure cannot restore it. */
         const envelope = JSON.parse(
-          new TextDecoder('utf-8', { fatal: true }).decode(
-            value.value
-          )
+          new TextDecoder('utf-8', { fatal: true }).decode(value.value)
         );
         optionKeys(envelope, ['version', 'name', 'data']);
         if (
