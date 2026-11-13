@@ -72,7 +72,6 @@ const CLI_NAME = 'zerux-server';
         compression?: import('./proxy-compression.js').ProxyCompressionOptions;
         cache?: import('./proxy-cache.js').ProxyCacheOptions;
     }} options - Explicit trusted listener/application policy; credentials and lifecycle permissions stay host-owned.
- * @param {string} lockHeldDir - Optional exact state root whose operation lock this lifecycle command already owns.
  * @param {boolean | undefined} options.https - Explicit TLS mode; no system trust is installed automatically.
  * @param {string | undefined} options.tld - Host-controlled proxy suffix, validated by its owning startup/certificate policy.
  * @param {string | undefined} options.certPath - Trusted local custom certificate path, used only with an explicit matching keyPath.
@@ -82,6 +81,7 @@ const CLI_NAME = 'zerux-server';
  * @param {ProxyAdmissionOptions | undefined} options.limits - Host-owned admission ceilings.
  * @param {import('./proxy-compression.js').ProxyCompressionOptions | undefined} options.compression - Existing single response-layer compression policy.
  * @param {import('./proxy-cache.js').ProxyCacheOptions | undefined} options.cache - Explicit public-response cache policy; this does not authorize personalized caching.
+ * @param {string} lockHeldDir - Optional exact state root whose operation lock this lifecycle command already owns.
  * @returns {Promise<boolean>} Listener/control/publication receipt; false reports startup failure rather than claiming a running owned server handle.
  */
 async function startProxyImpl(

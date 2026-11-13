@@ -1904,6 +1904,7 @@ test('hosting child scopes require retained handles while inert registries do no
     'launchSupervisedCommand',
     'launchManagedApplication',
     'launchRollingApplication',
+    'launchInstanceFleet',
   ]) {
     assert.ok(
       rules(

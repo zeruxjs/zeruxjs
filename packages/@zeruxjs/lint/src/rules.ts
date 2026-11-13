@@ -118,6 +118,7 @@ const acquisitions: Record<string, readonly string[]> = {
     'launchSupervisedCommand',
     'launchManagedApplication',
     'launchRollingApplication',
+    'launchInstanceFleet',
   ],
   'zeruxjs/renderers': ['createRendererRegistry'],
   'zeruxjs/protocols': ['createZeruxProtocols'],
