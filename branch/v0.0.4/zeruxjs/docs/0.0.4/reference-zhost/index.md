@@ -345,6 +345,7 @@ await startServer({
 ## Integrations
 
 `zhost` acts as the glue between several core components:
+
 - **`zlook`**: For monitoring source changes.
 - **`zforge`**: For devtools registration and dashboard management.
 - **`ws`**: For the real-time event pipeline.
@@ -353,6 +354,7 @@ await startServer({
 ## Development Mode
 
 When running in development mode (`details.dev` provided), `zhost` will:
+
 1. Register the application with the shared dev server.
 2. Inject the development client into all HTML responses.
 3. Establish a WebSocket connection for hot updates.
@@ -614,7 +616,7 @@ if (committed) {
 - `RouteStore.registerPoolRoute()` saves validated weighted targets atomically
   and returns a lease. `lease.switchBackends()` swaps targets under the same
   route lock and fails safely if another process took over the hostname.
-- `handoverBackends()` checks the *new* targets before committing; failed probes
+- `handoverBackends()` checks the _new_ targets before committing; failed probes
   or invalid targets leave the currently published route unchanged.
 - The proxy isolates failed upstream connections. With an active probe interval,
   isolated instances recover only after a successful check. Without an interval,
@@ -636,7 +638,7 @@ pool, handover, and WebSocket integration regression tests.
 
 ## Rolling application deployments
 
-`launchRollingApplication` runs *overlapping* generations of the same loopback
+`launchRollingApplication` runs _overlapping_ generations of the same loopback
 application on different ports, tests the candidate's readiness, switches the
 existing leased hostname atomically, and retires the previous child after its
 in-flight proxy connections finish (or a configured drain deadline elapses).
@@ -738,7 +740,7 @@ live in a private, same-user directory beneath the selected proxy state
 directory. Descriptors require a verified process-start fingerprint. Requests
 and responses are size-limited and time-limited; arbitrary command execution,
 file access and unauthenticated process signaling are not exposed through RPC.
-`rolling status` displays *last known* state and separately reports whether the
+`rolling status` displays _last known_ state and separately reports whether the
 owning controller is online. History keeps up to 50 events per hostname, with
 no application argv or environment secrets saved.
 
@@ -933,7 +935,7 @@ socket with private 0600 descriptors. CLI status displays the last persisted
 checkpoint and distinguishes online from offline or recovery-required state.
 
 The restart-budget checkpoint is a 0600 JSON file under the owner's private
-`app-controls-<uid>` directory. It stores retry timestamps *before* each
+`app-controls-<uid>` directory. It stores retry timestamps _before_ each
 attempt. A supervisor restarted with the same configuration inherits the
 remaining sliding-window budget, preventing hard crashes from resetting the
 attempt limit. Configuration fingerprints intentionally reject changed commands,
@@ -986,7 +988,7 @@ zerux-server fleet autoscale api resume
 ```
 
 Autoscaling uses **requests per second per active healthy replica**, observed
-by the *real proxy* rather than the fleet supervisor. The policy scales one
+by the _real proxy_ rather than the fleet supervisor. The policy scales one
 replica per decision, requires consecutive samples, uses different scale-up and
 scale-down thresholds, and honors a cooldown. A manual `fleet scale` pauses
 autoscaling until explicitly resumed. A failed or stale metrics request cannot
@@ -1222,14 +1224,14 @@ checks before accessing sensitive data.
 
 ### HTTP versions and QUIC
 
-| Version/transport | Support |
-| --- | --- |
-| HTTP/1.0, HTTP/1.1 | Native Node HTTP server |
-| HTTPS and HTTP/2 | TLS ALPN negotiation, HTTP/1.1 fallback |
-| HTTP/3 (QUIC) | **External HTTP/3 terminator required**; optional validated `Alt-Svc` advertising |
-| WebTransport | **External QUIC terminator required**; `WebTransportRouter` lets a terminator attach real sessions |
-| WebSocket | HTTP/1.1 upgrade proxy |
-| SSE | Native streamed HTTP event source |
+| Version/transport  | Support                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| HTTP/1.0, HTTP/1.1 | Native Node HTTP server                                                                            |
+| HTTPS and HTTP/2   | TLS ALPN negotiation, HTTP/1.1 fallback                                                            |
+| HTTP/3 (QUIC)      | **External HTTP/3 terminator required**; optional validated `Alt-Svc` advertising                  |
+| WebTransport       | **External QUIC terminator required**; `WebTransportRouter` lets a terminator attach real sessions |
+| WebSocket          | HTTP/1.1 upgrade proxy                                                                             |
+| SSE                | Native streamed HTTP event source                                                                  |
 
 Node 22's HTTP modules do not provide native HTTP/3 or WebTransport server APIs.
 Do not configure `http3Terminator` unless a real QUIC listener is running at
@@ -1341,6 +1343,12 @@ zerux-server proxy start --port 1355 --cache \
 
 Or set `createProxyServer({ getRoutes, proxyPort, cache: { enabled: true } })`. This exposes `proxy.responseCache.stats()`, `.invalidate(hostname, pathname?)`, and `.clear()` for explicit invalidation. The proxy caches only HTTP 200 GET responses with explicit `Cache-Control: public, max-age=...` or `s-maxage`, no cookies/authentication, no `Set-Cookie`, no `Vary` or upstream `Content-Encoding`, and no range, protocol stream or private/no-store response. Storage uses bounded process memory, not disk; entries expire and are separated by route generation. Cached identity bodies are compressed per client on delivery, so a gzip client and a Brotli client are never served the wrong encoding. `Age` reflects storage time.
 
+Cache invalidation removes entries retained at that moment. The optional
+`pathname` argument matches the exact stored request URL, including query bytes
+in the serving proxy. This legacy memory cache does not fence an upstream
+capture already in flight, which may insert after `.invalidate()` or `.clear()`.
+It provides neither distributed invalidation nor durable storage.
+
 **Nginx deployment:** You can leave ZHOST compression disabled with `--no-compress` and use Nginx `gzip`/branch/v0.0.4/`brotli` instead. Already-compressed upstream responses always pass through unchanged. Do not configure both layers to compress the same response intentionally. SSE and Connect streams are neither buffered in ZHOST's cache nor compressed by ZHOST; configure Nginx `proxy_buffering off` for SSE as needed. Content-length, ETag, Vary and Accept-Encoding safety is handled by the proxy's compression layer; application-level cache policies remain authoritative.
 
 ### Reloading the development HTTP server
@@ -1390,17 +1398,17 @@ direct peer is in `trustedProxies`. Host authorization receives the original
 request and must implement any verified proxy policy itself. Origin checks are
 additional to authentication.
 
-| Implementation | Request | Server stream | Bidirectional | Boundary |
-| --- | --- | --- | --- | --- |
-| HTTP adapter | yes | yes | no | Required host authorization, gateway endpoint policy |
-| WebSocket adapter | messages | yes | yes | Required upgrade authorization; handler owns per-message permission |
-| SSE `/events` | GET | yes | no | Gateway authorization; bounded clients/replay |
-| JSON-RPC `/rpc` | POST/batch/notifications | no | no | Gateway authorization; sequential batch up to 64 |
-| MCP `/mcp` | stateless JSON POST | no | no | Tools/resources core subset, default version `2025-11-25` |
-| Connect | unary JSON | framed JSON | framed JSON subset | No Protobuf, compression or complete Connect/gRPC compatibility |
-| tRPC | JSON bridge | no | no | No complete official tRPC wire protocol |
-| gRPC | forwarded | forwarded | forwarded | HTTP/2 upstream owns native RPC/authentication |
-| WebTransport / HTTP/3 | external | external | external | Explicit external QUIC terminator/session handoff |
+| Implementation        | Request                  | Server stream | Bidirectional      | Boundary                                                            |
+| --------------------- | ------------------------ | ------------- | ------------------ | ------------------------------------------------------------------- |
+| HTTP adapter          | yes                      | yes           | no                 | Required host authorization, gateway endpoint policy                |
+| WebSocket adapter     | messages                 | yes           | yes                | Required upgrade authorization; handler owns per-message permission |
+| SSE `/events`         | GET                      | yes           | no                 | Gateway authorization; bounded clients/replay                       |
+| JSON-RPC `/rpc`       | POST/batch/notifications | no            | no                 | Gateway authorization; sequential batch up to 64                    |
+| MCP `/mcp`            | stateless JSON POST      | no            | no                 | Tools/resources core subset, default version `2025-11-25`           |
+| Connect               | unary JSON               | framed JSON   | framed JSON subset | No Protobuf, compression or complete Connect/gRPC compatibility     |
+| tRPC                  | JSON bridge              | no            | no                 | No complete official tRPC wire protocol                             |
+| gRPC                  | forwarded                | forwarded     | forwarded          | HTTP/2 upstream owns native RPC/authentication                      |
+| WebTransport / HTTP/3 | external                 | external      | external           | Explicit external QUIC terminator/session handoff                   |
 
 MCP is not complete Streamable HTTP: no session negotiation, resumable MCP SSE,
 subscriptions, sampling or elicitation. The generic `/events` stream is separate.
@@ -1560,6 +1568,20 @@ requirements against the same open inode whose bytes they consume. Reads are
 bounded and reject leaf symlinks. Private parent ownership and the existing
 operation/route locks still belong to the host; these helpers do not create a
 filesystem sandbox or an atomic compare-and-delete primitive.
+
+### Ownership during fleet sampling and protocol shutdown
+
+Autoscaler `stop()` clears future timer ticks and fences later scale requests;
+it does not return a drain promise for a sample already running. Keep borrowed
+fleet/metric dependencies alive through their own actual settlement. Transport
+registry `stop()` instead awaits acquired adapter stop/cleanup promises in reverse
+order. HTTP/WebSocket adapters retain pending handler jobs until actual settlement;
+aborting a signal cannot force arbitrary application JavaScript to stop.
+
+Private local control descriptors contain secret tokens and native process
+identities. Keep them in the host-owned private state directory and out of public
+configuration and diagnostic responses. A client-side control timeout closes its
+socket; it does not prove rollback of a server-side operation.
 
 
 ## Implementation sources

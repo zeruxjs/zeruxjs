@@ -490,15 +490,15 @@ the reader; ignoring a response body keeps its request deadline active. A partia
 stream failure errors the next read, not the already-received bytes. SSE is supplied
 as ordinary content-type and byte chunks; there is no fabricated provider protocol.
 
-| Limit | Default | Accepted bounds |
-| --- | --- | --- |
-| maxBodyBytes | 65536 | 1–16777216 |
-| maxResponseBytes | 1048576 | 1–16777216 per response; 16 MiB total configured script bytes |
-| maxConcurrent | 32 | 1–128 active injected operations / accepted server connections |
-| timeoutMs | 5000 | 1–600000ms fixture lifetime, including unused fixtures |
-| requestTimeoutMs | 1000 | 1–600000ms real request/body/stream safety deadline |
-| Routes / response steps per route | 128 / 128 | Fixed maximums |
-| Chunks per response / call records | 1024 / 4096 | Fixed maximums |
+| Limit                              | Default     | Accepted bounds                                                |
+| ---------------------------------- | ----------- | -------------------------------------------------------------- |
+| maxBodyBytes                       | 65536       | 1–16777216                                                     |
+| maxResponseBytes                   | 1048576     | 1–16777216 per response; 16 MiB total configured script bytes  |
+| maxConcurrent                      | 32          | 1–128 active injected operations / accepted server connections |
+| timeoutMs                          | 5000        | 1–600000ms fixture lifetime, including unused fixtures         |
+| requestTimeoutMs                   | 1000        | 1–600000ms real request/body/stream safety deadline            |
+| Routes / response steps per route  | 128 / 128   | Fixed maximums                                                 |
+| Chunks per response / call records | 1024 / 4096 | Fixed maximums                                                 |
 
 Headers are limited to 64 entries (128-character names, 8192-character values),
 reject CRLF and prohibit connection/transfer-encoding/content-length/upgrade/set-cookie
@@ -676,7 +676,7 @@ Capture is off by default. To opt in, pass
 `artifacts: {directory: './notes/agents/browser', screenshot: true, video: true, trace: true}`.
 Create that directory yourself first. It must be an existing real directory without
 symlink components or traversal/control characters. Each case uses a private generated
-ztrial-* subdirectory and fixed page.png/trace.zip/video.webm filenames. Test names
+ztrial-\* subdirectory and fixed page.png/trace.zip/video.webm filenames. Test names
 never become filesystem paths. Result paths are relative to the configured root and
 are recorded only after successful capture. No arbitrary output filename is accepted.
 These checks assume a trusted filesystem; they do not sandbox concurrent malicious
@@ -800,13 +800,13 @@ File formats junit/csv/pdf/xlsx/png use the programmatic exporters, not new CLI 
 
 ### Budgets and atomic publication
 
-| Option | Default | Maximum |
-| --- | --- | --- |
-| maxResults | 1000 | 10000 |
-| maxInputBytes | 4 MiB | 16 MiB UTF-8 document budget |
-| maxOutputBytes | 8 MiB | 32 MiB |
-| maxAttachments | 64 | 1000 references across the report |
-| maxAttachmentBytes | 64 KiB | 1 MiB reference-label metadata |
+| Option             | Default | Maximum                           |
+| ------------------ | ------- | --------------------------------- |
+| maxResults         | 1000    | 10000                             |
+| maxInputBytes      | 4 MiB   | 16 MiB UTF-8 document budget      |
+| maxOutputBytes     | 8 MiB   | 32 MiB                            |
+| maxAttachments     | 64      | 1000 references across the report |
+| maxAttachmentBytes | 64 KiB  | 1 MiB reference-label metadata    |
 
 Text/metadata fields are bounded; coverage/ranges retain the earlier validation
 limits. Input work is charged while copying ranges/labels, before building an
@@ -838,11 +838,11 @@ name and internal cause, never a passing fake artifact or a changed test status.
 Factories also accept an explicit trusted load callback for controlled dependency
 injection. No dependency is downloaded by these APIs.
 
-| Factory / format | Explicit dependency tested | Fonts and limits |
-| --- | --- | --- |
-| createPdfExporter / pdf | PDFKit 0.20.2 (MIT) | Explicit canonical TTF/OTF file, at most 8 MiB; maxPages default 20, range 1–100; 45 fixed-height lines/page |
-| createXlsxExporter / xlsx | ExcelJS 4.4.0 (MIT) | Explicit fontFamily name; workbook references it without embedding a font; maxRows default 1000, range 1–10000; 32767 code units/cell |
-| createPngExporter / png | Sharp 0.35.5 (Apache-2.0) | Explicit TTF/OTF fontFile and fontFamily; width/height default 1000×400, each 128–4096; maxSources default 8, range 1–32 |
+| Factory / format          | Explicit dependency tested | Fonts and limits                                                                                                                      |
+| ------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| createPdfExporter / pdf   | PDFKit 0.20.2 (MIT)        | Explicit canonical TTF/OTF file, at most 8 MiB; maxPages default 20, range 1–100; 45 fixed-height lines/page                          |
+| createXlsxExporter / xlsx | ExcelJS 4.4.0 (MIT)        | Explicit fontFamily name; workbook references it without embedding a font; maxRows default 1000, range 1–10000; 32767 code units/cell |
+| createPngExporter / png   | Sharp 0.35.5 (Apache-2.0)  | Explicit TTF/OTF fontFile and fontFamily; width/height default 1000×400, each 128–4096; maxSources default 8, range 1–32              |
 
 Consult the chosen dependencies' Node/native/transitive requirements; they are not
 mandatory ztrial dependencies or bundled runtime guarantees. Fonts must be real,
