@@ -49,7 +49,7 @@ test('real SQLite campaign checkpoint and suppression CAS coordinate across inde
     /** Test fixture or local value named store1. */
     const store1 = createDatabaseCampaignStore(facade(d1)),
       store2 = createDatabaseCampaignStore(facade(d2));
-    let now = 1000;
+    const now = 1000;
     /**
      * Create a campaign planner bound to one database store.
      *

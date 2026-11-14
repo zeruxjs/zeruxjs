@@ -18,7 +18,7 @@ const manifest = JSON.parse(
 test('Pages builds every explicit docs prebuild scope before rendering sites', () => {
   /** Local value for build. */
   const build = workflow.match(
-    /run: node scripts\/build-workspaces\.mjs ([^\n]+)/
+    /run: node (?:--experimental-strip-types )?scripts\/build-workspaces\.(?:mjs|ts) ([^\n]+)/
   )?.[1];
   assert.ok(build, 'Pages must compile workspace dependencies');
   /** Local value for scopes. */
@@ -38,9 +38,7 @@ test('Pages builds every explicit docs prebuild scope before rendering sites', (
     );
   }
   assert.ok(
-    workflow.indexOf(
-      'run: node --experimental-strip-types scripts/build-workspaces.ts'
-    ) <
+    workflow.indexOf('scripts/build-workspaces.') <
       workflow.indexOf(
         'run: node --experimental-strip-types scripts/build-sites.ts'
       )

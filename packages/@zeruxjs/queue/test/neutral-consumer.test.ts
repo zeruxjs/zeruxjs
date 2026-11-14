@@ -72,10 +72,12 @@ test('packed neutral/backends exports and authored example compile with owning b
     const readme = await readFile(join(packageRoot, 'README.md'), 'utf8');
     /** Authored inert consumer source compiled in isolation, never remotely fetched. */
     const section = readme.split('## Opt-in neutral backend selection')[1];
+    /** TypeScript fenced block extracted from the documented public example. */
     const exampleMatch = section?.match(/```ts\n([\s\S]*?)```/);
     if (!exampleMatch?.[1]) {
       throw new Error('Neutral backend README TypeScript example is missing');
     }
+    /** Complete TypeScript example copied into the isolated consumer fixture. */
     const example = exampleMatch[1];
     await writeFile(
       join(temp, 'example.ts'),

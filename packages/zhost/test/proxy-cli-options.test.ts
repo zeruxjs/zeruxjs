@@ -66,6 +66,7 @@ test('proxy cache CLI flags are explicit, bounded and opt-in', () => {
     maxTotalBytes: 5000,
     maxAgeSeconds: 90,
   });
+  /** Explicitly disabled cache configuration returned by the opt-out flag. */
   const disabledCache = parseProxyStartArguments(['--no-cache']).cache;
   assert.ok(disabledCache);
   assert.equal(disabledCache.enabled, false);

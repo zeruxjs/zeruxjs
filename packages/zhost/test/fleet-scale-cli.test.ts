@@ -1,11 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  cli,
-  cliFixture,
-  poll,
-  request,
-} from './helpers/fleet-cli-fixture.ts';
+import { cli, cliFixture, poll, request } from './helpers/fleet-cli-fixture.ts';
 
 test(
   'fleet CLI scales online processes, reports metrics and writes lifecycle audit history',

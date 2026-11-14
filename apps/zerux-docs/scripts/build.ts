@@ -228,6 +228,8 @@ export async function build({ production = true } = {}) {
   /** Candidate root aligned with the configured public mount, never the operator’s running output. */
   const mountedRoot = path.join(staging, site.basePath.slice(1));
   await fs.mkdir(mountedRoot, { recursive: true });
+  /** Asset directory is created explicitly because empty source asset folders are not preserved by Git checkout. */
+  await fs.mkdir(path.join(mountedRoot, 'assets'), { recursive: true });
   try {
     await fs.cp(path.join(root, 'public'), mountedRoot, {
       recursive: true,

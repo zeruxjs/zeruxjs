@@ -38,6 +38,7 @@ async function freePorts(count: number): Promise<number[]> {
     );
     return sockets.map((socket) => {
       // Native servers can return string addresses or null before/after listening.
+      /** Bound listener address used to capture the ephemeral fixture port. */
       const address = socket.address();
       if (!address || typeof address === 'string') {
         throw new Error('Expected a bound TCP listener address');
