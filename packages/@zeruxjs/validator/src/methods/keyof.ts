@@ -30,29 +30,29 @@ import type {
 type Schema =
   | LooseObjectSchema<ObjectEntries, ErrorMessage<LooseObjectIssue> | undefined>
   | LooseObjectSchemaAsync<
-    ObjectEntriesAsync,
-    ErrorMessage<LooseObjectIssue> | undefined
-  >
+      ObjectEntriesAsync,
+      ErrorMessage<LooseObjectIssue> | undefined
+    >
   | ObjectSchema<ObjectEntries, ErrorMessage<ObjectIssue> | undefined>
   | ObjectSchemaAsync<ObjectEntriesAsync, ErrorMessage<ObjectIssue> | undefined>
   | ObjectWithRestSchema<
-    ObjectEntries,
-    BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-    ErrorMessage<ObjectWithRestIssue> | undefined
-  >
+      ObjectEntries,
+      BaseSchema<unknown, unknown, BaseIssue<unknown>>,
+      ErrorMessage<ObjectWithRestIssue> | undefined
+    >
   | ObjectWithRestSchemaAsync<
-    ObjectEntriesAsync,
-    BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-    ErrorMessage<ObjectWithRestIssue> | undefined
-  >
+      ObjectEntriesAsync,
+      BaseSchema<unknown, unknown, BaseIssue<unknown>>,
+      ErrorMessage<ObjectWithRestIssue> | undefined
+    >
   | StrictObjectSchema<
-    ObjectEntries,
-    ErrorMessage<StrictObjectIssue> | undefined
-  >
+      ObjectEntries,
+      ErrorMessage<StrictObjectIssue> | undefined
+    >
   | StrictObjectSchemaAsync<
-    ObjectEntriesAsync,
-    ErrorMessage<StrictObjectIssue> | undefined
-  >;
+      ObjectEntriesAsync,
+      ErrorMessage<StrictObjectIssue> | undefined
+    >;
 
 /**
  * Force tuple type.
@@ -66,24 +66,18 @@ type ObjectKeys<TSchema extends Schema> = ForceTuple<
   UnionToTuple<keyof TSchema['entries']>
 >;
 
-/**
- * Creates a picklist schema of object keys.
- *
- * @param schema The object schema.
- *
- * @returns A picklist schema.
+/** Capture Object.keys of a trusted schema dictionary in a picklist; this is a schema-key list, not tenant/site permission policy.
+ * @param {TSchema} schema - Borrowed declared schema; no runtime data is validated by this structural/metadata operation.
+ * @returns {PicklistSchema<ObjectKeys<TSchema>, undefined>} Declared borrowed metadata/child or fresh outer action/schema; no new disposal owner or permission boundary.
  */
 export function keyof<const TSchema extends Schema>(
   schema: TSchema
 ): PicklistSchema<ObjectKeys<TSchema>, undefined>;
 
-/**
- * Creates a picklist schema of object keys.
- *
- * @param schema The object schema.
- * @param message The error message.
- *
- * @returns A picklist schema.
+/** Capture Object.keys of a trusted schema dictionary in a picklist; this is a schema-key list, not tenant/site permission policy.
+ * @param {TSchema} schema - Borrowed declared schema; no runtime data is validated by this structural/metadata operation.
+ * @param {TMessage} message - Optional trusted private picklist diagnostic policy.
+ * @returns {PicklistSchema<ObjectKeys<TSchema>, TMessage>} Declared borrowed metadata/child or fresh outer action/schema; no new disposal owner or permission boundary.
  */
 export function keyof<
   const TSchema extends Schema,
@@ -93,6 +87,11 @@ export function keyof<
   message: TMessage
 ): PicklistSchema<ObjectKeys<TSchema>, TMessage>;
 
+/** Capture Object.keys of a trusted schema dictionary in a picklist; this is a schema-key list, not tenant/site permission policy.
+ * @param {Schema} schema - Borrowed declared schema; no runtime data is validated by this structural/metadata operation.
+ * @param {ErrorMessage<PicklistIssue>} message - Optional trusted private picklist diagnostic policy.
+ * @returns {PicklistSchema<ObjectKeys<Schema>, ErrorMessage<PicklistIssue> | undefined>} Declared borrowed metadata/child or fresh outer action/schema; no new disposal owner or permission boundary.
+ */
 // @__NO_SIDE_EFFECTS__
 export function keyof(
   schema: Schema,

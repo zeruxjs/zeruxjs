@@ -5,28 +5,28 @@ import type { RawCheckContext, RawCheckIssue } from './types/rawCheck.js';
 /**
  * Raw check action async interface.
  */
-export interface RawCheckActionAsync<TInput>
-  extends BaseValidationAsync<TInput, TInput, RawCheckIssue<TInput>> {
+export interface RawCheckActionAsync<TInput> extends BaseValidationAsync<
+  TInput,
+  TInput,
+  RawCheckIssue<TInput>
+> {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'raw_check';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof rawCheckAsync;
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expects: null;
 }
 
-/**
- * Creates a raw check validation action.
- *
- * @param action The validation action.
- *
- * @returns A raw check action.
+/** Await a trusted raw callback with the private dataset/config and addIssue closure; never retain this parse-owned context after return. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {(context: RawCheckContext<TInput>) => MaybePromise<void>} action - Explicit trusted raw callback with private parse context; do not retain its context or invoke addIssue after settlement.
+ * @returns {RawCheckActionAsync<TInput>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 // @__NO_SIDE_EFFECTS__
 export function rawCheckAsync<TInput>(
@@ -38,6 +38,11 @@ export function rawCheckAsync<TInput>(
     reference: rawCheckAsync,
     async: true,
     expects: null,
+    /** Await a trusted raw callback with the private dataset/config and addIssue closure; never retain this parse-owned context after return. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {Promise<import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     async '~run'(dataset, config) {
       await action({
         dataset,

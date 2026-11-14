@@ -8,3 +8,5 @@ export * from './http.js';
 export * from './aws-credentials.js';
 export * from './authorization.js';
 export * from './client.js';
+export * from './multipart-types.js';
+export * from './resumable.js';

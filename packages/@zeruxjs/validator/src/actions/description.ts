@@ -3,8 +3,10 @@ import type { BaseMetadata } from '../types/index.js';
 /**
  * Description action interface.
  */
-export interface DescriptionAction<TInput, TDescription extends string>
-  extends BaseMetadata<TInput> {
+export interface DescriptionAction<
+  TInput,
+  TDescription extends string,
+> extends BaseMetadata<TInput> {
   /**
    * The action type.
    */
@@ -22,9 +24,9 @@ export interface DescriptionAction<TInput, TDescription extends string>
 /**
  * Creates a description metadata action.
  *
- * @param description_ The description text.
+ * @param {TDescription} description_ - Borrowed host-owned text; renderers must escape it for their output context.
  *
- * @returns A description action.
+ * @returns {DescriptionAction<TInput, TDescription>} Structured metadata descriptor with no validation runner or cleanup resource.
  */
 // @__NO_SIDE_EFFECTS__
 export function description<TInput, TDescription extends string>(

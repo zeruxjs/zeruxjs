@@ -9,18 +9,19 @@ import type { ArrayInput, ArrayRequirement } from './types.js';
 /**
  * Some item issue interface.
  */
-export interface SomeItemIssue<TInput extends ArrayInput>
-  extends BaseIssue<TInput> {
+export interface SomeItemIssue<
+  TInput extends ArrayInput,
+> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed refinement category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'some_item';
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expected: null;
   /**
@@ -37,15 +38,15 @@ export interface SomeItemAction<
   TMessage extends ErrorMessage<SomeItemIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, SomeItemIssue<TInput>> {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'some_item';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof someItem;
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expects: null;
   /**
@@ -53,29 +54,23 @@ export interface SomeItemAction<
    */
   readonly requirement: ArrayRequirement<TInput>;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a some item validation action.
- *
- * @param requirement The validation function.
- *
- * @returns A some item action.
+/** Use native synchronous some, including false for an empty array and skipping sparse holes; callbacks are not awaited. Construction captures trusted policy without evaluating candidate data.
+ * @param {ArrayRequirement<TInput>} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @returns {SomeItemAction<TInput, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function someItem<TInput extends ArrayInput>(
   requirement: ArrayRequirement<TInput>
 ): SomeItemAction<TInput, undefined>;
 
-/**
- * Creates a some item validation action.
- *
- * @param requirement The validation function.
- * @param message The error message.
- *
- * @returns A some item action.
+/** Use native synchronous some, including false for an empty array and skipping sparse holes; callbacks are not awaited. Construction captures trusted policy without evaluating candidate data.
+ * @param {ArrayRequirement<TInput>} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {SomeItemAction<TInput, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function someItem<
   TInput extends ArrayInput,
@@ -85,6 +80,11 @@ export function someItem<
   message: TMessage
 ): SomeItemAction<TInput, TMessage>;
 
+/** Use native synchronous some, including false for an empty array and skipping sparse holes; callbacks are not awaited. Construction captures trusted policy without evaluating candidate data.
+ * @param {ArrayRequirement<unknown[]>} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @param {ErrorMessage<SomeItemIssue<unknown[]>>} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {SomeItemAction<unknown[], ErrorMessage<SomeItemIssue<unknown[]>> | undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function someItem(
   requirement: ArrayRequirement<unknown[]>,
@@ -101,6 +101,11 @@ export function someItem(
     expects: null,
     requirement,
     message,
+    /** Use native synchronous some, including false for an empty array and skipping sparse holes; callbacks are not awaited. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !dataset.value.some(this.requirement)) {
         _addIssue(this, 'item', dataset, config);

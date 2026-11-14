@@ -1,3 +1,4 @@
+import { _asyncCallback } from '../utils/_run.js';
 import type { BaseValidationAsync, ErrorMessage } from '../types/index.js';
 import { _addIssue } from '../utils/index.js';
 import type { ArrayInput, ArrayRequirementAsync } from './types.js';
@@ -11,15 +12,15 @@ export interface CheckItemsActionAsync<
   TMessage extends ErrorMessage<CheckItemsIssue<TInput>> | undefined,
 > extends BaseValidationAsync<TInput, TInput, CheckItemsIssue<TInput>> {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'check_items';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof checkItemsAsync;
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expects: null;
   /**
@@ -27,29 +28,23 @@ export interface CheckItemsActionAsync<
    */
   readonly requirement: ArrayRequirementAsync<TInput>;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a check items validation action.
- *
- * @param requirement The validation function.
- *
- * @returns A check items action.
+/** Schedule mapped item predicates through the shared root limiter and collect results in index order; sparse holes retain legacy missing-result behavior. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {ArrayRequirementAsync<TInput>} requirement - Borrowed explicitly registered predicate; only async variants await results and no source string is evaluated.
+ * @returns {CheckItemsActionAsync<TInput, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function checkItemsAsync<TInput extends ArrayInput>(
   requirement: ArrayRequirementAsync<TInput>
 ): CheckItemsActionAsync<TInput, undefined>;
 
-/**
- * Creates a check items validation action.
- *
- * @param requirement The validation function.
- * @param message The error message.
- *
- * @returns A check items action.
+/** Schedule mapped item predicates through the shared root limiter and collect results in index order; sparse holes retain legacy missing-result behavior. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {ArrayRequirementAsync<TInput>} requirement - Borrowed explicitly registered predicate; only async variants await results and no source string is evaluated.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {CheckItemsActionAsync<TInput, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function checkItemsAsync<
   TInput extends ArrayInput,
@@ -59,6 +54,11 @@ export function checkItemsAsync<
   message: TMessage
 ): CheckItemsActionAsync<TInput, TMessage>;
 
+/** Schedule mapped item predicates through the shared root limiter and collect results in index order; sparse holes retain legacy missing-result behavior. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {ArrayRequirementAsync<unknown[]>} requirement - Borrowed explicitly registered predicate; only async variants await results and no source string is evaluated.
+ * @param {ErrorMessage<CheckItemsIssue<unknown[]>>} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {CheckItemsActionAsync<unknown[], ErrorMessage<CheckItemsIssue<unknown[]>> | undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function checkItemsAsync(
   requirement: ArrayRequirementAsync<unknown[]>,
@@ -75,13 +75,24 @@ export function checkItemsAsync(
     expects: null,
     requirement,
     message,
+    /** Schedule mapped item predicates through the shared root limiter and collect results in index order; sparse holes retain legacy missing-result behavior. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {Promise<import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     async '~run'(dataset, config) {
       if (dataset.typed) {
+        /** Mapped predicate results under the shared root scheduler; issue accumulation uses the original index order. */
         const requirementResults = await Promise.all(
-          dataset.value.map(this.requirement)
+          dataset.value.map((value, index, array) =>
+            _asyncCallback(config, () =>
+              this.requirement(value, index, array, { signal: config.signal })
+            )
+          )
         );
         for (let index = 0; index < dataset.value.length; index++) {
           if (!requirementResults[index]) {
+            /** Original private item at this array index; issue paths retain this value until explicitly sanitized. */
             const item = dataset.value[index];
             _addIssue(this, 'item', dataset, config, {
               input: item,

@@ -1,10 +1,14 @@
-import type { DevtoolsSectionDefinition } from "../../module-registry.js";
+import type { DevtoolsSectionDefinition } from '../../module-registry.js';
 
+/** Inert component-inspection placeholder; no component tree capture is implemented here. */
 const section: DevtoolsSectionDefinition = {
-  id: "components",
-  title: "Components",
-  icon: "◫",
+  id: 'components',
+  title: 'Components',
+  icon: '◫',
   order: 40,
+  /** Render this authored development section from trusted host snapshot metadata.
+   * @returns {string} Authored section HTML; dynamic snapshot content must already be trusted at this legacy boundary.
+   */
   render() {
     return `
       <section class="zdev-panel-stack">
@@ -22,7 +26,7 @@ const section: DevtoolsSectionDefinition = {
         </article>
       </section>
     `;
-  }
+  },
 };
 
 export default section;

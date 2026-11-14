@@ -1,0 +1,45 @@
+{
+  "name": "@zeruxjs/search-mille",
+  "version": "0.0.4",
+  "type": "module",
+  "description": "Explicit tenant-scoped Meilisearch adapter for ZeruxJS",
+  "license": "(MIT OR Apache-2.0)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "examples/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
+    "prepack": "npm run build"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@zeruxjs/search": "0.0.4",
+    "meilisearch": "0.62.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,16 +1,17 @@
-/**
- * @title Reactivity Types
- * @description Core types for the ZyroJS reactivity system.
- */
+/** Core types for the ZyroJS reactivity system. */
 
 export type Subscriber = () => void;
 
 export interface Signal<T> {
-    value: T;
-    peek(): T;
+  /** Current mutable signal value. */
+  value: T;
+  /** Read the value without tracking a dependency. */
+  peek(): T;
 }
 
 export interface ReadonlySignal<T> {
-    readonly value: T;
-    peek(): T;
+  /** Current read-only signal value. */
+  readonly value: T;
+  /** Read the value without tracking a dependency. */
+  peek(): T;
 }

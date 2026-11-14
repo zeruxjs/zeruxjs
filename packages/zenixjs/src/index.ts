@@ -1,5 +1,13 @@
 /** Package release version; no environment or global state is read. */
-export const version = "0.0.3";
+export const version = '0.0.4';
 
-/** Implementation status; CMS functionality is planned for a future release. */
-export const status = "placeholder";
+/** Initial SSR CMS application; no complete CMS parity is implied. */
+export const status = 'initial-cms';
+/** Delivered metadata flags only; importing opens no CMS/database/network resources. */
+export const capabilities = Object.freeze({
+  setup: true,
+  login: true,
+  editor: true,
+  publicPage: true,
+  hydration: false,
+});

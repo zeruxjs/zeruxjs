@@ -1,10 +1,13 @@
+import type { ValidationOptions } from './runtime.js';
 import type { BaseIssue } from './issue.js';
 import type { ErrorMessage } from './other.js';
 
 /**
  * Config interface.
  */
-export interface Config<TIssue extends BaseIssue<unknown>> {
+export interface Config<
+  TIssue extends BaseIssue<unknown>,
+> extends ValidationOptions {
   /**
    * The selected language.
    */

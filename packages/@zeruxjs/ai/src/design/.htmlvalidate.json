@@ -1,0 +1,7 @@
+{
+  "rules": {
+    "doctype-style": ["error", { "style": "lowercase" }],
+    "void-style": ["error", { "style": "selfclose" }],
+    "attr-quotes": ["error", { "style": "auto", "unquoted": false }]
+  }
+}

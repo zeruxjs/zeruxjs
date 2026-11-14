@@ -5,15 +5,15 @@ import type { BaseIssue } from '../../types/index.js';
  */
 export interface CustomIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed schema failure category; rejected candidates remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable custom-predicate discriminator for issue consumers.
    */
   readonly type: 'custom';
   /**
-   * The expected property.
+   * Generic private diagnostic; host type assertions do not supply a synthesized runtime expectation.
    */
   readonly expected: 'unknown';
 }

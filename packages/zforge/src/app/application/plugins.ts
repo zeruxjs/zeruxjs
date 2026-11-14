@@ -1,10 +1,14 @@
-import type { DevtoolsSectionDefinition } from "../../module-registry.js";
+import type { DevtoolsSectionDefinition } from '../../module-registry.js';
 
+/** Fixed authored guide to explicit module, API and socket registrations. */
 const section: DevtoolsSectionDefinition = {
-  id: "plugins",
-  title: "Plugins",
-  icon: "✦",
+  id: 'plugins',
+  title: 'Plugins',
+  icon: '✦',
   order: 60,
+  /** Render this authored development section from trusted host snapshot metadata.
+   * @returns {string} Authored section HTML; dynamic snapshot content must already be trusted at this legacy boundary.
+   */
   render() {
     return `
       <section class="zdev-panel-stack">
@@ -24,7 +28,7 @@ const section: DevtoolsSectionDefinition = {
         </article>
       </section>
     `;
-  }
+  },
 };
 
 export default section;

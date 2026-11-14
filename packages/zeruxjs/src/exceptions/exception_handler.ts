@@ -1,3 +1,4 @@
+import { normalizeApiError } from './api-error.js';
 // Centralised exception handler for ZeruxJS core.
 //
 // It logs the error using the shared logger and returns a normalized
@@ -9,45 +10,42 @@ import { logger } from '../bootstrap/logger.js';
 import { HttpError } from './http_error.js';
 
 export interface NormalizedError {
-    /** HTTP status code (defaults to 500). */
-    status: number;
-    /** Payload that can be sent to the client. */
-    body: {
-        /** Human‑readable error message. */
-        message: string;
-        /** Optional stack trace – only included in non‑production builds. */
-        stack?: string;
-        /** Any extra data attached to the original error. */
-        data?: unknown;
-    };
+  /** HTTP status code (defaults to 500). */
+  status: number;
+  /** Payload that can be sent to the client. */
+  body: {
+    /** Human‑readable error message. */
+    message: string;
+    /** Legacy type field; framework responses never populate it. */
+    stack?: string;
+    /** Legacy type field; private error data is never returned. */
+    data?: unknown;
+  };
 }
 
-/**
- * Handles an error, logs it, and returns a normalized representation.
- *
- * @param err - The caught error.
- * @returns NormalizedError – ready to be sent to a client or re‑thrown.
+/** Log through the redacted framework logger and return the legacy safe error shape.
+ * @param {unknown} err - Private failure; raw diagnostics belong only in explicit trusted sinks.
+ * @returns {NormalizedError} Safe status/message without stack or private data.
  */
 export function exceptionHandler(err: unknown): NormalizedError {
-    const isHttp = err instanceof HttpError;
-    const status = isHttp ? err.status : 500;
-    const message = isHttp ? err.message : 'Internal Server Error';
-    const data = isHttp && (err as HttpError).data !== undefined ? (err as HttpError).data : undefined;
+  /** Whether the failure uses the framework’s declared status-aware error class. */
+  const isHttp = err instanceof HttpError;
+  /** Sanitized API normalization shared with request responses. */
+  const safe = normalizeApiError(err);
+  /** Safe normalized HTTP status, independent of private exception text. */
+  const status = safe.status;
+  /** Fixed public message rather than raw Error.message. */
+  const message = safe.body.error.message;
 
-    // Log the error – include stack for debugging purposes.
-    if (isHttp) {
-        logger.warn(`HttpError ${status}: ${message}`, data);
-    } else {
-        logger.error('Unhandled exception', err);
-    }
+  // Default logs contain only a safe summary; runtime onError owns trusted raw causes.
+  if (isHttp) {
+    logger.warn('HTTP request failed', status);
+  } else {
+    logger.error('Unhandled exception', err);
+  }
 
-    const body: NormalizedError['body'] = { message };
-    if (process.env.NODE_ENV !== 'production' && err instanceof Error) {
-        body.stack = err.stack;
-    }
-    if (data !== undefined) {
-        body.data = data;
-    }
+  /** Legacy response shape containing only the safe message. */
+  const body: NormalizedError['body'] = { message };
 
-    return { status, body };
+  return { status, body };
 }

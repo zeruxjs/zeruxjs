@@ -1,0 +1,89 @@
+{
+  "name": "@zeruxjs/queue-bullmq",
+  "version": "0.0.4",
+  "type": "module",
+  "description": "BullMQ backend and lifecycle helpers for ZeruxJS",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./reporting": {
+      "types": "./dist/reporting.d.ts",
+      "default": "./dist/reporting.js"
+    },
+    "./history": {
+      "types": "./dist/history.d.ts",
+      "default": "./dist/history.js"
+    },
+    "./campaigns": {
+      "types": "./dist/campaigns.d.ts",
+      "default": "./dist/campaigns.js"
+    },
+    "./recovery": {
+      "types": "./dist/recovery.d.ts",
+      "default": "./dist/recovery.js"
+    },
+    "./outbox": {
+      "types": "./dist/outbox.d.ts",
+      "default": "./dist/outbox.js"
+    },
+    "./dashboard": {
+      "types": "./dist/dashboard.d.ts",
+      "default": "./dist/dashboard.js"
+    },
+    "./scheduling": {
+      "types": "./dist/scheduling.d.ts",
+      "default": "./dist/scheduling.js"
+    },
+    "./performance": {
+      "types": "./dist/performance.d.ts",
+      "default": "./dist/performance.js"
+    },
+    "./trends": {
+      "types": "./dist/trends.d.ts",
+      "default": "./dist/trends.js"
+    },
+    "./delivery": {
+      "types": "./dist/delivery.d.ts",
+      "default": "./dist/delivery.js"
+    },
+    "./history-gaps": {
+      "types": "./dist/history-gaps.d.ts",
+      "default": "./dist/history-gaps.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "npm run build",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@zeruxjs/cache-redis": "0.0.4",
+    "bullmq": "^5.61.0",
+    "ioredis": "^5.4.0"
+  },
+  "license": "(MIT OR Apache-2.0)",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

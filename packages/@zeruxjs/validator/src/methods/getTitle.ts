@@ -16,27 +16,27 @@ type Schema =
   | BaseSchema<unknown, unknown, BaseIssue<unknown>>
   | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
   | SchemaWithPipe<
-    readonly [
-      BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-      ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
-        | TitleAction<unknown, string>
-      )[],
-    ]
-  >
+      readonly [
+        BaseSchema<unknown, unknown, BaseIssue<unknown>>,
+        ...(
+          | PipeItem<any, unknown, BaseIssue<unknown>>
+          | TitleAction<unknown, string>
+        )[],
+      ]
+    >
   | SchemaWithPipeAsync<
-    readonly [
-      (
-        | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-        | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
-      ),
-      ...(
-        | PipeItem<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
-        | PipeItemAsync<any, unknown, BaseIssue<unknown>> // eslint-disable-line @typescript-eslint/no-explicit-any
-        | TitleAction<unknown, string>
-      )[],
-    ]
-  >;
+      readonly [
+        (
+          | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+          | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>
+        ),
+        ...(
+          | PipeItem<any, unknown, BaseIssue<unknown>>
+          | PipeItemAsync<any, unknown, BaseIssue<unknown>>
+          | TitleAction<unknown, string>
+        )[],
+      ]
+    >;
 
 /**
  * Returns the title of the schema.
@@ -44,9 +44,9 @@ type Schema =
  * If multiple titles are defined, the last one of the highest level is
  * returned. If no title is defined, `undefined` is returned.
  *
- * @param schema The schema to get the title from.
+ * @param {Schema} schema - Borrowed trusted schema graph; reads structured metadata without parsing input or executing validation actions.
  *
- * @returns The title, if any.
+ * @returns {string | undefined} Last matching title at the highest available level; returned text remains unescaped for its eventual rendering context.
  *
  * @beta
  */

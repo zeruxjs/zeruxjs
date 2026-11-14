@@ -14,19 +14,19 @@ export interface MinValueIssue<
   TRequirement extends ValueInput,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'min_value';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: `>=${string}`;
   /**
-   * The minimum value.
+   * Inclusive native lower bound; mutable Date requirements remain borrowed.
    */
   readonly requirement: TRequirement;
 }
@@ -38,62 +38,61 @@ export interface MinValueAction<
   TInput extends ValueInput,
   TRequirement extends TInput,
   TMessage extends
-  | ErrorMessage<MinValueIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MinValueIssue<TInput, TRequirement>>
+    | undefined,
 > extends BaseValidation<TInput, TInput, MinValueIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'min_value';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof minValue;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: `>=${string}`;
   /**
-   * The minimum value.
+   * Inclusive native lower bound; mutable Date requirements remain borrowed.
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a min value validation action.
- *
- * @param requirement The minimum value.
- *
- * @returns A min value action.
+/** Apply the native inclusive >= comparison to a typed value and its configured lower bound. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @returns {MinValueAction<TInput, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function minValue<
   TInput extends ValueInput,
   const TRequirement extends TInput,
 >(requirement: TRequirement): MinValueAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a min value validation action.
- *
- * @param requirement The minimum value.
- * @param message The error message.
- *
- * @returns A min value action.
+/** Apply the native inclusive >= comparison to a typed value and its configured lower bound. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MinValueAction<TInput, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function minValue<
   TInput extends ValueInput,
   const TRequirement extends TInput,
   const TMessage extends
-  | ErrorMessage<MinValueIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MinValueIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): MinValueAction<TInput, TRequirement, TMessage>;
 
+/** Apply the native inclusive >= comparison to a typed value and its configured lower bound. This action neither establishes the input schema nor grants permissions.
+ * @param {ValueInput} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {ErrorMessage<MinValueIssue<ValueInput, ValueInput>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MinValueAction<ValueInput, ValueInput, ErrorMessage<MinValueIssue<ValueInput, ValueInput>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function minValue(
   requirement: ValueInput,
@@ -108,12 +107,18 @@ export function minValue(
     type: 'min_value',
     reference: minValue,
     async: false,
-    expects: `>=${requirement instanceof Date
-      ? requirement.toJSON()
-      : _stringify(requirement)
-      }`,
+    expects: `>=${
+      requirement instanceof Date
+        ? requirement.toJSON()
+        : _stringify(requirement)
+    }`,
     requirement,
     message,
+    /** Apply the native inclusive >= comparison to a typed value and its configured lower bound. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !(dataset.value >= this.requirement)) {
         _addIssue(this, 'value', dataset, config, {

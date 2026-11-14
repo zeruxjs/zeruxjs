@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -8,18 +9,18 @@ import type {
 import { _getStandardProps } from '../utils/index.js';
 
 /**
- * Changes the local message configuration of a schema.
+ * Overlay one local private diagnostic message policy without replacing root execution ownership. Custom message callbacks remain trusted code and may throw.
  *
- * @param schema The schema to configure.
- * @param message_ The error message.
+ * @param {TSchema} schema - Borrowed declared schema to wrap.
+ * @param {ErrorMessage<InferIssue<TSchema>>} message_ - Private diagnostic text or trusted synchronous callback; not public HTML.
  *
- * @returns The configured schema.
+ * @returns {TSchema} Inert message wrapper; parsing still uses the root budgets, signals and cleanup.
  */
 // @__NO_SIDE_EFFECTS__
 export function message<
   const TSchema extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(schema: TSchema, message_: ErrorMessage<InferIssue<TSchema>>): TSchema {
   return {
     ...schema,
@@ -27,7 +28,7 @@ export function message<
       return _getStandardProps(this);
     },
     '~run'(dataset, config) {
-      return schema['~run'](dataset, { ...config, message: message_ });
+      return _runSchema(schema, dataset, { ...config, message: message_ });
     },
   };
 }

@@ -1,11 +1,7 @@
 [
-    {
-        "name": "Shubham Kumar Bansal",
-        "repo": "https://github.com/shubkb07",
-        "contributed": [
-            "zeruxjs",
-            "zhost",
-            "zclivo"
-        ]
-    }
+  {
+    "name": "Shubham Kumar Bansal",
+    "repo": "https://github.com/shubkb07",
+    "contributed": ["zeruxjs", "zhost", "zclivo"]
+  }
 ]

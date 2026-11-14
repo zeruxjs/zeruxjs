@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import { getDefault } from '../methods/index.js';
 import type {
   BaseIssue,
@@ -22,45 +23,45 @@ export interface UndefinedableSchema<
   InferIssue<TWrapped>
 > {
   /**
-   * The schema type.
+   * Fixed undefinedable discriminator: only undefined selects this default/sentinel branch.
    */
   readonly type: 'undefinedable';
   /**
-   * The schema reference.
+   * Authored constructor reference; never loaded from user-controlled source text.
    */
   readonly reference: typeof undefinedable;
   /**
-   * The expected property.
+   * Diagnostic expectation combining wrapped input with undefined, not a callback.
    */
   readonly expects: `(${TWrapped['expects']} | undefined)`;
   /**
-   * The wrapped schema.
+   * Borrowed schema validating/transforming every non-sentinel replacement.
    */
   readonly wrapped: TWrapped;
   /**
-   * The default value.
+   * Trusted input literal/factory retained by reference; non-undefined results undergo wrapped validation.
    */
   readonly default: TDefault;
 }
 
 /**
- * Creates an undefinedable schema.
+ * Accept undefined or select a trusted input default before wrapped validation. A default returning undefined short-circuits without another factory call.
  *
- * @param wrapped The wrapped schema.
+ * @param {TWrapped} wrapped - Borrowed trusted input schema; construction starts no parsing or callback work.
  *
- * @returns An undefinedable schema.
+ * @returns {UndefinedableSchema<TWrapped, undefined>} Inert undefinedable value wrapper; this discriminator does not make an object key optional.
  */
 export function undefinedable<
   const TWrapped extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(wrapped: TWrapped): UndefinedableSchema<TWrapped, undefined>;
 
 /**
- * Creates an undefinedable schema.
+ * Accept undefined or select a trusted input default before wrapped validation. A default returning undefined short-circuits without another factory call.
  *
- * @param wrapped The wrapped schema.
- * @param default_ The default value.
+ * @param {TWrapped} wrapped - Borrowed trusted input schema; construction starts no parsing or callback work.
+ * @param {TDefault} default_ - Trusted input-compatible literal/factory; results are not deep-cloned.
  *
- * @returns An undefinedable schema.
+ * @returns {UndefinedableSchema<TWrapped, TDefault>} Default-aware wrapper; non-sentinel replacements run through wrapped validation.
  */
 export function undefinedable<
   const TWrapped extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
@@ -70,6 +71,11 @@ export function undefinedable<
   default_: TDefault
 ): UndefinedableSchema<TWrapped, TDefault>;
 
+/** Build an undefinedable value wrapper without parsing or starting background work.
+ * @param {object} wrapped - Borrowed trusted schema; root execution owns budgets/cancellation.
+ * @param {unknown} default_ - Optional trusted input literal/factory; factory work remains host-owned.
+ * @returns {object} Inert undefinedable schema; sync wrappers reject async default misuse, async wrappers await settlement.
+ */
 // @__NO_SIDE_EFFECTS__
 export function undefinedable(
   wrapped: BaseSchema<unknown, unknown, BaseIssue<unknown>>,
@@ -86,9 +92,17 @@ export function undefinedable(
     async: false,
     wrapped,
     default: default_,
+    /** Adapt explicit validation calls to bounded root execution.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Apply the default once for undefined, then validate any non-sentinel replacement.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private input dataset.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Root-owned budgets/signal shared by nested work.
+     * @returns {unknown} Declared sync/async dataset; factory exceptions and hard limits still propagate.
+     */
     '~run'(dataset, config) {
       // If value is `undefined`, override it with default or return dataset
       if (dataset.value === undefined) {
@@ -99,15 +113,15 @@ export function undefinedable(
 
         // If value is still `undefined`, return dataset
         if (dataset.value === undefined) {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.typed = true;
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           return dataset as SuccessDataset<unknown>;
         }
       }
 
       // Otherwise, return dataset of wrapped schema
-      return this.wrapped['~run'](dataset, config);
+      return _runSchema(this.wrapped, dataset, config);
     },
   };
 }

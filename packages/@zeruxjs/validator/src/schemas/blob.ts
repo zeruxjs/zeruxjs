@@ -11,15 +11,15 @@ import { _addIssue, _getStandardProps } from '../utils/index.js';
  */
 export interface BlobIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed schema issue category; raw objects and messages remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable native-object discriminator for structured issue codes.
    */
   readonly type: 'blob';
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation, not a content, URL or authorization policy.
    */
   readonly expected: 'Blob';
 }
@@ -31,41 +31,45 @@ export interface BlobSchema<
   TMessage extends ErrorMessage<BlobIssue> | undefined,
 > extends BaseSchema<Blob, Blob, BlobIssue> {
   /**
-   * The schema type.
+   * Fixed blob discriminator; accepted objects retain borrowed identity.
    */
   readonly type: 'blob';
   /**
-   * The schema reference.
+   * Authored constructor reference; no native object is created on import.
    */
   readonly reference: typeof blob;
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation, not a content, URL or authorization policy.
    */
   readonly expects: 'Blob';
   /**
-   * The error message.
+   * Optional borrowed trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
 /**
- * Creates a blob schema.
+ * Validate instances of the runtime Blob class without reading contents or enforcing MIME/byte policy. The required runtime class is accessed only during explicit validation.
  *
- * @returns A blob schema.
+ * @returns {BlobSchema<undefined>} Inert native-object schema; no content read, cloning or ownership transfer.
  */
 export function blob(): BlobSchema<undefined>;
 
 /**
- * Creates a blob schema.
+ * Validate instances of the runtime Blob class without reading contents or enforcing MIME/byte policy. The required runtime class is accessed only during explicit validation.
  *
- * @param message The error message.
+ * @param {TMessage} message - Optional trusted private diagnostic policy.
  *
- * @returns A blob schema.
+ * @returns {BlobSchema<TMessage>} Inert schema retaining the supplied private diagnostic policy.
  */
 export function blob<
   const TMessage extends ErrorMessage<BlobIssue> | undefined,
 >(message: TMessage): BlobSchema<TMessage>;
 
+/** Build an explicit runtime-class check without creating, reading or storing binary/date objects.
+ * @param {ErrorMessage<BlobIssue>} message - Optional trusted private diagnostic text/callback.
+ * @returns {BlobSchema<ErrorMessage<BlobIssue> | undefined>} Inert schema validating instances of the runtime Blob class without reading contents or enforcing MIME/byte policy.
+ */
 // @__NO_SIDE_EFFECTS__
 export function blob(
   message?: ErrorMessage<BlobIssue>
@@ -77,17 +81,25 @@ export function blob(
     expects: 'Blob',
     async: false,
     message,
+    /** Adapt explicit validation to shared root budgets and cleanup.
+     * @returns {object} Inert Standard Schema V1 adapter; no DOM access occurs merely on import.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Perform the declared native-object check while preserving caller-owned identity.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private candidate object.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Root issue budget and private message policy.
+     * @returns {OutputDataset<Blob, BlobIssue>} Declared native-object dataset; host still owns content validation and lifetime.
+     */
     '~run'(dataset, config) {
       if (dataset.value instanceof Blob) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
       } else {
         _addIssue(this, 'type', dataset, config);
       }
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<Blob, BlobIssue>;
     },
   };

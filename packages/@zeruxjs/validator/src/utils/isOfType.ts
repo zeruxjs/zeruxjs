@@ -1,10 +1,7 @@
-/**
- * A generic type guard to check the type of an object.
- *
- * @param type The type to check for.
- * @param object The object to check.
- *
- * @returns Whether it matches.
+/** Narrow an already typed union using its type discriminator; this does not perform arbitrary input validation.
+ * @param {TType} type - Literal discriminator allowed by the declared union.
+ * @param {TObject} object - Already typed borrowed value; arbitrary null/non-object input is outside this guard contract.
+ * @returns {boolean} Whether the declared type matches; no nested validation, cloning or authorization occurs.
  */
 // @__NO_SIDE_EFFECTS__
 export function isOfType<

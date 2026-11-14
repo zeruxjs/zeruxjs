@@ -1,3 +1,4 @@
+/** Node-oriented generators and low-level helpers; the owned Fetch handler is a separate subpath. */
 export * from './types.js';
 export * from './utils.js';
 export * from './json.js';

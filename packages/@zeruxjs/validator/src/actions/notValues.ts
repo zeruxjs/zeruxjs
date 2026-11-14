@@ -14,15 +14,15 @@ export interface NotValuesIssue<
   TRequirement extends readonly TInput[],
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed refinement category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'not_values';
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expected: `!${string}`;
   /**
@@ -38,19 +38,19 @@ export interface NotValuesAction<
   TInput extends ValueInput,
   TRequirement extends readonly TInput[],
   TMessage extends
-  | ErrorMessage<NotValuesIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<NotValuesIssue<TInput, TRequirement>>
+    | undefined,
 > extends BaseValidation<TInput, TInput, NotValuesIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'not_values';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof notValues;
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expects: `!${string}`;
   /**
@@ -58,42 +58,41 @@ export interface NotValuesAction<
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a not values validation action.
- *
- * @param requirement The not required values.
- *
- * @returns A not values action.
+/** Reject listed members using retained <= and >= relational comparisons; Date/coercion behavior remains native. Construction captures trusted policy without evaluating candidate data.
+ * @param {TRequirement} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @returns {NotValuesAction<TInput, TRequirement, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function notValues<
   TInput extends ValueInput,
   const TRequirement extends readonly TInput[],
 >(requirement: TRequirement): NotValuesAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a not values validation action.
- *
- * @param requirement The not required values.
- * @param message The error message.
- *
- * @returns A not values action.
+/** Reject listed members using retained <= and >= relational comparisons; Date/coercion behavior remains native. Construction captures trusted policy without evaluating candidate data.
+ * @param {TRequirement} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {NotValuesAction<TInput, TRequirement, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function notValues<
   TInput extends ValueInput,
   const TRequirement extends readonly TInput[],
   const TMessage extends
-  | ErrorMessage<NotValuesIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<NotValuesIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): NotValuesAction<TInput, TRequirement, TMessage>;
 
+/** Reject listed members using retained <= and >= relational comparisons; Date/coercion behavior remains native. Construction captures trusted policy without evaluating candidate data.
+ * @param {readonly ValueInput[]} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @param {ErrorMessage<NotValuesIssue<ValueInput, readonly ValueInput[]>>} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {NotValuesAction<ValueInput, readonly ValueInput[], ErrorMessage<NotValuesIssue<ValueInput, readonly ValueInput[]>> | undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function notValues(
   requirement: readonly ValueInput[],
@@ -116,6 +115,11 @@ export function notValues(
     )}`,
     requirement,
     message,
+    /** Reject listed members using retained <= and >= relational comparisons; Date/coercion behavior remains native. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     '~run'(dataset, config) {
       if (
         dataset.typed &&

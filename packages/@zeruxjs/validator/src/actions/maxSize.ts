@@ -14,19 +14,19 @@ export interface MaxSizeIssue<
   TRequirement extends number,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'max_size';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: `<=${TRequirement}`;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `${number}`;
   /**
@@ -44,15 +44,15 @@ export interface MaxSizeAction<
   TMessage extends ErrorMessage<MaxSizeIssue<TInput, TRequirement>> | undefined,
 > extends BaseValidation<TInput, TInput, MaxSizeIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'max_size';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof maxSize;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: `<=${TRequirement}`;
   /**
@@ -60,42 +60,41 @@ export interface MaxSizeAction<
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a max size validation action.
- *
- * @param requirement The maximum size.
- *
- * @returns A max size action.
+/** Require native Blob byte size or Map/Set count at most the threshold; this is not transport read admission. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted numeric threshold; this legacy constructor does not independently enforce finite, nonnegative or integer configuration.
+ * @returns {MaxSizeAction<TInput, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function maxSize<
   TInput extends SizeInput,
   const TRequirement extends number,
 >(requirement: TRequirement): MaxSizeAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a max size validation action.
- *
- * @param requirement The maximum size.
- * @param message The error message.
- *
- * @returns A max size action.
+/** Require native Blob byte size or Map/Set count at most the threshold; this is not transport read admission. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted numeric threshold; this legacy constructor does not independently enforce finite, nonnegative or integer configuration.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MaxSizeAction<TInput, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function maxSize<
   TInput extends SizeInput,
   const TRequirement extends number,
   const TMessage extends
-  | ErrorMessage<MaxSizeIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MaxSizeIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): MaxSizeAction<TInput, TRequirement, TMessage>;
 
+/** Require native Blob byte size or Map/Set count at most the threshold; this is not transport read admission. This action neither establishes the input schema nor grants permissions.
+ * @param {number} requirement - Explicit trusted numeric threshold; this legacy constructor does not independently enforce finite, nonnegative or integer configuration.
+ * @param {ErrorMessage<MaxSizeIssue<SizeInput, number>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MaxSizeAction<SizeInput, number, ErrorMessage<MaxSizeIssue<SizeInput, number>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function maxSize(
   requirement: number,
@@ -113,6 +112,11 @@ export function maxSize(
     expects: `<=${requirement}`,
     requirement,
     message,
+    /** Require native Blob byte size or Map/Set count at most the threshold; this is not transport read admission. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native property/getter exceptions propagate; diagnostic formatting can read length/size again.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && dataset.value.size > this.requirement) {
         _addIssue(this, 'size', dataset, config, {

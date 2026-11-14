@@ -3,3 +3,8 @@ export * from './container.js';
 export * from './runtime.js';
 export * from './browser.js';
 export * from './governance.js';
+
+export * from './providers.js';
+export * from './transfer.js';
+
+export type { TagAdminMount, TagAdminAuditEvent } from './admin-policy.js';

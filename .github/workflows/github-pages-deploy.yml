@@ -2,7 +2,7 @@ name: Build and deploy ecosystem sites
 
 on:
   push:
-    branches: [master, "version/*"]
+    branches: [master, 'version/*']
     # Build every push, including version branches created from an existing commit.
     # A paths filter can suppress these pushes even when the branch pattern matches.
   workflow_dispatch:
@@ -27,15 +27,15 @@ jobs:
       contents: write
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 1
           # The output worktree shares this ephemeral GitHub-token authentication.
           persist-credentials: true
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "24"
+          node-version: '24'
           cache: npm
           cache-dependency-path: package-lock.json
       - name: Install locked build dependencies without package lifecycle scripts
@@ -46,31 +46,31 @@ jobs:
           import assert from 'node:assert/strict';
           import fs from 'node:fs';
           import path from 'node:path';
-          for (const name of ['zuixs', '@zeruxjs/typescript', '@zeruxjs/performance', '@zeruxjs/search']) {
+          for (const name of ['zlook', 'zuixs', '@zeruxjs/typescript', '@zeruxjs/performance', '@zeruxjs/search', '@zeruxjs/security']) {
             const actual = fs.realpathSync(path.join('node_modules', name));
             const expected = fs.realpathSync(path.join('packages', name));
             assert.equal(actual, expected, `${name} must use the checked-out workspace`);
             console.log(`[site-tooling] ${name}: local workspace verified`);
           }
           NODE
-      - name: Build workspace CSS, browser bundler, search and navigation tooling in parallel
-        run: node scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search
+      - name: Build workspace CSS, browser bundler, search, navigation and security tooling in parallel
+        run: node --experimental-strip-types scripts/build-workspaces.ts --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security
       - name: Build shared homepage and every configured site
-        run: node scripts/build-sites.mjs
+        run: node --experimental-strip-types scripts/build-sites.ts
       - name: Verify raw Markdown and static Pages artifact (no Jekyll rendering)
         run: |
           node --input-type=module <<'NODE'
-          import { verifySites, output } from './scripts/build-sites.mjs';
-          const { previewMount } = await import('./scripts/site-preview.mjs');
+          import { verifySites, output } from './scripts/build-sites.ts';
+          const { previewMount } = await import('./scripts/site-preview.ts');
           const result = await verifySites(output, { mount: previewMount() });
           if (!result.markdown) throw new Error('Raw Markdown exports missing');
           console.log(`[sites] ${result.markdown} unchanged Markdown exports verified; deployment uploads prebuilt static files without Jekyll.`);
           NODE
       - name: Publish generated folders to master-site and prepare complete artifact
         id: publish
-        run: node scripts/publish-sites.mjs
+        run: node --experimental-strip-types scripts/publish-sites.ts
       - name: Upload the master-site static tree for Pages
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: .site-published
 
@@ -87,10 +87,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - name: Deploy the published master-site tree
         id: deployment
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           SITE_BUILD_COMMIT: ${{ needs.build-and-publish.outputs.site_commit }}
         with:

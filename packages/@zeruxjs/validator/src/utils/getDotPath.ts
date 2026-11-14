@@ -7,31 +7,36 @@ import type {
 } from '../types/index.js';
 
 /**
- * Creates and returns the dot path of an issue if possible.
+ * Join convertible raw diagnostic string/number keys; no escaping, selector interpolation or privacy redaction occurs.
  *
- * @param issue The issue to get the dot path from.
+ * @param {BaseIssue<unknown>} issue - Private raw issue whose path may contain user-derived keys.
  *
- * @returns The dot path or null.
+ * @returns {string | null} Joined raw path or null for absence/nonconvertible keys.
  */
 export function getDotPath(issue: BaseIssue<unknown>): string | null;
 
 /**
- * Creates and returns the dot path of an issue if possible.
+ * Join convertible raw diagnostic string/number keys; no escaping, selector interpolation or privacy redaction occurs.
  *
- * @param issue The issue to get the dot path from.
+ * @param {InferIssue<TSchema>} issue - Private schema-specific issue path.
  *
- * @returns The dot path or null.
+ * @returns {IssueDotPath<TSchema> | null} Typed joined path or null; output is not sanitized public feedback.
  */
 export function getDotPath<
   TSchema extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 >(issue: InferIssue<TSchema>): IssueDotPath<TSchema> | null;
 
+/** Join raw string/number path keys for trusted diagnostic formatting.
+ * @param {BaseIssue<unknown>} issue - Private issue path, not a selector to execute.
+ * @returns {string | null} Joined raw keys or null for unsupported/absent path.
+ */
 // @__NO_SIDE_EFFECTS__
 export function getDotPath(issue: BaseIssue<unknown>): string | null {
   if (issue.path) {
     let key = '';
+    // Preserve declared segment order and reject unrepresentable Map/Set-style keys.
     for (const item of issue.path) {
       if (typeof item.key === 'string' || typeof item.key === 'number') {
         if (key) {

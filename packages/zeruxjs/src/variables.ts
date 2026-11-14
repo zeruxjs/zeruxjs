@@ -1,88 +1,248 @@
 /** Safe, reusable {{path}} interpolation. Registries are application-scoped; no eval or JS expressions. */
-export type VariableContext=Readonly<Record<string,unknown>>;
-export type VariableResolver=(context:VariableContext)=>unknown|Promise<unknown>;
-export type VariableEscape='text'|'html';
-export interface VariableRenderOptions {escape?:VariableEscape;missing?:'empty'|'keep'|'error';maxOutput?:number}
-const namePattern=/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
-const forbidden=new Set(['__proto__','constructor','prototype']);
-const token=/\{\{\s*([A-Za-z_][\w]*(?:\.[A-Za-z_]\w*)*)\s*\}\}/g;
-const safeName=(name:string)=>namePattern.test(name)&&!name.split('.').some(part=>forbidden.has(part));
-const encodeHtml=(value:string)=>value.replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]!));
-function property(source:unknown,path:string):unknown{
-  let current=source;
-  for(const segment of path.split('.')){
-    if(!current||typeof current!=='object'||!Object.prototype.hasOwnProperty.call(current,segment))return undefined;
-    current=(current as Record<string,unknown>)[segment];
+export type VariableContext = Readonly<Record<string, unknown>>;
+export type VariableResolver = (
+  context: VariableContext
+) => unknown | Promise<unknown>;
+export type VariableEscape = 'text' | 'html';
+export interface VariableRenderOptions {
+  /** HTML character escaping is explicit; text mode preserves scalar text unchanged. */
+  escape?: VariableEscape;
+  /** Choose empty, original placeholder text, or an explicit missing-value error. */
+  missing?: 'empty' | 'keep' | 'error';
+  /** Maximum aggregate UTF-16 output characters, default two million and capped at five million. */
+  maxOutput?: number;
+}
+/** Dotted identifier grammar; expressions, indexing and arbitrary JavaScript are unsupported. */
+const namePattern = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
+/** Prototype-sensitive path segments rejected for both registrations and placeholders. */
+const forbidden = new Set(['__proto__', 'constructor', 'prototype']);
+/** Literal placeholder matcher with one required dotted-name capture. */
+const token = /\{\{\s*([A-Za-z_][\w]*(?:\.[A-Za-z_]\w*)*)\s*\}\}/g;
+/** Validate identifier syntax and every prototype-sensitive path segment.
+ * @param {string} name - Dotted placeholder name.
+ * @returns {boolean} Whether registration/lookup admits the name.
+ */
+const safeName = (name: string) =>
+  namePattern.test(name) &&
+  !name.split('.').some((part) => forbidden.has(part));
+/** Legacy interpolation encoder for HTML text/attribute characters only; not URL, CSS or script policy.
+ * @param {string} value - Scalar string representation.
+ * @returns {string} HTML-escaped text.
+ */
+const encodeHtml = (value: string) =>
+  value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
+        character
+      ]!
+  );
+/** Traverse own dotted properties of host-provided context without evaluating expressions.
+ * @param {unknown} source - Trusted application context; ordinary property access can invoke host-authored getters.
+ * @param {string} path - Validated dotted name with prototype-sensitive segments already rejected.
+ * @returns {unknown} Own path value or undefined when traversal cannot continue.
+ */
+function property(source: unknown, path: string): unknown {
+  let current = source;
+  for (const segment of path.split('.')) {
+    if (
+      !current ||
+      typeof current !== 'object' ||
+      !Object.prototype.hasOwnProperty.call(current, segment)
+    ) {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[segment];
   }
   return current;
 }
-export function createVariableRegistry(){
-  const resolvers=new Map<string,VariableResolver>();
-  function register(name:string,resolver:VariableResolver){
-    if(!safeName(name)||typeof resolver!=='function')throw new TypeError('Invalid variable registration');
-    if(resolvers.has(name))throw new Error(`Variable already registered: ${name}`);
-    resolvers.set(name,resolver);
-    return ()=>{if(resolvers.get(name)===resolver)resolvers.delete(name);};
-  }
-  /** Render multiple named fields using one per-recipient resolver snapshot. Registered
-   * async variables are evaluated once per name even if repeated across fields. */
-  async function renderFields<T extends Record<string,string>>(
-    fields:T,context:VariableContext={},options:{escape?:Partial<Record<keyof T,VariableEscape>>;missing?:'empty'|'keep'|'error';maxOutput?:number}={}
-  ):Promise<T>{
-    if(!fields||typeof fields!=='object'||Array.isArray(fields)||Object.keys(fields).length>32)throw new TypeError('Invalid template fields');
-    if(!context||typeof context!=='object'||Array.isArray(context))throw new TypeError('Invalid variable context');
-    const max=options.maxOutput??2_000_000;
-    if(!Number.isSafeInteger(max)||max<1||max>5_000_000)throw new RangeError('Invalid output limit');
-    const cached=new Map<string,unknown>();let count=0,total=0;
-    const output=Object.create(null) as T;
-    for(const [key,template] of Object.entries(fields)){
-      if(typeof template!=='string'||template.length>1_000_000)throw new RangeError('Invalid template length');
-      let result='',at=0;
-      for(const match of template.matchAll(token)){
-        if(++count>10_000)throw new RangeError('Too many template variables');
-        const name=match[1];if(!safeName(name))throw new TypeError('Forbidden variable name');
-        result+=template.slice(at,match.index);
-        let value:unknown;
-        if(cached.has(name))value=cached.get(name);
-        else{
-          value=property(context,name);
-          if(value===undefined&&resolvers.has(name))value=await resolvers.get(name)!(context);
-          cached.set(name,value);
-        }
-        if(value===undefined){
-          if(options.missing==='error')throw new Error(`Missing variable: ${name}`);
-          result+=options.missing==='keep'?match[0]:'';
-        }else if(value===null){/* explicit empty */}
-        else if(typeof value==='string'||typeof value==='number'||typeof value==='boolean'||typeof value==='bigint'){
-          const printable=String(value);
-          result+=options.escape?.[key as keyof T]==='html'?encodeHtml(printable):printable;
-        }else throw new TypeError(`Non-scalar variable: ${name}`);
-        if(result.length>max)throw new RangeError('Rendered content too large');
-        at=match.index!+match[0].length;
+/** Create an application-scoped resolver map with explicit registration and no dynamic code execution.
+ * @returns {object} Registration, inspection, extraction and bounded rendering operations.
+ */
+export function createVariableRegistry() {
+  /** Application-owned named callbacks; no module/package discovery or eval occurs. */
+  const resolvers = new Map<string, VariableResolver>();
+  /** Register one explicit trusted resolver and return a compare-and-remove callback.
+   * @param {string} name - Validated unique dotted identifier.
+   * @param {VariableResolver} resolver - Application-owned callback; asynchronous work has no implicit timeout/cancellation.
+   * @returns {() => void} Removes only this same registration, preserving a later replacement.
+   */
+  function register(name: string, resolver: VariableResolver) {
+    if (!safeName(name) || typeof resolver !== 'function') {
+      throw new TypeError('Invalid variable registration');
+    }
+    if (resolvers.has(name)) {
+      throw new Error(`Variable already registered: ${name}`);
+    }
+    resolvers.set(name, resolver);
+    return () => {
+      if (resolvers.get(name) === resolver) {
+        resolvers.delete(name);
       }
-      result+=template.slice(at);
-      total+=result.length;
-      if(result.length>max||total>max)throw new RangeError('Rendered content too large');
-      output[key as keyof T]=result as T[keyof T];
+    };
+  }
+  /** Render named fields with one per-call resolver-result cache and a shared character/placeholder budget.
+   * @param {T} fields - At most thirty-two string templates.
+   * @param {VariableContext} context - Application-owned lookup values; do not pass untrusted executable objects.
+   * @param {{ escape?: Partial<Record<keyof T, VariableEscape>>; missing?: 'empty' | 'keep' | 'error'; maxOutput?: number; }} options - Per-field escaping, missing-value and aggregate output policy.
+   * @param {Partial<Record<keyof T, VariableEscape>>} [options.escape] - Per-field HTML/text escaping.
+   * @param {"empty" | "keep" | "error"} [options.missing] - Missing-value policy.
+   * @param {number} [options.maxOutput] - Aggregate UTF-16 character ceiling.
+   * @returns {Promise<T>} Rendered fields with original keys; callback failures propagate without replay.
+   */
+  async function renderFields<T extends Record<string, string>>(
+    fields: T,
+    context: VariableContext = {},
+    options: {
+      /** HTML character escaping is explicit; text mode preserves scalar text unchanged. */
+      escape?: Partial<Record<keyof T, VariableEscape>>;
+      /** Choose empty, original placeholder text, or an explicit missing-value error. */
+      missing?: 'empty' | 'keep' | 'error';
+      /** Maximum aggregate UTF-16 output characters, default two million and capped at five million. */
+      maxOutput?: number;
+    } = {}
+  ): Promise<T> {
+    if (
+      !fields ||
+      typeof fields !== 'object' ||
+      Array.isArray(fields) ||
+      Object.keys(fields).length > 32
+    ) {
+      throw new TypeError('Invalid template fields');
+    }
+    if (!context || typeof context !== 'object' || Array.isArray(context)) {
+      throw new TypeError('Invalid variable context');
+    }
+    /** Validated aggregate UTF-16 output-character ceiling, not a byte or provider deadline. */
+    const max = options.maxOutput ?? 2_000_000;
+    if (!Number.isSafeInteger(max) || max < 1 || max > 5_000_000) {
+      throw new RangeError('Invalid output limit');
+    }
+    /** Per-renderFields resolver results shared across fields, never across separate calls. */
+    const cached = new Map<string, unknown>();
+    let count = 0,
+      total = 0;
+    /** Null-prototype result record retaining the caller’s field keys. */
+    const output = Object.create(null) as T;
+    for (const [key, template] of Object.entries(fields)) {
+      if (typeof template !== 'string' || template.length > 1_000_000) {
+        throw new RangeError('Invalid template length');
+      }
+      let result = '',
+        at = 0;
+      for (const match of template.matchAll(token)) {
+        if (++count > 10_000) {
+          throw new RangeError('Too many template variables');
+        }
+        // The successful token pattern always supplies its required name capture.
+        /** Required name capture, validated before context/resolver lookup. */
+        const name = match[1]!;
+        if (!safeName(name)) {
+          throw new TypeError('Forbidden variable name');
+        }
+        result += template.slice(at, match.index);
+        let value: unknown;
+        if (cached.has(name)) {
+          value = cached.get(name);
+        } else {
+          value = property(context, name);
+          if (value === undefined && resolvers.has(name)) {
+            value = await resolvers.get(name)!(context);
+          }
+          cached.set(name, value);
+        }
+        if (value === undefined) {
+          if (options.missing === 'error') {
+            throw new Error(`Missing variable: ${name}`);
+          }
+          result += options.missing === 'keep' ? match[0] : '';
+        } else if (value === null) {
+          /* explicit empty */
+        } else if (
+          typeof value === 'string' ||
+          typeof value === 'number' ||
+          typeof value === 'boolean' ||
+          typeof value === 'bigint'
+        ) {
+          /** Admitted scalar value converted to text before optional HTML encoding. */
+          const printable = String(value);
+          result +=
+            options.escape?.[key as keyof T] === 'html'
+              ? encodeHtml(printable)
+              : printable;
+        } else {
+          throw new TypeError(`Non-scalar variable: ${name}`);
+        }
+        if (result.length > max) {
+          throw new RangeError('Rendered content too large');
+        }
+        at = match.index! + match[0].length;
+      }
+      result += template.slice(at);
+      total += result.length;
+      if (result.length > max || total > max) {
+        throw new RangeError('Rendered content too large');
+      }
+      output[key as keyof T] = result as T[keyof T];
     }
     return output;
   }
-  async function render(template:string,context:VariableContext={},options:VariableRenderOptions={}):Promise<string>{
-    const result=await renderFields({value:template},context,{escape:{value:options.escape},missing:options.missing,maxOutput:options.maxOutput});
+  /** Render one string through the same batch validation and escaping semantics.
+   * @param {string} template - Bounded literal template.
+   * @param {VariableContext} context - Application-owned lookup values.
+   * @param {VariableRenderOptions} options - Escaping, missing-value and aggregate character policy.
+   * @returns {Promise<string>} Rendered scalar string; arbitrary objects cannot become replacement text.
+   */
+  async function render(
+    template: string,
+    context: VariableContext = {},
+    options: VariableRenderOptions = {}
+  ): Promise<string> {
+    /** Single-field batch result used to preserve the same lookup/limit semantics. */
+    const result = await renderFields({ value: template }, context, {
+      escape: { value: options.escape },
+      missing: options.missing,
+      maxOutput: options.maxOutput,
+    });
     return result.value;
   }
-  /** List the placeholders in a template without running resolvers. */
-  function extract(template:string):string[]{
-    if(typeof template!=='string'||template.length>1_000_000)throw new RangeError('Invalid template length');
-    const matches=[...template.matchAll(token)];if(matches.length>10_000)throw new RangeError('Too many template variables');
-    const names=new Set<string>();
-    for(const match of matches){if(!safeName(match[1]))throw new TypeError('Forbidden variable name');names.add(match[1]);}
+  /** List validated placeholder names without invoking registered resolvers.
+   * @param {string} template - Bounded literal template.
+   * @returns {string[]} Unique dotted names in discovery order.
+   */
+  function extract(template: string): string[] {
+    if (typeof template !== 'string' || template.length > 1_000_000) {
+      throw new RangeError('Invalid template length');
+    }
+    /** Bounded syntactic placeholder matches; extraction does not invoke resolvers. */
+    const matches = [...template.matchAll(token)];
+    if (matches.length > 10_000) {
+      throw new RangeError('Too many template variables');
+    }
+    /** Unique validated names retained in discovery order. */
+    const names = new Set<string>();
+    for (const match of matches) {
+      if (!safeName(match[1]!)) {
+        throw new TypeError('Forbidden variable name');
+      }
+      names.add(match[1]!);
+    }
     return [...names];
   }
-  return {register,unregister:(name:string)=>resolvers.delete(name),has:(name:string)=>resolvers.has(name),clear:()=>resolvers.clear(),render,renderFields,extract};
+  return {
+    register,
+    unregister: (name: string) => resolvers.delete(name),
+    has: (name: string) => resolvers.has(name),
+    clear: () => resolvers.clear(),
+    render,
+    renderFields,
+    extract,
+  };
 }
-export type VariableRegistry=ReturnType<typeof createVariableRegistry>;
+export type VariableRegistry = ReturnType<typeof createVariableRegistry>;
 /** Convenience singleton for code registered in the current server process. Prefer an explicit registry per app/tenant. */
-export const variables=createVariableRegistry();
-export const registerVariable=variables.register;
-export const renderVariables=variables.render;
+export const variables = createVariableRegistry();
+/** Compatibility registration alias on the process-global convenience registry. */
+export const registerVariable = variables.register;
+/** Compatibility rendering alias on the process-global convenience registry. */
+export const renderVariables = variables.render;

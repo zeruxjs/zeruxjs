@@ -1,57 +1,69 @@
-import type { ZuixRecipe } from "./types.js";
-import { safeCondition, cssEscapeClass } from "./safety.js";
+import type { ZuixRecipe } from './types.js';
+import { safeCondition, cssEscapeClass } from './safety.js';
 
-/** Compose base utilities into ordered component/typography recipes without raw declarations.
- * @param recipes Trusted application recipes; selectors and conditions are bounded and validated.
- * @param compile Compile one base utility using the application's theme, prefix and plugins.
- * @param limit Maximum recipes and total utility applications.
- * @returns CSS rules, preserving author order and declaration importance. No globals or I/O.
+/** Compose base utilities into ordered recipes without accepting raw declarations or token variants.
+ * @param {readonly ZuixRecipe[]} recipes - Trusted application selectors/conditions and base token lists.
+ * @param {(token: string) => string | undefined} compile - Compiler bound to application theme, prefix and trusted plugins.
+ * @param {number} limit - Maximum recipe count and total utility applications.
+ * @returns {string[]} Rules in author order; unsafe/unsupported composition throws.
  */
 export function compileRecipes(
   recipes: readonly ZuixRecipe[],
   compile: (token: string) => string | undefined,
-  limit: number,
+  limit: number
 ): string[] {
-  if (!Array.isArray(recipes) || recipes.length > limit)
-    throw new Error("zuix: recipe limit exceeded");
+  if (!Array.isArray(recipes) || recipes.length > limit) {
+    throw new Error('zuix: recipe limit exceeded');
+  }
   let applications = 0;
   return recipes.map((recipe) => {
     // Block rule/declaration escapes; selectors remain trusted configuration, never visitor input.
     if (
       !recipe ||
-      typeof recipe.selector !== "string" ||
+      typeof recipe.selector !== 'string' ||
       !recipe.selector.trim() ||
       recipe.selector.length > 1024 ||
       !/^[a-zA-Z0-9\s.#:[\]_'"()=~+*>|,-]+$/.test(recipe.selector) ||
       /[\r\n\t]/.test(recipe.selector) ||
       !Array.isArray(recipe.apply) ||
       !recipe.apply.length
-    )
-      throw new Error("zuix: invalid utility recipe");
+    ) {
+      throw new Error('zuix: invalid utility recipe');
+    }
     applications += recipe.apply.length;
-    if (applications > limit)
-      throw new Error("zuix: recipe utility limit exceeded");
+    if (applications > limit) {
+      throw new Error('zuix: recipe utility limit exceeded');
+    }
+    /** Composed base declarations in recipe application order, preserving importance. */
     const declarations = recipe.apply
       .map((token: string) => {
-        const compiled = typeof token === "string" ? compile(token) : undefined;
+        /** Single generated utility rule; variants and nested rules reject at this boundary. */
+        const compiled = typeof token === 'string' ? compile(token) : undefined;
         // Variants produce selectors or at-rules. Recipes put those in selector/conditions explicitly.
-        const opening = compiled?.indexOf("{") ?? -1;
-        const selector = opening >= 0 ? compiled!.slice(0, opening) : "";
+        /** First declaration-block delimiter, used to verify the generated base selector. */
+        const opening = compiled?.indexOf('{') ?? -1;
+        /** Generated utility selector, which must exactly match the escaped base token. */
+        const selector = opening >= 0 ? compiled!.slice(0, opening) : '';
         if (
           !compiled ||
           selector !== `.${cssEscapeClass(token)}` ||
-          compiled.slice(opening + 1, -1).includes("{")
-        )
+          compiled.slice(opening + 1, -1).includes('{')
+        ) {
           throw new Error(`zuix: unsupported recipe utility: ${String(token)}`);
+        }
         return compiled.slice(opening + 1, -1);
       })
-      .join("");
+      .join('');
     let rule = `${recipe.selector}{${declarations}}`;
-    for (const kind of ["container", "supports", "media"] as const) {
+    for (const kind of ['container', 'supports', 'media'] as const) {
+      /** Optional explicit recipe condition, validated before wrapping the rule. */
       const condition = recipe[kind];
-      if (condition === undefined) continue;
-      if (typeof condition !== "string" || !safeCondition(condition))
+      if (condition === undefined) {
+        continue;
+      }
+      if (typeof condition !== 'string' || !safeCondition(condition)) {
         throw new Error(`zuix: invalid recipe ${kind} condition`);
+      }
       rule = `@${kind} ${condition}{${rule}}`;
     }
     return rule;

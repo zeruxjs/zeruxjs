@@ -33,52 +33,54 @@ import type { InferFallbacks } from './types/getFallbacks.js';
  * this function recursively returns the fallback values of the subschemas
  * instead of `undefined`.
  *
- * @param schema The schema to get them from.
+ * @param {TSchema} schema - Borrowed trusted schema tree; reading leaves may execute host-owned fallback factories without an input dataset or root parse budget.
  *
- * @returns The fallback values.
+ * @returns {InferFallbacks<TSchema>} Fresh object/tuple structure with borrowed leaf values; leaves are not parsed or deep-cloned and factory failures propagate.
  */
 // @__NO_SIDE_EFFECTS__
 export function getFallbacks<
   const TSchema extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | LooseObjectSchema<
-    ObjectEntries,
-    ErrorMessage<LooseObjectIssue> | undefined
-  >
-  | LooseTupleSchema<TupleItems, ErrorMessage<LooseTupleIssue> | undefined>
-  | ObjectSchema<ObjectEntries, ErrorMessage<ObjectIssue> | undefined>
-  | ObjectWithRestSchema<
-    ObjectEntries,
-    BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-    ErrorMessage<ObjectWithRestIssue> | undefined
-  >
-  | StrictObjectSchema<
-    ObjectEntries,
-    ErrorMessage<StrictObjectIssue> | undefined
-  >
-  | StrictTupleSchema<TupleItems, ErrorMessage<StrictTupleIssue> | undefined>
-  | TupleSchema<TupleItems, ErrorMessage<TupleIssue> | undefined>
-  | TupleWithRestSchema<
-    TupleItems,
-    BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-    ErrorMessage<TupleWithRestIssue> | undefined
-  >,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | LooseObjectSchema<
+        ObjectEntries,
+        ErrorMessage<LooseObjectIssue> | undefined
+      >
+    | LooseTupleSchema<TupleItems, ErrorMessage<LooseTupleIssue> | undefined>
+    | ObjectSchema<ObjectEntries, ErrorMessage<ObjectIssue> | undefined>
+    | ObjectWithRestSchema<
+        ObjectEntries,
+        BaseSchema<unknown, unknown, BaseIssue<unknown>>,
+        ErrorMessage<ObjectWithRestIssue> | undefined
+      >
+    | StrictObjectSchema<
+        ObjectEntries,
+        ErrorMessage<StrictObjectIssue> | undefined
+      >
+    | StrictTupleSchema<TupleItems, ErrorMessage<StrictTupleIssue> | undefined>
+    | TupleSchema<TupleItems, ErrorMessage<TupleIssue> | undefined>
+    | TupleWithRestSchema<
+        TupleItems,
+        BaseSchema<unknown, unknown, BaseIssue<unknown>>,
+        ErrorMessage<TupleWithRestIssue> | undefined
+      >,
 >(schema: TSchema): InferFallbacks<TSchema> {
-  // If it is an object schema, return fallbacks of entries
+  // Structural objects take precedence over wrapper-level fallback metadata; recurse declared entries only.
   if ('entries' in schema) {
+    /** Fresh result dictionary; leaf values retain the identity supplied by their factories. */
     const object: Record<string, unknown> = {};
+    // Enumerated entries belong to the trusted schema dictionary, whose values are schemas.
     for (const key in schema.entries) {
-      object[key] = getFallbacks(schema.entries[key]);
+      object[key] = getFallbacks(schema.entries[key]!);
     }
     return object as InferFallbacks<TSchema>;
   }
 
-  // If it is a tuple schema, return fallbacks of items
+  // Preserve declared tuple order; dynamic rest values have no instances to enumerate here.
   if ('items' in schema) {
     return schema.items.map(getFallbacks) as InferFallbacks<TSchema>;
   }
 
   // Otherwise, return fallback or `undefined`
-  // @ts-expect-error
+  // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
   return getFallback(schema);
 }

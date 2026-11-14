@@ -1,7 +1,7 @@
 {
   "name": "create-zenix-js",
-  "version": "0.0.3",
-  "description": "Placeholder CLI for the future Zenix CMS project generator",
+  "version": "0.0.4",
+  "description": "Safe generator for the host-configured SQLite Zenix CMS baseline",
   "bin": {
     "create-zenix": "./dist/index.js"
   },
@@ -23,20 +23,36 @@
     "prepack": "npm run build"
   },
   "keywords": [
-    "placeholder",
-    "zenix"
+    "zenix",
+    "cms",
+    "generator"
   ],
   "files": [
     "dist/",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "assets/",
+    "examples/"
   ],
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "zclivo": "0.0.4"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./templates": {
+      "types": "./dist/templates.d.ts",
+      "import": "./dist/templates.js"
+    }
   }
 }

@@ -78,12 +78,12 @@ Screenshots, recordings, logs, and technical details are **optional**. Do not in
 
 Reporters do **not** need to select a severity. Maintainers will assess impact with the affected user experience in mind:
 
-| Severity | Meaning | Example |
-| --- | --- | --- |
-| **Critical** | An essential task is impossible for a group of users, with no practical workaround. | A keyboard-only user cannot access the primary navigation or submit a required form. |
-| **High** | An important task is blocked or only possible through a difficult, unreliable workaround. | A required dialog cannot be operated by a screen reader. |
-| **Medium** | The task can be completed, but the barrier causes substantial effort, confusion, or loss of information. | Form errors are visible but not announced or connected to the right fields. |
-| **Low** | A localized usability or content issue with limited impact on completing tasks. | A secondary icon has unclear alternative text, while an equivalent labeled control is available. |
+| Severity     | Meaning                                                                                                  | Example                                                                                          |
+| ------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Critical** | An essential task is impossible for a group of users, with no practical workaround.                      | A keyboard-only user cannot access the primary navigation or submit a required form.             |
+| **High**     | An important task is blocked or only possible through a difficult, unreliable workaround.                | A required dialog cannot be operated by a screen reader.                                         |
+| **Medium**   | The task can be completed, but the barrier causes substantial effort, confusion, or loss of information. | Form errors are visible but not announced or connected to the right fields.                      |
+| **Low**      | A localized usability or content issue with limited impact on completing tasks.                          | A secondary icon has unclear alternative text, while an equivalent labeled control is available. |
 
 Severity reflects real impact and may change during investigation. These categories guide prioritization; they are **not** guaranteed response or fix deadlines.
 
@@ -107,13 +107,13 @@ Maintainers should review this statement **at least every six months**, and when
 
 ZeruxJS includes different kinds of surfaces. The intended experiences and testing status differ:
 
-| Surface | Intended environments and ways of using it | Current verification status |
-| --- | --- | --- |
-| **Website and documentation** | Modern desktop and mobile browsers; keyboard, pointer, touch, zoom, and assistive technologies such as screen readers. | No comprehensive browser/device/assistive-technology support matrix or dated accessibility audit is published in this statement. Specific combinations must be verified before claiming support. |
-| **Example applications and UI components** | The browsers and platforms identified by each example or package; keyboard and alternative input when interactive. | May differ by example or package. Do not assume all combinations have been tested. |
-| **Node.js command-line tools** | Supported Node.js runtimes and terminal environments as defined by each package; interactive keyboard use and noninteractive output when available. | CLI accessibility has not been verified across terminal/screen-reader combinations here. |
-| **VS Code extension** | VS Code environments covered by the extension's own compatibility metadata; keyboard and editor accessibility features. | No extension-specific screen-reader compatibility audit is claimed here. |
-| **Documentation and development collaboration on GitHub** | Browsers and assistive technologies supported by GitHub's platform. | GitHub is a third-party platform; its accessibility support and limitations are separate from ZeruxJS's own testing. |
+| Surface                                                   | Intended environments and ways of using it                                                                                                          | Current verification status                                                                                                                                                                      |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Website and documentation**                             | Modern desktop and mobile browsers; keyboard, pointer, touch, zoom, and assistive technologies such as screen readers.                              | No comprehensive browser/device/assistive-technology support matrix or dated accessibility audit is published in this statement. Specific combinations must be verified before claiming support. |
+| **Example applications and UI components**                | The browsers and platforms identified by each example or package; keyboard and alternative input when interactive.                                  | May differ by example or package. Do not assume all combinations have been tested.                                                                                                               |
+| **Node.js command-line tools**                            | Supported Node.js runtimes and terminal environments as defined by each package; interactive keyboard use and noninteractive output when available. | CLI accessibility has not been verified across terminal/screen-reader combinations here.                                                                                                         |
+| **VS Code extension**                                     | VS Code environments covered by the extension's own compatibility metadata; keyboard and editor accessibility features.                             | No extension-specific screen-reader compatibility audit is claimed here.                                                                                                                         |
+| **Documentation and development collaboration on GitHub** | Browsers and assistive technologies supported by GitHub's platform.                                                                                 | GitHub is a third-party platform; its accessibility support and limitations are separate from ZeruxJS's own testing.                                                                             |
 
 Potential test combinations include current stable Chrome/Chromium, Firefox, Safari, and Edge; Windows with NVDA; macOS or iOS with VoiceOver; and Android with TalkBack. **These are candidates for future validation, not combinations we claim to have tested or certified.** Contributors should report the exact versions used when reporting test results.
 

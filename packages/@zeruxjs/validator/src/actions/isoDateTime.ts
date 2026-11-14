@@ -9,22 +9,23 @@ import { _addIssue } from '../utils/index.js';
 /**
  * ISO date time issue interface.
  */
-export interface IsoDateTimeIssue<TInput extends string>
-  extends BaseIssue<TInput> {
+export interface IsoDateTimeIssue<
+  TInput extends string,
+> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'iso_date_time';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: null;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `"${string}"`;
   /**
@@ -41,15 +42,15 @@ export interface IsoDateTimeAction<
   TMessage extends ErrorMessage<IsoDateTimeIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, IsoDateTimeIssue<TInput>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'iso_date_time';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof isoDateTime;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: null;
   /**
@@ -57,51 +58,32 @@ export interface IsoDateTimeAction<
    */
   readonly requirement: RegExp;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an [ISO date time](https://en.wikipedia.org/wiki/ISO_8601) validation action.
- *
- * Format: yyyy-mm-ddThh:mm
- *
- * Hint: The regex used cannot validate the maximum number of days based on
- * year and month. For example, "2023-06-31T00:00" is valid although June has only
- * 30 days.
- *
- * Hint: The regex also allows a space as a separator between the date and time
- * parts instead of the "T" character.
- *
- * @returns An ISO date time action.
+/** Check the configured date plus minute-precision local time syntax; no calendar validity, zone conversion or date parsing occurs. This action neither establishes the input schema nor grants permissions.
+ * @returns {IsoDateTimeAction<TInput, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function isoDateTime<TInput extends string>(): IsoDateTimeAction<
   TInput,
   undefined
 >;
 
-/**
- * Creates an [ISO date time](https://en.wikipedia.org/wiki/ISO_8601) validation action.
- *
- * Format: yyyy-mm-ddThh:mm
- *
- * Hint: The regex used cannot validate the maximum number of days based on
- * year and month. For example, "2023-06-31T00:00" is valid although June has only
- * 30 days.
- *
- * Hint: The regex also allows a space as a separator between the date and time
- * parts instead of the "T" character.
- *
- * @param message The error message.
- *
- * @returns An ISO date time action.
+/** Check the configured date plus minute-precision local time syntax; no calendar validity, zone conversion or date parsing occurs. This action neither establishes the input schema nor grants permissions.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {IsoDateTimeAction<TInput, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function isoDateTime<
   TInput extends string,
   const TMessage extends ErrorMessage<IsoDateTimeIssue<TInput>> | undefined,
 >(message: TMessage): IsoDateTimeAction<TInput, TMessage>;
 
+/** Check the configured date plus minute-precision local time syntax; no calendar validity, zone conversion or date parsing occurs. This action neither establishes the input schema nor grants permissions.
+ * @param {ErrorMessage<IsoDateTimeIssue<string>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {IsoDateTimeAction<string, ErrorMessage<IsoDateTimeIssue<string>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function isoDateTime(
   message?: ErrorMessage<IsoDateTimeIssue<string>>
@@ -117,6 +99,11 @@ export function isoDateTime(
     expects: null,
     requirement: ISO_DATE_TIME_REGEX,
     message,
+    /** Check the configured date plus minute-precision local time syntax; no calendar validity, zone conversion or date parsing occurs. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement.test(dataset.value)) {
         _addIssue(this, 'date-time', dataset, config);

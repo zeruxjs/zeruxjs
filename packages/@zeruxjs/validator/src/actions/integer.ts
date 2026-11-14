@@ -10,23 +10,23 @@ import { _addIssue } from '../utils/index.js';
  */
 export interface IntegerIssue<TInput extends number> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'integer';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: null;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `${number}`;
   /**
-   * The validation function.
+   * Native numeric predicate identity; not an executable function string.
    */
   readonly requirement: (input: number) => boolean;
 }
@@ -39,49 +39,48 @@ export interface IntegerAction<
   TMessage extends ErrorMessage<IntegerIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, IntegerIssue<TInput>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'integer';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof integer;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: null;
   /**
-   * The validation function.
+   * Native numeric predicate identity; not an executable function string.
    */
   readonly requirement: (input: number) => boolean;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an [integer](https://en.wikipedia.org/wiki/Integer) validation action.
- *
- * @returns An integer action.
+/** Refine typed numbers with native Number.isInteger without conversion or a safe-range guarantee. This action neither establishes the input schema nor grants permissions.
+ * @returns {IntegerAction<TInput, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function integer<TInput extends number>(): IntegerAction<
   TInput,
   undefined
 >;
 
-/**
- * Creates an [integer](https://en.wikipedia.org/wiki/Integer) validation action.
- *
- * @param message The error message.
- *
- * @returns An integer action.
+/** Refine typed numbers with native Number.isInteger without conversion or a safe-range guarantee. This action neither establishes the input schema nor grants permissions.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {IntegerAction<TInput, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function integer<
   TInput extends number,
   const TMessage extends ErrorMessage<IntegerIssue<TInput>> | undefined,
 >(message: TMessage): IntegerAction<TInput, TMessage>;
 
+/** Refine typed numbers with native Number.isInteger without conversion or a safe-range guarantee. This action neither establishes the input schema nor grants permissions.
+ * @param {ErrorMessage<IntegerIssue<number>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {IntegerAction<number, ErrorMessage<IntegerIssue<number>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function integer(
   message?: ErrorMessage<IntegerIssue<number>>
@@ -94,6 +93,11 @@ export function integer(
     expects: null,
     requirement: Number.isInteger,
     message,
+    /** Refine typed numbers with native Number.isInteger without conversion or a safe-range guarantee. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement(dataset.value)) {
         _addIssue(this, 'integer', dataset, config);

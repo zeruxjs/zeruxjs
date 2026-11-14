@@ -12,7 +12,7 @@ services:
       - ./.dev-container/docker/root:/root
     working_dir: /workspace
     ports:
-      - "3000-3100:3000-3100"
-      - "9999-10099:9999-10099"
+      - '3000-3100:3000-3100'
+      - '9999-10099:9999-10099'
     # Keeps the container alive without running anything specific yet
     command: tail -f /dev/null

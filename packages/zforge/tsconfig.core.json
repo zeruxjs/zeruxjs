@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "src/module-endpoints.ts",
+    "src/request-diagnostics.ts",
+    "src/experiments.ts"
+  ]
+}

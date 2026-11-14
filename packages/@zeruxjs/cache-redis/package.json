@@ -1,19 +1,20 @@
 {
   "name": "@zeruxjs/cache-redis",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Redis cache helper supporting node-redis and ioredis, with BullMQ connection settings.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@zeruxjs/cache": "0.0.3",
-    "redis": "^5.8.3",
-    "ioredis": "^5.4.0"
+    "@zeruxjs/cache": "0.0.4",
+    "@zeruxjs/security": "0.0.4",
+    "ioredis": "^5.4.0",
+    "redis": "^5.8.3"
   },
   "license": "(MIT OR Apache-2.0)",
   "files": [
@@ -26,8 +27,8 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

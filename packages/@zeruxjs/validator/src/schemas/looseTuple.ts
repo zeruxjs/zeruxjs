@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   ArrayPathItem,
   BaseIssue,
@@ -24,51 +25,50 @@ export interface LooseTupleSchema<
   LooseTupleIssue | InferTupleIssue<TItems>
 > {
   /**
-   * The schema type.
+   * Fixed structural discriminator used by issue and metadata consumers.
    */
   readonly type: 'loose_tuple';
   /**
-   * The schema reference.
+   * Authored constructor identity; no package discovery or source evaluation occurs.
    */
   readonly reference: typeof looseTuple;
   /**
-   * The expected property.
+   * Private root-type diagnostic, not an authorization or escaping policy.
    */
   readonly expects: 'Array';
   /**
-   * The items schema.
+   * Borrowed ordered child schemas; not a copied or frozen tuple.
    */
   readonly items: TItems;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback; raw issues can contain rejected values.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a loose tuple schema.
- *
- * @param items The items schema.
- *
- * @returns A loose tuple schema.
+/** Validate the declared positional prefix and retain trailing values without validating them. Construction captures trusted references; root parsing owns execution limits.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; missing positions are delegated as undefined.
+ * @returns {LooseTupleSchema<TItems, undefined>} Inert structured schema; no input is parsed, cloned or authorized during construction.
  */
 export function looseTuple<const TItems extends TupleItems>(
   items: TItems
 ): LooseTupleSchema<TItems, undefined>;
 
-/**
- * Creates a loose tuple schema.
- *
- * @param items The items schema.
- * @param message The error message.
- *
- * @returns A loose tuple schema.
+/** Validate the declared positional prefix and retain trailing values without validating them. Construction captures trusted references; root parsing owns execution limits.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; missing positions are delegated as undefined.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; not client-safe HTML.
+ * @returns {LooseTupleSchema<TItems, TMessage>} Inert structured schema; no input is parsed, cloned or authorized during construction.
  */
 export function looseTuple<
   const TItems extends TupleItems,
   const TMessage extends ErrorMessage<LooseTupleIssue> | undefined,
 >(items: TItems, message: TMessage): LooseTupleSchema<TItems, TMessage>;
 
+/** Validate the declared positional prefix and retain trailing values without validating them. Construction captures trusted references; root parsing owns execution limits.
+ * @param {TupleItems} items - Borrowed trusted ordered child schemas; missing positions are delegated as undefined.
+ * @param {ErrorMessage<LooseTupleIssue>} message - Optional trusted private diagnostic text/callback; not client-safe HTML.
+ * @returns {LooseTupleSchema<TupleItems, ErrorMessage<LooseTupleIssue> | undefined>} Inert structured schema; no input is parsed, cloned or authorized during construction.
+ */
 // @__NO_SIDE_EFFECTS__
 export function looseTuple(
   items: TupleItems,
@@ -82,28 +82,41 @@ export function looseTuple(
     async: false,
     items,
     message,
+    /** Adapt explicit validation to the shared bounded root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Validate the declared positional prefix and retain trailing values without validating them. Child transforms may return borrowed identities; output is not a deep clone.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; object keys are checked as own properties and tuple positions use array indices.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root work/issue budgets, abort flags and private message policy.
+     * @returns {OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Declared structural output or private nested issues; exceptions and budget failures propagate.
+     */
     '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed current input retained for own-field checks and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
       if (Array.isArray(input)) {
         // Set typed to `true` and value to empty array
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
         dataset.value = [];
 
         // Parse schema of each tuple item
         for (let key = 0; key < this.items.length; key++) {
+          /** Current own field or positional value; missing input is delegated as undefined. */
           const value = input[key];
-          const itemDataset = this.items[key]['~run']({ value }, config);
+          // The loop bounds select an existing item from the trusted schema tuple.
+          /** Current positional child result; issue rebasing and abort flags preserve source order. */
+          const itemDataset = _runSchema(this.items[key]!, { value }, config);
 
           // If there are issues, capture them
           if (itemDataset.issues) {
             // Create tuple path item
+            /** Private parent path segment retaining original input/value; public HTTP responses sanitize it. */
             const pathItem: ArrayPathItem = {
               type: 'array',
               origin: 'value',
@@ -117,14 +130,14 @@ export function looseTuple(
               if (issue.path) {
                 issue.path.unshift(pathItem);
               } else {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 issue.path = [pathItem];
               }
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues?.push(issue);
             }
             if (!dataset.issues) {
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues = itemDataset.issues;
             }
 
@@ -141,14 +154,14 @@ export function looseTuple(
           }
 
           // Add item to dataset
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.value.push(itemDataset.value);
         }
 
         // Add rest to dataset if necessary
         if (!dataset.issues || !config.abortEarly) {
           for (let key = this.items.length; key < input.length; key++) {
-            // @ts-expect-error
+            // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
             dataset.value.push(input[key]);
           }
         }
@@ -159,7 +172,7 @@ export function looseTuple(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         unknown[],
         LooseTupleIssue | BaseIssue<unknown>

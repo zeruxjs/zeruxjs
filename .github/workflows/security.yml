@@ -1,0 +1,245 @@
+name: Security and Code Quality
+
+on:
+  # PR branches are checked by pull_request; master is checked after merge.
+  push:
+    branches: [master]
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  schedule:
+    # Daily at 00:00 UTC; scheduled runs use the default branch.
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+# Restrict the default token; write permissions are granted per job only.
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  semgrep:
+    name: Semgrep CE
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Install Semgrep
+        run: python -m pip install --disable-pip-version-check 'semgrep==1.184.0'
+      - name: Scan source (public community rules)
+        run: |
+          mkdir -p reports
+          semgrep scan --config p/security-audit --metrics off --disable-version-check --timeout 10 --max-memory 2048 --sarif --output reports/semgrep.sarif --error .
+      - name: Upload Semgrep to GitHub Code Scanning
+        if: always() && hashFiles('reports/semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        with:
+          sarif_file: reports/semgrep.sarif
+          category: semgrep
+      - name: Save Semgrep findings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: scan-semgrep
+          path: reports/semgrep.sarif
+          if-no-files-found: ignore
+          retention-days: 14
+
+  trivy:
+    name: Trivy (dependencies / config / secrets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Prepare report directory
+        run: mkdir -p reports
+      - name: Scan filesystem
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.70.0
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          format: sarif
+          output: reports/trivy.sarif
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: false
+      - name: Upload Trivy SARIF
+        if: always() && hashFiles('reports/trivy.sarif') != ''
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        with:
+          sarif_file: reports/trivy.sarif
+          category: trivy
+      - name: Save Trivy findings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: scan-trivy
+          path: reports/trivy.sarif
+          if-no-files-found: ignore
+          retention-days: 14
+
+  gitleaks:
+    name: Gitleaks (Git history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install checksum-verified Gitleaks
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --max-time 120 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz -o gitleaks.tar.gz
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz' | sha256sum --check --strict
+          tar -xzf gitleaks.tar.gz gitleaks
+      - name: Scan entire Git history (secrets redacted)
+        run: |
+          mkdir -p reports
+          "$RUNNER_TEMP/gitleaks" git --redact=100 --no-banner --log-level warn --log-opts=--all --report-format sarif --report-path reports/gitleaks.sarif .
+      - name: Upload Gitleaks SARIF
+        if: always() && hashFiles('reports/gitleaks.sarif') != ''
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        with:
+          sarif_file: reports/gitleaks.sarif
+          category: gitleaks
+      - name: Save redacted Gitleaks findings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: scan-gitleaks
+          path: reports/gitleaks.sarif
+          if-no-files-found: ignore
+          retention-days: 14
+
+  zizmor:
+    name: Zizmor (workflow security)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Scan GitHub Actions workflows
+        id: scan
+        uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
+        with:
+          advanced-security: true
+      - name: Save Zizmor findings
+        if: always() && steps.scan.outputs.output-file != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: scan-zizmor
+          path: ${{ steps.scan.outputs.output-file }}
+          if-no-files-found: ignore
+          retention-days: 14
+
+  eslint:
+    name: ESLint (JavaScript and TypeScript)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build repository preset and its required dependencies
+        run: npm run lint:prepare
+      - name: Check source using root flat config
+        run: npm run lint:js:report
+      - name: Check repository quality policy fixtures
+        run: npm run quality:policy
+      - name: Check formatting of reviewed package scopes
+        run: npm run format:reviewed
+      - name: Save ESLint results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: scan-eslint
+          path: reports/eslint.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  stylelint:
+    name: Stylelint (CSS and SCSS)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check styles using root config
+        run: npm run lint:css:report
+      - name: Save Stylelint results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: scan-stylelint
+          path: reports/stylelint.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  htmlvalidate:
+    name: HTML-validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Install locked tooling without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check authored HTML using the root configuration
+        run: npm run lint:html:report
+      - name: Save HTML validation results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: scan-htmlvalidate
+          path: reports/htmlvalidate.json
+          if-no-files-found: warn
+          retention-days: 7

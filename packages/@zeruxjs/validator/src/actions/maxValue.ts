@@ -14,19 +14,19 @@ export interface MaxValueIssue<
   TRequirement extends ValueInput,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'max_value';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: `<=${string}`;
   /**
-   * The maximum value.
+   * Inclusive native upper bound; mutable Date requirements remain borrowed.
    */
   readonly requirement: TRequirement;
 }
@@ -38,62 +38,61 @@ export interface MaxValueAction<
   TInput extends ValueInput,
   TRequirement extends TInput,
   TMessage extends
-  | ErrorMessage<MaxValueIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MaxValueIssue<TInput, TRequirement>>
+    | undefined,
 > extends BaseValidation<TInput, TInput, MaxValueIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'max_value';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof maxValue;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: `<=${string}`;
   /**
-   * The maximum value.
+   * Inclusive native upper bound; mutable Date requirements remain borrowed.
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a max value validation action.
- *
- * @param requirement The maximum value.
- *
- * @returns A max value action.
+/** Apply the native inclusive <= comparison to a typed value and its configured upper bound. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @returns {MaxValueAction<TInput, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function maxValue<
   TInput extends ValueInput,
   const TRequirement extends TInput,
 >(requirement: TRequirement): MaxValueAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a max value validation action.
- *
- * @param requirement The maximum value.
- * @param message The error message.
- *
- * @returns A max value action.
+/** Apply the native inclusive <= comparison to a typed value and its configured upper bound. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MaxValueAction<TInput, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function maxValue<
   TInput extends ValueInput,
   const TRequirement extends TInput,
   const TMessage extends
-  | ErrorMessage<MaxValueIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MaxValueIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): MaxValueAction<TInput, TRequirement, TMessage>;
 
+/** Apply the native inclusive <= comparison to a typed value and its configured upper bound. This action neither establishes the input schema nor grants permissions.
+ * @param {ValueInput} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {ErrorMessage<MaxValueIssue<ValueInput, ValueInput>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MaxValueAction<ValueInput, ValueInput, ErrorMessage<MaxValueIssue<ValueInput, ValueInput>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function maxValue(
   requirement: ValueInput,
@@ -108,12 +107,18 @@ export function maxValue(
     type: 'max_value',
     reference: maxValue,
     async: false,
-    expects: `<=${requirement instanceof Date
-      ? requirement.toJSON()
-      : _stringify(requirement)
-      }`,
+    expects: `<=${
+      requirement instanceof Date
+        ? requirement.toJSON()
+        : _stringify(requirement)
+    }`,
     requirement,
     message,
+    /** Apply the native inclusive <= comparison to a typed value and its configured upper bound. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !(dataset.value <= this.requirement)) {
         _addIssue(this, 'value', dataset, config, {

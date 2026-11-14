@@ -9,22 +9,23 @@ import { _addIssue } from '../utils/index.js';
 /**
  * ISO time second issue interface.
  */
-export interface IsoTimeSecondIssue<TInput extends string>
-  extends BaseIssue<TInput> {
+export interface IsoTimeSecondIssue<
+  TInput extends string,
+> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'iso_time_second';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: null;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `"${string}"`;
   /**
@@ -41,15 +42,15 @@ export interface IsoTimeSecondAction<
   TMessage extends ErrorMessage<IsoTimeSecondIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, IsoTimeSecondIssue<TInput>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'iso_time_second';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof isoTimeSecond;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: null;
   /**
@@ -57,37 +58,32 @@ export interface IsoTimeSecondAction<
    */
   readonly requirement: RegExp;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an [ISO time second](https://en.wikipedia.org/wiki/ISO_8601) validation action.
- *
- * Format: hh:mm:ss
- *
- * @returns An ISO time second action.
+/** Check configured hour/minute/second text ranges; leap seconds and timezone handling are outside this syntax subset. This action neither establishes the input schema nor grants permissions.
+ * @returns {IsoTimeSecondAction<TInput, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function isoTimeSecond<TInput extends string>(): IsoTimeSecondAction<
   TInput,
   undefined
 >;
 
-/**
- * Creates an [ISO time second](https://en.wikipedia.org/wiki/ISO_8601) validation action.
- *
- * Format: hh:mm:ss
- *
- * @param message The error message.
- *
- * @returns An ISO time second action.
+/** Check configured hour/minute/second text ranges; leap seconds and timezone handling are outside this syntax subset. This action neither establishes the input schema nor grants permissions.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {IsoTimeSecondAction<TInput, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function isoTimeSecond<
   TInput extends string,
   const TMessage extends ErrorMessage<IsoTimeSecondIssue<TInput>> | undefined,
 >(message: TMessage): IsoTimeSecondAction<TInput, TMessage>;
 
+/** Check configured hour/minute/second text ranges; leap seconds and timezone handling are outside this syntax subset. This action neither establishes the input schema nor grants permissions.
+ * @param {ErrorMessage<IsoTimeSecondIssue<string>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {IsoTimeSecondAction<string, ErrorMessage<IsoTimeSecondIssue<string>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function isoTimeSecond(
   message?: ErrorMessage<IsoTimeSecondIssue<string>>
@@ -103,6 +99,11 @@ export function isoTimeSecond(
     expects: null,
     requirement: ISO_TIME_SECOND_REGEX,
     message,
+    /** Check configured hour/minute/second text ranges; leap seconds and timezone handling are outside this syntax subset. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement.test(dataset.value)) {
         _addIssue(this, 'time-second', dataset, config);

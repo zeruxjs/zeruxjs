@@ -1,34 +1,57 @@
 /** Overlapping child generations with lease-protected, verified traffic cutovers.
  * Uses the existing loopback proxy and RouteStore; does not require a shell. */
-import { launchSupervisedCommand, type SupervisedProcess, type SupervisorOptions } from './process-supervisor.js';
+import {
+  launchSupervisedCommand,
+  type SupervisedProcess,
+  type SupervisorOptions,
+} from './process-supervisor.js';
 import type { ChildProcess } from 'node:child_process';
 import { probeApplicationHealth, validateHealthCheck } from './health.js';
 import { validateBackends } from './backend-pool.js';
 import type { BackendConnections } from './backend-connections.js';
 import type { RouteStore, RouteLease } from './routes.js';
 
-export type RollingPhase = 'running' | 'deploying' | 'draining' | 'stopping' | 'stopped';
+export type RollingPhase =
+  | 'running'
+  | 'deploying'
+  | 'draining'
+  | 'stopping'
+  | 'stopped';
 export interface RollingStatus {
+  /** Current controller lifecycle phase, separate from child application state. */
   phase: RollingPhase;
+  /** Controller-local successful generation counter. */
   generation: number;
+  /** Currently serving port, or null after stop. */
   port: number | null;
+  /** Current child PID when known; never authority to manage another process. */
   pid: number | null;
+  /** Prior port while deploying or draining, otherwise null. */
   previousPort: number | null;
+  /** Wall-clock ISO status timestamp, not a deployment-history transaction. */
   updatedAt: string;
 }
 export interface RollingDeployResult {
+  /** Port serving before the successful cutover. */
   fromPort: number;
+  /** Verified replacement port selected from the fixed validated list. */
   toPort: number;
+  /** Controller-local successful generation counter. */
   generation: number;
   /** False when the drain deadline was reached; the old child was still stopped. */
   drained: boolean;
 }
-export interface RollingAppOptions extends Omit<SupervisorOptions, 'port' | 'onExit' | 'onSpawn'> {
+export interface RollingAppOptions extends Omit<
+  SupervisorOptions,
+  'port' | 'onExit' | 'onSpawn'
+> {
   /** Record each detached generation as soon as it spawns (before readiness). */
   onSpawn?: (child: ChildProcess, port: number) => void;
   /** Persist the initial route lease before returning a published controller. */
   onLease?: (leaseId: string) => void;
+  /** Borrowed route store; conditional leases protect against overwriting a replacement owner. */
   store: RouteStore;
+  /** Host-authorized route hostname; never inferred from an untrusted request. */
   hostname: string;
   /** Two or more private, distinct loopback ports. Each child receives PORT. */
   ports: readonly number[];
@@ -40,54 +63,160 @@ export interface RollingAppOptions extends Omit<SupervisorOptions, 'port' | 'onE
   preCutoverChecks?: number;
   /** Number of post-cutover health probes before retiring the old process. */
   verificationChecks?: number;
+  /** Bounded delay between verification probes in milliseconds. */
   verificationIntervalMs?: number;
   /** Explicitly replace an existing registration; disabled by default. */
   force?: boolean;
+  /** Borrowed optional status observer; its errors cannot break route management. */
   onStatus?: (status: Readonly<RollingStatus>) => void;
 }
 export interface RollingApplication {
+  /** Current owned child handle, if available through this controller. */
   readonly current: SupervisedProcess | undefined;
+  /** Immutable latest status record, not a durable history ledger. */
   readonly status: Readonly<RollingStatus>;
+  /** Conditional route lease owned by this controller; do not transfer it to another owner. */
   readonly lease: RouteLease;
-  /** Concurrent deploy calls share one promise. Failed readiness never replaces the old route. */
+  /** Share a readiness-checked cutover, verifying the replacement before retiring the old child.
+   * @returns {Promise<RollingDeployResult>} Observed generation ports and whether old connections actually drained before the deadline.
+   */
   deploy(): Promise<RollingDeployResult>;
-  /** Idempotent. First withdraws the route, then drains and stops children. */
+  /** Fence new deployments, await the current deployment, withdraw this lease and drain/stop its owned child.
+   * @returns {Promise<void>} Shared shutdown operation; dependent drain/lease errors propagate rather than claiming success.
+   */
   stop(): Promise<void>;
 }
 
-function bounded(value: number | undefined, fallback: number, min: number, max: number, name: string): number {
+/** Apply a policy default and reject unsafe integer bounds before acquiring child processes or route ownership.
+ * @param {number | undefined} value - Optional caller value.
+ * @param {number} fallback - Default value when absent.
+ * @param {number} min - Inclusive permitted minimum.
+ * @param {number} max - Inclusive permitted maximum.
+ * @param {string} name - Option label used in validation failures.
+ * @returns {number} Validated policy value.
+ */
+function bounded(
+  value: number | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+  name: string
+): number {
+  /** Policy candidate validated before any resource acquisition. */
   const n = value ?? fallback;
-  if (!Number.isSafeInteger(n) || n < min || n > max) throw new RangeError(`${name} must be ${min}–${max}`);
+  if (!Number.isSafeInteger(n) || n < min || n > max) {
+    throw new RangeError(`${name} must be ${min}–${max}`);
+  }
   return n;
 }
 
-/** Initial publication occurs only after the first application is healthy. */
-export async function launchRollingApplication(argv: readonly string[], options: RollingAppOptions): Promise<RollingApplication> {
-  if (!options.connections || typeof options.connections.waitForIdle !== 'function') throw new TypeError('A proxy connection-drain observer is required');
-  const ports = validateBackends(options.ports.map(port => ({ port }))).map(item => item.port);
-  if (ports.length < 2) throw new RangeError('Rolling deployments need at least two distinct ports');
-  const drainTimeoutMs = bounded(options.drainTimeoutMs, 10_000, 0, 300_000, 'drainTimeoutMs');
-  const verificationChecks = bounded(options.verificationChecks, 1, 1, 20, 'verificationChecks');
-  const preCutoverChecks = bounded(options.preCutoverChecks, 1, 1, 20, 'preCutoverChecks');
-  const verificationIntervalMs = bounded(options.verificationIntervalMs, 100, 1, 30_000, 'verificationIntervalMs');
+/** Own verified overlapping child generations and a conditional route lease; only a healthy initial child is published.
+ * @param {readonly string[]} argv - Trusted operator command tokens executed directly by the existing supervisor.
+ * @param {RollingAppOptions} options - Host-owned route store, actual serving-proxy drain observer and bounded verification policy.
+ * @returns {Promise<RollingApplication>} Controller requiring awaited stop during teardown; route rollback is not rollback of business side effects.
+ */
+export async function launchRollingApplication(
+  argv: readonly string[],
+  options: RollingAppOptions
+): Promise<RollingApplication> {
+  if (
+    !options.connections ||
+    typeof options.connections.waitForIdle !== 'function'
+  ) {
+    throw new TypeError('A proxy connection-drain observer is required');
+  }
+  /** Detached validated distinct ports; the two-port guard proves all initial and cyclic selections exist. */
+  const ports = validateBackends(options.ports.map((port) => ({ port }))).map(
+    (item) => item.port
+  );
+  if (ports.length < 2) {
+    throw new RangeError(
+      'Rolling deployments need at least two distinct ports'
+    );
+  }
+  /** Validated maximum wait for the actual serving proxy’s accepted connections. */
+  const drainTimeoutMs = bounded(
+    options.drainTimeoutMs,
+    10_000,
+    0,
+    300_000,
+    'drainTimeoutMs'
+  );
+  /** Validated count of post-cutover replacement health observations. */
+  const verificationChecks = bounded(
+    options.verificationChecks,
+    1,
+    1,
+    20,
+    'verificationChecks'
+  );
+  /** Validated count of fresh health gates before traffic publication. */
+  const preCutoverChecks = bounded(
+    options.preCutoverChecks,
+    1,
+    1,
+    20,
+    'preCutoverChecks'
+  );
+  /** Validated delay between independent health observations. */
+  const verificationIntervalMs = bounded(
+    options.verificationIntervalMs,
+    100,
+    1,
+    30_000,
+    'verificationIntervalMs'
+  );
   validateHealthCheck(options.health);
-  const { store, hostname, connections, onStatus, onSpawn, onLease, force, ports: _ports, drainTimeoutMs: _drain,
-    verificationChecks: _checks, preCutoverChecks: _preChecks, verificationIntervalMs: _interval, ...supervisor } = options;
-  const launch = (port: number) => launchSupervisedCommand(argv, {
-    ...supervisor, port, forwardSignals: false,
-    onSpawn: child => onSpawn?.(child, port),
-    env: { ...supervisor.env, PORT: String(port) },
-  });
-  let active = await launch(ports[0]);
+  /** Separate borrowed routing/observer callbacks from the existing supervisor’s child policy. */
+  const {
+    store,
+    hostname,
+    connections,
+    onStatus,
+    onSpawn,
+    onLease,
+    force,
+    ports: _ports,
+    drainTimeoutMs: _drain,
+    verificationChecks: _checks,
+    preCutoverChecks: _preChecks,
+    verificationIntervalMs: _interval,
+    ...supervisor
+  } = options;
+  /** Launch one owned generation on a validated private port without installing another process signal-forwarding owner.
+   * @param {number} port - Validated generation port passed as PORT.
+   * @returns {Promise<SupervisedProcess>} Child handle after native startup/readiness.
+   */
+  const launch = (port: number) =>
+    launchSupervisedCommand(argv, {
+      ...supervisor,
+      port,
+      forwardSignals: false,
+      onSpawn: (child) => onSpawn?.(child, port),
+      env: { ...supervisor.env, PORT: String(port) },
+    });
+  let active = await launch(ports[0]!);
   let lease: RouteLease;
   try {
     // Avoid silently replacing another lease owned by this same operating-system PID.
-    if (!force && store.loadRoutes().some(route => route.hostname === hostname)) {
+    if (
+      !force &&
+      store.loadRoutes().some((route) => route.hostname === hostname)
+    ) {
       throw new Error(`Route already registered: ${hostname}`);
     }
-    lease = store.registerRoute(hostname, ports[0], process.pid, force ?? false);
-    try { onLease?.(lease.leaseId); }
-    catch (error) { lease.release(); throw error; }
+    lease = store.registerRoute(
+      hostname,
+      ports[0]!,
+      process.pid,
+      force ?? false
+    );
+    try {
+      onLease?.(lease.leaseId);
+    } catch (error) {
+      lease.release();
+      throw error;
+    }
   } catch (error) {
     await active.stop();
     throw error;
@@ -97,59 +226,133 @@ export async function launchRollingApplication(argv: readonly string[], options:
   let stopping = false;
   let deployPromise: Promise<RollingDeployResult> | undefined;
   let stopPromise: Promise<void> | undefined;
-  let currentPort = ports[0];
-  let snapshot: Readonly<RollingStatus> = Object.freeze({ phase: 'running', generation, port: currentPort,
-    pid: active.child.pid ?? null, previousPort: null, updatedAt: new Date().toISOString() });
+  let currentPort = ports[0]!;
+  let snapshot: Readonly<RollingStatus> = Object.freeze({
+    phase: 'running',
+    generation,
+    port: currentPort,
+    pid: active.child.pid ?? null,
+    previousPort: null,
+    updatedAt: new Date().toISOString(),
+  });
+  /** Publish an immutable controller status while isolating optional observer failures.
+   * @param {RollingPhase} phase - New controller phase.
+   * @param {number | null} previousPort - Prior generation port during handover, default null.
+   * @returns {void} Updates only this controller’s snapshot.
+   */
   const update = (phase: RollingPhase, previousPort: number | null = null) => {
-    snapshot = Object.freeze({ phase, generation, port: phase === 'stopped' ? null : currentPort,
-      pid: phase === 'stopped' ? null : (active.child.pid ?? null), previousPort,
-      updatedAt: new Date().toISOString() });
-    try { onStatus?.(snapshot); } catch { /* Telemetry must not break routing. */ }
+    snapshot = Object.freeze({
+      phase,
+      generation,
+      port: phase === 'stopped' ? null : currentPort,
+      pid: phase === 'stopped' ? null : (active.child.pid ?? null),
+      previousPort,
+      updatedAt: new Date().toISOString(),
+    });
+    try {
+      onStatus?.(snapshot);
+    } catch {
+      /* Telemetry must not break routing. */
+    }
   };
-  const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+  /** Own a bounded verification pacing timer without replaying application work.
+   * @param {number} ms - Delay in milliseconds.
+   * @returns {Promise<void>} Resolves when pacing completes.
+   */
+  const delay = (ms: number) =>
+    new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+  /** Share one verified deployment; failed candidates are stopped and route rollback remains conditional on this lease.
+   * @returns {Promise<RollingDeployResult>} Cutover receipt; concurrent callers receive the same active operation.
+   */
   const deploy = (): Promise<RollingDeployResult> => {
-    if (stopping) return Promise.reject(new Error('Cannot deploy a stopping application'));
-    if (deployPromise) return deployPromise;
+    if (stopping) {
+      return Promise.reject(new Error('Cannot deploy a stopping application'));
+    }
+    if (deployPromise) {
+      return deployPromise;
+    }
     deployPromise = (async () => {
-      if (!active.running) throw new Error('Current application has already exited');
+      if (!active.running) {
+        throw new Error('Current application has already exited');
+      }
+      /** Owned prior child retained until the replacement survives verification. */
       const old = active;
+      /** Fixed old-generation port used for route rollback and actual connection drain. */
       const previousPort = currentPort;
-      const nextPort = ports[(ports.indexOf(previousPort) + 1) % ports.length];
+      /** Next private port selected cyclically from the validated nonempty list. */
+      const nextPort = ports[(ports.indexOf(previousPort) + 1) % ports.length]!;
       update('deploying', previousPort);
       let candidate: SupervisedProcess | undefined;
       let switched = false;
       try {
         candidate = await launch(nextPort);
-        if (stopping) throw new Error('Deployment cancelled by shutdown');
-        if (!old.running) throw new Error('Current application exited before handover');
+        if (stopping) {
+          throw new Error('Deployment cancelled by shutdown');
+        }
+        if (!old.running) {
+          throw new Error('Current application exited before handover');
+        }
         // Readiness on launch is not sufficient evidence for cutover: run a
         // fresh bounded health gate while the old route still serves traffic.
         for (let i = 0; i < preCutoverChecks; i++) {
-          if (i) await delay(verificationIntervalMs);
-          if (stopping || !candidate.running || !old.running || !(await probeApplicationHealth(nextPort, options.health))) {
-            throw new Error('Replacement became unhealthy before traffic cutover');
+          if (i) {
+            await delay(verificationIntervalMs);
+          }
+          if (
+            stopping ||
+            !candidate.running ||
+            !old.running ||
+            !(await probeApplicationHealth(nextPort, options.health))
+          ) {
+            throw new Error(
+              'Replacement became unhealthy before traffic cutover'
+            );
           }
         }
-        if (stopping || !old.running) throw new Error('Deployment cancelled before handover');
-        if (!lease.switchBackends([{ port: nextPort }])) throw new Error('Route lease was superseded');
+        if (stopping || !old.running) {
+          throw new Error('Deployment cancelled before handover');
+        }
+        if (!lease.switchBackends([{ port: nextPort }])) {
+          throw new Error('Route lease was superseded');
+        }
         switched = true;
         // The old process remains alive until the replacement survives the
         // requested post-cutover health verification window.
         for (let i = 0; i < verificationChecks; i++) {
-          if (i) await delay(verificationIntervalMs);
-          if (stopping || !candidate.running || !(await probeApplicationHealth(nextPort, options.health))) {
-            throw new Error('Replacement became unhealthy; rolling back traffic');
+          if (i) {
+            await delay(verificationIntervalMs);
+          }
+          if (
+            stopping ||
+            !candidate.running ||
+            !(await probeApplicationHealth(nextPort, options.health))
+          ) {
+            throw new Error(
+              'Replacement became unhealthy; rolling back traffic'
+            );
           }
         }
         active = candidate;
         currentPort = nextPort;
         generation++;
         update('draining', previousPort);
-        const drained = await connections.waitForIdle(hostname, previousPort, drainTimeoutMs);
+        /** Observed result from the actual proxy tracker, not an assumption that timeout means idle. */
+        const drained = await connections.waitForIdle(
+          hostname,
+          previousPort,
+          drainTimeoutMs
+        );
         await old.stop();
-        if (!stopping) update('running');
-        return { fromPort: previousPort, toPort: nextPort, generation, drained };
+        if (!stopping) {
+          update('running');
+        }
+        return {
+          fromPort: previousPort,
+          toPort: nextPort,
+          generation,
+          drained,
+        };
       } catch (error) {
         if (switched && active === old) {
           // Fail closed if our route was taken over; never overwrite a new owner.
@@ -157,26 +360,42 @@ export async function launchRollingApplication(argv: readonly string[], options:
             // Old process still belongs to this controller but its route is lost.
             update('running');
             await candidate?.stop();
-            throw new Error('Rollback failed because route ownership changed', { cause: error });
+            throw new Error('Rollback failed because route ownership changed', {
+              cause: error,
+            });
           }
         }
-        if (candidate && candidate !== active) await candidate.stop();
-        if (!stopping) update('running');
+        if (candidate && candidate !== active) {
+          await candidate.stop();
+        }
+        if (!stopping) {
+          update('running');
+        }
         throw error;
       }
-    })().finally(() => { deployPromise = undefined; });
-    return deployPromise;
+    })().finally(() => {
+      deployPromise = undefined;
+    });
+    return deployPromise!;
   };
 
+  /** Share shutdown after fencing deployment admission and waiting for candidate cleanup.
+   * @returns {Promise<void>} Withdraws only this lease and awaits dependent drain/child stop operations.
+   */
   const stop = (): Promise<void> => {
-    if (stopPromise) return stopPromise;
+    if (stopPromise) {
+      return stopPromise;
+    }
     stopping = true;
     update('stopping');
     stopPromise = (async () => {
       // Wait for an in-flight deployment to roll back or finish before cleanup.
-      if (deployPromise) await deployPromise.catch(() => {});
-      try { lease.release(); }
-      finally {
+      if (deployPromise) {
+        await deployPromise.catch(() => {});
+      }
+      try {
+        lease.release();
+      } finally {
         await connections.waitForIdle(hostname, currentPort, drainTimeoutMs);
         await active.stop();
         update('stopped');
@@ -184,5 +403,15 @@ export async function launchRollingApplication(argv: readonly string[], options:
     })();
     return stopPromise;
   };
-  return { get current() { return active; }, get status() { return snapshot; }, lease, deploy, stop };
+  return {
+    get current() {
+      return active;
+    },
+    get status() {
+      return snapshot;
+    },
+    lease,
+    deploy,
+    stop,
+  };
 }

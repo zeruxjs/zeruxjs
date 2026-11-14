@@ -1,0 +1,39 @@
+**/node_modules/**
+**/dist/**
+**/build/**
+**/coverage/**
+**/.git/**
+**/.cache/**
+**/.next/**
+**/.output/**
+**/.zerux/**
+**/.zyro/**
+**/.workspace/**
+**/.dev-container/**
+.site-build/**
+.site-published/**
+**/vendor/**
+**/third-party-licenses/**
+reports/**
+**/package-lock.json
+**/*.min.*
+**/reference.snapshot.json
+apps/zeruxjs-app/public/workspace-client.js
+apps/zeruxjs-app/public/counter-client.js
+**/public/workspace.js
+**/public/workspace-counter.js
+**/public/workspace-utilities.css
+
+# Operator state and local agent/account configuration are not source targets.
+.aws/**
+.agents/**
+.codex/**
+.claude/**
+.npm-release/**
+
+# Versioned local AI evaluation corpus: preserve exact bytes used by fixture hashes.
+packages/@zeruxjs/ai/evaluation/cases.json
+
+# Historical generated compatibility bundle; preserve bytes and review packages/zyrojs instead.
+apps/zeruxjs-app/public/src/zyro.js
+apps/zyro-single/src/zyro.js

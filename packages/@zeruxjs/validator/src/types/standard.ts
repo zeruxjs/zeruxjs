@@ -2,23 +2,18 @@
  * The Standard Schema properties interface.
  */
 export interface StandardProps<TInput, TOutput> {
-  /**
-   * The version number of the standard.
-   */
+  /** Fixed Standard Schema V1 protocol marker; no claim of later-version conformance. */
   readonly version: 1;
-  /**
-   * The vendor name of the schema library.
-   */
+  /** Fixed package-owned vendor label; not a tenant or authorization identifier. */
   readonly vendor: '@zeruxjs/validator';
-  /**
-   * Validates unknown input values.
+  /** Explicitly validate one candidate through the owning adapter/root execution path.
+   * @param {unknown} value - Private unknown candidate; not evaluated as source or used as an authorization identity.
+   * @returns {StandardResult<TOutput> | Promise<StandardResult<TOutput>>} Declared output or adapter issues; callers must not expose private message/path content without sanitization.
    */
   readonly validate: (
     value: unknown
   ) => StandardResult<TOutput> | Promise<StandardResult<TOutput>>;
-  /**
-   * Inferred types associated with the schema.
-   */
+  /** Optional type-only input/output inference marker, normally absent from runtime adapters. */
   readonly types?: StandardTypes<TInput, TOutput> | undefined;
 }
 
@@ -33,13 +28,9 @@ export type StandardResult<TOutput> =
  * The result interface if validation succeeds.
  */
 export interface StandardSuccessResult<TOutput> {
-  /**
-   * The typed output value.
-   */
+  /** Declared parsed output or inference value; nested references may remain borrowed. */
   readonly value: TOutput;
-  /**
-   * The non-existent issues.
-   */
+  /** Structured validation failures; messages/paths are not automatically public-safe. */
   readonly issues?: undefined;
 }
 
@@ -47,9 +38,7 @@ export interface StandardSuccessResult<TOutput> {
  * The result interface if validation fails.
  */
 export interface StandardFailureResult {
-  /**
-   * The issues of failed validation.
-   */
+  /** Structured validation failures; messages/paths are not automatically public-safe. */
   readonly issues: readonly StandardIssue[];
 }
 
@@ -57,13 +46,9 @@ export interface StandardFailureResult {
  * The issue interface of the failure output.
  */
 export interface StandardIssue {
-  /**
-   * The error message of the issue.
-   */
+  /** Private/native adapter diagnostic text; the host must choose its public redaction policy. */
   readonly message: string;
-  /**
-   * The path of the issue, if any.
-   */
+  /** Optional structured issue path; runtime property names are not authorization scopes. */
   readonly path?: readonly (PropertyKey | StandardPathItem)[] | undefined;
 }
 
@@ -71,9 +56,7 @@ export interface StandardIssue {
  * The path item interface of the issue.
  */
 export interface StandardPathItem {
-  /**
-   * The key of the path item.
-   */
+  /** Original property key for a structured Standard Schema path segment. */
   readonly key: PropertyKey;
 }
 
@@ -81,12 +64,8 @@ export interface StandardPathItem {
  * The Standard Schema types interface.
  */
 export interface StandardTypes<TInput, TOutput> {
-  /**
-   * The input type of the schema.
-   */
+  /** Type-only accepted input inference, not a stored submitted value. */
   readonly input: TInput;
-  /**
-   * The output type of the schema.
-   */
+  /** Type-only parsed output inference; no validation is performed by this field. */
   readonly output: TOutput;
 }

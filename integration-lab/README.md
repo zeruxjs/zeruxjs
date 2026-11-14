@@ -7,11 +7,11 @@ This laboratory is **not** the all-in-one (AIO) hosting/management application. 
 From `apps/proworkspace`:
 
 ```sh
-node --test scripts/integration-lab-core.test.mjs
+node --experimental-strip-types --test scripts/integration-lab-core.test.ts
 npm run lab:offline
-node scripts/integration-lab.mjs --offline --build --report=integration-lab/reports/offline.json
+node --experimental-strip-types scripts/integration-lab.ts --offline --build --report=integration-lab/reports/offline.json
 npm run lab:live
-node scripts/integration-lab.mjs --only=pg,redis-queue --require=pg,redis-queue --build --report=integration-lab/reports/selected.json
+node --experimental-strip-types scripts/integration-lab.ts --only=pg,redis-queue --require=pg,redis-queue --build --report=integration-lab/reports/selected.json
 npm run lab:all
 ```
 
@@ -28,7 +28,7 @@ docker compose -f integration-lab/compose.yml -p zerux-section83 up -d --wait
 docker compose -f integration-lab/compose.yml -p zerux-section83 ps
 docker compose -f integration-lab/compose.yml -p zerux-section83 images
 # Export only the required values from .env.lab.example into the shell.
-node scripts/integration-lab.mjs --live --build --report=integration-lab/reports/live.json
+node --experimental-strip-types scripts/integration-lab.ts --live --build --report=integration-lab/reports/live.json
 # ALWAYS release all disposable volumes, including on failure:
 docker compose -f integration-lab/compose.yml -p zerux-section83 down --volumes --remove-orphans
 ```
@@ -39,21 +39,21 @@ GreenMail uses self-signed test TLS by default. Provision a **test-only CA** thr
 
 ## Coverage / certification boundaries
 
-| Gate | Evidence | Default availability |
-|---|---|---|
-| Source contracts / lock and tooling | isolated source preflight, workspace tools | offline |
-| Authentication and authorization | Auth/Security local regressions | offline with built outputs |
-| SQLite analytics/tags/reports/migrations/campaigns | real Node SQLite integration tests | offline with built outputs |
-| Auth → DB → analytics → publish tag → report endpoint → suppression | new real SQLite host-policy fixture; **not** a real queue/email send | offline with built outputs |
-| Local media/assets/search/feed/SEO/AI retrieval | end-to-end local storage workflow | offline with built outputs |
-| PostgreSQL/MySQL/MongoDB | real connector parity (CRUD / affected count) | opt-in live credentials |
-| Redis/BullMQ | namespace isolation, multi-worker/retry/scheduling | opt-in real Redis |
-| Redis Cluster | cross-slot/prefix + cron with Cluster nodes | **separate** opt-in cluster fixture (not in one-node Compose) |
-| MinIO/S3 | upload, range, metadata, copy and cleanup | opt-in S3 endpoint + SDK |
-| SMTP | TLS/password verify only, no send | opt-in SMTP + trusted test CA |
-| IMAP/POP3 | TLS auth, read-only folder verification | opt-in mail server + trusted test CA |
-| Browser | Chromium accessibility fixture | opt-in Chromium binary; render timeouts are failures |
-| Cross-OS / React / Vue / Next / Nuxt / native HTTP/3 | separate certification required | **not certified** |
+| Gate                                                                | Evidence                                                             | Default availability                                          |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Source contracts / lock and tooling                                 | isolated source preflight, workspace tools                           | offline                                                       |
+| Authentication and authorization                                    | Auth/Security local regressions                                      | offline with built outputs                                    |
+| SQLite analytics/tags/reports/migrations/campaigns                  | real Node SQLite integration tests                                   | offline with built outputs                                    |
+| Auth → DB → analytics → publish tag → report endpoint → suppression | new real SQLite host-policy fixture; **not** a real queue/email send | offline with built outputs                                    |
+| Local media/assets/search/feed/SEO/AI retrieval                     | end-to-end local storage workflow                                    | offline with built outputs                                    |
+| PostgreSQL/MySQL/MongoDB                                            | real connector parity (CRUD / affected count)                        | opt-in live credentials                                       |
+| Redis/BullMQ                                                        | namespace isolation, multi-worker/retry/scheduling                   | opt-in real Redis                                             |
+| Redis Cluster                                                       | cross-slot/prefix + cron with Cluster nodes                          | **separate** opt-in cluster fixture (not in one-node Compose) |
+| MinIO/S3                                                            | upload, range, metadata, copy and cleanup                            | opt-in S3 endpoint + SDK                                      |
+| SMTP                                                                | TLS/password verify only, no send                                    | opt-in SMTP + trusted test CA                                 |
+| IMAP/POP3                                                           | TLS auth, read-only folder verification                              | opt-in mail server + trusted test CA                          |
+| Browser                                                             | Chromium accessibility fixture                                       | opt-in Chromium binary; render timeouts are failures          |
+| Cross-OS / React / Vue / Next / Nuxt / native HTTP/3                | separate certification required                                      | **not certified**                                             |
 
 `status: passed` applies only to selected suites that actually passed. A test suite with zero successes, even if every test was skipped, cannot pass. `status: partial` means selected checks are missing. `status: incomplete` means no suite passed. If a required suite skips, exits nonzero, times out, or is missing compiled artifacts, `status: failed`. Per-suite TAP totals retain `skipped` counts (e.g. the shared DB test includes tests for other engines).
 

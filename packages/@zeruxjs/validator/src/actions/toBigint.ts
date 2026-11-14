@@ -11,15 +11,15 @@ import { _addIssue } from '../utils/index.js';
  */
 export interface ToBigintIssue<TInput> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed refinement category; raw rejected values remain private.
    */
   readonly kind: 'transformation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'to_bigint';
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expected: null;
 }
@@ -32,35 +32,28 @@ export interface ToBigintAction<
   TMessage extends ErrorMessage<ToBigintIssue<TInput>> | undefined,
 > extends BaseTransformation<TInput, bigint, ToBigintIssue<TInput>> {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'to_bigint';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof toBigint;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a to bigint transformation action.
- *
- * @returns A to bigint action.
- *
+/** Use native BigInt conversion, reporting conversion failures as private issues; already-lost Number precision cannot be recovered. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @returns {ToBigintAction<TInput, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  * @beta
  */
 export function toBigint<TInput>(): ToBigintAction<TInput, undefined>;
 
-/**
- * Creates a to bigint transformation action.
- *
- * @param message The error message.
- *
- * @returns A to bigint action.
- *
+/** Use native BigInt conversion, reporting conversion failures as private issues; already-lost Number precision cannot be recovered. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {ToBigintAction<TInput, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  * @beta
  */
 export function toBigint<
@@ -68,6 +61,10 @@ export function toBigint<
   const TMessage extends ErrorMessage<ToBigintIssue<TInput>> | undefined,
 >(message: TMessage): ToBigintAction<TInput, TMessage>;
 
+/** Use native BigInt conversion, reporting conversion failures as private issues; already-lost Number precision cannot be recovered. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {ErrorMessage<ToBigintIssue<unknown>>} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {ToBigintAction<unknown, ErrorMessage<ToBigintIssue<unknown>> | undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function toBigint(
   message?: ErrorMessage<ToBigintIssue<unknown>>
@@ -78,13 +75,18 @@ export function toBigint(
     reference: toBigint,
     async: false,
     message,
+    /** Use native BigInt conversion, reporting conversion failures as private issues; already-lost Number precision cannot be recovered. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     '~run'(dataset, config) {
       try {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.value = BigInt(dataset.value);
       } catch {
         _addIssue(this, 'bigint', dataset, config);
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = false;
       }
       return dataset as OutputDataset<bigint, ToBigintIssue<unknown>>;

@@ -7,40 +7,40 @@ import type {
 } from '../../types/index.js';
 
 /**
- * Safe parse result type.
+ * Discriminated ordinary validation result; budget, cancellation and dependency failures still throw/reject.
  */
 export type SafeParseResult<
   TSchema extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 > =
   | {
-    /**
-     * Whether is's typed.
-     */
-    readonly typed: true;
-    /**
-     * Whether it's successful.
-     */
-    readonly success: true;
-    /**
-     * The output value.
-     */
-    readonly output: InferOutput<TSchema>;
-    /**
-     * The issues, if any.
-     */
-    readonly issues: undefined;
-  }
+      /** Whether the schema established its declared output type; typed true can still carry refinement issues. */
+      readonly typed: true;
+      /** Whether there are no ordinary validation issues; operational failures do not create a success:false result. */
+      readonly success: true;
+      /** Private parsed/partial candidate; success:false output must not be treated as validated public data. */
+      readonly output: InferOutput<TSchema>;
+      /** Private nonempty ordinary issues on failure, undefined on success; select safe client fields explicitly. */
+      readonly issues: undefined;
+    }
   | {
-    readonly typed: true;
-    readonly success: false;
-    readonly output: InferOutput<TSchema>;
-    readonly issues: [InferIssue<TSchema>, ...InferIssue<TSchema>[]];
-  }
+      /** Whether the schema established its declared output type; typed true can still carry refinement issues. */
+      readonly typed: true;
+      /** Whether there are no ordinary validation issues; operational failures do not create a success:false result. */
+      readonly success: false;
+      /** Private parsed/partial candidate; success:false output must not be treated as validated public data. */
+      readonly output: InferOutput<TSchema>;
+      /** Private nonempty ordinary issues on failure, undefined on success; select safe client fields explicitly. */
+      readonly issues: [InferIssue<TSchema>, ...InferIssue<TSchema>[]];
+    }
   | {
-    readonly typed: false;
-    readonly success: false;
-    readonly output: unknown;
-    readonly issues: [InferIssue<TSchema>, ...InferIssue<TSchema>[]];
-  };
+      /** Whether the schema established its declared output type; typed true can still carry refinement issues. */
+      readonly typed: false;
+      /** Whether there are no ordinary validation issues; operational failures do not create a success:false result. */
+      readonly success: false;
+      /** Private parsed/partial candidate; success:false output must not be treated as validated public data. */
+      readonly output: unknown;
+      /** Private nonempty ordinary issues on failure, undefined on success; select safe client fields explicitly. */
+      readonly issues: [InferIssue<TSchema>, ...InferIssue<TSchema>[]];
+    };

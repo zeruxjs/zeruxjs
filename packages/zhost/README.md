@@ -1,8 +1,4 @@
-> [!WARNING]
-> This package is in a very early stage of development and is only published for pre-saving the name from being taken by somebody else. This release uses version `0.0.2`.
-
 # zhost
-
 
 The core server orchestration engine for **ZeruxJS**. `zhost` manages the lifecycle of both the application server and the development environment, providing a seamless "zero-config" experience.
 
@@ -40,6 +36,7 @@ await startServer({
 ## Integrations
 
 `zhost` acts as the glue between several core components:
+
 - **`zlook`**: For monitoring source changes.
 - **`zforge`**: For devtools registration and dashboard management.
 - **`ws`**: For the real-time event pipeline.
@@ -48,6 +45,7 @@ await startServer({
 ## Development Mode
 
 When running in development mode (`details.dev` provided), `zhost` will:
+
 1. Register the application with the shared dev server.
 2. Inject the development client into all HTML responses.
 3. Establish a WebSocket connection for hot updates.
@@ -59,23 +57,21 @@ When running in development mode (`details.dev` provided), `zhost` will:
   The engine powering ZeruxJS Applications.
 </p>
 
-
-## Proxy request hardening (Section 7)
+## Proxy request hardening
 
 The portless proxy now validates Host / HTTP/2 authority before routing, handles IPv6 authorities, and prefers the longest matching registered suffix. Untrusted `Forwarded` and `X-Forwarded-*` input is discarded; the proxy reconstructs forwarding headers from the socket and requested authority. Malformed hop counts are rejected, and upstream HTTP and WebSocket handshake requests have a 30-second socket timeout.
 
-Run focused regression tests after building: `node --test test/request-security.test.mjs`. This local development proxy is **not** a substitute for an authenticated public reverse proxy.
+Run focused regression tests after building: `node --experimental-strip-types --test test/request-security.test.ts`. This local development proxy is **not** a substitute for an authenticated public reverse proxy.
 
 ## Proxy lifecycle and WebSocket behavior
 
 The portless proxy supports HTTP/1.1, HTTP/2 over TLS, and HTTP/1.1 WebSocket upgrades. Upgrade handshake bytes are forwarded only after the upstream returns `101 Switching Protocols`; both tunnel sockets are cleaned up on disconnect. A 30-second upstream handshake timeout applies before an upgrade, while an established WebSocket tunnel is not subject to this handshake timeout.
 
-`portlessStop()` rejects malformed PID files and refuses to signal a process unless the expected proxy is responding. If the PID no longer exists, it removes the stale marker. **Note:** an HTTP health check does not establish cryptographic process identity; do not share the proxy state directory with untrusted users. The proxy remains intended for local development. A graceful-drain shutdown, stronger process ownership verification, and production hardening remain future work.
+`portlessStop()` rejects malformed PID files and refuses to signal a process unless the expected proxy is responding. If the PID no longer exists, it removes the stale marker. **Note:** an HTTP health check does not establish cryptographic process identity; do not share the proxy state directory with untrusted users. The proxy remains intended for local development. A bounded connection drain is available through `connectionTracker.drain`; stronger process ownership verification still requires a separate trusted control boundary.
 
-Focused regression tests are in `test/websocket-proxy.test.mjs` and `test/lifecycle.test.mjs`.
+Focused regression tests are in `test/websocket-proxy.test.ts` and `test/lifecycle.test.ts`.
 
-
-### Atomic proxy state and recovery (Section 16)
+### Atomic proxy state and recovery
 
 `zhost` now writes `proxy.state.json` as the **last, atomic commit record**
 containing the port, TLS flag, TLD and verified process marker. The existing
@@ -95,8 +91,7 @@ double snapshot until their next successful startup. Legacy reads cannot offer
 the same atomic guarantee as a commit record; do not edit state files manually.
 A malformed commit record or unresolved journal is not silently ignored.
 
-
-## Safe route lifecycle and registry protection (Section 17)
+## Safe route lifecycle and registry protection
 
 Applications launched with `portlessRun()` now receive a unique route lease.
 When the child command finishes, its cleanup only removes **that registration**;
@@ -127,13 +122,13 @@ based on file age alone. Verified dead owners can be recovered. An ownerless,
 malformed, or unverifiable lock requires manual inspection.
 
 To run the route-focused regression tests after compiling the package:
-`node --test test/routes.test.mjs test/route-leases.test.mjs`.
+`node --experimental-strip-types --test test/routes.test.ts test/route-leases.test.ts`.
 
 **Deployment note:** This continues to be a local-development proxy. Route
 leases prevent accidental cleanup races; they do not provide user isolation,
 authenticated registration, or a hardened internet-facing control plane.
 
-## Application supervision and readiness (Section 18)
+## Application supervision and readiness
 
 `zerux-server run` now launches application commands **without shell interpolation**,
 checks for an already occupied application port, waits for a TCP listener on
@@ -142,6 +137,11 @@ crashes, fails to spawn, or misses its readiness deadline, no route is published
 and the child is stopped/reaped. The parent forwards SIGINT/SIGTERM, sends them
 to the entire spawned POSIX process group, waits up to a bounded timeout, and
 uses SIGKILL if necessary. Route cleanup remains ownership-aware.
+
+Diagnostic PID lookup validates a primitive TCP port before using fixed native
+argument arrays for `lsof`/`netstat`; it never interpolates that port into a
+shell command. A returned PID is diagnostic evidence, not permission to stop
+a process. Native tool availability and platform trust remain host concerns.
 
 ```bash
 zerux-server proxy start --port 1355
@@ -162,16 +162,16 @@ returns a `SupervisedProcess` with `.completed`, `.running`, and asynchronous
 should use the supervisor API. On Windows, direct execution does not invoke a
 shell; prefer executable programs or invoke scripts through `node` explicitly.
 
-**Section 18 limitations:** Basic TCP readiness confirms a listener, not an HTTP health endpoint;
+**Limitations:** Basic TCP readiness confirms a listener, not an HTTP health endpoint;
 free-port discovery cannot eliminate races before the child binds. Child-process
 group termination is strongest on POSIX; native Windows process-tree supervision
 still needs its own integration suite. This tool is intended for local developer
 applications, not untrusted multi-tenant process execution.
 
-Focused checks after compilation: `node --test test/process-supervisor.test.mjs
-test/cli-run-arguments.test.mjs test/app-supervision-integration.test.mjs`.
+Focused checks after compilation: `node --experimental-strip-types --test test/process-supervisor.test.ts
+test/cli-run-arguments.test.ts test/app-supervision-integration.test.ts`.
 
-## HTTP health checks and bounded restart policies (Section 19)
+## HTTP health checks and bounded restart policies
 
 When an application supplies an HTTP health endpoint, ZHOST can wait for a
 successful status (HTTP 200–299) before publishing a route. Health requests are
@@ -213,9 +213,9 @@ not a privilege boundary for executing untrusted commands. Windows process tree
 behavior and cross-process recovery still need native integration testing.
 
 Regression suite (after building dependencies and `zhost`):
-`node --test test/*.test.mjs`.
+`node --experimental-strip-types --test test/*.test.ts`.
 
-## Runtime status and coordinated manual reload (Section 20)
+## Runtime status and coordinated manual reload
 
 Managed application state is now observable via `handle.status` and
 `handle.subscribe(listener)`. Snapshots include lifecycle phase, child PID,
@@ -262,7 +262,7 @@ This is local-machine observability, not a distributed control plane or an
 authenticated remote management API. End-to-end Linux testing is included;
 native macOS/Windows behavior requires additional platform verification.
 
-## Multi-instance routing and safe traffic handovers (Section 21)
+## Multi-instance routing and safe traffic handovers
 
 Route pools can distribute **new HTTP requests and WebSocket upgrades** across
 up to 32 local application instances using smooth weighted round-robin. Legacy
@@ -307,7 +307,7 @@ if (committed) {
 - `RouteStore.registerPoolRoute()` saves validated weighted targets atomically
   and returns a lease. `lease.switchBackends()` swaps targets under the same
   route lock and fails safely if another process took over the hostname.
-- `handoverBackends()` checks the *new* targets before committing; failed probes
+- `handoverBackends()` checks the _new_ targets before committing; failed probes
   or invalid targets leave the currently published route unchanged.
 - The proxy isolates failed upstream connections. With an active probe interval,
   isolated instances recover only after a successful check. Without an interval,
@@ -324,12 +324,12 @@ if (committed) {
 - This is still a local-development proxy. It is not an internet-facing load
   balancer, authenticated service mesh, or distributed routing coordinator.
 
-After a package build, run `node --test test/backend-*.test.mjs` for the new
+After a package build, run `node --experimental-strip-types --test test/backend-*.test.ts` for the new
 pool, handover, and WebSocket integration regression tests.
 
-## Rolling application deployments (Section 22)
+## Rolling application deployments
 
-`launchRollingApplication` runs *overlapping* generations of the same loopback
+`launchRollingApplication` runs _overlapping_ generations of the same loopback
 application on different ports, tests the candidate's readiness, switches the
 existing leased hostname atomically, and retires the previous child after its
 in-flight proxy connections finish (or a configured drain deadline elapses).
@@ -394,11 +394,11 @@ The controller passes the correct `PORT` to each child even if an existing
   after the verification window has ended.
 
 Focused validation: build `zhost`, then run
-`node --test test/rolling-app.test.mjs test/backend-*.test.mjs`.
+`node --experimental-strip-types --test test/rolling-app.test.ts test/backend-*.test.ts`.
 
-## Rolling CLI & cross-process deployment control (Section 23)
+## Rolling CLI & cross-process deployment control
 
-The Section 22 rolling controller is now available from the CLI, with **real
+The rolling controller is now available from the CLI, with **real
 proxy-side HTTP/WebSocket drain observations** even when the proxy and the
 application wrapper are separate processes. Use an existing ZHOST proxy built
 from this version or later; rolling launches deliberately refuse to claim
@@ -431,7 +431,7 @@ live in a private, same-user directory beneath the selected proxy state
 directory. Descriptors require a verified process-start fingerprint. Requests
 and responses are size-limited and time-limited; arbitrary command execution,
 file access and unauthenticated process signaling are not exposed through RPC.
-`rolling status` displays *last known* state and separately reports whether the
+`rolling status` displays _last known_ state and separately reports whether the
 owning controller is online. History keeps up to 50 events per hostname, with
 no application argv or environment secrets saved.
 
@@ -443,10 +443,10 @@ another user. Abrupt supervisor termination (for example `SIGKILL` or power
 loss) cannot guarantee cleanup of detached application children; stale routes
 are filtered by owner liveness and require inspection. Multi-file crash
 consistency, distributed scheduling and external load-balancer draining are
-not provided. Run `node --test test/rolling-cli-control.test.mjs` against fresh
+not provided. Run `node --experimental-strip-types --test test/rolling-cli-control.test.ts` against fresh
 compiled output for a separate-process smoke test.
 
-### Recovering rolling applications after a hard crash (Section 24)
+### Recovering rolling applications after a hard crash
 
 The rolling wrapper now records its own OS creation fingerprint and the
 fingerprints/ports of **each spawned generation** in a private, atomically
@@ -484,8 +484,7 @@ recent status. History is informational and is never a source of authority
 for process termination. Cross-platform process identity behavior still needs
 native Windows/macOS integration testing.
 
-
-### Persistent backend health and multi-app reconciliation (Section 25)
+### Persistent backend health and multi-app reconciliation
 
 ZHOST's built-in proxy now checkpoints recent backend circuit-breaker state in
 `app-controls-<uid>/backend-health.json` using private atomic writes. Checkpoints
@@ -514,6 +513,14 @@ console.log(pool.status());
 pool.close();
 ```
 
+`BackendPool` owns its periodic probe and checkpoint timers; `close()` stops
+new sweeps, attempts a final checkpoint and clears local state. A probe already
+in flight may still settle, but its result cannot update the closed pool.
+`checkNow()` coalesces overlapping sweeps by returning immediately while one is
+active; it does not return the active sweep's promise. Probe destinations stay
+on IPv4 loopback, HTTP redirects are not followed, and response bodies are not
+buffered. A checkpoint is recovery metadata, not permission to modify a route.
+
 The proxy also serves read-only per-backend status through its authenticated
 local RPC (not over public HTTP):
 
@@ -538,7 +545,7 @@ recent failures and are not durable application or process authority.
 No cross-host storage, distributed failover, or persistent metrics database is
 provided. State files must remain private to the proxy's operating-system user.
 
-## Health-aware multi-instance process fleets (Section 26)
+## Health-aware multi-instance process fleets
 
 `launchInstanceFleet()` manages a desired set of local application processes and
 publishes their backend ports through a conditional route lease. It detects
@@ -572,12 +579,11 @@ The fleet API is exported from the root package. Create the proxy using your
 existing ZHOST proxy setup; do not create a separate empty tracker for draining.
 `fleet.stop()` is required during application shutdown. Restart budgets are
 currently in memory and the API does not perform cross-process ownership
-recovery automatically. See `SECTION_26_MULTI_INSTANCE_SUPERVISION.md` in the
-project root for operational details and limitations.
+recovery automatically.
 
-## Persistent multi-instance fleet CLI (Section 27)
+## Persistent multi-instance fleet CLI
 
-`zerux-server fleet` connects the Section 26 multi-instance supervisor to the
+`zerux-server fleet` connects the multi-instance supervisor to the
 real proxy's private authenticated control endpoint. Unlike launching the API
 from another process, the CLI uses the proxy's **actual** connection tracker
 for draining; it refuses to launch when that control is unavailable.
@@ -620,12 +626,16 @@ socket with private 0600 descriptors. CLI status displays the last persisted
 checkpoint and distinguishes online from offline or recovery-required state.
 
 The restart-budget checkpoint is a 0600 JSON file under the owner's private
-`app-controls-<uid>` directory. It stores retry timestamps *before* each
+`app-controls-<uid>` directory. It stores retry timestamps _before_ each
 attempt. A supervisor restarted with the same configuration inherits the
 remaining sliding-window budget, preventing hard crashes from resetting the
 attempt limit. Configuration fingerprints intentionally reject changed commands,
 ports, replica counts and restart windows unless the operator explicitly resets
 the checkpoint with `fleet reset` while offline and fully recovered.
+
+Initial startup rejects if an already-ready replica exits while another is still
+starting. The controller stops its remaining children and publishes no route;
+background reconciliation begins only after the initial route lease exists.
 
 **Operational limits:** This manages local processes, not distributed replicas.
 The proxy must remain accessible via authenticated local control. Recovery
@@ -636,7 +646,7 @@ hook fails closed rather than silently allowing a new replacement. A health
 failure can temporarily reduce serving capacity. Full native Windows/macOS
 integration and long-duration deployment tests are still required.
 
-## Dynamic fleet capacity and request-rate autoscaling (Section 28)
+## Dynamic fleet capacity and request-rate autoscaling
 
 A fleet can now change its desired replica count while running. Each new replica
 is started and health-checked **before** its port is atomically added to the
@@ -669,7 +679,7 @@ zerux-server fleet autoscale api resume
 ```
 
 Autoscaling uses **requests per second per active healthy replica**, observed
-by the *real proxy* rather than the fleet supervisor. The policy scales one
+by the _real proxy_ rather than the fleet supervisor. The policy scales one
 replica per decision, requires consecutive samples, uses different scale-up and
 scale-down thresholds, and honors a cooldown. A manual `fleet scale` pauses
 autoscaling until explicitly resumed. A failed or stale metrics request cannot
@@ -698,7 +708,7 @@ orchestration, not cluster autoscaling; it does not provision machines, limit
 CPU/memory usage, or distribute control across hosts. The OS and full app
 integration still need validation in your deployment environment.
 
-## Fleet observability and resource autoscaling (Section 29)
+## Fleet observability and resource autoscaling
 
 The fleet controller supports request-rate scaling (default) and Linux child-process
 resource scaling. Samples are based on **the serving child processes**, not the
@@ -783,6 +793,10 @@ implications. Dynamic TLS certificates are restricted to the configured local
 TLD namespace and exact requested hostnames. Cached contexts and concurrent
 certificate generation are bounded.
 
+TLS liveness probes verify the private state directory's bounded `ca.pem` and
+configured hostname. A missing, mismatched or untrusted CA returns an unsuccessful
+probe; verification is never disabled. This does not install system trust.
+
 HTTP request and response headers now filter both fixed hop-by-hop headers
 and the additional fields nominated by `Connection`; WebSocket handshakes
 retain the necessary upgrade headers. Managed `/etc/hosts` entries are
@@ -791,7 +805,16 @@ validated and malformed managed blocks fail closed.
 The dev-server implementation is now under `src/dev/`, with `src/index.ts`
 remaining the package's public export surface. Dev HTML injection is limited
 to 2 MiB of identity-encoded HTML; larger and compressed responses are
-forwarded without injection rather than buffered unboundedly. The dev app
+forwarded without injection rather than buffered unboundedly. Responses with an
+enforced Content-Security-Policy header (including raw writeHead pairs) or an
+explicit flushHeaders call also pass through unchanged. The application owns its
+headers and streamed nonce; the injector never guesses a nonce or widens CSP.
+For deliberate manual integration, zforge's public injectDevClient accepts a
+response-owned nonce, but the host must separately approve styles, connections
+and devtools frame origins. Configure devtools.frameAncestors with exact origins
+for development embedding; production devtools documents ignore those grants.
+See [zforge framing policy](../zforge/README.md#document-policy-and-framing).
+The dev app
 listens on loopback, filesystem watch reloads are serialized, and shutdown
 releases its watcher without stopping unrelated applications' proxy.
 
@@ -837,7 +860,7 @@ protection. Size violations are rejected with HTTP 413, rate violations with
 429, and concurrency overload with 503. Backend code may have seen a partial
 chunked request before a streaming size violation is detected.
 
-## Integrated protocol gateway (Section 31)
+## Integrated protocol gateway
 
 **MCP has moved into `zhost`**: import `createMcpServer`, `ToolRegistry`,
 `ResourceRegistry` and `createProtocolGateway` from `zhost`. The old
@@ -875,6 +898,11 @@ console.log(proxy.getApplicationLoad('my-app.localhost'));
 Protocol endpoints are `POST /mcp`, `POST /rpc`,
 `POST /<package.Service>/<Method>` for **Connect unary JSON**, `POST /trpc/<procedure>`
 for the basic tRPC-compatible procedure bridge, and `GET /events` for SSE.
+Authenticated applications can supply `events: new SseHub({privateCache:true})`
+to emit `private, no-store, no-transform`. Omitting `privateCache` preserves the
+legacy `no-cache, no-transform` policy. Event-stream connection lifetimes remain
+a host responsibility; the gateway's dispatch deadline is not an SSE lifetime.
+
 The Connect and tRPC bridges are lightweight JSON subsets: use their official
 framework adapters for full schema, codecs, bidirectional streams and client
 compatibility. gRPC-over-HTTP/2 requests with `application/grpc` are forwarded
@@ -887,14 +915,14 @@ checks before accessing sensitive data.
 
 ### HTTP versions and QUIC
 
-| Version/transport | Support |
-| --- | --- |
-| HTTP/1.0, HTTP/1.1 | Native Node HTTP server |
-| HTTPS and HTTP/2 | TLS ALPN negotiation, HTTP/1.1 fallback |
-| HTTP/3 (QUIC) | **External HTTP/3 terminator required**; optional validated `Alt-Svc` advertising |
-| WebTransport | **External QUIC terminator required**; `WebTransportRouter` lets a terminator attach real sessions |
-| WebSocket | HTTP/1.1 upgrade proxy |
-| SSE | Native streamed HTTP event source |
+| Version/transport  | Support                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| HTTP/1.0, HTTP/1.1 | Native Node HTTP server                                                                            |
+| HTTPS and HTTP/2   | TLS ALPN negotiation, HTTP/1.1 fallback                                                            |
+| HTTP/3 (QUIC)      | **External HTTP/3 terminator required**; optional validated `Alt-Svc` advertising                  |
+| WebTransport       | **External QUIC terminator required**; `WebTransportRouter` lets a terminator attach real sessions |
+| WebSocket          | HTTP/1.1 upgrade proxy                                                                             |
+| SSE                | Native streamed HTTP event source                                                                  |
 
 Node 22's HTTP modules do not provide native HTTP/3 or WebTransport server APIs.
 Do not configure `http3Terminator` unless a real QUIC listener is running at
@@ -994,7 +1022,7 @@ server already compresses responses. The proxy avoids double-compression and
 never transforms SSE, Connect/gRPC, range, or `Cache-Control: no-transform`
 responses. Zstandard is only selected when the Node runtime supports it.
 
-## Proxy cache control (Section 32)
+## Proxy cache control
 
 Response caching is **off by default**, independent of ZHOST's streaming compression. To opt in:
 
@@ -1006,17 +1034,242 @@ zerux-server proxy start --port 1355 --cache \
 
 Or set `createProxyServer({ getRoutes, proxyPort, cache: { enabled: true } })`. This exposes `proxy.responseCache.stats()`, `.invalidate(hostname, pathname?)`, and `.clear()` for explicit invalidation. The proxy caches only HTTP 200 GET responses with explicit `Cache-Control: public, max-age=...` or `s-maxage`, no cookies/authentication, no `Set-Cookie`, no `Vary` or upstream `Content-Encoding`, and no range, protocol stream or private/no-store response. Storage uses bounded process memory, not disk; entries expire and are separated by route generation. Cached identity bodies are compressed per client on delivery, so a gzip client and a Brotli client are never served the wrong encoding. `Age` reflects storage time.
 
+Cache invalidation removes entries retained at that moment. The optional
+`pathname` argument matches the exact stored request URL, including query bytes
+in the serving proxy. This legacy memory cache does not fence an upstream
+capture already in flight, which may insert after `.invalidate()` or `.clear()`.
+It provides neither distributed invalidation nor durable storage.
+
 **Nginx deployment:** You can leave ZHOST compression disabled with `--no-compress` and use Nginx `gzip`/`brotli` instead. Already-compressed upstream responses always pass through unchanged. Do not configure both layers to compress the same response intentionally. SSE and Connect streams are neither buffered in ZHOST's cache nor compressed by ZHOST; configure Nginx `proxy_buffering off` for SSE as needed. Content-length, ETag, Vary and Accept-Encoding safety is handled by the proxy's compression layer; application-level cache policies remain authoritative.
 
 ### Reloading the development HTTP server
 
 Development reloads now replace the active request handler without unbinding the application's HTTP port. In-flight requests retain their old handler, new requests use the new handler, and a failed `watchFunc` leaves the previous handler serving. This is local development lifecycle behavior, not a guarantee of zero-downtime production deployment.
 
-## Release 0.0.2
+## Application-owned transport registration
 
-Prepared to validate npm trusted publishing through GitHub Actions.
+`zhost/protocols` exports `createTransportRegistry`,
+`createHttpTransportAdapter`, `createWebSocketTransportAdapter` and
+`transportCapabilityMatrix`. Registration is inert and separate from CLI/process
+supervision. Factories are trusted executable code registered explicitly by the
+host; no packages are scanned. Unknown adapter names fail with
+`TRANSPORT_UNSUPPORTED`. Native gRPC registration is deliberately unavailable;
+the existing HTTP/2 proxy forwards gRPC frames to a real upstream implementation.
 
+```js
+import {
+  createTransportRegistry, createProtocolGateway, createHttpTransportAdapter,
+} from 'zhost/protocols';
 
-## Release 0.0.3
+// Called by the owning application with its real authentication policy.
+export async function openRpc(authorize) {
+  const gateway = createProtocolGateway({ authorize: () => true });
+  gateway.rpc.register('app.ping', () => ({ ok: true }));
+  const http = createHttpTransportAdapter({ gateway, authorize });
+  const transports = createTransportRegistry();
+  transports.registerAdapter('http', () => http);
+  transports.register({
+    id: 'api', type: 'http', bind: { host: '127.0.0.1', port: 0 },
+    limits: { maxMessageBytes: 65536, maxConcurrent: 16, timeoutMs: 5000 },
+  });
+  await transports.start();
+  return { address: http.address(), health: () => transports.health(),
+    close: () => transports.stop() };
+}
+```
 
-Synchronized ecosystem release, including Zuixs CSS-entry support and documentation updates. Existing placeholder packages retain their documented limitations.
+The HTTP adapter requires an authorization callback, even on loopback. It owns
+and closes its gateway. For granular permissions, also provide the gateway's
+`authorizeEndpoint(req, { kind, path }, { signal, remoteAddress, trustedProxy })`;
+both policies must return exactly `true`. Authentication does not grant method,
+tool, resource or tenant permissions: handlers enforce those separately. Legacy
+direct gateways retain their localhost-only default. Forwarding headers never
+automatically establish identity; handler context removes them unless the exact
+direct peer is in `trustedProxies`. Host authorization receives the original
+request and must implement any verified proxy policy itself. Origin checks are
+additional to authentication.
+
+| Implementation        | Request                  | Server stream | Bidirectional      | Boundary                                                            |
+| --------------------- | ------------------------ | ------------- | ------------------ | ------------------------------------------------------------------- |
+| HTTP adapter          | yes                      | yes           | no                 | Required host authorization, gateway endpoint policy                |
+| WebSocket adapter     | messages                 | yes           | yes                | Required upgrade authorization; handler owns per-message permission |
+| SSE `/events`         | GET                      | yes           | no                 | Gateway authorization; bounded clients/replay                       |
+| JSON-RPC `/rpc`       | POST/batch/notifications | no            | no                 | Gateway authorization; sequential batch up to 64                    |
+| MCP `/mcp`            | stateless JSON POST      | no            | no                 | Tools/resources core subset, default version `2025-11-25`           |
+| Connect               | unary JSON               | framed JSON   | framed JSON subset | No Protobuf, compression or complete Connect/gRPC compatibility     |
+| tRPC                  | JSON bridge              | no            | no                 | No complete official tRPC wire protocol                             |
+| gRPC                  | forwarded                | forwarded     | forwarded          | HTTP/2 upstream owns native RPC/authentication                      |
+| WebTransport / HTTP/3 | external                 | external      | external           | Explicit external QUIC terminator/session handoff                   |
+
+MCP is not complete Streamable HTTP: no session negotiation, resumable MCP SSE,
+subscriptions, sampling or elicitation. The generic `/events` stream is separate.
+See the [MCP transport specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/basic/transports/streamable-http.mdx),
+[Connect framing protocol](https://connectrpc.com/docs/protocol/) and
+[ws API](https://github.com/websockets/ws/blob/master/doc/ws.md).
+Legacy `transportCapabilities()` booleans describe configured proxy/terminator
+availability; the new matrix describes actual implementations, not native gRPC
+or QUIC support.
+
+Bindings require numeric IPs. Fixed TCP port collisions are rejected
+conservatively across hosts before starting; port zero permits separate ephemeral
+listeners. Duplicate gateway paths also reject before the HTTP listener opens.
+Start runs in registration order, checks readiness and rolls back acquired
+adapters in reverse order on failure. Health records contain only id/type/state
+and readiness; private failure causes remain on `TransportLifecycleError.cause`.
+Registrations can be removed with their exact returned handle before startup.
+A failed/stopped registry is terminal; create a fresh generation for replacement.
+
+Limits default to 1 MiB/message, 32 concurrent operations and 30 seconds; caps are
+16 MiB, 1024 and 120 seconds. JSON readers bound bytes and deadlines, response
+serialization is bounded, and gateway slots remain occupied until disconnected
+handlers actually settle. Connect input/output has additional message/total-byte
+bounds. Signals reach RPC/Connect/tRPC and MCP tool handlers. SSE retains its
+own replay/client limits and occupies a gateway slot until disconnect; request
+deadlines do not expire an established SSE subscription.
+
+WebSocket adapters require `path`, `authorize`, and `onMessage(data, context)`;
+`context` supplies a cooperative signal, binary flag, direct peer address and
+bounded async `send`. Browser origins require explicit `allowedOrigins`. The ws
+library caps the aggregate size of fragmented messages; compression is disabled.
+Connections, concurrent authorization/message jobs and buffered sends are bounded.
+Only one message handler runs per connection: overlapping messages close with
+1013 rather than building a queue. Oversized frames close with 1009. Deadline or
+disconnect aborts the current handler; errors terminate the connection and only
+reach the optional private `onError` callback.
+
+Stop closes admission, aborts handlers, ends SSE/terminates WebSockets, destroys
+owned sockets/listeners and waits for actual pending handler settlement. Adapter
+`stop` and registered `onDispose` cleanup must be idempotent; partial start must
+register cleanup immediately. Startup deadlines signal cancellation, not forced
+JavaScript interruption. Uncooperative custom adapters/handlers can delay
+startup or shutdown; no timeout claims to kill their work. No import starts
+telemetry, listeners, subprocesses or external integrations.
+
+## Proxy resource budgets and overload
+
+Configure budgets for a measured application workload; existing global concurrency
+(default 100000) and rate/body defaults are preserved. The following example owns
+only a disposable local listener and never launches an application:
+
+```js
+import { createProxyServer } from 'zhost';
+
+export async function openProxy(getRoutes) {
+  const proxy = createProxyServer({ getRoutes, proxyPort: 0,
+    limits: { maxConnections: 256, maxActiveRequests: 128,
+      maxActiveStreams: 32, maxActivePerClient: 16, maxBodyBytes: 1048576 } });
+  await new Promise((resolve, reject) => {
+    proxy.once('error', reject);
+    proxy.listen(0, '127.0.0.1', resolve);
+  });
+  return { address: proxy.address(), stats: () => proxy.getAdmissionStatus(),
+    close: () => proxy.connectionTracker.drain({ timeoutMs: 5000 }) };
+}
+```
+
+`maxConnections` bounds incoming TCP connections, including idle sockets, using
+[Node's listener ceiling](https://nodejs.org/api/net.html#servermaxconnections).
+It is opt-in and closes excess sockets before HTTP admission; no HTTP response
+is guaranteed for that case. `maxActiveRequests` counts admitted HTTP requests
+(including SSE, downloads and HTTP/2 requests) and upgraded WebSockets together.
+`maxActiveStreams` is an optional **WebSocket upgrade** ceiling inside that global
+budget; setting it lower reserves headroom for HTTP. It does not classify
+arbitrary HTTP response streams. `maxActivePerClient` counts both by direct peer
+IP, including loopback proxies; forwarded headers cannot bypass it. Behind a
+shared trusted proxy this deliberately groups all its requests. Apply verified
+identity/tenant rate limits at the authenticated application boundary separately.
+The security package's atomic limiter contract provides distributed accounting;
+these admission limits are process-local and are not a distributed fallback.
+
+All three new ceilings accept integers 1–100000. Per-peer concurrency accounting
+retains at most 4096 active peers and refuses new peers at capacity; live entries
+are never evicted. Capacity refusals use 503, token-bucket rate refusals use 429,
+and both carry `Retry-After: 1`. There is no unbounded waiting queue, FIFO guarantee
+or automatic retry. Optional peer caps limit monopolization but do not promise
+fairness between tenants sharing an IP.
+
+`getAdmissionStatus()` returns fixed fields: active requests/upgraded streams,
+tracked peer count, accepted total, rate refusals and capacity refusals. It exposes
+no peer labels, URLs, credentials or bodies. The existing HTTP telemetry remains
+capped at 128 route labels plus the outside-routes bucket; backend completion
+samples remain capped at 512 per backend with bounded recent windows.
+
+Uploads and downloads retain Node stream piping/backpressure. Both compressed
+and identity response helpers destroy their source when the downstream closes;
+SSE is neither buffered in the response cache nor recompressed. Upgraded tunnels
+retain bidirectional piping and peer cancellation. Cache eligibility continues
+to exclude authenticated/cookie/private/no-store traffic. Hop-by-hop and forwarding
+header filtering is unchanged. Upstream HTTP inactivity and WebSocket handshake
+timeouts remain 30 seconds; established streams have no new forced lifetime.
+
+A backend is selected once per request. A failure after any partial POST delivery
+ends that attempt; a changed route or healthy replacement is used only by later
+requests. The proxy never replays the partially delivered operation. Existing
+health isolation, rolling handover and persisted restart budgets are preserved.
+Drain stops accepting connections, closes idle HTTP sockets when supported, waits
+for work and destroys remaining sockets at its deadline. Deadlines are integer
+0–300000ms (default 10000); repeated drain calls share the first result. Socket
+closure does not establish that an upstream business operation rolled back.
+
+The focused `test/proxy-resilience.test.ts` workload sends 24 concurrent loopback
+GETs to a 40ms-delayed backend with admission 4, identity responses and no HTTP
+agent reuse. It reports runtime, elapsed time, status counts and peak upstream
+concurrency, and asserts zero retained connection/admission counts. Separate cases
+exercise paused downstreams, aborted slow uploads, unavailable backends and a
+partially delivered POST. This is a bounded correctness workload, not evidence of
+a production throughput improvement or live deployment acceptance.
+
+Gateway RPC/Connect/MCP contexts now include an absolute `deadline` (Unix ms).
+Optional `x-zerux-deadline` request metadata must be a safe nonnegative integer:
+malformed values reject with 400, elapsed deadlines with 408. The gateway takes
+the minimum of this value and its own configured timeout and aborts the handler's
+signal at that limit. It never trusts this header for authorization or extends host
+budgets. The framework service client uses this convention across its declared
+JSON endpoints; this does not introduce a native gRPC deadline protocol.
+
+Native WebSocket message contexts also expose a local absolute `deadline` for each
+message handler, capped by that adapter's message timeout. It does not turn a
+handshake deadline into an established connection lifetime.
+
+### Explicit compression ownership
+
+`zhost/compression` exposes `createCompressionOwner` for application response
+integrations. It delegates to the existing proxy encoder with bounded native
+encoder admission (default eight), identity/406 overload behavior and fixed-field
+measurement callbacks. Close cancels source/response pipelines and awaits native
+encoder close. It does not change an existing proxy's admission limits or install
+compression globally. See the performance package's response integration for
+private cache policy and single-layer ownership. HEAD and bodyless statuses close
+the unused source without consuming it; identity streaming errors terminate the
+downstream response.
+
+For an owned development server, `dev.watchIgnoredPaths` is an optional list of
+relative directories excluded before source traversal. `createDevelopmentWatchIgnore`
+validates and snapshots up to 128 bounded relative paths; subscriber ignores never
+change another app’s mutable configuration. The framework forwards its stricter
+`server.watchIgnoredPaths` policy together with its runtime directory.
+
+`startServer({config:{server:{portless:false}}, app: ...})` starts the direct
+loopback HTTP application without starting the shared portless proxy or registering
+proxy aliases. The default remains true. This setting does not change devtools
+host checks or grant access to an existing proxy's PID/state files.
+
+Proxy/fleet/control-state readers validate type, size, owner and private-mode
+requirements against the same open inode whose bytes they consume. Reads are
+bounded and reject leaf symlinks. Private parent ownership and the existing
+operation/route locks still belong to the host; these helpers do not create a
+filesystem sandbox or an atomic compare-and-delete primitive.
+
+### Ownership during fleet sampling and protocol shutdown
+
+Autoscaler `stop()` clears future timer ticks and fences later scale requests;
+it does not return a drain promise for a sample already running. Keep borrowed
+fleet/metric dependencies alive through their own actual settlement. Transport
+registry `stop()` instead awaits acquired adapter stop/cleanup promises in reverse
+order. HTTP/WebSocket adapters retain pending handler jobs until actual settlement;
+aborting a signal cannot force arbitrary application JavaScript to stop.
+
+Private local control descriptors contain secret tokens and native process
+identities. Keep them in the host-owned private state directory and out of public
+configuration and diagnostic responses. A client-side control timeout closes its
+socket; it does not prove rollback of a server-side operation.

@@ -11,24 +11,22 @@ import { _addIssue } from '../utils/index.js';
  */
 export interface EmojiIssue<TInput extends string> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'emoji';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: null;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `"${string}"`;
-  /**
-   * The emoji regex.
-   */
+  /** Borrowed compatibility RegExp shared with public regex exports; hosts must not mutate it or treat a syntax match as authorization. */
   readonly requirement: RegExp;
 }
 
@@ -40,46 +38,43 @@ export interface EmojiAction<
   TMessage extends ErrorMessage<EmojiIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, EmojiIssue<TInput>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'emoji';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof emoji;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: null;
-  /**
-   * The emoji regex.
-   */
+  /** Borrowed compatibility RegExp shared with public regex exports; hosts must not mutate it or treat a syntax match as authorization. */
   readonly requirement: RegExp;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an [emoji](https://en.wikipedia.org/wiki/Emoji) validation action.
- *
- * @returns An emoji action.
+/** Check the retained compatibility Unicode emoji pattern; matches depend on native Unicode property support and are not full RGI conformance. This action neither establishes the input schema nor grants permissions.
+ * @returns {EmojiAction<TInput, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function emoji<TInput extends string>(): EmojiAction<TInput, undefined>;
 
-/**
- * Creates an [emoji](https://en.wikipedia.org/wiki/Emoji) validation action.
- *
- * @param message The error message.
- *
- * @returns An emoji action.
+/** Check the retained compatibility Unicode emoji pattern; matches depend on native Unicode property support and are not full RGI conformance. This action neither establishes the input schema nor grants permissions.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {EmojiAction<TInput, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function emoji<
   TInput extends string,
   const TMessage extends ErrorMessage<EmojiIssue<TInput>> | undefined,
 >(message: TMessage): EmojiAction<TInput, TMessage>;
 
+/** Check the retained compatibility Unicode emoji pattern; matches depend on native Unicode property support and are not full RGI conformance. This action neither establishes the input schema nor grants permissions.
+ * @param {ErrorMessage<EmojiIssue<string>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {EmojiAction<string, ErrorMessage<EmojiIssue<string>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function emoji(
   message?: ErrorMessage<EmojiIssue<string>>
@@ -92,6 +87,11 @@ export function emoji(
     expects: null,
     requirement: EMOJI_REGEX,
     message,
+    /** Check the retained compatibility Unicode emoji pattern; matches depend on native Unicode property support and are not full RGI conformance. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native regex errors propagate without any remote lookup, input evaluation or mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement.test(dataset.value)) {
         _addIssue(this, 'emoji', dataset, config);

@@ -14,19 +14,19 @@ export interface ValueIssue<
   TRequirement extends TInput,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'value';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: string;
   /**
-   * The required value.
+   * Relational equality requirement using native <= and >=, not strict object identity.
    */
   readonly requirement: TRequirement;
 }
@@ -40,58 +40,57 @@ export interface ValueAction<
   TMessage extends ErrorMessage<ValueIssue<TInput, TRequirement>> | undefined,
 > extends BaseValidation<TInput, TInput, ValueIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'value';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof value;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: string;
   /**
-   * The required value.
+   * Relational equality requirement using native <= and >=, not strict object identity.
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a value validation action.
- *
- * @param requirement The required value.
- *
- * @returns A value action.
+/** Require both native <= and >= comparisons to hold; this is relational equality, not strict identity. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @returns {ValueAction<TInput, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function value<
   TInput extends ValueInput,
   const TRequirement extends TInput,
 >(requirement: TRequirement): ValueAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a value validation action.
- *
- * @param requirement The required value.
- * @param message The error message.
- *
- * @returns A value action.
+/** Require both native <= and >= comparisons to hold; this is relational equality, not strict identity. This action neither establishes the input schema nor grants permissions.
+ * @param {TRequirement} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {ValueAction<TInput, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function value<
   TInput extends ValueInput,
   const TRequirement extends TInput,
   const TMessage extends
-  | ErrorMessage<ValueIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<ValueIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): ValueAction<TInput, TRequirement, TMessage>;
 
+/** Require both native <= and >= comparisons to hold; this is relational equality, not strict identity. This action neither establishes the input schema nor grants permissions.
+ * @param {ValueInput} requirement - Explicit trusted comparison/divisor requirement; mutable Date references and native metadata methods remain host-owned.
+ * @param {ErrorMessage<ValueIssue<ValueInput, ValueInput>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {ValueAction<ValueInput, ValueInput, ErrorMessage<ValueIssue<ValueInput, ValueInput>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function value(
   requirement: ValueInput,
@@ -112,6 +111,11 @@ export function value(
         : _stringify(requirement),
     requirement,
     message,
+    /** Require both native <= and >= comparisons to hold; this is relational equality, not strict identity. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (
         dataset.typed &&

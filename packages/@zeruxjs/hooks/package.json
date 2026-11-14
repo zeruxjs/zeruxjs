@@ -1,7 +1,7 @@
 {
   "name": "@zeruxjs/hooks",
-  "version": "0.0.3",
-  "description": "Request-scoped React-style hooks, context, and safe ZeruxJS path registry",
+  "version": "0.0.4",
+  "description": "Request-scoped server state/context hooks, lifecycle actions and filters, and safe path registry",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,6 +21,14 @@
     "./paths": {
       "types": "./dist/path-registry.d.ts",
       "import": "./dist/path-registry.js"
+    },
+    "./actions": {
+      "types": "./dist/server-hooks.d.ts",
+      "import": "./dist/server-hooks.js"
+    },
+    "./lifecycle": {
+      "types": "./dist/lifecycle.d.ts",
+      "import": "./dist/lifecycle.js"
     }
   },
   "files": [
@@ -32,7 +40,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "license": "(MIT OR Apache-2.0)",

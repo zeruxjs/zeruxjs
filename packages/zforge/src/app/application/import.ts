@@ -1,10 +1,15 @@
-import type { DevtoolsSectionDefinition } from "../../module-registry.js";
+import type { DevtoolsSectionDefinition } from '../../module-registry.js';
 
+/** Inert import-inspection guide; no dependency analyzer runs through this section. */
 const section: DevtoolsSectionDefinition = {
-  id: "imports",
-  title: "Imports",
-  icon: "↗",
+  id: 'imports',
+  title: 'Imports',
+  icon: '↗',
   order: 20,
+  /** Render this authored development section from trusted host snapshot metadata.
+   * @param {import('../../module-registry.js').DevtoolsSectionContext} context - Explicit trusted module definitions selected by the host.
+   * @returns {string} Authored section HTML; dynamic snapshot content must already be trusted at this legacy boundary.
+   */
   render({ modules }) {
     return `
       <section class="zdev-panel-stack">
@@ -31,12 +36,12 @@ const section: DevtoolsSectionDefinition = {
             <li>Bootstrap API helpers from <code>zdev/src/api/</code></li>
             <li>Server and peer websocket channels from <code>zdev/src/api/ws.ts</code></li>
             <li>UI module registration from <code>zdev/src/module-registry.ts</code></li>
-            <li>${modules.length ? `${modules.length} module(s) currently registered.` : "No external modules registered yet."}</li>
+            <li>${modules.length ? `${modules.length} module(s) currently registered.` : 'No external modules registered yet.'}</li>
           </ul>
         </article>
       </section>
     `;
-  }
+  },
 };
 
 export default section;

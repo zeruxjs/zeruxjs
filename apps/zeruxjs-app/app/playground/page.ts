@@ -1,4 +1,16 @@
+import { escapeHtmlText } from '@zeruxjs/security/encoding';
+
+/** Render the legacy runtime playground with escaped diagnostic JSON.
+ * @param {object} root0 - Borrowed framework context projection.
+ * @param {object} root0.state - Middleware-owned request state.
+ * @param {object} root0.services - Host-registered composables, never caller imports.
+ * @param {object} root0.runtime - Current generation runtime.
+ * @param {object} root0.env - Private host environment; only the authored summary chooses a public field.
+ * @param {string} root0.pathname - Matched request path, escaped before HTML insertion.
+ * @returns {string} HTML with diagnostics encoded as text, not script data.
+ */
 export default ({ state, services, runtime, env, pathname }: any) => {
+  /** Explicit public diagnostic projection; never serialize the entire environment/runtime object. */
   const requestInfo = {
     pathname,
     requestId: state.requestId,
@@ -6,7 +18,7 @@ export default ({ state, services, runtime, env, pathname }: any) => {
     middleware: state.middleware,
     note: services.composables.runtimeSummary
       ? services.composables.runtimeSummary(runtime, env)
-      : "missing composable"
+      : 'missing composable',
   };
 
   return `<!DOCTYPE html>
@@ -33,7 +45,7 @@ export default ({ state, services, runtime, env, pathname }: any) => {
         </section>
         <section class="panel">
           <h2>Runtime Request State</h2>
-          <pre>${JSON.stringify(requestInfo, null, 2)}</pre>
+          <pre>${escapeHtmlText(JSON.stringify(requestInfo, null, 2))}</pre>
         </section>
         <section class="panel">
           <h2>Next checks</h2>

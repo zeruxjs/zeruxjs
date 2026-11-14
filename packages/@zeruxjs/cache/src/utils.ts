@@ -1,72 +1,112 @@
+import { cachePolicy, cacheKey, cacheSetOptions } from './policy.js';
 import type {
-    CacheErrorShape,
-    CacheHelperFactory,
-    CacheManagerConfig
-} from "./types.js";
+  CacheErrorShape,
+  CacheHelperFactory,
+  CacheManagerConfig,
+} from './types.js';
 
-/**
- * Title: Cache error creator
- * Description: Builds a consistent error payload for cache abstraction failures.
- * Global Variables: none
- * @param error Partial error information.
- * @returns Normalized Error instance.
- */
-export const createCacheError = (error: CacheErrorShape): Error & { details: CacheErrorShape; } => {
-    const instance = new Error(error.message) as Error & { details: CacheErrorShape; };
-    instance.name = "ZeruxCacheError";
-    instance.details = error;
-    return instance;
+/** Create the compatible cache error shape; host-supplied details still require redaction before client/log output.
+ * @param {CacheErrorShape} error - Explicit public code/message and optional private diagnostic details.
+ * @returns {Error & {details: CacheErrorShape}} Error retaining the supplied shape; no secret scrubbing is implied. */
+export const createCacheError = (
+  error: CacheErrorShape
+): Error & { details: CacheErrorShape } => {
+  /** Owned error object with the compatible ZeruxCacheError name and attached details. */
+  const instance = new Error(error.message) as Error & {
+    details: CacheErrorShape;
+  };
+  instance.name = 'ZeruxCacheError';
+  instance.details = error;
+  return instance;
 };
 
-/**
- * Title: Cache manager config normalization
- * Description: Validates helper package, key prefix, and default TTL before helper loading.
- * Global Variables: none
- * @param config Raw cache manager config.
- * @returns Validated cache manager config.
- */
-export const normalizeCacheConfig = (config: CacheManagerConfig): Required<Pick<CacheManagerConfig, "helper">> & CacheManagerConfig => {
-    const helper = String(config?.helper || "").trim();
-    if (!helper) {
-        throw createCacheError({
-            code: "MISSING_HELPER",
-            message: "A cache helper package is required"
-        });
-    }
+/** Validate policy, prefix and TTL before any explicitly configured helper module loads.
+ * @param {CacheManagerConfig} config - Trusted executable host helper configuration, never request-controlled module input.
+ * @returns {Required<Pick<CacheManagerConfig, 'helper'>> & CacheManagerConfig} Normalized compatible config with copied options and effective policy. */
+export const normalizeCacheConfig = (
+  config: CacheManagerConfig
+): Required<Pick<CacheManagerConfig, 'helper'>> & CacheManagerConfig => {
+  if (
+    !config ||
+    typeof config !== 'object' ||
+    Array.isArray(config) ||
+    typeof config.helper !== 'string'
+  ) {
+    throw createCacheError({
+      code: 'INVALID_CONFIG',
+      message: 'Invalid cache configuration',
+    });
+  }
+  /** Validated finite key/value/bulk/producer limits and helper ownership policy. */
+  const policy = cachePolicy(config.policy);
+  if (config.prefix !== undefined) {
+    cacheKey(config.prefix, policy);
+  }
+  if (
+    config.options !== undefined &&
+    (!config.options ||
+      typeof config.options !== 'object' ||
+      Array.isArray(config.options))
+  ) {
+    throw createCacheError({
+      code: 'INVALID_CONFIG',
+      message: 'Invalid cache options',
+    });
+  }
+  cacheSetOptions({ ttlSeconds: config.defaultTtlSeconds });
+  /** Trimmed explicit host-selected helper name; not a disk-discovered adapter. */
+  const helper = config.helper.trim();
+  if (!helper) {
+    throw createCacheError({
+      code: 'MISSING_HELPER',
+      message: 'A cache helper package is required',
+    });
+  }
 
-    if (config.defaultTtlSeconds !== undefined && (!Number.isFinite(config.defaultTtlSeconds) || config.defaultTtlSeconds <= 0)) {
-        throw createCacheError({
-            code: "INVALID_TTL",
-            message: "defaultTtlSeconds must be a positive finite number"
-        });
-    }
+  if (
+    config.defaultTtlSeconds !== undefined &&
+    (!Number.isFinite(config.defaultTtlSeconds) ||
+      config.defaultTtlSeconds <= 0)
+  ) {
+    throw createCacheError({
+      code: 'INVALID_TTL',
+      message: 'defaultTtlSeconds must be a positive finite number',
+    });
+  }
 
-    return {
-        helper,
-        options: typeof config.options === "object" && config.options !== null ? { ...config.options } : {},
-        prefix: typeof config.prefix === "string" && config.prefix.length > 0 ? config.prefix : undefined,
-        defaultTtlSeconds: config.defaultTtlSeconds
-    };
+  return {
+    helper,
+    policy,
+    options:
+      typeof config.options === 'object' && config.options !== null
+        ? { ...config.options }
+        : {},
+    prefix:
+      typeof config.prefix === 'string' && config.prefix.length > 0
+        ? config.prefix
+        : undefined,
+    defaultTtlSeconds: config.defaultTtlSeconds,
+  };
 };
 
-/**
- * Title: Helper factory extraction
- * Description: Reads supported factory export shapes from a dynamically imported helper package.
- * Global Variables: none
- * @param moduleValue Imported module namespace.
- * @returns Cache helper factory.
- */
-export const extractCacheHelperFactory = (moduleValue: Record<string, unknown>): CacheHelperFactory => {
-    const candidate = moduleValue.createCacheHelper ??
-        moduleValue.createHelper ??
-        moduleValue.default;
+/** Select only supported factory export shapes from the explicitly imported host helper module.
+ * @param {Record<string, unknown>} moduleValue - Namespace of a trusted configured executable adapter module.
+ * @returns {CacheHelperFactory} Factory or fixed unsupported-export error; loading arbitrary untrusted configuration is unsafe. */
+export const extractCacheHelperFactory = (
+  moduleValue: Record<string, unknown>
+): CacheHelperFactory => {
+  /** First supported named/default factory export; no additional package code is evaluated here. */
+  const candidate =
+    moduleValue.createCacheHelper ??
+    moduleValue.createHelper ??
+    moduleValue.default;
 
-    if (typeof candidate !== "function") {
-        throw createCacheError({
-            code: "INVALID_HELPER_FACTORY",
-            message: "Cache helper package does not export a helper factory"
-        });
-    }
+  if (typeof candidate !== 'function') {
+    throw createCacheError({
+      code: 'INVALID_HELPER_FACTORY',
+      message: 'Cache helper package does not export a helper factory',
+    });
+  }
 
-    return candidate as CacheHelperFactory;
+  return candidate as CacheHelperFactory;
 };

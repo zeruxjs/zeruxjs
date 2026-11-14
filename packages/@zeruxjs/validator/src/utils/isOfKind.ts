@@ -1,10 +1,7 @@
-/**
- * A generic type guard to check the kind of an object.
- *
- * @param kind The kind to check for.
- * @param object The object to check.
- *
- * @returns Whether it matches.
+/** Narrow an already typed schema/action/metadata union using its kind discriminator; this is not a runtime shape validator.
+ * @param {TKind} kind - Literal discriminator allowed by the declared union.
+ * @param {TObject} object - Already typed borrowed value; arbitrary null/non-object input is outside this guard contract.
+ * @returns {boolean} Whether the declared kind matches; does not validate nested fields or grant permissions.
  */
 // @__NO_SIDE_EFFECTS__
 export function isOfKind<

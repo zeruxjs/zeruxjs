@@ -1,7 +1,7 @@
 {
   "name": "@zenixjs/core",
-  "version": "0.0.3",
-  "description": "Placeholder for the future Zenix CMS",
+  "version": "0.0.4",
+  "description": "Minimal tenant-authorized CMS domain core with explicit SQLite persistence",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
     "url": "https://github.com/zeruxjs/zeruxjs/issues"
@@ -19,20 +19,45 @@
     "prepack": "npm run build"
   },
   "keywords": [
-    "placeholder",
-    "zenix"
+    "cms",
+    "zenix",
+    "sqlite"
   ],
   "files": [
     "dist/",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "examples/"
   ],
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./cms": {
+      "types": "./dist/cms.d.ts",
+      "browser": null,
+      "import": "./dist/cms.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "browser": null,
+      "import": "./dist/types.js"
+    }
+  },
+  "dependencies": {
+    "@zeruxjs/auth": "0.0.4",
+    "@zeruxjs/db": "0.0.4",
+    "@zeruxjs/db-sqlite": "0.0.4",
+    "@zeruxjs/files": "0.0.4"
   }
 }

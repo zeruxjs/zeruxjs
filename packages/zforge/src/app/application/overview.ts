@@ -1,10 +1,15 @@
-import type { DevtoolsSectionDefinition } from "../../module-registry.js";
+import type { DevtoolsSectionDefinition } from '../../module-registry.js';
 
+/** Legacy private runtime overview borrowing host-approved application snapshot fields. */
 const section: DevtoolsSectionDefinition = {
-  id: "overview",
-  title: "Overview",
-  icon: "◌",
+  id: 'overview',
+  title: 'Overview',
+  icon: '◌',
   order: 10,
+  /** Render this authored development section from trusted host snapshot metadata.
+   * @param {import('../../module-registry.js').DevtoolsSectionContext} context - Host-selected application, private snapshot and configured modules.
+   * @returns {string} Authored section HTML; dynamic snapshot content must already be trusted at this legacy boundary.
+   */
   render({ app, snapshot, modules }) {
     return `
       <section class="zdev-card-grid">
@@ -35,8 +40,8 @@ const section: DevtoolsSectionDefinition = {
           </header>
           <dl class="zdev-detail-grid">
             <div><dt>Root</dt><dd data-overview-root>${snapshot.rootDir}</dd></div>
-            <div><dt>Manifest</dt><dd data-overview-manifest>${snapshot.manifestPath ?? "missing"}</dd></div>
-            <div><dt>Log File</dt><dd data-overview-log>${snapshot.logFilePath ?? "missing"}</dd></div>
+            <div><dt>Manifest</dt><dd data-overview-manifest>${snapshot.manifestPath ?? 'missing'}</dd></div>
+            <div><dt>Log File</dt><dd data-overview-log>${snapshot.logFilePath ?? 'missing'}</dd></div>
             <div><dt>Updated</dt><dd data-overview-updated>${snapshot.updatedAt}</dd></div>
           </dl>
         </article>
@@ -62,7 +67,7 @@ const section: DevtoolsSectionDefinition = {
         </article>
       </section>
     `;
-  }
+  },
 };
 
 export default section;

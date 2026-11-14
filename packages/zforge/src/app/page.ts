@@ -1,21 +1,30 @@
-import { renderDocument, escapeHtml } from "../components/document.js";
-import { renderThemeButton } from "../components/chrome.js";
-import type { SharedDevRegistration } from "../types.js";
+import { renderDocument, escapeHtml } from '../components/document.js';
+import { renderThemeButton } from '../components/chrome.js';
+import type { SharedDevRegistration } from '../types.js';
 
 interface HomePageContext {
+  /** Explicit host-approved registrations displayed by the hub. */
   apps: SharedDevRegistration[];
+  /** Response-owned nonce matching the document security headers. */
   nonce?: string;
 }
 
-export default ({ apps, nonce }: HomePageContext) => renderDocument({
-  title: "Zdev Hub",
-  bodyClass: "zdev-home",
-  nonce,
-  config: {
-    page: "home",
-    apps: apps.map(app => ({ routeName: app.routeName, appName: app.appName, appPort: app.appPort, rootDir: app.rootDir, serviceName: app.serviceName }))
-  },
-  content: `
+export default ({ apps, nonce }: HomePageContext) =>
+  renderDocument({
+    title: 'Zdev Hub',
+    bodyClass: 'zdev-home',
+    nonce,
+    config: {
+      page: 'home',
+      apps: apps.map((app) => ({
+        routeName: app.routeName,
+        appName: app.appName,
+        appPort: app.appPort,
+        rootDir: app.rootDir,
+        serviceName: app.serviceName,
+      })),
+    },
+    content: `
     <div class="zdev-home-shell">
       <header class="zdev-home-hero">
         <div>
@@ -32,7 +41,9 @@ export default ({ apps, nonce }: HomePageContext) => renderDocument({
         </div>
       </header>
       <main class="zdev-home-grid">
-        ${apps.map((app) => `
+        ${apps
+          .map(
+            (app) => `
           <a class="zdev-app-card" href="/${escapeHtml(app.routeName)}">
             <div class="zdev-app-card-head">
               <span class="zdev-app-badge">${escapeHtml(app.routeName)}</span>
@@ -45,8 +56,10 @@ export default ({ apps, nonce }: HomePageContext) => renderDocument({
               <span>Live diagnostics</span>
             </div>
           </a>
-        `).join("")}
+        `
+          )
+          .join('')}
       </main>
     </div>
-  `
-});
+  `,
+  });

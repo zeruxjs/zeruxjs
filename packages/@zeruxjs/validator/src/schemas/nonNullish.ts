@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -24,51 +25,56 @@ export interface NonNullishSchema<
   NonNullishIssue | InferNonNullishIssue<TWrapped>
 > {
   /**
-   * The schema type.
+   * Fixed exclusion discriminator rejecting both null and undefined.
    */
   readonly type: 'non_nullish';
   /**
-   * The schema reference.
+   * Authored constructor reference; never supplied or loaded from untrusted source text.
    */
   readonly reference: typeof nonNullish;
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation for the excluded sentinel, not a callback.
    */
   readonly expects: '(!null & !undefined)';
   /**
-   * The wrapped schema.
+   * Borrowed schema invoked only after the input sentinel guard; transformed output is checked again.
    */
   readonly wrapped: TWrapped;
   /**
-   * The error message.
+   * Optional private diagnostic text or trusted synchronous issue-message callback.
    */
   readonly message: TMessage;
 }
 
 /**
- * Creates a non nullish schema.
+ * Exclude null or undefined before wrapped execution and again after transformation. This is validation, not coercion or authorization.
  *
- * @param wrapped The wrapped schema.
+ * @param {TWrapped} wrapped - Trusted borrowed schema; excluded inputs never invoke its default/fallback path.
  *
- * @returns A non nullish schema.
+ * @returns {NonNullishSchema<TWrapped, undefined>} Inert exclusion wrapper; root execution still owns limits and cancellation.
  */
 export function nonNullish<
   const TWrapped extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(wrapped: TWrapped): NonNullishSchema<TWrapped, undefined>;
 
 /**
- * Creates a non nullish schema.
+ * Exclude null or undefined before wrapped execution and again after transformation. This is validation, not coercion or authorization.
  *
- * @param wrapped The wrapped schema.
- * @param message The error message.
+ * @param {TWrapped} wrapped - Trusted borrowed schema; excluded inputs never invoke its default/fallback path.
+ * @param {TMessage} message - Optional private diagnostic text/callback; escape/redact separately for public presentation.
  *
- * @returns A non nullish schema.
+ * @returns {NonNullishSchema<TWrapped, TMessage>} Inert wrapper retaining borrowed schema/message references without deep cloning.
  */
 export function nonNullish<
   const TWrapped extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
   const TMessage extends ErrorMessage<NonNullishIssue> | undefined,
 >(wrapped: TWrapped, message: TMessage): NonNullishSchema<TWrapped, TMessage>;
 
+/** Build an exclusion wrapper without invoking validation or message callbacks.
+ * @param {object} wrapped - Borrowed trusted schema; actual parsing remains root-owned.
+ * @param {ErrorMessage<NonNullishIssue>} message - Optional private issue message policy, never executable source text.
+ * @returns {object} Inert sync/async schema guarding null or undefined around wrapped execution.
+ */
 // @__NO_SIDE_EFFECTS__
 export function nonNullish(
   wrapped: BaseSchema<unknown, unknown, BaseIssue<unknown>>,
@@ -85,14 +91,22 @@ export function nonNullish(
     async: false,
     wrapped,
     message,
+    /** Adapt explicit validation to the same bounded root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Guard excluded input before invoking wrapped code, then reject any excluded transformed output.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private input dataset.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets and cooperative signal.
+     * @returns {unknown} Declared dataset or async settlement; raw issues and operational causes remain private.
+     */
     '~run'(dataset, config) {
       // If value is not `null` and `undefined`, run wrapped schema
       if (!(dataset.value === null || dataset.value === undefined)) {
-        // @ts-expect-error
-        dataset = this.wrapped['~run'](dataset, config);
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
+        dataset = _runSchema(this.wrapped, dataset, config);
       }
 
       // If value is `null` or `undefined`, add issue to dataset
@@ -101,7 +115,7 @@ export function nonNullish(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<unknown, BaseIssue<unknown>>;
     },
   };

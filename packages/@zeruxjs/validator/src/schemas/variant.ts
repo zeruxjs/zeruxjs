@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -6,11 +7,7 @@ import type {
   InferOutput,
   OutputDataset,
 } from '../types/index.js';
-import {
-  _addIssue,
-  _getStandardProps,
-  _joinExpects,
-} from '../utils/index.js';
+import { _addIssue, _getStandardProps, _joinExpects } from '../utils/index.js';
 import type {
   InferVariantIssue,
   VariantIssue,
@@ -31,52 +28,46 @@ export interface VariantSchema<
   VariantIssue | InferVariantIssue<TOptions>
 > {
   /**
-   * The schema type.
+   * Stable schema discriminator used by structured issue consumers.
    */
   readonly type: 'variant';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof variant;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not a coercion, escaping or authorization policy.
    */
   readonly expects: 'Object';
   /**
-   * The discriminator key.
+   * Declared key whose presence/value selects eligible branches; not an authorization scope.
    */
   readonly key: TKey;
   /**
-   * The variant options.
+   * Borrowed declared discriminator branches; no dynamic handler lookup from input.
    */
   readonly options: TOptions;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a variant schema.
- *
- * @param key The discriminator key.
- * @param options The variant options.
- *
- * @returns A variant schema.
+/** Traverse explicit discriminator branches recursively, retaining the first successful or best typed result. Construction does not parse input or authorize its source.
+ * @param {TKey} key - Explicit discriminator key required by each declared option; never a module name or execution target.
+ * @param {TOptions} options - Borrowed ordered trusted branch schemas; mutation after construction is not isolated.
+ * @returns {VariantSchema<TKey, TOptions, undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function variant<
   const TKey extends string,
   const TOptions extends VariantOptions<TKey>,
 >(key: TKey, options: TOptions): VariantSchema<TKey, TOptions, undefined>;
 
-/**
- * Creates a variant schema.
- *
- * @param key The discriminator key.
- * @param options The variant options.
- * @param message The error message.
- *
- * @returns An variant schema.
+/** Traverse explicit discriminator branches recursively, retaining the first successful or best typed result. Construction does not parse input or authorize its source.
+ * @param {TKey} key - Explicit discriminator key required by each declared option; never a module name or execution target.
+ * @param {TOptions} options - Borrowed ordered trusted branch schemas; mutation after construction is not isolated.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {VariantSchema<TKey, TOptions, TMessage>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function variant<
   const TKey extends string,
@@ -88,6 +79,12 @@ export function variant<
   message: TMessage
 ): VariantSchema<TKey, TOptions, TMessage>;
 
+/** Traverse explicit discriminator branches recursively, retaining the first successful or best typed result. Construction does not parse input or authorize its source.
+ * @param {string} key - Explicit discriminator key required by each declared option; never a module name or execution target.
+ * @param {VariantOptions<string>} options - Borrowed ordered trusted branch schemas; mutation after construction is not isolated.
+ * @param {ErrorMessage<VariantIssue>} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {VariantSchema<string, VariantOptions<string>, ErrorMessage<VariantIssue> | undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function variant(
   key: string,
@@ -107,11 +104,20 @@ export function variant(
     key,
     options,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Traverse explicit discriminator branches recursively, retaining the first successful or best typed result. Raw issues remain private and operational failures propagate.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; this schema does not grant permissions or sanitize output.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets, cancellation, abort flags and diagnostic policy.
+     * @returns {OutputDataset<unknown, BaseIssue<unknown>>} Declared output or private issue dataset; child result identity follows its schema.
+     */
     '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed candidate retained for child reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
@@ -127,6 +133,10 @@ export function variant(
         let expectedDiscriminators: string[] = [];
 
         // Create recursive function to parse nested variant options
+        /** Traverse trusted nested variant declarations in order; this is not arbitrary source evaluation.
+         * @param {VariantOptionSchema<string>} variant - Current borrowed variant branch.
+         * @param {Set<string>} allKeys - Declared discriminator keys accumulated by this recursion path.
+         * @returns {void} Updates only the enclosing result/diagnostic selection; child failures and operational exceptions propagate. */
         const parseOptions = (
           variant: VariantOptionSchema<string>,
           allKeys: Set<string>
@@ -146,17 +156,20 @@ export function variant(
               // information about invalid discriminator keys if not
               for (const currentKey of allKeys) {
                 // If any discriminator is invalid, mark keys as invalid
-                const discriminatorSchema = schema.entries[currentKey];
+                // Variant option types require a schema for every discriminator key.
+                /** Trusted option child for a declared discriminator; preserve legacy presence checks and explicit abortEarly probing. */
+                const discriminatorSchema = schema.entries[currentKey]!;
                 if (
                   currentKey in input
-                    ? discriminatorSchema['~run'](
-                      // @ts-expect-error
-                      { typed: false, value: input[currentKey] },
-                      { abortEarly: true }
-                    ).issues
+                    ? _runSchema(
+                        discriminatorSchema,
+                        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
+                        { typed: false, value: input[currentKey] },
+                        { abortEarly: true }
+                      ).issues
                     : discriminatorSchema.type !== 'exact_optional' &&
-                    discriminatorSchema.type !== 'optional' &&
-                    discriminatorSchema.type !== 'nullish'
+                      discriminatorSchema.type !== 'optional' &&
+                      discriminatorSchema.type !== 'nullish'
                 ) {
                   keysAreValid = false;
 
@@ -180,7 +193,7 @@ export function variant(
                   // store its expected value
                   if (invalidDiscriminatorKey === currentKey) {
                     expectedDiscriminators.push(
-                      schema.entries[currentKey].expects
+                      schema.entries[currentKey]!.expects
                     );
                   }
 
@@ -194,7 +207,12 @@ export function variant(
 
               // If all discriminators are valid, parse input with schema of option
               if (keysAreValid) {
-                const optionDataset = schema['~run']({ value: input }, config);
+                /** Current attempted branch result sharing the root work and issue budget. */
+                const optionDataset = _runSchema(
+                  schema,
+                  { value: input },
+                  config
+                );
 
                 // Store output dataset if necessary
                 // Hint: Only the first untyped or typed dataset is returned, and
@@ -227,7 +245,7 @@ export function variant(
 
         // Otherwise, add discriminator issue
         _addIssue(this, 'type', dataset, config, {
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           input: input[invalidDiscriminatorKey],
           expected: _joinExpects(expectedDiscriminators, '|'),
           path: [
@@ -236,7 +254,7 @@ export function variant(
               origin: 'value',
               input: input as Record<string, unknown>,
               key: invalidDiscriminatorKey,
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               value: input[invalidDiscriminatorKey],
             },
           ],
@@ -248,7 +266,7 @@ export function variant(
       }
 
       // Finally, return  output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         InferOutput<VariantOptions<string>[number]>,
         VariantIssue | BaseIssue<unknown>

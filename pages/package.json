@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch ../scripts/serve-sites.mjs --dev",
-    "build": "node ../scripts/build-sites.mjs",
-    "preview": "node ../scripts/serve-sites.mjs",
-    "start": "node ../scripts/serve-sites.mjs",
-    "prebuild": "node ../scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search",
-    "predev": "node ../scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search"
+    "dev": "node --experimental-strip-types --watch ../scripts/serve-sites.ts --dev",
+    "build": "node --experimental-strip-types ../scripts/build-sites.ts",
+    "preview": "node --experimental-strip-types ../scripts/serve-sites.ts",
+    "start": "node --experimental-strip-types ../scripts/serve-sites.ts",
+    "prebuild": "node --experimental-strip-types ../scripts/build-workspaces.ts --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search",
+    "predev": "node --experimental-strip-types ../scripts/build-workspaces.ts --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search"
   }
 }

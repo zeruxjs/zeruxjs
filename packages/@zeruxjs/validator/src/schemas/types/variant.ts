@@ -30,15 +30,15 @@ import type { variantAsync } from '../variantAsync.js';
  */
 export interface VariantIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed structural validation category; raw input and diagnostics remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable discriminator for issue code consumers.
    */
   readonly type: 'variant';
   /**
-   * The expected property.
+   * Private diagnostic expectation, never proof of permission or safe rendered content.
    */
   readonly expected: string;
 }
@@ -46,24 +46,38 @@ export interface VariantIssue extends BaseIssue<unknown> {
 /**
  * Variant option schema interface.
  */
-export interface VariantOptionSchema<TKey extends string>
-  extends BaseSchema<unknown, unknown, VariantIssue | BaseIssue<unknown>> {
+export interface VariantOptionSchema<TKey extends string> extends BaseSchema<
+  unknown,
+  unknown,
+  VariantIssue | BaseIssue<unknown>
+> {
+  /** Declared nested variant discriminator; this metadata is not a permission grant. */
   readonly type: 'variant';
+  /** Authored variant constructor identity; never loaded from submitted source. */
   readonly reference: typeof variant;
+  /** Declared discriminator key required by this branch contract. */
   readonly key: string;
+  /** Borrowed ordered nested branch schemas; no dynamic handler discovery occurs. */
   readonly options: VariantOptions<TKey>;
+  /** Optional trusted private diagnostic text/callback. */
   readonly message: ErrorMessage<VariantIssue> | undefined;
 }
 
 /**
  * Variant option schema async interface.
  */
-export interface VariantOptionSchemaAsync<TKey extends string>
-  extends BaseSchemaAsync<unknown, unknown, VariantIssue | BaseIssue<unknown>> {
+export interface VariantOptionSchemaAsync<
+  TKey extends string,
+> extends BaseSchemaAsync<unknown, unknown, VariantIssue | BaseIssue<unknown>> {
+  /** Declared nested variant discriminator; this metadata is not a permission grant. */
   readonly type: 'variant';
+  /** Authored variant constructor identity; never loaded from submitted source. */
   readonly reference: typeof variant | typeof variantAsync;
+  /** Declared discriminator key required by this branch contract. */
   readonly key: string;
+  /** Borrowed ordered nested branch schemas; no dynamic handler discovery occurs. */
   readonly options: VariantOptionsAsync<TKey>;
+  /** Optional trusted private diagnostic text/callback. */
   readonly message: ErrorMessage<VariantIssue> | undefined;
 }
 
@@ -93,22 +107,22 @@ type VariantObjectEntriesAsync<TKey extends string> = Record<
  */
 type VariantOption<TKey extends string> =
   | LooseObjectSchema<
-    VariantObjectEntries<TKey>,
-    ErrorMessage<LooseObjectIssue> | undefined
-  >
+      VariantObjectEntries<TKey>,
+      ErrorMessage<LooseObjectIssue> | undefined
+    >
   | ObjectSchema<
-    VariantObjectEntries<TKey>,
-    ErrorMessage<ObjectIssue> | undefined
-  >
+      VariantObjectEntries<TKey>,
+      ErrorMessage<ObjectIssue> | undefined
+    >
   | ObjectWithRestSchema<
-    VariantObjectEntries<TKey>,
-    BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-    ErrorMessage<ObjectWithRestIssue> | undefined
-  >
+      VariantObjectEntries<TKey>,
+      BaseSchema<unknown, unknown, BaseIssue<unknown>>,
+      ErrorMessage<ObjectWithRestIssue> | undefined
+    >
   | StrictObjectSchema<
-    VariantObjectEntries<TKey>,
-    ErrorMessage<StrictObjectIssue> | undefined
-  >
+      VariantObjectEntries<TKey>,
+      ErrorMessage<StrictObjectIssue> | undefined
+    >
   | VariantOptionSchema<TKey>;
 
 /**
@@ -116,23 +130,23 @@ type VariantOption<TKey extends string> =
  */
 type VariantOptionAsync<TKey extends string> =
   | LooseObjectSchemaAsync<
-    VariantObjectEntriesAsync<TKey>,
-    ErrorMessage<LooseObjectIssue> | undefined
-  >
+      VariantObjectEntriesAsync<TKey>,
+      ErrorMessage<LooseObjectIssue> | undefined
+    >
   | ObjectSchemaAsync<
-    VariantObjectEntriesAsync<TKey>,
-    ErrorMessage<ObjectIssue> | undefined
-  >
+      VariantObjectEntriesAsync<TKey>,
+      ErrorMessage<ObjectIssue> | undefined
+    >
   | ObjectWithRestSchemaAsync<
-    VariantObjectEntriesAsync<TKey>,
-    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
-    ErrorMessage<ObjectWithRestIssue> | undefined
-  >
+      VariantObjectEntriesAsync<TKey>,
+      | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+      | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+      ErrorMessage<ObjectWithRestIssue> | undefined
+    >
   | StrictObjectSchemaAsync<
-    VariantObjectEntriesAsync<TKey>,
-    ErrorMessage<StrictObjectIssue> | undefined
-  >
+      VariantObjectEntriesAsync<TKey>,
+      ErrorMessage<StrictObjectIssue> | undefined
+    >
   | VariantOptionSchemaAsync<TKey>;
 
 /**
@@ -156,5 +170,8 @@ export type InferVariantIssue<
   TOptions extends VariantOptions<string> | VariantOptionsAsync<string>,
 > = Exclude<
   InferIssue<TOptions[number]>,
-  { type: 'loose_object' | 'object' | 'object_with_rest' }
+  {
+    /** Declared nested variant discriminator; this metadata is not a permission grant. */
+    type: 'loose_object' | 'object' | 'object_with_rest';
+  }
 >;

@@ -4,22 +4,23 @@ import type { ArrayInput, ArrayRequirementAsync } from '../types.js';
 /**
  * Check items issue interface.
  */
-export interface CheckItemsIssue<TInput extends ArrayInput>
-  extends BaseIssue<TInput[number]> {
+export interface CheckItemsIssue<TInput extends ArrayInput> extends BaseIssue<
+  TInput[number]
+> {
   /**
-   * The issue kind.
+   * Fixed private action issue category.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'check_items';
   /**
-   * The expected input.
+   * Private expectation for the declared refinement, not proof of complete validation.
    */
   readonly expected: null;
   /**
-   * The validation function.
+   * Borrowed trusted predicate reference retained for private diagnostics; no function source is evaluated.
    */
   readonly requirement: ArrayRequirementAsync<TInput>;
 }

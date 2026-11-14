@@ -13,19 +13,19 @@ export interface MaxWordsIssue<
   TRequirement extends number,
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'max_words';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: `<=${TRequirement}`;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `${number}`;
   /**
@@ -42,19 +42,19 @@ export interface MaxWordsAction<
   TLocales extends Intl.LocalesArgument,
   TRequirement extends number,
   TMessage extends
-  | ErrorMessage<MaxWordsIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MaxWordsIssue<TInput, TRequirement>>
+    | undefined,
 > extends BaseValidation<TInput, TInput, MaxWordsIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'max_words';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof maxWords;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: `<=${TRequirement}`;
   /**
@@ -66,18 +66,15 @@ export interface MaxWordsAction<
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a max words validation action.
- *
- * @param locales The locales to be used.
- * @param requirement The maximum words.
- *
- * @returns A max words action.
+/** Require at most the configured count of native locale-specific word-like Intl segments; locale configuration must remain bounded because the legacy segmenter cache has no eviction. This action neither establishes the input schema nor grants permissions.
+ * @param {TLocales} locales - Explicit bounded locale configuration; exact locale-array identity is retained and invalid Intl settings may throw.
+ * @param {TRequirement} requirement - Explicit trusted measurement/comparison requirement; this constructor does not independently validate every threshold or clone Date references.
+ * @returns {MaxWordsAction<TInput, TLocales, TRequirement, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function maxWords<
   TInput extends string,
@@ -88,28 +85,31 @@ export function maxWords<
   requirement: TRequirement
 ): MaxWordsAction<TInput, TLocales, TRequirement, undefined>;
 
-/**
- * Creates a max words validation action.
- *
- * @param locales The locales to be used.
- * @param requirement The maximum words.
- * @param message The error message.
- *
- * @returns A max words action.
+/** Require at most the configured count of native locale-specific word-like Intl segments; locale configuration must remain bounded because the legacy segmenter cache has no eviction. This action neither establishes the input schema nor grants permissions.
+ * @param {TLocales} locales - Explicit bounded locale configuration; exact locale-array identity is retained and invalid Intl settings may throw.
+ * @param {TRequirement} requirement - Explicit trusted measurement/comparison requirement; this constructor does not independently validate every threshold or clone Date references.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MaxWordsAction<TInput, TLocales, TRequirement, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function maxWords<
   TInput extends string,
   TLocales extends Intl.LocalesArgument,
   const TRequirement extends number,
   const TMessage extends
-  | ErrorMessage<MaxWordsIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<MaxWordsIssue<TInput, TRequirement>>
+    | undefined,
 >(
   locales: TLocales,
   requirement: TRequirement,
   message: TMessage
 ): MaxWordsAction<TInput, TLocales, TRequirement, TMessage>;
 
+/** Require at most the configured count of native locale-specific word-like Intl segments; locale configuration must remain bounded because the legacy segmenter cache has no eviction. This action neither establishes the input schema nor grants permissions.
+ * @param {Intl.LocalesArgument} locales - Explicit bounded locale configuration; exact locale-array identity is retained and invalid Intl settings may throw.
+ * @param {number} requirement - Explicit trusted measurement/comparison requirement; this constructor does not independently validate every threshold or clone Date references.
+ * @param {ErrorMessage<MaxWordsIssue<string, number>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {MaxWordsAction<string, Intl.LocalesArgument, number, ErrorMessage<MaxWordsIssue<string, number>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function maxWords(
   locales: Intl.LocalesArgument,
@@ -130,8 +130,14 @@ export function maxWords(
     locales,
     requirement,
     message,
+    /** Require at most the configured count of native locale-specific word-like Intl segments; locale configuration must remain bounded because the legacy segmenter cache has no eviction. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed) {
+        /** Measured native segment or own-key count; diagnostic output uses this captured value rather than recomputing it. */
         const count = _getWordCount(this.locales, dataset.value);
         if (count > this.requirement) {
           _addIssue(this, 'words', dataset, config, {

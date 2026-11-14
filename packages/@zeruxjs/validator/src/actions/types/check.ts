@@ -5,19 +5,19 @@ import type { BaseIssue, MaybePromise } from '../../types/index.js';
  */
 export interface CheckIssue<TInput> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed private action issue category.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'check';
   /**
-   * The expected property.
+   * Private diagnostic expectation; no authorization or safe HTML is implied.
    */
   readonly expected: null;
   /**
-   * The validation function.
+   * Borrowed trusted predicate reference retained for private diagnostics; no function source is evaluated.
    */
   readonly requirement: (input: TInput) => MaybePromise<boolean>;
 }

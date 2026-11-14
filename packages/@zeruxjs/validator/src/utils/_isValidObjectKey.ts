@@ -1,12 +1,7 @@
-/**
- * Disallows inherited object properties and prevents object prototype
- * pollution by disallowing certain keys.
- *
- * @param object The object to check.
- * @param key The key to check.
- *
- * @returns Whether the key is allowed.
- *
+/** Check own-property membership and exclude the three reserved prototype-related names; this is a key filter, not value validation.
+ * @param {object} object - Borrowed object to inspect; no getters are intentionally invoked by the own-key test.
+ * @param {string} key - Literal candidate property name; it is not expanded into a nested path.
+ * @returns {boolean} Whether the own literal key is eligible for copying by structural schemas.
  * @internal
  */
 // @__NO_SIDE_EFFECTS__

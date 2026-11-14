@@ -1,3 +1,4 @@
+/** Public server entry; native transport and persistence dependencies are not browser imports. */
 export * from './types.js';
 export * from './validation.js';
 export * from './html.js';
@@ -33,3 +34,5 @@ export * from './inbound-sync.js';
 export * from './inbound-retention.js';
 
 export * from './inbox-api.js';
+
+export * from './sender-feedback.js';

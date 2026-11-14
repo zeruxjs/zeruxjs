@@ -1,0 +1,28 @@
+title = "ZeruxJS: defaults with reviewed non-secret fixture exceptions"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "Generated docs manifest entries contain public SHA-256 content hashes, not credentials"
+condition = "AND"
+paths = ['^(?:branch/[^/]+/)?zeruxjs/build-manifest\.json$']
+regexTarget = "line"
+regexes = ['^\s*"/(?:branch/[^/]+/)?zeruxjs/docs/[0-9.]+/[A-Za-z0-9._/-]+\.md":\s*"[a-f0-9]{64}",?\s*$']
+
+[[rules.allowlists]]
+description = "Published RFC 6238 TOTP test vector, only in its named fixture"
+condition = "AND"
+paths = ['^packages/@zeruxjs/auth/test/auth\.test\.cjs$']
+regexTarget = "secret"
+regexes = ['^GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ$']
+
+[[rules.allowlists]]
+description = "Synthetic durable-ingestion replay key, only in its named fixture"
+condition = "AND"
+paths = ['^packages/@zeruxjs/analytics/test/durable\.test\.mjs$']
+regexTarget = "secret"
+regexes = ['^opaque_ingest_0123456789$']
