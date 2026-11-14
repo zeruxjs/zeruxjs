@@ -36,7 +36,7 @@
   "devDependencies": {
     "@types/node": "^25.4.0",
     "@zeruxjs/asset-manager": "0.0.4",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "exports": {
     ".": {

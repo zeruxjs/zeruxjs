@@ -50,7 +50,7 @@
     "@types/css-tree": "3.2.0",
     "@types/node": "^25.4.0",
     "css-tree": "3.2.1",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "zlook": "0.0.4"
   },
   "repository": {
