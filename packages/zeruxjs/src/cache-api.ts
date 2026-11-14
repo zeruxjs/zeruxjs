@@ -1,38 +1,39 @@
 /**
- * Title: Zerux cache public API
- * Description: Re-exports the active cache facade so applications can import from `zeruxjs/cache`.
- * Global Variables: active cache manager in @zeruxjs/cache
+ * Re-export the cache package's compatibility facade without creating a manager.
+ * Convenience calls use its process-wide active manager. Prefer a host-owned
+ * scoped manager when application generations need independent configuration
+ * and cleanup; importing this facade does not transfer manager ownership.
  */
 export {
-    cache as default,
-    cache,
-    clear,
-    configureCacheManager,
-    createCacheError,
-    createCacheManager,
-    delete,
-    deleteMany,
-    decrement,
-    get,
-    getMany,
-    getActiveCacheManager,
-    has,
-    increment,
-    native,
-    remove,
-    set,
-    setMany,
-    setActiveCacheManager,
-    touch
-} from "@zeruxjs/cache";
+  cache as default,
+  cache,
+  clear,
+  configureCacheManager,
+  createCacheError,
+  createCacheManager,
+  delete,
+  deleteMany,
+  decrement,
+  get,
+  getMany,
+  getActiveCacheManager,
+  has,
+  increment,
+  native,
+  remove,
+  set,
+  setMany,
+  setActiveCacheManager,
+  touch,
+} from '@zeruxjs/cache';
 export type {
-    CacheErrorShape,
-    CacheHelper,
-    CacheHelperFactory,
-    CacheManager,
-    CacheManagerConfig,
-    CachePrimitive,
-    CacheSetOptions,
-    CacheValue,
-    MaybePromise
-} from "@zeruxjs/cache";
+  CacheErrorShape,
+  CacheHelper,
+  CacheHelperFactory,
+  CacheManager,
+  CacheManagerConfig,
+  CachePrimitive,
+  CacheSetOptions,
+  CacheValue,
+  MaybePromise,
+} from '@zeruxjs/cache';

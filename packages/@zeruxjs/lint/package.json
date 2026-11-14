@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/lint",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Composable ESLint, Stylelint CSS/SCSS and Prettier runners for ZeruxJS",
   "type": "module",
   "main": "./dist/index.js",
@@ -8,8 +8,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
-    "prepack": "node scripts/prepare-stylelint-bundle.mjs && npm run build"
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
+    "prepack": "node --experimental-strip-types scripts/prepare-stylelint-bundle.ts && npm run build"
   },
   "exports": {
     ".": {
@@ -19,6 +19,18 @@
     "./files": {
       "types": "./dist/files.d.ts",
       "import": "./dist/files.js"
+    },
+    "./presets": {
+      "types": "./dist/presets.d.ts",
+      "import": "./dist/presets.js"
+    },
+    "./presets/package": {
+      "types": "./dist/preset-package.d.ts",
+      "import": "./dist/preset-package.js"
+    },
+    "./presets/application": {
+      "types": "./dist/preset-application.d.ts",
+      "import": "./dist/preset-application.js"
     }
   },
   "dependencies": {
@@ -36,7 +48,7 @@
     "stylelint-config-standard-scss": "17.0.0",
     "stylelint-scss": "7.3.0",
     "typescript-eslint": "^8.57.0",
-    "zlook": "0.0.3"
+    "zlook": "0.0.4"
   },
   "license": "(MIT OR Apache-2.0)",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
@@ -61,7 +73,8 @@
   },
   "devDependencies": {
     "@types/node": "^25.4.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "zlocale": "0.0.4"
   },
   "bundleDependencies": [
     "stylelint",
@@ -69,5 +82,13 @@
     "stylelint-config-standard-scss",
     "stylelint-scss",
     "postcss-scss"
-  ]
+  ],
+  "peerDependencies": {
+    "zlocale": "0.0.4"
+  },
+  "peerDependenciesMeta": {
+    "zlocale": {
+      "optional": true
+    }
+  }
 }

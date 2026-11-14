@@ -1,1 +1,1 @@
-export {createJsdomEnvironment, requireDom} from './env.js';
+export { createJsdomEnvironment, requireDom } from './env.js';

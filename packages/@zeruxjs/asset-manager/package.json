@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/asset-manager",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Asset Manager, Help naming asset and manage them on the go, best for managing branding and your identity assets by arrangeing them, can be for Logo, Images, Video but not limited to assets, can be add Color, font and more",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "keywords": [
@@ -32,7 +32,32 @@
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "@zeruxjs/files": "0.0.4",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@zeruxjs/files": "0.0.4"
+  },
+  "peerDependenciesMeta": {
+    "@zeruxjs/files": {
+      "optional": true
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage.d.ts",
+      "default": "./dist/storage.js"
+    },
+    "./brand": {
+      "types": "./dist/brand.d.ts",
+      "default": "./dist/brand.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
   }
 }

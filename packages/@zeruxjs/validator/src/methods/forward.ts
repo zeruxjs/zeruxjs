@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseValidation,
@@ -12,13 +13,10 @@ import type { RequiredPath, ValidPath } from './types/forward.js';
 // to the returnd object in a type-safe way, similar to how the `fallback`
 // method works.
 
-/**
- * Forwards the issues of the passed validation action.
- *
- * @param action The validation action.
- * @param path The path to forward the issues to.
- *
- * @returns The modified action.
+/** Append a trusted private target path only to newly created issue objects; this changes diagnostic placement, not value validation or authorization.
+ * @param {BaseValidation<TInput, TInput, TIssue>} action - Borrowed explicitly registered validation action, never loaded from a model/input string.
+ * @param {ValidPath<TInput, TPath>} path - Borrowed trusted declared diagnostic target; traversal can read host-owned properties and stops at a falsy value.
+ * @returns {BaseValidation<TInput, TInput, TIssue>} Declared borrowed metadata/child or fresh outer action/schema; no new disposal owner or permission boundary.
  */
 // @__NO_SIDE_EFFECTS__
 export function forward<
@@ -31,12 +29,18 @@ export function forward<
 ): BaseValidation<TInput, TInput, TIssue> {
   return {
     ...action,
+    /** Execute the borrowed action and extend only new private issue paths; do not mutate already-existing issue locations.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset and issue identities.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root budgets/signal/private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Dataset retaining the action result; property/callback exceptions propagate and paths are not public-safe.
+     */
     '~run'(dataset, config) {
       // Create copy of previous issues
+      /** Shallow snapshot of pre-existing issue identities; only new objects receive forwarded paths. */
       const prevIssues = dataset.issues && [...dataset.issues];
 
       // Run validation action
-      dataset = action['~run'](dataset, config);
+      dataset = _runSchema(action, dataset, config);
 
       // If dataset contains issues, forward newly added issues
       if (dataset.issues) {
@@ -48,10 +52,12 @@ export function forward<
             // Try to forward issue to end of path list
             for (const key of path) {
               // Create path value variable
-              // @ts-expect-error
+              /** Borrowed current path value; host getters can run and the legacy walk stops when this value is falsy. */
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               const pathValue: unknown = pathInput[key];
 
               // Create path item for current key
+              /** Private structural diagnostic segment retaining original input/key/value, not a safe client payload. */
               const pathItem: IssuePathItem = {
                 type: 'unknown',
                 origin: 'value',
@@ -64,7 +70,7 @@ export function forward<
               if (issue.path) {
                 issue.path.push(pathItem);
               } else {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 issue.path = [pathItem];
               }
 

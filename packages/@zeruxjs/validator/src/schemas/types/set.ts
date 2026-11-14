@@ -11,33 +11,33 @@ import type {
  */
 export interface SetIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed native-collection schema category; rejected input remains private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable collection discriminator for structured issue consumers.
    */
   readonly type: 'set';
   /**
-   * The expected property.
+   * Private native-type diagnostic; no input conversion or authorization is implied.
    */
   readonly expected: 'Set';
 }
 
 /**
- * Infer set input type.
+ * Infer accepted native collection keys/values from the declared child input types.
  */
 export type InferSetInput<
   TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 > = Set<InferInput<TValue>>;
 
 /**
- * Infer set output type.
+ * Infer native collection output after child transforms; runtime key/value collisions still use native equality.
  */
 export type InferSetOutput<
   TValue extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 > = Set<InferOutput<TValue>>;

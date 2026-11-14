@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -20,26 +21,26 @@ import { getFallback } from './getFallback.js';
  */
 export type FallbackAsync<
   TSchema extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
 > =
   | MaybeDeepReadonly<InferOutput<TSchema>>
   | ((
-    dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,
-    config?: Config<InferIssue<TSchema>>
-  ) => MaybePromise<MaybeDeepReadonly<InferOutput<TSchema>>>);
+      dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,
+      config?: Config<InferIssue<TSchema>>
+    ) => MaybePromise<MaybeDeepReadonly<InferOutput<TSchema>>>);
 
 /**
  * Schema with fallback async type.
  */
 export type SchemaWithFallbackAsync<
   TSchema extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   TFallback extends FallbackAsync<TSchema>,
 > = Omit<TSchema, 'async' | '~standard' | '~run'> & {
   /**
-   * The fallback value.
+   * Trusted output literal/factory retained by reference; type compatibility is not runtime revalidation.
    */
   readonly fallback: TFallback;
   /**
@@ -58,10 +59,10 @@ export type SchemaWithFallbackAsync<
   /**
    * Parses unknown input values.
    *
-   * @param dataset The input dataset.
-   * @param config The configuration.
+   * @param {UnknownDataset} dataset - Current private input dataset.
+   * @param {Config<BaseIssue<unknown>>} config - Root-derived private budgets and cooperative signal.
    *
-   * @returns The output dataset.
+   * @returns {Promise<OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>>>} Actual schema/factory settlement; replacement identity remains borrowed.
    *
    * @internal
    */
@@ -72,18 +73,18 @@ export type SchemaWithFallbackAsync<
 };
 
 /**
- * Returns a fallback value as output if the input does not match the schema.
+ * Replace ordinary schema rejection with an explicitly trusted fallback value/factory. Operational, cancellation and budget failures still propagate; the replacement is not revalidated by the wrapped schema.
  *
- * @param schema The schema to catch.
- * @param fallback The fallback value.
+ * @param {TSchema} schema - Trusted declared schema whose ordinary issue result may select a fallback.
+ * @param {TFallback} fallback - Trusted output-compatible literal/factory retained by reference, not arbitrary source code.
  *
- * @returns The passed schema.
+ * @returns {SchemaWithFallbackAsync<TSchema, TFallback>} Inert fallback wrapper; literal/output identity is not deep-cloned.
  */
 // @__NO_SIDE_EFFECTS__
 export function fallbackAsync<
   const TSchema extends
-  | BaseSchema<unknown, unknown, BaseIssue<unknown>>
-  | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
+    | BaseSchema<unknown, unknown, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>,
   const TFallback extends FallbackAsync<TSchema>,
 >(
   schema: TSchema,
@@ -97,12 +98,13 @@ export function fallbackAsync<
       return _getStandardProps(this);
     },
     async '~run'(dataset, config) {
-      const outputDataset = await schema['~run'](dataset, config);
+      /** Completed schema dataset; only ordinary issues select replacement, never operational exceptions. */
+      const outputDataset = await _runSchema(schema, dataset, config);
       return outputDataset.issues
         ? {
-          typed: true,
-          value: await getFallback(this, outputDataset, config),
-        }
+            typed: true,
+            value: await getFallback(this, outputDataset, config),
+          }
         : outputDataset;
     },
   };

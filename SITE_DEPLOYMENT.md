@@ -42,8 +42,8 @@ The combined build is written to `.site-build/` at the repository root. Each app
 
 `.github/workflows/github-pages-deploy.yml` runs for every push to `master` or `version/*` and supports manual runs from those branches:
 
-1. Install locked dependencies with package lifecycle scripts disabled. Build Zuixs and the TypeScript, performance and search workspace tooling in parallel. The exporter does not build the full framework runtime or native database adapters.
-2. Build all apps declared in `sites.config.mjs` concurrently, with live START/READY logs.
+1. Install locked dependencies with package lifecycle scripts disabled. Build Zuixs and the TypeScript, performance, search and security workspace tooling in parallel. The exporter does not build the full framework runtime or native database adapters.
+2. Build all apps declared in `sites.config.ts` concurrently, with live START/READY logs.
 3. Generate the shared homepage and validate cross-site links, assets and anchors.
 4. Create/update `master-site` through a temporary worktree and a **normal push**, preserving its history.
 5. Upload the complete static branch tree, including other preserved site folders.
@@ -57,14 +57,14 @@ Existing `CNAME` and other unowned files on the output branch are preserved. In 
 
 ## Add another site
 
-Add a disjoint entry to `sites.config.mjs`:
+Add a disjoint entry to `sites.config.ts`:
 
 ```js
 {
   id: 'zyrojs',
   mount: '/zyrojs',
   directory: 'apps/zyro-docs',
-  build: ['node', 'scripts/build.mjs'],
+  build: ['node', '--experimental-strip-types', 'scripts/build.ts'],
   watch: ['src', 'public', 'scripts'],
   output: 'dist/zyrojs'
 }
@@ -82,13 +82,13 @@ App builds validate their content. The combined builder checks the complete new 
 
 A GitHub Pages settings/deployment failure does not lose the successfully published `master-site` build; fix the setting and rerun. No source branch is force-pushed. `.site-published/` and temporary worktrees are generated staging, not source files to commit.
 
-Site tooling uses the current checkout, including unpublished changes: the locked install links local npm workspaces, CI verifies the real paths of Zuixs and the TypeScript/performance/search packages under `packages/`, then builds those sources before building any site. Only external dependencies come from the npm registry. There is no need to publish these workspace changes first.
+Site tooling uses the current checkout, including unpublished changes: the locked install links local npm workspaces, CI verifies the real paths of Zuixs and the TypeScript/performance/search/security packages under `packages/`, then builds those sources before building any site. Only external dependencies come from the npm registry. There is no need to publish these workspace changes first.
 
 ## Markdown stays Markdown
 
 The published tree includes `/index.md`, `/zeruxjs.md` and raw Markdown alternatives for every docs route. GitHub Actions verifies their content hashes before publishing, and `verifySites` checks them again in the complete output-branch tree. The workflow deploys the uploaded static artifact directly; it has no Jekyll or Markdown-to-HTML step. Keep `.nojekyll` in the output root if hosting the branch directly. Do not add a subsequent site generator or SPA fallback that rewrites `.md` requests. GitHub Pages controls response MIME headers, so browsers may display or download the raw content.
 
-Palette and motion changes in `scripts/site-design.mjs`, and theme changes in `scripts/site-theme.mjs`, trigger the Pages workflow alongside template/content changes. All of these build from the checkout without publishing workspace packages to npm.
+Palette and motion changes in `scripts/site-design.ts`, and theme changes in `scripts/site-theme.ts`, trigger the Pages workflow alongside template/content changes. All of these build from the checkout without publishing workspace packages to npm.
 
 ## Version branch previews
 

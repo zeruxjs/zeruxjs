@@ -1,0 +1,37 @@
+#!/usr/bin/env node
+/** Real installed artifact inspection; manual SPDX compatibility review still required. */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { inspectInstalledLicenses } from './workspace-installed-licenses.ts';
+/** Local value for args. */
+const args = process.argv.slice(2);
+if (args.length > 1 || args.some((arg) => arg !== '--strict')) {
+  console.error(
+    'Usage: node --experimental-strip-types scripts/installed-license-review.ts [--strict]'
+  );
+  process.exit(2);
+}
+/** Local value for root. */
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/** Local value for lock. */
+const lock = JSON.parse(
+  fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8')
+);
+/** Local value for result. */
+const result = inspectInstalledLicenses(root, lock);
+console.log(
+  JSON.stringify(
+    {
+      status: result.ok ? 'metadata-checked' : 'unresolved',
+      scope:
+        'Installed external artifacts; not a legal opinion or license compatibility approval',
+      ...result,
+    },
+    null,
+    2
+  )
+);
+if (args.includes('--strict') && !result.ok) {
+  process.exitCode = 1;
+}

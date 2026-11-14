@@ -80,7 +80,7 @@ function reactive(target) {
       signals[prop].value = value;
       obj[prop] = value;
       return true;
-    }
+    },
   });
 }
 
@@ -116,20 +116,22 @@ function h(type, props, ...children) {
   return {
     type,
     props: props || {},
-    children: children.flat().filter((child) => child !== null && child !== void 0 && child !== false)
+    children: children
+      .flat()
+      .filter((child) => child !== null && child !== void 0 && child !== false),
   };
 }
 
 // src/dom/render.ts
 function mount(vnode, container) {
-  if (vnode == null || typeof vnode === "boolean") return;
-  if (typeof vnode === "string" || typeof vnode === "number") {
+  if (vnode == null || typeof vnode === 'boolean') return;
+  if (typeof vnode === 'string' || typeof vnode === 'number') {
     const el = document.createTextNode(String(vnode));
     container.appendChild(el);
     return el;
   }
-  if (typeof vnode === "function") {
-    const el = document.createTextNode("");
+  if (typeof vnode === 'function') {
+    const el = document.createTextNode('');
     effect(() => {
       el.textContent = String(vnode());
     });
@@ -137,7 +139,7 @@ function mount(vnode, container) {
     return el;
   }
   const vn = vnode;
-  if (typeof vn.type === "string") {
+  if (typeof vn.type === 'string') {
     const el = document.createElement(vn.type);
     vn.el = el;
     Object.entries(vn.props).forEach(([key, value]) => {
@@ -147,17 +149,17 @@ function mount(vnode, container) {
     container.appendChild(el);
     return el;
   }
-  if (typeof vn.type === "function") {
+  if (typeof vn.type === 'function') {
     const componentVNode = vn.type(vn.props);
     return mount(componentVNode, container);
   }
 }
 function patchProp(el, key, prevValue, nextValue) {
-  if (key.startsWith("on")) {
+  if (key.startsWith('on')) {
     const eventName = key.slice(2).toLowerCase();
     if (prevValue) el.removeEventListener(eventName, prevValue);
     if (nextValue) el.addEventListener(eventName, nextValue);
-  } else if (typeof nextValue === "function") {
+  } else if (typeof nextValue === 'function') {
     effect(() => {
       el[key] = nextValue();
     });
@@ -174,7 +176,7 @@ function patch(container, vnode, oldVNode) {
       oldVNode.el.parentNode.replaceChild(newEl, oldVNode.el);
     }
   } else {
-    const el = vnode.el = oldVNode.el;
+    const el = (vnode.el = oldVNode.el);
     const oldProps = oldVNode.props;
     const newProps = vnode.props;
     for (const key in newProps) {
@@ -232,5 +234,5 @@ export {
   useMemo,
   useReactive,
   useRef,
-  useState
+  useState,
 };

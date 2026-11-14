@@ -11,24 +11,22 @@ import { _addIssue } from '../utils/index.js';
  */
 export interface Base64Issue<TInput extends string> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'base64';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: null;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `"${string}"`;
-  /**
-   * The Base64 regex.
-   */
+  /** Borrowed compatibility RegExp shared with public regex exports; hosts must not mutate it or treat a syntax match as authorization. */
   readonly requirement: RegExp;
 }
 
@@ -40,49 +38,46 @@ export interface Base64Action<
   TMessage extends ErrorMessage<Base64Issue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, Base64Issue<TInput>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'base64';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof base64;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: null;
-  /**
-   * The Base64 regex.
-   */
+  /** Borrowed compatibility RegExp shared with public regex exports; hosts must not mutate it or treat a syntax match as authorization. */
   readonly requirement: RegExp;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a [Base64](https://en.wikipedia.org/wiki/Base64) validation action.
- *
- * @returns A Base64 action.
+/** Check the compatibility padded Base64 alphabet/group pattern without decoding bytes or enforcing canonical padding bits. This action neither establishes the input schema nor grants permissions.
+ * @returns {Base64Action<TInput, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function base64<TInput extends string>(): Base64Action<
   TInput,
   undefined
 >;
 
-/**
- * Creates a [Base64](https://en.wikipedia.org/wiki/Base64) validation action.
- *
- * @param message The error message.
- *
- * @returns A Base64 action.
+/** Check the compatibility padded Base64 alphabet/group pattern without decoding bytes or enforcing canonical padding bits. This action neither establishes the input schema nor grants permissions.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {Base64Action<TInput, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function base64<
   TInput extends string,
   const TMessage extends ErrorMessage<Base64Issue<TInput>> | undefined,
 >(message: TMessage): Base64Action<TInput, TMessage>;
 
+/** Check the compatibility padded Base64 alphabet/group pattern without decoding bytes or enforcing canonical padding bits. This action neither establishes the input schema nor grants permissions.
+ * @param {ErrorMessage<Base64Issue<string>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {Base64Action<string, ErrorMessage<Base64Issue<string>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function base64(
   message?: ErrorMessage<Base64Issue<string>>
@@ -95,6 +90,11 @@ export function base64(
     expects: null,
     requirement: BASE64_REGEX,
     message,
+    /** Check the compatibility padded Base64 alphabet/group pattern without decoding bytes or enforcing canonical padding bits. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native regex errors propagate without any remote lookup, input evaluation or mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement.test(dataset.value)) {
         _addIssue(this, 'Base64', dataset, config);

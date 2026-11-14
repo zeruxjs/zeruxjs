@@ -1,3 +1,4 @@
+/** Explicit protocol helpers and lifecycle adapters; capability support is implementation-specific. */
 export * from './mcp/index.js';
 export * from './json-rpc.js';
 export * from './connect.js';
@@ -6,3 +7,5 @@ export * from './gateway.js';
 export * from './transport.js';
 export * from './webtransport.js';
 export * from './connect-stream.js';
+export * from './lifecycle.js';
+export * from './node-adapters.js';

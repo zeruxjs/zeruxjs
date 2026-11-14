@@ -1,0 +1,65 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { discoverPackages, repositoryRoot, root } from './content.ts';
+
+/** Read a workspace reference snapshot without executing package code.
+ * @returns {Promise<object[]>} Public manifests and README text. Reads package metadata only. */
+export async function workspaceReference() {
+  /** Public package metadata/README snapshot; none of the discovered package code is executed. */
+  const packages = await discoverPackages();
+  return Promise.all(
+    packages.map(async (item) => ({
+      ...item,
+      readme: await fs
+        .readFile(path.join(repositoryRoot, item.source, 'README.md'), 'utf8')
+        .catch((error) => {
+          if (error.code !== 'ENOENT') {
+            throw error;
+          }
+          return '';
+        }),
+    }))
+  );
+}
+/** Load live or frozen package references for a docs version.
+ *
+ * @param {object} version Version configuration.
+ * @returns {Promise<object[]>} Manifest snapshot. Reads workspace or an explicit version-local snapshot.
+ */
+export async function versionReference(version) {
+  if (version.reference === 'snapshot') {
+    /** Frozen reference candidate checked for schema/version before exposing archived package records. */
+    const data = JSON.parse(
+      await fs.readFile(
+        path.join(root, 'src/docs', version.id, 'reference.snapshot.json'),
+        'utf8'
+      )
+    );
+    if (
+      data.schema !== 1 ||
+      data.version !== version.id ||
+      !Array.isArray(data.packages)
+    ) {
+      throw new Error(`Invalid reference snapshot for ${version.id}`);
+    }
+    return data.packages;
+  }
+  if (version.reference !== 'workspace') {
+    throw new Error(
+      `Select workspace or snapshot references for ${version.id}`
+    );
+  }
+  /** Public package metadata/README snapshot; none of the discovered package code is executed. */
+  const packages = await workspaceReference();
+  /** Live framework manifest anchors preview compatibility; no version is inferred from roadmap notes. */
+  const framework = packages.find((item) => item.name === 'zeruxjs');
+  // Preview docs can advance while explicitly pinning their current package references.
+  /** Explicit preview package version when configured, otherwise the documentation version. */
+  const expectedVersion = version.packageVersion ?? version.id;
+  if (framework?.version !== expectedVersion) {
+    throw new Error(
+      `Framework ${framework?.version} differs from expected package version ${expectedVersion} for live docs ${version.id}; freeze references before changing the framework docs version`
+    );
+  }
+  return packages;
+}

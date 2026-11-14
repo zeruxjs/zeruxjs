@@ -1,6 +1,32 @@
-/** No browser bundles/dependencies required: the generated bootstrap is self-contained. */
-export function browserScript(config:{endpoint:string;site:string;debug:boolean;autoEvents?:string[];defaultConsent?:'granted'|'denied'}):string{
-  const settings=JSON.stringify(config).replace(/</g,'\\u003c');
+/** Generate a self-contained document-lifetime bootstrap from explicit public collection settings. No script executes on the server and no provider code/credentials are included.
+ * @param {{
+  endpoint: string;
+  site: string;
+  debug: boolean;
+  autoEvents?: string[];
+  defaultConsent?: 'granted' | 'denied';
+}} config - Trusted public collector endpoint/site/debug/automatic trigger kinds and explicit initial consent.
+ * @param {string} config.endpoint - Explicit collection endpoint, not a destination credential.
+ * @param {string} config.site - Host-selected public site identifier.
+ * @param {boolean} config.debug - Explicit public diagnostic switch.
+ * @param {string[]} config.autoEvents - Optional published automatic trigger types.
+ * @param {'granted' | 'denied'} config.defaultConsent - Optional initial telemetry policy.
+ * @returns {string} Script-safe bootstrap text; generated native listeners belong to the document, not a mount/unmount scope.
+ */
+export function browserScript(config: {
+  /** Explicit public collection endpoint, never a destination-secret URL. */
+  endpoint: string;
+  /** Host-selected public site identity; collector still verifies origin/site binding. */
+  site: string;
+  /** Explicit fixed diagnostic switch; browser config cannot overwrite it. */
+  debug: boolean;
+  /** Published enabled automatic trigger kinds; absent does not enable tracking automatically. */
+  autoEvents?: string[];
+  /** Explicit telemetry state, fallback granted; host must establish its privacy/consent policy. */
+  defaultConsent?: 'granted' | 'denied';
+}): string {
+  /** JSON public settings escaped against HTML script termination; generated source bytes otherwise remain stable. */
+  const settings = JSON.stringify(config).replace(/</g, '\\u003c');
   return `(function(){'use strict';
 if(window.__zeruxTtagLoaded===true)return;window.__zeruxTtagLoaded=true;
 var cfg=${settings}, alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -21,21 +47,21 @@ function flush(){scheduled=false;var batch=pending.splice(0);for(var i=0;i<batch
 function queue(event){if(consent!=='granted')return null;var id=makeId();
   var item={requestId:id,name:String(event.event),source:'web',site:cfg.site,pathname:location.pathname,consent:'granted',properties:safe(event.properties),data:safe(state)};
   if(typeof state.sessionId==='string'&&state.sessionId.length<=128)item.sessionId=state.sessionId;
-  pending.push(item);if(!scheduled){scheduled=true;Promise.resolve().then(flush);}return id;
+  if(pending.length>=100||new Blob([JSON.stringify(item)]).size>16384)return null;pending.push(item);if(!scheduled){scheduled=true;Promise.resolve().then(flush);}return id;
 }
 var originalPush=data.push.bind(data);
-data.push=function(){var result=originalPush.apply(data,arguments);for(var i=0;i<arguments.length;i++){var item=arguments[i];if(item&&typeof item==='object'&&!Array.isArray(item)&&typeof item.event==='string'&&item.event)queue(item);}return result;};
+data.push=function(){var result=originalPush.apply(data,arguments);if(data.length>500)data.splice(0,data.length-500);for(var i=0;i<arguments.length;i++){var item=arguments[i];if(item&&typeof item==='object'&&!Array.isArray(item)&&typeof item.event==='string'&&item.event)queue(item);}return result;};
 function ttag(command,a,b){if(command==='event'){
-    var event={event:String(a),properties:safe(b)};originalPush(event);return queue(event);
+    var event={event:String(a),properties:safe(b)};originalPush(event);if(data.length>500)data.splice(0,data.length-500);return queue(event);
   }
-  if(command==='set'){if(typeof a==='string'&&/^[A-Za-z][A-Za-z0-9_.:-]{0,95}$/.test(a)&&a!=='constructor'&&a!=='prototype'&&a!=='__proto__'&&(typeof b==='string'&&b.length<=1024||typeof b==='number'&&Number.isFinite(b)||typeof b==='boolean'||b===null)){state[a]=b;data.push({set:a,value:b});return true;}return false;}
+  if(command==='set'){if((Object.prototype.hasOwnProperty.call(state,a)||Object.keys(state).length<40)&&typeof a==='string'&&/^[A-Za-z][A-Za-z0-9_.:-]{0,95}$/.test(a)&&a!=='constructor'&&a!=='prototype'&&a!=='__proto__'&&(typeof b==='string'&&b.length<=1024||typeof b==='number'&&Number.isFinite(b)||typeof b==='boolean'||b===null)){state[a]=b;data.push({set:a,value:b});return true;}return false;}
   if(command==='get')return a==='site'?cfg.site:a==='debug'?cfg.debug:state[a];
   if(command==='consent'){if(a==='granted'||a==='denied'){consent=a;if(a==='denied')pending.length=0;log('consent',a);return true;}return false;}
   if(command==='config')return false; // Site and debug flags are controlled by the server.
   return false;
 }
 window.ttag=ttag;
-for(var i=0,initial=data.slice();i<initial.length;i++)if(initial[i]&&typeof initial[i].event==='string')queue(initial[i]);
+for(var i=0,initial=data.slice(-500);i<initial.length;i++)if(initial[i]&&typeof initial[i].event==='string')queue(initial[i]);
 if(document.addEventListener){document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flush();});window.addEventListener('pagehide',flush);
  var auto=cfg.autoEvents||[];
  if(auto.indexOf('pageview')!==-1)ttag('event','page_view',{path:location.pathname});

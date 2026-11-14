@@ -6,5 +6,8 @@ export * from './rum.js';
 export * from './utils/webVitals.js';
 export * from './utils/lighthouse.js';
 
-export {installNavigationPrefetch} from './navigation.js';
-export type {NavigationPrefetchOptions,NavigationPrefetch} from './navigation.js';
+export { installNavigationPrefetch } from './navigation.js';
+export type {
+  NavigationPrefetchOptions,
+  NavigationPrefetch,
+} from './navigation.js';

@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/zyro",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Observable state, selectors, external-store bridges and asynchronous observation.",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "node --test test/*.test.mjs",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "keywords": [
@@ -32,7 +32,30 @@
     "access": "public"
   },
   "devDependencies": {
+    "@types/node": "^25.4.0",
     "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "zyrojs": "0.0.4"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./renderer": {
+      "types": "./dist/renderer.d.ts",
+      "import": "./dist/renderer.js",
+      "require": "./dist/renderer.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "zyrojs": "0.0.4"
+  },
+  "peerDependenciesMeta": {
+    "zyrojs": {
+      "optional": true
+    }
   }
 }

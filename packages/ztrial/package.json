@@ -1,6 +1,6 @@
 {
   "name": "ztrial",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Modular testing framework and assertion toolkit for ZeruxJS, ZyroJS and JavaScript",
   "type": "module",
   "main": "./dist/index.js",
@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "exports": {
@@ -16,9 +16,24 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./reports": {
+      "types": "./dist/reports/index.d.ts",
+      "import": "./dist/reports/index.js"
+    },
+    "./http": {
+      "types": "./dist/http/index.d.ts",
+      "import": "./dist/http/index.js"
+    },
     "./jsdom": "./dist/adapters/jsdom/setup.js",
-    "./playwright": "./dist/adapters/playwright/setup.js",
-    "./vitest": "./dist/adapters/vitest/setup.js"
+    "./playwright": {
+      "types": "./dist/adapters/playwright/setup.d.ts",
+      "import": "./dist/adapters/playwright/setup.js"
+    },
+    "./vitest": "./dist/adapters/vitest/setup.js",
+    "./experiments": {
+      "types": "./dist/experiments/index.d.ts",
+      "import": "./dist/experiments/index.js"
+    }
   },
   "license": "MIT",
   "bin": {
@@ -28,7 +43,8 @@
     "dist/",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "examples/"
   ],
   "publishConfig": {
     "access": "public"

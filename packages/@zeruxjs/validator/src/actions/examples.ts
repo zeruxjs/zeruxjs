@@ -3,14 +3,16 @@ import type { BaseMetadata } from '../types/index.js';
 /**
  * Examples action interface.
  */
-export interface ExamplesAction<TInput, TExamples extends readonly TInput[]>
-  extends BaseMetadata<TInput> {
+export interface ExamplesAction<
+  TInput,
+  TExamples extends readonly TInput[],
+> extends BaseMetadata<TInput> {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'examples';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof examples;
   /**
@@ -19,13 +21,9 @@ export interface ExamplesAction<TInput, TExamples extends readonly TInput[]>
   readonly examples: TExamples;
 }
 
-/**
- * Creates an examples metadata action.
- *
- * @param examples_ The examples.
- *
- * @returns An examples action.
- *
+/** Capture borrowed example metadata without validating, executing, cloning or redacting its values. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {TExamples} examples_ - Borrowed readonly example list; metadata readers still need output-context escaping and secret policy.
+ * @returns {ExamplesAction<TInput, TExamples>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  * @beta
  */
 // @__NO_SIDE_EFFECTS__

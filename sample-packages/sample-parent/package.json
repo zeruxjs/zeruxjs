@@ -1,0 +1,7 @@
+{
+  "name": "sample-parent",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./src/index.ts",
+  "private": true
+}

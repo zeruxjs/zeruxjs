@@ -10,56 +10,44 @@ export interface BaseValidation<
   TOutput,
   TIssue extends BaseIssue<unknown>,
 > {
-  /**
-   * The object kind.
-   */
+  /** Fixed validation category used by pipeline dispatch; not a permission grant. */
   readonly kind: 'validation';
-  /**
-   * The validation type.
-   */
+  /** Stable authored validation discriminator used by structured diagnostics. */
   readonly type: string;
-  /**
-   * The validation reference.
+  /** Authored factory identity used by metadata/diagnostics; never resolve this from submitted source or a package name.
+   * @param {any[]} args - Trusted authored constructor arguments; this reference is not a general-purpose execution interface.
+   * @returns {BaseValidation<any, any, BaseIssue<unknown>>} Inert validation descriptor retaining declared capabilities; no source string is evaluated.
    */
   readonly reference: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...args: any[]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => BaseValidation<any, any, BaseIssue<unknown>>;
-  /**
-   * The expected property.
-   */
+  /** Private diagnostic expectation; null means the action has no fixed textual expectation. */
   readonly expects: string | null;
-  /**
-   * Whether it's async.
-   */
+  /** Explicit sync/async contract; synchronous parsing rejects async work instead of invoking it. */
   readonly async: false;
-  /**
-   * Validates known input values.
-   *
-   * @param dataset The input dataset.
-   * @param config The configuration.
-   *
-   * @returns The output dataset.
-   *
+  /** Refine the current dataset under the shared root execution policy; pipeline typing controls whether a value can be checked.
+   * @param {OutputDataset<TInput, BaseIssue<unknown>>} dataset - Private candidate dataset; raw values and issue objects are not safe public diagnostics.
+   * @param {Config<BaseIssue<unknown>>} config - Root budgets, cooperative cancellation and private issue policy; callbacks own external work they start.
+   * @returns {OutputDataset<TOutput, BaseIssue<unknown> | TIssue>} Declared output/private issue dataset; budget failures and operational exceptions propagate without implying rollback.
    * @internal
    */
   readonly '~run': (
     dataset: OutputDataset<TInput, BaseIssue<unknown>>,
     config: Config<BaseIssue<unknown>>
   ) => OutputDataset<TOutput, BaseIssue<unknown> | TIssue>;
-  /**
-   * The input, output and issue type.
-   *
+  /** Optional type-only input/output/issue inference; it stores no runtime validator or submitted value.
    * @internal
    */
   readonly '~types'?:
-  | {
-    readonly input: TInput;
-    readonly output: TOutput;
-    readonly issue: TIssue;
-  }
-  | undefined;
+    | {
+        /** Declared accepted input type; this field is inference-only and is absent from normal runtime descriptors. */
+        readonly input: TInput;
+        /** Declared parsed output type; input and output need not be identical after child transforms. */
+        readonly output: TOutput;
+        /** Declared private issue union; transforms and operational exceptions are distinct outcomes. */
+        readonly issue: TIssue;
+      }
+    | undefined;
 }
 
 /**
@@ -73,28 +61,21 @@ export interface BaseValidationAsync<
   BaseValidation<TInput, TOutput, TIssue>,
   'reference' | 'async' | '~run'
 > {
-  /**
-   * The validation reference.
+  /** Authored factory identity used by metadata/diagnostics; never resolve this from submitted source or a package name.
+   * @param {any[]} args - Trusted authored constructor arguments; this reference is not a general-purpose execution interface.
+   * @returns {BaseValidation<any, any, BaseIssue<unknown>> | BaseValidationAsync<any, any, BaseIssue<unknown>>} Inert validation descriptor retaining declared capabilities; no source string is evaluated.
    */
   readonly reference: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...args: any[]
-  ) => // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) =>
     | BaseValidation<any, any, BaseIssue<unknown>>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     | BaseValidationAsync<any, any, BaseIssue<unknown>>;
-  /**
-   * Whether it's async.
-   */
+  /** Explicit sync/async contract; synchronous parsing rejects async work instead of invoking it. */
   readonly async: true;
-  /**
-   * Validates known input values.
-   *
-   * @param dataset The input dataset.
-   * @param config The configuration.
-   *
-   * @returns The output dataset.
-   *
+  /** Refine the current dataset under the shared root execution policy; pipeline typing controls whether a value can be checked.
+   * @param {OutputDataset<TInput, BaseIssue<unknown>>} dataset - Private candidate dataset; raw values and issue objects are not safe public diagnostics.
+   * @param {Config<BaseIssue<unknown>>} config - Root budgets, cooperative cancellation and private issue policy; callbacks own external work they start.
+   * @returns {Promise<OutputDataset<TOutput, BaseIssue<unknown> | TIssue>>} Declared output/private issue dataset; budget failures and operational exceptions propagate without implying rollback.
    * @internal
    */
   readonly '~run': (
@@ -107,7 +88,6 @@ export interface BaseValidationAsync<
  * Generic validation type.
  */
 export type GenericValidation<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,
@@ -117,7 +97,6 @@ export type GenericValidation<
  * Generic validation async type.
  */
 export type GenericValidationAsync<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,

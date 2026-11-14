@@ -13,22 +13,23 @@ export type PartialInput = Record<string, unknown> | ArrayLike<unknown>;
 /**
  * Partial check issue interface.
  */
-export interface PartialCheckIssue<TInput extends PartialInput>
-  extends BaseIssue<TInput> {
+export interface PartialCheckIssue<
+  TInput extends PartialInput,
+> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed private action issue category.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'partial_check';
   /**
-   * The expected input.
+   * Private expectation for the declared refinement, not proof of complete validation.
    */
   readonly expected: null;
   /**
-   * The validation function.
+   * Borrowed trusted predicate reference retained for private diagnostics; no function source is evaluated.
    */
   readonly requirement: (input: TInput) => MaybePromise<boolean>;
 }
@@ -38,18 +39,18 @@ export interface PartialCheckIssue<TInput extends PartialInput>
  */
 type KeyOf<TValue> =
   IsAny<TValue> extends true
-  ? never
-  : TValue extends readonly unknown[]
-  ? number extends TValue['length']
-  ? '$' // For arrays we use '$' as a wildcard
-  : {
-    [TKey in keyof TValue]: TKey extends `${infer TIndex extends number}`
-    ? TIndex
-    : never;
-  }[number]
-  : TValue extends Record<string, unknown>
-  ? keyof TValue & (string | number)
-  : never;
+    ? never
+    : TValue extends readonly unknown[]
+      ? number extends TValue['length']
+        ? '$' // For arrays we use '$' as a wildcard
+        : {
+            [TKey in keyof TValue]: TKey extends `${infer TIndex extends number}`
+              ? TIndex
+              : never;
+          }[number]
+      : TValue extends Record<string, unknown>
+        ? keyof TValue & (string | number)
+        : never;
 
 /**
  * Path type.
@@ -81,28 +82,28 @@ type LazyPath<
 > =
   // If path to check is empty, return last valid path
   TPathToCheck extends readonly []
-  ? TValidPath
-  : // If first key of path to check is valid, continue with next key
-  TPathToCheck extends readonly [
-    infer TFirstKey extends KeyOf<TValue>,
-    ...infer TPathRest extends Path,
-  ]
-  ? LazyPath<
-    TFirstKey extends keyof TValue
-    ? TValue[TFirstKey]
-    : TFirstKey extends '$'
-    ? TValue extends readonly unknown[]
-    ? TValue[number]
-    : never
-    : never,
-    TPathRest,
-    readonly [...TValidPath, TFirstKey]
-  >
-  : // If current value has valid keys, return them
-  IsNever<KeyOf<TValue>> extends false
-  ? readonly [...TValidPath, KeyOf<TValue>]
-  : // Otherwise, return only last valid path
-  TValidPath;
+    ? TValidPath
+    : // If first key of path to check is valid, continue with next key
+      TPathToCheck extends readonly [
+          infer TFirstKey extends KeyOf<TValue>,
+          ...infer TPathRest extends Path,
+        ]
+      ? LazyPath<
+          TFirstKey extends keyof TValue
+            ? TValue[TFirstKey]
+            : TFirstKey extends '$'
+              ? TValue extends readonly unknown[]
+                ? TValue[number]
+                : never
+              : never,
+          TPathRest,
+          readonly [...TValidPath, TFirstKey]
+        >
+      : // If current value has valid keys, return them
+        IsNever<KeyOf<TValue>> extends false
+        ? readonly [...TValidPath, KeyOf<TValue>]
+        : // Otherwise, return only last valid path
+          TValidPath;
 
 /**
  * Returns the path if valid, otherwise the first possible valid path based on
@@ -129,24 +130,24 @@ type DeepPick<TValue, TPath extends Path> = TPath extends readonly [
   ...infer TPathRest extends Path,
 ]
   ? TValue extends readonly unknown[]
-  ? number extends TValue['length']
-  ? TPathRest extends readonly []
-  ? TValue
-  : DeepPick<TValue[number], TPathRest>[]
-  : {
-    [TKey in keyof TValue]: TKey extends `${TFirstKey}`
-    ? TPathRest extends readonly []
-    ? TValue[TKey]
-    : DeepPick<TValue[TKey], TPathRest>
-    : unknown;
-  }
-  : {
-    [TKey in keyof TValue as TKey extends TFirstKey
-    ? TKey
-    : never]: TPathRest extends readonly []
-    ? TValue[TKey]
-    : DeepPick<TValue[TKey], TPathRest>;
-  }
+    ? number extends TValue['length']
+      ? TPathRest extends readonly []
+        ? TValue
+        : DeepPick<TValue[number], TPathRest>[]
+      : {
+          [TKey in keyof TValue]: TKey extends `${TFirstKey}`
+            ? TPathRest extends readonly []
+              ? TValue[TKey]
+              : DeepPick<TValue[TKey], TPathRest>
+            : unknown;
+        }
+    : {
+        [TKey in keyof TValue as TKey extends TFirstKey
+          ? TKey
+          : never]: TPathRest extends readonly []
+          ? TValue[TKey]
+          : DeepPick<TValue[TKey], TPathRest>;
+      }
   : never;
 
 /**
@@ -154,29 +155,29 @@ type DeepPick<TValue, TPath extends Path> = TPath extends readonly [
  */
 type DeepMerge<TValue1, TValue2> = TValue1 extends readonly unknown[]
   ? TValue2 extends readonly unknown[]
-  ? number extends TValue1['length'] | TValue2['length']
-  ? DeepMerge<TValue1[number], TValue2[number]>[]
-  : {
-    [TKey in keyof TValue1]: TKey extends keyof TValue2
-    ? unknown extends TValue1[TKey]
-    ? TValue2[TKey]
-    : TValue1[TKey]
-    : never;
-  }
-  : never
+    ? number extends TValue1['length'] | TValue2['length']
+      ? DeepMerge<TValue1[number], TValue2[number]>[]
+      : {
+          [TKey in keyof TValue1]: TKey extends keyof TValue2
+            ? unknown extends TValue1[TKey]
+              ? TValue2[TKey]
+              : TValue1[TKey]
+            : never;
+        }
+    : never
   : TValue1 extends Record<string, unknown>
-  ? TValue2 extends Record<string, unknown>
-  ? {
-    [TKey in keyof (TValue1 & TValue2)]: TKey extends keyof TValue1
-    ? TKey extends keyof TValue2
-    ? DeepMerge<TValue1[TKey], TValue2[TKey]>
-    : TValue1[TKey]
-    : TKey extends keyof TValue2
-    ? TValue2[TKey]
-    : never;
-  }
-  : never
-  : TValue1 & TValue2;
+    ? TValue2 extends Record<string, unknown>
+      ? {
+          [TKey in keyof (TValue1 & TValue2)]: TKey extends keyof TValue1
+            ? TKey extends keyof TValue2
+              ? DeepMerge<TValue1[TKey], TValue2[TKey]>
+              : TValue1[TKey]
+            : TKey extends keyof TValue2
+              ? TValue2[TKey]
+              : never;
+        }
+      : never
+    : TValue1 & TValue2;
 
 /**
  * Deeply picks N specific keys.
@@ -186,6 +187,6 @@ export type DeepPickN<TInput, TPaths extends Paths> = TPaths extends readonly [
   ...infer TRestPaths extends Paths,
 ]
   ? TRestPaths extends readonly []
-  ? DeepPick<TInput, TFirstPath>
-  : DeepMerge<DeepPick<TInput, TFirstPath>, DeepPickN<TInput, TRestPaths>>
+    ? DeepPick<TInput, TFirstPath>
+    : DeepMerge<DeepPick<TInput, TFirstPath>, DeepPickN<TInput, TRestPaths>>
   : TInput;

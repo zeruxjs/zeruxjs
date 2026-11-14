@@ -10,19 +10,15 @@ import { _addIssue } from '../utils/index.js';
  *
  * @beta
  */
-export type GuardFunction<TInput> = (
-  input: TInput
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-) => input is any;
+export type GuardFunction<TInput> = (input: TInput) => input is any;
 
 /**
  * Infer guard output type.
  *
  * @beta
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export type InferGuardOutput<TGuard extends GuardFunction<any>> =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TGuard extends (input: any) => input is infer TOutput ? TOutput : unknown;
 
 /**
@@ -30,14 +26,16 @@ export type InferGuardOutput<TGuard extends GuardFunction<any>> =
  *
  * @beta
  */
-export interface GuardIssue<TInput, TGuard extends GuardFunction<TInput>>
-  extends BaseIssue<TInput> {
+export interface GuardIssue<
+  TInput,
+  TGuard extends GuardFunction<TInput>,
+> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed refinement category; raw rejected values remain private.
    */
   readonly kind: 'transformation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'guard';
   /**
@@ -62,11 +60,11 @@ export interface GuardAction<
   GuardIssue<TInput, TGuard>
 > {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'guard';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof guard;
   /**
@@ -74,18 +72,14 @@ export interface GuardAction<
    */
   readonly requirement: TGuard;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a guard transformation action.
- *
- * @param requirement The guard function.
- *
- * @returns A guard action.
- *
+/** Apply an explicit trusted synchronous type guard; false adds a private issue and clears typed status without granting permissions. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {TGuard} requirement - Borrowed explicitly registered predicate; only async variants await results and no source string is evaluated.
+ * @returns {GuardAction<TInput, TGuard, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  * @beta
  */
 // known input from pipe
@@ -93,29 +87,21 @@ export function guard<TInput, const TGuard extends GuardFunction<TInput>>(
   requirement: TGuard
 ): GuardAction<TInput, TGuard, undefined>;
 
-/**
- * Creates a guard transformation action.
- *
- * @param requirement The guard function.
- *
- * @returns A guard action.
- *
+/** Apply an explicit trusted synchronous type guard; false adds a private issue and clears typed status without granting permissions. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {TGuard} requirement - Borrowed explicitly registered predicate; only async variants await results and no source string is evaluated.
+ * @returns {GuardAction<Parameters<TGuard>[0], TGuard, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  * @beta
  */
 // unknown input, e.g. standalone
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export function guard<const TGuard extends GuardFunction<any>>(
   requirement: TGuard
 ): GuardAction<Parameters<TGuard>[0], TGuard, undefined>;
 
-/**
- * Creates a guard transformation action.
- *
- * @param requirement The guard function.
- * @param message The error message.
- *
- * @returns A guard action.
- *
+/** Apply an explicit trusted synchronous type guard; false adds a private issue and clears typed status without granting permissions. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {TGuard} requirement - Borrowed explicitly registered predicate; only async variants await results and no source string is evaluated.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {GuardAction<TInput, TGuard, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  * @beta
  */
 // known input from pipe
@@ -128,28 +114,28 @@ export function guard<
   message: TMessage
 ): GuardAction<TInput, TGuard, TMessage>;
 
-/**
- * Creates a guard transformation action.
- *
- * @param requirement The guard function.
- * @param message The error message.
- *
- * @returns A guard action.
- *
+/** Apply an explicit trusted synchronous type guard; false adds a private issue and clears typed status without granting permissions. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {TGuard} requirement - Borrowed explicitly registered predicate; only async variants await results and no source string is evaluated.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {GuardAction<Parameters<TGuard>[0], TGuard, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  * @beta
  */
 // unknown input, e.g. standalone
 export function guard<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const TGuard extends GuardFunction<any>,
   const TMessage extends
-  | ErrorMessage<GuardIssue<Parameters<TGuard>[0], TGuard>>
-  | undefined,
+    | ErrorMessage<GuardIssue<Parameters<TGuard>[0], TGuard>>
+    | undefined,
 >(
   requirement: TGuard,
   message: TMessage
 ): GuardAction<Parameters<TGuard>[0], TGuard, TMessage>;
 
+/** Apply an explicit trusted synchronous type guard; false adds a private issue and clears typed status without granting permissions. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {GuardFunction<unknown>} requirement - Borrowed explicitly registered predicate; only async variants await results and no source string is evaluated.
+ * @param {ErrorMessage<GuardIssue<unknown, GuardFunction<unknown>>>} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {GuardAction<unknown, GuardFunction<unknown>, ErrorMessage<GuardIssue<unknown, GuardFunction<unknown>>> | undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function guard(
   requirement: GuardFunction<unknown>,
@@ -166,10 +152,15 @@ export function guard(
     async: false,
     requirement,
     message,
+    /** Apply an explicit trusted synchronous type guard; false adds a private issue and clears typed status without granting permissions. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement(dataset.value)) {
         _addIssue(this, 'input', dataset, config);
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = false;
       }
       return dataset;

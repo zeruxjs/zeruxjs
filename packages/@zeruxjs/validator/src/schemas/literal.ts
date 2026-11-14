@@ -16,15 +16,15 @@ export type Literal = bigint | boolean | number | string | symbol;
  */
 export interface LiteralIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed schema failure category; raw candidate values remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable discriminator for structured issue consumers.
    */
   readonly type: 'literal';
   /**
-   * The expected property.
+   * Private diagnostic expectation; never sanitized output or a permission grant.
    */
   readonly expected: string;
 }
@@ -37,47 +37,46 @@ export interface LiteralSchema<
   TMessage extends ErrorMessage<LiteralIssue> | undefined,
 > extends BaseSchema<TLiteral, TLiteral, LiteralIssue> {
   /**
-   * The schema type.
+   * Stable schema discriminator used by structured issue consumers.
    */
   readonly type: 'literal';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof literal;
   /**
-   * The literal value.
+   * Primitive used for strict equality; no coercion or source evaluation.
    */
   readonly literal: TLiteral;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a literal schema.
- *
- * @param literal_ The literal value.
- *
- * @returns A literal schema.
+/** Accept only strict equality with the configured primitive; NaN does not match itself and signed zero values compare equal. Construction does not parse input or authorize its source.
+ * @param {TLiteral} literal_ - Explicit primitive comparison value; diagnostics are private and unescaped.
+ * @returns {LiteralSchema<TLiteral, undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function literal<const TLiteral extends Literal>(
   literal_: TLiteral
 ): LiteralSchema<TLiteral, undefined>;
 
-/**
- * Creates a literal schema.
- *
- * @param literal_ The literal value.
- * @param message The error message.
- *
- * @returns A literal schema.
+/** Accept only strict equality with the configured primitive; NaN does not match itself and signed zero values compare equal. Construction does not parse input or authorize its source.
+ * @param {TLiteral} literal_ - Explicit primitive comparison value; diagnostics are private and unescaped.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {LiteralSchema<TLiteral, TMessage>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
  */
 export function literal<
   const TLiteral extends Literal,
   const TMessage extends ErrorMessage<LiteralIssue> | undefined,
 >(literal_: TLiteral, message: TMessage): LiteralSchema<TLiteral, TMessage>;
 
+/** Accept only strict equality with the configured primitive; NaN does not match itself and signed zero values compare equal. Construction does not parse input or authorize its source.
+ * @param {Literal} literal_ - Explicit primitive comparison value; diagnostics are private and unescaped.
+ * @param {ErrorMessage<LiteralIssue>} message - Optional trusted private diagnostic text/callback; raw errors may retain input.
+ * @returns {LiteralSchema<Literal, ErrorMessage<LiteralIssue> | undefined>} Inert schema retaining its declared references and message policy; no external resource owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function literal(
   literal_: Literal,
@@ -91,17 +90,25 @@ export function literal(
     async: false,
     literal: literal_,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Accept only strict equality with the configured primitive; NaN does not match itself and signed zero values compare equal. Raw issues remain private and operational failures propagate.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private current candidate; this schema does not grant permissions or sanitize output.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root budgets, cancellation, abort flags and diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Declared output or private issue dataset; child result identity follows its schema.
+     */
     '~run'(dataset, config) {
       if (dataset.value === this.literal) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
       } else {
         _addIssue(this, 'type', dataset, config);
       }
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<Literal, LiteralIssue>;
     },
   };

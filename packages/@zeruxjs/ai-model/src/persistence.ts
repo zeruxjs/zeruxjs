@@ -1,32 +1,30 @@
-import { randomUUID } from 'node:crypto';
-import { constants } from 'node:fs';
-import { mkdir, open, rename, unlink, lstat } from 'node:fs/promises';
-import { dirname } from 'node:path';
 import { DocumentKnowledgeBase } from './knowledge-base.js';
 import type { KnowledgeOptions, KnowledgeSnapshot } from './types.js';
-const LIMIT = 32 * 1024 * 1024;
-async function checkTarget(file: string) {
-  try { if (!(await lstat(file)).isFile()) throw new TypeError('Unsafe knowledge snapshot path'); }
-  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+import { readBoundedSnapshot, writeBoundedSnapshot } from './snapshot-io.js';
+/**
+ * Write a complete V1 base snapshot using bounded private atomic file replacement.
+ * @param {DocumentKnowledgeBase} base - Borrowed base; host must populate it only with authorized source records.
+ * @param {string} file - Trusted private snapshot path; parent ownership and cross-process coordination belong to host.
+ * @returns {Promise<void>} Resolves after promotion; trusted parent ownership and cross-process coordination remain host-owned.
+ */
+export async function saveKnowledgeBase(
+  base: DocumentKnowledgeBase,
+  file: string
+): Promise<void> {
+  return writeBoundedSnapshot(base.snapshot(), file);
 }
-export async function saveKnowledgeBase(base: DocumentKnowledgeBase, file: string): Promise<void> {
-  const content = JSON.stringify(base.snapshot());
-  if (Buffer.byteLength(content) > LIMIT) throw new RangeError('Knowledge snapshot too large');
-  await mkdir(dirname(file), {recursive:true}); await checkTarget(file);
-  const temp = `${file}.${randomUUID()}.tmp`;
-  try {
-    const handle = await open(temp,'wx',0o600);
-    try { await handle.writeFile(content); await handle.sync(); } finally { await handle.close(); }
-    await checkTarget(file);
-    await rename(temp,file);
-  } catch (error) { await unlink(temp).catch(() => {}); throw error; }
-}
-export async function loadKnowledgeBase(file: string, options?: KnowledgeOptions): Promise<DocumentKnowledgeBase> {
-  const handle = await open(file,constants.O_RDONLY | constants.O_NOFOLLOW);
-  let snapshot: KnowledgeSnapshot;
-  try { const stat = await handle.stat(); if (!stat.isFile() || stat.size > LIMIT) throw new TypeError('Invalid knowledge snapshot file'); snapshot = JSON.parse(await handle.readFile({encoding:'utf8'})) as KnowledgeSnapshot; }
-  finally { await handle.close(); }
+/**
+ * Restore a bounded snapshot into a fresh staged base.
+ * @param {string} file - Trusted private snapshot path; parent ownership and cross-process coordination belong to host.
+ * @param {KnowledgeOptions | undefined} options - Validated optional policy; nested field declarations document units, bounds and ownership.
+ * @returns {Promise<DocumentKnowledgeBase>} New validated base; input descriptor closes on all paths.
+ */
+export async function loadKnowledgeBase(
+  file: string,
+  options?: KnowledgeOptions
+): Promise<DocumentKnowledgeBase> {
+  /** Fresh staged base accepts a snapshot only after complete restore validation. */
   const base = new DocumentKnowledgeBase(options);
-  base.restore(snapshot);
+  base.restore((await readBoundedSnapshot(file)) as KnowledgeSnapshot);
   return base;
 }

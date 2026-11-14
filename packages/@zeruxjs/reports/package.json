@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/reports",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "description": "Authenticated report builder backed by internal Zerux analytics",
   "main": "./dist/index.js",
@@ -9,18 +9,42 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./sources": {
+      "types": "./dist/sources.d.ts",
+      "browser": null,
+      "default": "./dist/sources.js"
+    },
+    "./ga4": {
+      "types": "./dist/ga4.d.ts",
+      "browser": null,
+      "default": "./dist/ga4.js"
+    },
+    "./adsense": {
+      "types": "./dist/adsense.d.ts",
+      "browser": null,
+      "default": "./dist/adsense.js"
+    },
+    "./definitions": {
+      "types": "./dist/definitions.d.ts",
+      "default": "./dist/definitions.js"
+    },
+    "./view": {
+      "types": "./dist/view.d.ts",
+      "default": "./dist/view.js"
     }
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "peerDependencies": {
-    "@zeruxjs/analytics": "0.0.3"
+    "@zeruxjs/analytics": "0.0.4"
   },
   "files": [
     "dist/",
+    "examples/",
     "README.md",
     "LICENSE-MIT",
     "LICENSE-APACHE"
@@ -30,8 +54,9 @@
   },
   "license": "(MIT OR Apache-2.0)",
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "@zeruxjs/analytics": "0.0.4",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",

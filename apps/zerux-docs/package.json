@@ -5,19 +5,20 @@
   "author": "Shubham Kumar Bansal",
   "type": "module",
   "dependencies": {
-    "@zeruxjs/typescript": "0.0.3",
-    "zeruxjs": "0.0.3"
+    "@zeruxjs/security": "0.0.4",
+    "@zeruxjs/typescript": "0.0.4",
+    "zeruxjs": "0.0.4"
   },
   "private": true,
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "dev": "node --watch scripts/serve.mjs --dev",
-    "preview": "node scripts/serve.mjs",
-    "start": "node scripts/serve.mjs",
-    "check": "node scripts/check.mjs",
-    "snapshot": "node scripts/snapshot.mjs",
-    "prebuild": "node ../../scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search",
-    "predev": "node ../../scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search"
+    "build": "node --experimental-strip-types scripts/build.ts",
+    "dev": "node --experimental-strip-types --watch scripts/serve.ts --dev",
+    "preview": "node --experimental-strip-types scripts/serve.ts",
+    "start": "node --experimental-strip-types scripts/serve.ts",
+    "check": "node --experimental-strip-types scripts/check.ts",
+    "snapshot": "node --experimental-strip-types scripts/snapshot.ts",
+    "prebuild": "node --experimental-strip-types ../../scripts/build-workspaces.ts --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security",
+    "predev": "node --experimental-strip-types ../../scripts/build-workspaces.ts --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -32,9 +33,9 @@
     "ZeruxJS Documentation"
   ],
   "devDependencies": {
+    "@zeruxjs/performance": "0.0.4",
+    "@zeruxjs/search": "0.0.4",
     "marked": "^18.1.1",
-    "zuixs": "0.0.3",
-    "@zeruxjs/performance": "0.0.3",
-    "@zeruxjs/search": "0.0.3"
+    "zuixs": "0.0.4"
   }
 }

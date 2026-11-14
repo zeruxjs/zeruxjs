@@ -1,0 +1,11 @@
+**/node_modules/**
+**/dist/**
+**/build/**
+**/coverage/**
+.site-build/**
+**/.zerux/**
+**/.zyro/**
+**/.workspace/**
+**/vendor/**
+notes/**
+reports/**

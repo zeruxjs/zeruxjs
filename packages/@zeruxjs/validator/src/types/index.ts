@@ -12,3 +12,9 @@ export * from './transformation.js';
 export * from './tuple.js';
 export * from './utils.js';
 export * from './validation.js';
+
+export type {
+  ValidationOptions,
+  ValidationContext,
+  ParseEvent,
+} from './runtime.js';

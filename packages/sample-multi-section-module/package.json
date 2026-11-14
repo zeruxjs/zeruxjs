@@ -1,7 +1,0 @@
-{
-  "name": "sample-multi-section-module",
-  "version": "0.0.1",
-  "type": "module",
-  "main": "./src/index.js",
-  "private": true
-}

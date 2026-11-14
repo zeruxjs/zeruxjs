@@ -14,15 +14,15 @@ export interface ValuesIssue<
   TRequirement extends readonly TInput[],
 > extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed refinement category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable action discriminator for structured issue consumers.
    */
   readonly type: 'values';
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expected: string;
   /**
@@ -40,15 +40,15 @@ export interface ValuesAction<
   TMessage extends ErrorMessage<ValuesIssue<TInput, TRequirement>> | undefined,
 > extends BaseValidation<TInput, TInput, ValuesIssue<TInput, TRequirement>> {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'values';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof values;
   /**
-   * The expected property.
+   * Private diagnostic expectation; not escaped client feedback.
    */
   readonly expects: string;
   /**
@@ -56,42 +56,41 @@ export interface ValuesAction<
    */
   readonly requirement: TRequirement;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a values validation action.
- *
- * @param requirement The required values.
- *
- * @returns A values action.
+/** Accept a member using the retained <= and >= relational comparisons; this is not strict identity or native includes. Construction captures trusted policy without evaluating candidate data.
+ * @param {TRequirement} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @returns {ValuesAction<TInput, TRequirement, undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function values<
   TInput extends ValueInput,
   const TRequirement extends readonly TInput[],
 >(requirement: TRequirement): ValuesAction<TInput, TRequirement, undefined>;
 
-/**
- * Creates a values validation action.
- *
- * @param requirement The required values.
- * @param message The error message.
- *
- * @returns A values action.
+/** Accept a member using the retained <= and >= relational comparisons; this is not strict identity or native includes. Construction captures trusted policy without evaluating candidate data.
+ * @param {TRequirement} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {ValuesAction<TInput, TRequirement, TMessage>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function values<
   TInput extends ValueInput,
   const TRequirement extends readonly TInput[],
   const TMessage extends
-  | ErrorMessage<ValuesIssue<TInput, TRequirement>>
-  | undefined,
+    | ErrorMessage<ValuesIssue<TInput, TRequirement>>
+    | undefined,
 >(
   requirement: TRequirement,
   message: TMessage
 ): ValuesAction<TInput, TRequirement, TMessage>;
 
+/** Accept a member using the retained <= and >= relational comparisons; this is not strict identity or native includes. Construction captures trusted policy without evaluating candidate data.
+ * @param {readonly ValueInput[]} requirement - Explicit substring/member list or trusted synchronous predicate; no source string is evaluated as a callback.
+ * @param {ErrorMessage<ValuesIssue<ValueInput, readonly ValueInput[]>>} message - Optional trusted private diagnostic text/callback; raw issues retain rejected values.
+ * @returns {ValuesAction<ValueInput, readonly ValueInput[], ErrorMessage<ValuesIssue<ValueInput, readonly ValueInput[]>> | undefined>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function values(
   requirement: readonly ValueInput[],
@@ -114,6 +113,11 @@ export function values(
     )}`,
     requirement,
     message,
+    /** Accept a member using the retained <= and >= relational comparisons; this is not strict identity or native includes. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     '~run'(dataset, config) {
       if (
         dataset.typed &&

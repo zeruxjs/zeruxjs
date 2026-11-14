@@ -1,0 +1,298 @@
+:root {
+  color-scheme: light dark;
+
+  --surface: #f5f8f7;
+  --panel: #fff;
+  --ink: #17352f;
+  --muted: #526b64;
+  --accent: #086a56;
+  --line: #cbdcd6;
+
+  font:
+    16px/1.6 system-ui,
+    sans-serif;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+  padding: 1.2rem 3vw;
+}
+
+.brand {
+  font-weight: 800;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+header span,
+footer {
+  color: var(--muted);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  max-width: 1440px;
+  margin: auto;
+  min-height: 78vh;
+}
+
+nav {
+  border-right: 1px solid var(--line);
+  padding: 2rem 1rem;
+}
+
+nav a {
+  display: block;
+  padding: 0.6rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+}
+
+main {
+  padding: clamp(1.2rem, 4vw, 4rem);
+  max-width: 1100px;
+}
+
+h1 {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+  margin: 0 0 1.5rem;
+}
+
+h2 {
+  line-height: 1.25;
+  font-size: 1.25rem;
+}
+
+.intro {
+  font-size: 1.2rem;
+  max-width: 65ch;
+  color: var(--muted);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.2rem;
+  margin: 2rem 0;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  background: var(--panel);
+}
+
+.card p {
+  color: var(--muted);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+th,
+td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+caption {
+  text-align: left;
+  font-weight: 700;
+}
+
+form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+input,
+button {
+  font: inherit;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+}
+
+button {
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+
+footer {
+  padding: 2rem 3vw;
+  border-top: 1px solid var(--line);
+}
+
+.skip {
+  position: absolute;
+  transform: translateY(-200%);
+  background: var(--panel);
+  padding: 1rem;
+}
+
+.skip:focus {
+  transform: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #0e1d1a;
+    --panel: #152b25;
+    --ink: #e6f0eb;
+    --muted: #b0c6bc;
+    --accent: #81dbb9;
+    --line: #355148;
+  }
+
+  button {
+    color: #10241d;
+  }
+}
+
+@media (width <=720px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  nav {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    overflow: auto;
+    padding: 0.6rem;
+  }
+
+  nav a {
+    white-space: nowrap;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  header span {
+    display: none;
+  }
+
+  table,
+  tbody,
+  tr,
+  th,
+  td {
+    display: block;
+  }
+
+  thead {
+    display: none;
+  }
+
+  th {
+    padding-bottom: 0;
+  }
+
+  td {
+    padding-top: 0.4rem;
+  }
+}
+
+@media (forced-colors: active) {
+  .card {
+    border: 1px solid CanvasText;
+  }
+
+  button {
+    border: 1px solid ButtonText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto;
+  }
+}
+
+nav,
+main,
+fieldset {
+  min-width: 0;
+}
+
+label {
+  display: grid;
+  gap: 0.3rem;
+  max-width: 100%;
+}
+
+textarea,
+select {
+  font: inherit;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  max-width: 100%;
+}
+
+textarea {
+  width: 100%;
+}
+
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.card form {
+  margin-block: 1rem;
+}
+
+fieldset {
+  border: 1px solid var(--line);
+  margin-block: 1.5rem;
+}
+
+h1:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 0.3rem;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #cd6009;
+  outline-offset: 4px;
+}
+
+nav a:hover {
+  background: var(--panel);
+}

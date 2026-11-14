@@ -11,15 +11,15 @@ import { _addIssue, _getStandardProps } from '../utils/index.js';
  */
 export interface NullIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed schema issue category; raw inputs and messages remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable sentinel/terminal discriminator for structured issue codes.
    */
   readonly type: 'null';
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation, not a coercion or omission policy.
    */
   readonly expected: 'null';
 }
@@ -31,41 +31,45 @@ export interface NullSchema<
   TMessage extends ErrorMessage<NullIssue> | undefined,
 > extends BaseSchema<null, null, NullIssue> {
   /**
-   * The schema type.
+   * Fixed null schema discriminator; object presence rules are handled separately.
    */
   readonly type: 'null';
   /**
-   * The schema reference.
+   * Authored base constructor reference, never a user-supplied module path.
    */
   readonly reference: typeof null_;
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation, not a coercion or omission policy.
    */
   readonly expects: 'null';
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback retained by reference.
    */
   readonly message: TMessage;
 }
 
 /**
- * Creates a null schema.
+ * Validate only the null value without treating absence/undefined as equivalent. Root execution still checks budgets before dispatch.
  *
- * @returns A null schema.
+ * @returns {NullSchema<undefined>} Inert schema with default diagnostic policy.
  */
 export function null_(): NullSchema<undefined>;
 
 /**
- * Creates a null schema.
+ * Validate only the null value without treating absence/undefined as equivalent. Root execution still checks budgets before dispatch.
  *
- * @param message The error message.
+ * @param {TMessage} message - Optional trusted private diagnostic policy.
  *
- * @returns A null schema.
+ * @returns {NullSchema<TMessage>} Inert schema retaining the borrowed trusted message policy.
  */
 export function null_<
   const TMessage extends ErrorMessage<NullIssue> | undefined,
 >(message: TMessage): NullSchema<TMessage>;
 
+/** Build a sentinel/terminal validator without executing any input value.
+ * @param {ErrorMessage<NullIssue>} message - Optional private trusted diagnostic text/callback.
+ * @returns {NullSchema<ErrorMessage<NullIssue> | undefined>} Inert schema validating only the null value without treating absence/undefined as equivalent.
+ */
 // @__NO_SIDE_EFFECTS__
 export function null_(
   message?: ErrorMessage<NullIssue>
@@ -77,17 +81,25 @@ export function null_(
     expects: 'null',
     async: false,
     message,
+    /** Adapt explicit validation to the shared bounded root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Apply this exact sentinel/terminal rule without coercion or permission inference.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private input dataset.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Root issue budget and private message policy.
+     * @returns {OutputDataset<null, NullIssue>} Declared dataset; raw diagnostics require explicit public redaction.
+     */
     '~run'(dataset, config) {
       if (dataset.value === null) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
       } else {
         _addIssue(this, 'type', dataset, config);
       }
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<null, NullIssue>;
     },
   };

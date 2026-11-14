@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/typescript",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "TypeScript transpilation, typechecking, loaders and fast builds for ZeruxJS",
   "author": "",
   "type": "module",
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "exports": {
@@ -24,6 +24,14 @@
     "./build": {
       "types": "./dist/build.d.ts",
       "import": "./dist/build.js"
+    },
+    "./presets": {
+      "types": "./dist/presets.d.ts",
+      "import": "./dist/presets.js"
+    },
+    "./tsconfig": {
+      "types": "./dist/tsconfig.d.ts",
+      "import": "./dist/tsconfig.js"
     }
   },
   "license": "(MIT OR Apache-2.0)",

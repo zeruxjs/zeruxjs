@@ -11,15 +11,15 @@ import { _addIssue, _getStandardProps } from '../utils/index.js';
  */
 export interface VoidIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed schema issue category; raw inputs and messages remain private.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable sentinel/terminal discriminator for structured issue codes.
    */
   readonly type: 'void';
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation, not a coercion or omission policy.
    */
   readonly expected: 'void';
 }
@@ -31,41 +31,45 @@ export interface VoidSchema<
   TMessage extends ErrorMessage<VoidIssue> | undefined,
 > extends BaseSchema<void, void, VoidIssue> {
   /**
-   * The schema type.
+   * Fixed void schema discriminator; object presence rules are handled separately.
    */
   readonly type: 'void';
   /**
-   * The schema reference.
+   * Authored base constructor reference, never a user-supplied module path.
    */
   readonly reference: typeof void_;
   /**
-   * The expected property.
+   * Fixed private diagnostic expectation, not a coercion or omission policy.
    */
   readonly expects: 'void';
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback retained by reference.
    */
   readonly message: TMessage;
 }
 
 /**
- * Creates a void schema.
+ * Validate the undefined runtime value with the declared TypeScript void contract. Root execution still checks budgets before dispatch.
  *
- * @returns A void schema.
+ * @returns {VoidSchema<undefined>} Inert schema with default diagnostic policy.
  */
 export function void_(): VoidSchema<undefined>;
 
 /**
- * Creates a void schema.
+ * Validate the undefined runtime value with the declared TypeScript void contract. Root execution still checks budgets before dispatch.
  *
- * @param message The error message.
+ * @param {TMessage} message - Optional trusted private diagnostic policy.
  *
- * @returns A void schema.
+ * @returns {VoidSchema<TMessage>} Inert schema retaining the borrowed trusted message policy.
  */
 export function void_<
   const TMessage extends ErrorMessage<VoidIssue> | undefined,
 >(message: TMessage): VoidSchema<TMessage>;
 
+/** Build a sentinel/terminal validator without executing any input value.
+ * @param {ErrorMessage<VoidIssue>} message - Optional private trusted diagnostic text/callback.
+ * @returns {VoidSchema<ErrorMessage<VoidIssue> | undefined>} Inert schema validating the undefined runtime value with the declared TypeScript void contract.
+ */
 // @__NO_SIDE_EFFECTS__
 export function void_(
   message?: ErrorMessage<VoidIssue>
@@ -77,17 +81,25 @@ export function void_(
     expects: 'void',
     async: false,
     message,
+    /** Adapt explicit validation to the shared bounded root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Apply this exact sentinel/terminal rule without coercion or permission inference.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Current private input dataset.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Root issue budget and private message policy.
+     * @returns {OutputDataset<void, VoidIssue>} Declared dataset; raw diagnostics require explicit public redaction.
+     */
     '~run'(dataset, config) {
       if (dataset.value === undefined) {
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
       } else {
         _addIssue(this, 'type', dataset, config);
       }
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<void, VoidIssue>;
     },
   };

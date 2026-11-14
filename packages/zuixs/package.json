@@ -1,6 +1,6 @@
 {
   "name": "zuixs",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Zero-dependency utility-first CSS compiler for ZeruxJS, ZyroJS, React, Vue, Next and Nuxt",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,8 +11,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test:smoke": "npm run build && node tests/smoke.mjs",
-    "test": "npm run build && node --test tests/*.mjs",
+    "test:smoke": "npm run build && node --experimental-strip-types tests/smoke.ts",
+    "test": "npm run build && node --experimental-strip-types --test tests/*.test.ts tests/smoke.ts",
     "prepack": "npm run build"
   },
   "exports": {
@@ -47,11 +47,25 @@
     "access": "public"
   },
   "devDependencies": {
+    "@types/node": "^25.4.0",
+    "css-tree": "3.2.1",
     "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "zlook": "0.0.4"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "peerDependencies": {
+    "source-map-js": "^1.2.2",
+    "zlook": "0.0.4"
+  },
+  "peerDependenciesMeta": {
+    "zlook": {
+      "optional": true
+    },
+    "source-map-js": {
+      "optional": true
+    }
   }
 }

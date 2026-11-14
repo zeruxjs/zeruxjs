@@ -8,26 +8,27 @@ import { _addIssue, _isLuhnAlgo } from '../utils/index.js';
 /**
  * Credit card issue interface.
  */
-export interface CreditCardIssue<TInput extends string>
-  extends BaseIssue<TInput> {
+export interface CreditCardIssue<
+  TInput extends string,
+> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'credit_card';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: null;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `"${string}"`;
   /**
-   * The validation function.
+   * Native numeric predicate identity; not an executable function string.
    */
   readonly requirement: (input: string) => boolean;
 }
@@ -40,23 +41,23 @@ export interface CreditCardAction<
   TMessage extends ErrorMessage<CreditCardIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, CreditCardIssue<TInput>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'credit_card';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof creditCard;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: null;
   /**
-   * The validation function.
+   * Native numeric predicate identity; not an executable function string.
    */
   readonly requirement: (input: string) => boolean;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
@@ -93,28 +94,27 @@ const PROVIDER_REGEX_LIST = [
   /^4\d{12}(?:\d{3,6})?$/u,
 ];
 
-/**
- * Creates a [credit card](https://en.wikipedia.org/wiki/Payment_card_number) validation action.
- *
- * @returns A Credit card action.
+/** Check retained card format, provider-prefix patterns and Luhn checksum; this never contacts a payment provider or proves issuance/authorization. This action neither establishes the input schema nor grants permissions.
+ * @returns {CreditCardAction<TInput, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function creditCard<TInput extends string>(): CreditCardAction<
   TInput,
   undefined
 >;
 
-/**
- * Creates a [credit card](https://en.wikipedia.org/wiki/Payment_card_number) validation action.
- *
- * @param message The error message.
- *
- * @returns A credit card action.
+/** Check retained card format, provider-prefix patterns and Luhn checksum; this never contacts a payment provider or proves issuance/authorization. This action neither establishes the input schema nor grants permissions.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {CreditCardAction<TInput, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function creditCard<
   TInput extends string,
   const TMessage extends ErrorMessage<CreditCardIssue<TInput>> | undefined,
 >(message: TMessage): CreditCardAction<TInput, TMessage>;
 
+/** Check retained card format, provider-prefix patterns and Luhn checksum; this never contacts a payment provider or proves issuance/authorization. This action neither establishes the input schema nor grants permissions.
+ * @param {ErrorMessage<CreditCardIssue<string>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {CreditCardAction<string, ErrorMessage<CreditCardIssue<string>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function creditCard(
   message?: ErrorMessage<CreditCardIssue<string>>
@@ -125,6 +125,10 @@ export function creditCard(
     reference: creditCard,
     async: false,
     expects: null,
+    /** Apply retained presentation/checksum rules to local text without any provider or registry request.
+     * @param {string} input - Private candidate string; text is never treated as executable source.
+     * @returns {boolean} Whether the retained syntax/checksum predicate accepts it; no issuance, ownership or permission follows.
+     */
     requirement(input) {
       let sanitized: string | undefined;
       return (CREDIT_CARD_REGEX.test(input) &&
@@ -136,6 +140,11 @@ export function creditCard(
         _isLuhnAlgo(sanitized)) as boolean;
     },
     message,
+    /** Check retained card format, provider-prefix patterns and Luhn checksum; this never contacts a payment provider or proves issuance/authorization. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement(dataset.value)) {
         _addIssue(this, 'credit card', dataset, config);

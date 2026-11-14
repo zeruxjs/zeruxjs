@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   LooseTupleIssue,
   LooseTupleSchema,
@@ -26,16 +27,15 @@ type Schema =
   | StrictTupleSchema<TupleItems, ErrorMessage<StrictTupleIssue> | undefined>
   | TupleSchema<TupleItems, ErrorMessage<TupleIssue> | undefined>
   | TupleWithRestSchema<
-    TupleItems,
-    BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-    ErrorMessage<TupleWithRestIssue> | undefined
-  >;
+      TupleItems,
+      BaseSchema<unknown, unknown, BaseIssue<unknown>>,
+      ErrorMessage<TupleWithRestIssue> | undefined
+    >;
 
 /**
  * Args action type.
  */
 export interface ArgsAction<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TInput extends (...args: any[]) => unknown,
   TSchema extends Schema,
 > extends BaseTransformation<
@@ -44,11 +44,11 @@ export interface ArgsAction<
   never
 > {
   /**
-   * The action type.
+   * Stable declared refinement/transformation discriminator.
    */
   readonly type: 'args';
   /**
-   * The action reference.
+   * Authored constructor identity; never loaded from a candidate string.
    */
   readonly reference: typeof args;
   /**
@@ -57,19 +57,19 @@ export interface ArgsAction<
   readonly schema: TSchema;
 }
 
-/**
- * Creates a function arguments transformation action.
- *
- * @param schema The arguments schema.
- *
- * @returns An args action.
+/** Wrap an explicitly supplied function so tuple arguments validate before invocation; bind host methods first because the wrapper uses a plain call. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {TSchema} schema - Borrowed explicit argument/result schema; returned callables retain the captured configuration and create no fresh request authorization boundary.
+ * @returns {ArgsAction<TInput, TSchema>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
  */
 export function args<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TInput extends (...args: any[]) => unknown,
   TSchema extends Schema,
 >(schema: TSchema): ArgsAction<TInput, TSchema>;
 
+/** Wrap an explicitly supplied function so tuple arguments validate before invocation; bind host methods first because the wrapper uses a plain call. Construction captures trusted callbacks/paths without evaluating candidate data.
+ * @param {Schema} schema - Borrowed explicit argument/result schema; returned callables retain the captured configuration and create no fresh request authorization boundary.
+ * @returns {ArgsAction<(...args: unknown[]) => unknown, Schema>} Structured action with its declared validation/transformation behavior; no resource-disposal owner is allocated.
+ */
 // @__NO_SIDE_EFFECTS__
 export function args(
   schema: Schema
@@ -80,10 +80,18 @@ export function args(
     reference: args,
     async: false,
     schema,
+    /** Wrap an explicitly supplied function so tuple arguments validate before invocation; bind host methods first because the wrapper uses a plain call. Host callback/property exceptions propagate.
+     * @param {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} dataset - Private dataset; input admission and pipeline typing belong to the owning schema.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private message policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>} Dataset with declared output or private issues; this is not escaping, authorization or rollback.
+     */
     '~run'(dataset, config) {
+      /** Borrowed explicit function, called as a plain function only when the returned wrapper is invoked; no candidate string is evaluated. */
       const func = dataset.value;
+      // Capture the existing root configuration, including its execution mode/budgets; this is not fresh per-request authorization.
       dataset.value = (...args_) => {
-        const argsDataset = this.schema['~run']({ value: args_ }, config);
+        /** Validated/transformed argument tuple; ordinary issues throw before invoking the borrowed function. */
+        const argsDataset = _runSchema(this.schema, { value: args_ }, config);
         if (argsDataset.issues) {
           throw new ValidationError(argsDataset.issues);
         }

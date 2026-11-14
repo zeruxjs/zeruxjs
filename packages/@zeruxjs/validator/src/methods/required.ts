@@ -37,14 +37,14 @@ type Schema = SchemaWithoutPipe<
   | LooseObjectSchema<ObjectEntries, ErrorMessage<LooseObjectIssue> | undefined>
   | ObjectSchema<ObjectEntries, ErrorMessage<ObjectIssue> | undefined>
   | ObjectWithRestSchema<
-    ObjectEntries,
-    BaseSchema<unknown, unknown, BaseIssue<unknown>>,
-    ErrorMessage<ObjectWithRestIssue> | undefined
-  >
+      ObjectEntries,
+      BaseSchema<unknown, unknown, BaseIssue<unknown>>,
+      ErrorMessage<ObjectWithRestIssue> | undefined
+    >
   | StrictObjectSchema<
-    ObjectEntries,
-    ErrorMessage<StrictObjectIssue> | undefined
-  >
+      ObjectEntries,
+      ErrorMessage<StrictObjectIssue> | undefined
+    >
 >;
 
 /**
@@ -55,12 +55,12 @@ type RequiredEntries<
   TKeys extends readonly (keyof TEntries)[] | undefined,
   TMessage extends ErrorMessage<NonOptionalIssue> | undefined,
 > = {
-    [TKey in keyof TEntries]: TKeys extends readonly (keyof TEntries)[]
+  [TKey in keyof TEntries]: TKeys extends readonly (keyof TEntries)[]
     ? TKey extends TKeys[number]
-    ? NonOptionalSchema<TEntries[TKey], TMessage>
-    : TEntries[TKey]
+      ? NonOptionalSchema<TEntries[TKey], TMessage>
+      : TEntries[TKey]
     : NonOptionalSchema<TEntries[TKey], TMessage>;
-  };
+};
 
 /**
  * Schema with required type.
@@ -72,188 +72,182 @@ export type SchemaWithRequired<
 > = TSchema extends
   | ObjectSchema<infer TEntries, ErrorMessage<ObjectIssue> | undefined>
   | StrictObjectSchema<
-    infer TEntries,
-    ErrorMessage<StrictObjectIssue> | undefined
-  >
+      infer TEntries,
+      ErrorMessage<StrictObjectIssue> | undefined
+    >
   ? Omit<TSchema, 'entries' | '~standard' | '~run' | '~types'> & {
-    /**
-     * The object entries.
-     */
-    readonly entries: RequiredEntries<TEntries, TKeys, TMessage>;
-    /**
-     * The Standard Schema properties.
-     *
-     * @internal
-     */
-    readonly '~standard': StandardProps<
-      InferObjectInput<RequiredEntries<TEntries, TKeys, TMessage>>,
-      InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>>
-    >;
-    /**
-     * Parses unknown input.
-     *
-     * @param dataset The input dataset.
-     * @param config The configuration.
-     *
-     * @returns The output dataset.
-     *
-     * @internal
-     */
-    readonly '~run': (
-      dataset: UnknownDataset,
-      config: Config<BaseIssue<unknown>>
-    ) => OutputDataset<
-      InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>>,
-      NonOptionalIssue | InferIssue<TSchema>
-    >;
-    /**
-     * The input, output and issue type.
-     *
-     * @internal
-     */
-    readonly '~types'?:
-    | {
-      readonly input: InferObjectInput<
-        RequiredEntries<TEntries, TKeys, TMessage>
+      /**
+       * Fresh mapped entry dictionary; unselected children retain their borrowed identity.
+       */
+      readonly entries: RequiredEntries<TEntries, TKeys, TMessage>;
+      /**
+       * Adapter metadata for the copied entry shape, not a separate validator.
+       *
+       * @internal
+       */
+      readonly '~standard': StandardProps<
+        InferObjectInput<RequiredEntries<TEntries, TKeys, TMessage>>,
+        InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>>
       >;
-      readonly output: InferObjectOutput<
-        RequiredEntries<TEntries, TKeys, TMessage>
+      /** Run the copied structural schema under the shared root context.
+       * @param {UnknownDataset} dataset - Private candidate dataset; validation does not grant tenant permissions.
+       * @param {Config<BaseIssue<unknown>>} config - Shared root work/issue budgets, abort flags and private diagnostic policy.
+       * @returns {OutputDataset<InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>>, NonOptionalIssue | InferIssue<TSchema>>} Declared output or private issues; execution exceptions and budget failures propagate.
+       * @internal
+       */
+      readonly '~run': (
+        dataset: UnknownDataset,
+        config: Config<BaseIssue<unknown>>
+      ) => OutputDataset<
+        InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>>,
+        NonOptionalIssue | InferIssue<TSchema>
       >;
-      readonly issue: NonOptionalIssue | InferIssue<TSchema>;
+      /**
+       * The input, output and issue type.
+       *
+       * @internal
+       */
+      readonly '~types'?:
+        | {
+            /** Type-only accepted object fields after selected wrappers are applied. */
+            readonly input: InferObjectInput<
+              RequiredEntries<TEntries, TKeys, TMessage>
+            >;
+            /** Type-only child output fields; runtime transforms remain schema-owned. */
+            readonly output: InferObjectOutput<
+              RequiredEntries<TEntries, TKeys, TMessage>
+            >;
+            /** Type-only private child/undefined issue union. */
+            readonly issue: NonOptionalIssue | InferIssue<TSchema>;
+          }
+        | undefined;
     }
-    | undefined;
-  }
   : TSchema extends LooseObjectSchema<
-    infer TEntries,
-    ErrorMessage<LooseObjectIssue> | undefined
-  >
-  ? Omit<TSchema, 'entries' | '~standard' | '~run' | '~types'> & {
-    /**
-     * The object entries.
-     */
-    readonly entries: RequiredEntries<TEntries, TKeys, TMessage>;
-    /**
-     * The Standard Schema properties.
-     *
-     * @internal
-     */
-    readonly '~standard': StandardProps<
-      InferObjectInput<RequiredEntries<TEntries, TKeys, TMessage>> & {
-        [key: string]: unknown;
-      },
-      InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>> & {
-        [key: string]: unknown;
+        infer TEntries,
+        ErrorMessage<LooseObjectIssue> | undefined
+      >
+    ? Omit<TSchema, 'entries' | '~standard' | '~run' | '~types'> & {
+        /**
+         * Fresh mapped entry dictionary; unselected children retain their borrowed identity.
+         */
+        readonly entries: RequiredEntries<TEntries, TKeys, TMessage>;
+        /**
+         * Adapter metadata for the copied entry shape, not a separate validator.
+         *
+         * @internal
+         */
+        readonly '~standard': StandardProps<
+          InferObjectInput<RequiredEntries<TEntries, TKeys, TMessage>> & {
+            [key: string]: unknown;
+          },
+          InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>> & {
+            [key: string]: unknown;
+          }
+        >;
+        /** Run the copied structural schema under the shared root context.
+         * @param {UnknownDataset} dataset - Private candidate dataset; validation does not grant tenant permissions.
+         * @param {Config<BaseIssue<unknown>>} config - Shared root work/issue budgets, abort flags and private diagnostic policy.
+         * @returns {OutputDataset<InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>> & { [key: string]: unknown; }, NonOptionalIssue | InferIssue<TSchema>>} Declared output or private issues; execution exceptions and budget failures propagate.
+         * @internal
+         */
+        readonly '~run': (
+          dataset: UnknownDataset,
+          config: Config<BaseIssue<unknown>>
+        ) => OutputDataset<
+          InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>> & {
+            [key: string]: unknown;
+          },
+          NonOptionalIssue | InferIssue<TSchema>
+        >;
+        /**
+         * The input, output and issue type.
+         *
+         * @internal
+         */
+        readonly '~types'?:
+          | {
+              /** Type-only accepted object fields after selected wrappers are applied. */
+              readonly input: InferObjectInput<
+                RequiredEntries<TEntries, TKeys, TMessage>
+              > & {
+                [key: string]: unknown;
+              };
+              /** Type-only child output fields; runtime transforms remain schema-owned. */
+              readonly output: InferObjectOutput<
+                RequiredEntries<TEntries, TKeys, TMessage>
+              > & {
+                [key: string]: unknown;
+              };
+              /** Type-only private child/undefined issue union. */
+              readonly issue: NonOptionalIssue | InferIssue<TSchema>;
+            }
+          | undefined;
       }
-    >;
-    /**
-     * Parses unknown input.
-     *
-     * @param dataset The input dataset.
-     * @param config The configuration.
-     *
-     * @returns The output dataset.
-     *
-     * @internal
-     */
-    readonly '~run': (
-      dataset: UnknownDataset,
-      config: Config<BaseIssue<unknown>>
-    ) => OutputDataset<
-      InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>> & {
-        [key: string]: unknown;
-      },
-      NonOptionalIssue | InferIssue<TSchema>
-    >;
-    /**
-     * The input, output and issue type.
-     *
-     * @internal
-     */
-    readonly '~types'?:
-    | {
-      readonly input: InferObjectInput<
-        RequiredEntries<TEntries, TKeys, TMessage>
-      > & {
-        [key: string]: unknown;
-      };
-      readonly output: InferObjectOutput<
-        RequiredEntries<TEntries, TKeys, TMessage>
-      > & {
-        [key: string]: unknown;
-      };
-      readonly issue: NonOptionalIssue | InferIssue<TSchema>;
-    }
-    | undefined;
-  }
-  : TSchema extends ObjectWithRestSchema<
-    infer TEntries,
-    infer TRest,
-    ErrorMessage<ObjectWithRestIssue> | undefined
-  >
-  ? Omit<TSchema, 'entries' | '~standard' | '~run' | '~types'> & {
-    /**
-     * The object entries.
-     */
-    readonly entries: RequiredEntries<TEntries, TKeys, TMessage>;
-    /**
-     * The Standard Schema properties.
-     *
-     * @internal
-     */
-    readonly '~standard': StandardProps<
-      InferObjectInput<RequiredEntries<TEntries, TKeys, TMessage>> & {
-        [key: string]: InferInput<TRest>;
-      },
-      InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>> & {
-        [key: string]: InferOutput<TRest>;
-      }
-    >;
-    /**
-     * Parses unknown input.
-     *
-     * @param dataset The input dataset.
-     * @param config The configuration.
-     *
-     * @returns The output dataset.
-     *
-     * @internal
-     */
-    readonly '~run': (
-      dataset: UnknownDataset,
-      config: Config<BaseIssue<unknown>>
-    ) => OutputDataset<
-      InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>> & {
-        [key: string]: InferOutput<TRest>;
-      },
-      NonOptionalIssue | InferIssue<TSchema>
-    >;
-    /**
-     * The input, output and issue type.
-     *
-     * @internal
-     */
-    readonly '~types'?:
-    | {
-      readonly input: InferObjectInput<
-        RequiredEntries<TEntries, TKeys, TMessage>
-      > & {
-        [key: string]: InferInput<TRest>;
-      };
-      readonly output: InferObjectOutput<
-        RequiredEntries<TEntries, TKeys, TMessage>
-      > & { [key: string]: InferOutput<TRest> };
-      readonly issue: NonOptionalIssue | InferIssue<TSchema>;
-    }
-    | undefined;
-  }
-  : never;
+    : TSchema extends ObjectWithRestSchema<
+          infer TEntries,
+          infer TRest,
+          ErrorMessage<ObjectWithRestIssue> | undefined
+        >
+      ? Omit<TSchema, 'entries' | '~standard' | '~run' | '~types'> & {
+          /**
+           * Fresh mapped entry dictionary; unselected children retain their borrowed identity.
+           */
+          readonly entries: RequiredEntries<TEntries, TKeys, TMessage>;
+          /**
+           * Adapter metadata for the copied entry shape, not a separate validator.
+           *
+           * @internal
+           */
+          readonly '~standard': StandardProps<
+            InferObjectInput<RequiredEntries<TEntries, TKeys, TMessage>> & {
+              [key: string]: InferInput<TRest>;
+            },
+            InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>> & {
+              [key: string]: InferOutput<TRest>;
+            }
+          >;
+          /** Run the copied structural schema under the shared root context.
+           * @param {UnknownDataset} dataset - Private candidate dataset; validation does not grant tenant permissions.
+           * @param {Config<BaseIssue<unknown>>} config - Shared root work/issue budgets, abort flags and private diagnostic policy.
+           * @returns {OutputDataset<InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>> & { [key: string]: InferOutput<TRest>; }, NonOptionalIssue | InferIssue<TSchema>>} Declared output or private issues; execution exceptions and budget failures propagate.
+           * @internal
+           */
+          readonly '~run': (
+            dataset: UnknownDataset,
+            config: Config<BaseIssue<unknown>>
+          ) => OutputDataset<
+            InferObjectOutput<RequiredEntries<TEntries, TKeys, TMessage>> & {
+              [key: string]: InferOutput<TRest>;
+            },
+            NonOptionalIssue | InferIssue<TSchema>
+          >;
+          /**
+           * The input, output and issue type.
+           *
+           * @internal
+           */
+          readonly '~types'?:
+            | {
+                /** Type-only accepted object fields after selected wrappers are applied. */
+                readonly input: InferObjectInput<
+                  RequiredEntries<TEntries, TKeys, TMessage>
+                > & {
+                  [key: string]: InferInput<TRest>;
+                };
+                /** Type-only child output fields; runtime transforms remain schema-owned. */
+                readonly output: InferObjectOutput<
+                  RequiredEntries<TEntries, TKeys, TMessage>
+                > & { [key: string]: InferOutput<TRest> };
+                /** Type-only private child/undefined issue union. */
+                readonly issue: NonOptionalIssue | InferIssue<TSchema>;
+              }
+            | undefined;
+        }
+      : never;
 
-/**
- * Creates a modified copy of an object schema that marks all entries as required.
- *
- * @param schema The schema to modify.
- *
- * @returns An object schema.
+/** Create a shallow structural schema copy with selected entries wrapped to reject undefined before and after child transforms. Child schemas and unselected references remain borrowed.
+ * @param {TSchema} schema - Borrowed supported structural schema without a pipeline; no input is parsed by this operation.
+ * @returns {SchemaWithRequired<TSchema, undefined, undefined>} Fresh outer schema/entry dictionary with existing root behavior and Standard Schema adaptation; no disposer or deep isolation is introduced.
  */
 // @ts-expect-error FIXME: TypeScript incorrectly claims that the overload
 // signature is not compatible with the implementation signature
@@ -261,13 +255,10 @@ export function required<const TSchema extends Schema>(
   schema: TSchema
 ): SchemaWithRequired<TSchema, undefined, undefined>;
 
-/**
- * Creates a modified copy of an object schema that marks all entries as required.
- *
- * @param schema The schema to modify.
- * @param message The error message.
- *
- * @returns An object schema.
+/** Create a shallow structural schema copy with selected entries wrapped to reject undefined before and after child transforms. Child schemas and unselected references remain borrowed.
+ * @param {TSchema} schema - Borrowed supported structural schema without a pipeline; no input is parsed by this operation.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback for undefined rejection.
+ * @returns {SchemaWithRequired<TSchema, undefined, TMessage>} Fresh outer schema/entry dictionary with existing root behavior and Standard Schema adaptation; no disposer or deep isolation is introduced.
  */
 export function required<
   const TSchema extends Schema,
@@ -277,29 +268,21 @@ export function required<
   message: TMessage
 ): SchemaWithRequired<TSchema, undefined, TMessage>;
 
-/**
- * Creates a modified copy of an object schema that marks the selected entries
- * as required.
- *
- * @param schema The schema to modify.
- * @param keys The selected entries.
- *
- * @returns An object schema.
+/** Create a shallow structural schema copy with selected entries wrapped to reject undefined before and after child transforms. Child schemas and unselected references remain borrowed.
+ * @param {TSchema} schema - Borrowed supported structural schema without a pipeline; no input is parsed by this operation.
+ * @param {TKeys} keys - Optional selected declared entry keys; omission selects every entry.
+ * @returns {SchemaWithRequired<TSchema, TKeys, undefined>} Fresh outer schema/entry dictionary with existing root behavior and Standard Schema adaptation; no disposer or deep isolation is introduced.
  */
 export function required<
   const TSchema extends Schema,
   const TKeys extends ObjectKeys<TSchema>,
 >(schema: TSchema, keys: TKeys): SchemaWithRequired<TSchema, TKeys, undefined>;
 
-/**
- * Creates a modified copy of an object schema that marks the selected entries
- * as required.
- *
- * @param schema The schema to modify.
- * @param keys The selected entries.
- * @param message The error message.
- *
- * @returns An object schema.
+/** Create a shallow structural schema copy with selected entries wrapped to reject undefined before and after child transforms. Child schemas and unselected references remain borrowed.
+ * @param {TSchema} schema - Borrowed supported structural schema without a pipeline; no input is parsed by this operation.
+ * @param {TKeys} keys - Optional selected declared entry keys; omission selects every entry.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback for undefined rejection.
+ * @returns {SchemaWithRequired<TSchema, TKeys, TMessage>} Fresh outer schema/entry dictionary with existing root behavior and Standard Schema adaptation; no disposer or deep isolation is introduced.
  */
 export function required<
   const TSchema extends Schema,
@@ -311,6 +294,12 @@ export function required<
   message: TMessage
 ): SchemaWithRequired<TSchema, TKeys, TMessage>;
 
+/** Create a shallow structural schema copy with selected entries wrapped to reject undefined before and after child transforms. Child schemas and unselected references remain borrowed.
+ * @param {Schema} schema - Borrowed supported structural schema without a pipeline; no input is parsed by this operation.
+ * @param {ErrorMessage<NonOptionalIssue> | ObjectKeys<Schema>} arg2 - Optional selected key array or trusted private message; an array is always interpreted as keys.
+ * @param {ErrorMessage<NonOptionalIssue>} arg3 - Optional private message used when the second argument is a key array.
+ * @returns {SchemaWithRequired<Schema, ObjectKeys<Schema> | undefined, ErrorMessage<NonOptionalIssue> | undefined>} Fresh outer schema/entry dictionary with existing root behavior and Standard Schema adaptation; no disposer or deep isolation is introduced.
+ */
 // @__NO_SIDE_EFFECTS__
 export function required(
   schema: Schema,
@@ -322,29 +311,36 @@ export function required(
   ErrorMessage<NonOptionalIssue> | undefined
 > {
   // Get keys and message from arguments
+  /** Explicit key selection if the overloaded second argument is an array; otherwise all entries are selected. */
   const keys = Array.isArray(arg2) ? arg2 : undefined;
+  /** Borrowed private undefined-rejection policy resolved without invoking callbacks. */
   const message = (Array.isArray(arg2) ? arg3 : arg2) as
     | ErrorMessage<NonOptionalIssue>
     | undefined;
 
   // Create modified object entries
+  /** Fresh schema dictionary receiving wrappers only for selected declared keys. */
   const entries: RequiredEntries<
     ObjectEntries,
     ObjectKeys<Schema>,
     ErrorMessage<NonOptionalIssue> | undefined
   > = {};
+  // Enumerated entries belong to the trusted schema dictionary, whose values are schemas.
   for (const key in schema.entries) {
-    // @ts-expect-error
+    // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
     entries[key] =
       !keys || keys.includes(key)
-        ? nonOptional(schema.entries[key], message)
-        : schema.entries[key];
+        ? nonOptional(schema.entries[key]!, message)
+        : schema.entries[key]!;
   }
 
   // Return modified copy of schema
   return {
     ...schema,
     entries,
+    /** Adapt the fresh copied schema to the same bounded root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },

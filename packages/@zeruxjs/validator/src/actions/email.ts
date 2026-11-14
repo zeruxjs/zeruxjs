@@ -11,19 +11,19 @@ import { _addIssue } from '../utils/index.js';
  */
 export interface EmailIssue<TInput extends string> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'email';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: null;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `"${string}"`;
   /**
@@ -40,15 +40,15 @@ export interface EmailAction<
   TMessage extends ErrorMessage<EmailIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, EmailIssue<TInput>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'email';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof email;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: null;
   /**
@@ -56,40 +56,29 @@ export interface EmailAction<
    */
   readonly requirement: RegExp;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an [email](https://en.wikipedia.org/wiki/Email_address) validation
- * action.
- *
- * Hint: This validation action intentionally only validates common email
- * addresses. If you are interested in an action that covers the entire
- * specification, please use the `rfcEmail` action instead.
- *
- * @returns An email action.
+/** Check the retained email text pattern without mailbox verification, SMTP/DNS traffic or complete standards conformance. This action neither establishes the input schema nor grants permissions.
+ * @returns {EmailAction<TInput, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function email<TInput extends string>(): EmailAction<TInput, undefined>;
 
-/**
- * Creates an [email](https://en.wikipedia.org/wiki/Email_address) validation
- * action.
- *
- * Hint: This validation action intentionally only validates common email
- * addresses. If you are interested in an action that covers the entire
- * specification, please use the `rfcEmail` action instead.
- *
- * @param message The error message.
- *
- * @returns An email action.
+/** Check the retained email text pattern without mailbox verification, SMTP/DNS traffic or complete standards conformance. This action neither establishes the input schema nor grants permissions.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {EmailAction<TInput, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function email<
   TInput extends string,
   const TMessage extends ErrorMessage<EmailIssue<TInput>> | undefined,
 >(message: TMessage): EmailAction<TInput, TMessage>;
 
+/** Check the retained email text pattern without mailbox verification, SMTP/DNS traffic or complete standards conformance. This action neither establishes the input schema nor grants permissions.
+ * @param {ErrorMessage<EmailIssue<string>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {EmailAction<string, ErrorMessage<EmailIssue<string>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function email(
   message?: ErrorMessage<EmailIssue<string>>
@@ -102,6 +91,11 @@ export function email(
     async: false,
     requirement: EMAIL_REGEX,
     message,
+    /** Check the retained email text pattern without mailbox verification, SMTP/DNS traffic or complete standards conformance. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement.test(dataset.value)) {
         _addIssue(this, 'email', dataset, config);

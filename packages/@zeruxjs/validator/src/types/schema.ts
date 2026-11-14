@@ -11,61 +11,48 @@ export interface BaseSchema<
   TOutput,
   TIssue extends BaseIssue<unknown>,
 > {
-  /**
-   * The object kind.
-   */
+  /** Fixed schema category used by pipeline dispatch; not a permission grant. */
   readonly kind: 'schema';
-  /**
-   * The schema type.
-   */
+  /** Stable authored schema discriminator used by structured diagnostics. */
   readonly type: string;
-  /**
-   * The schema reference.
+  /** Authored factory identity used by metadata/diagnostics; never resolve this from submitted source or a package name.
+   * @param {any[]} args - Trusted authored constructor arguments; this reference is not a general-purpose execution interface.
+   * @returns {BaseSchema<unknown, unknown, BaseIssue<unknown>>} Inert schema descriptor retaining declared capabilities; no source string is evaluated.
    */
   readonly reference: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...args: any[]
   ) => BaseSchema<unknown, unknown, BaseIssue<unknown>>;
-  /**
-   * The expected property.
-   */
+  /** Private textual schema expectation; never a coercion rule, authorization scope or safe rendered value. */
   readonly expects: string;
-  /**
-   * Whether it's async.
-   */
+  /** Explicit sync/async contract; synchronous parsing rejects async work instead of invoking it. */
   readonly async: false;
-  /**
-   * The Standard Schema properties.
-   *
+  /** Structured Standard Schema V1 adapter; root execution still owns budgets, cancellation and private issues.
    * @internal
    */
   readonly '~standard': StandardProps<TInput, TOutput>;
-  /**
-   * Parses unknown input values.
-   *
-   * @param dataset The input dataset.
-   * @param config The configuration.
-   *
-   * @returns The output dataset.
-   *
+  /** Parse a candidate dataset under the shared root execution policy.
+   * @param {UnknownDataset} dataset - Private candidate dataset; raw values and issue objects are not safe public diagnostics.
+   * @param {Config<BaseIssue<unknown>>} config - Root budgets, cooperative cancellation and private issue policy; callbacks own external work they start.
+   * @returns {OutputDataset<TOutput, TIssue>} Declared output/private issue dataset; budget failures and operational exceptions propagate without implying rollback.
    * @internal
    */
   readonly '~run': (
     dataset: UnknownDataset,
     config: Config<BaseIssue<unknown>>
   ) => OutputDataset<TOutput, TIssue>;
-  /**
-   * The input, output and issue type.
-   *
+  /** Optional type-only input/output/issue inference; it stores no runtime validator or submitted value.
    * @internal
    */
   readonly '~types'?:
-  | {
-    readonly input: TInput;
-    readonly output: TOutput;
-    readonly issue: TIssue;
-  }
-  | undefined;
+    | {
+        /** Declared accepted input type; this field is inference-only and is absent from normal runtime descriptors. */
+        readonly input: TInput;
+        /** Declared parsed output type; input and output need not be identical after child transforms. */
+        readonly output: TOutput;
+        /** Declared private issue union; transforms and operational exceptions are distinct outcomes. */
+        readonly issue: TIssue;
+      }
+    | undefined;
 }
 
 /**
@@ -79,27 +66,21 @@ export interface BaseSchemaAsync<
   BaseSchema<TInput, TOutput, TIssue>,
   'reference' | 'async' | '~run'
 > {
-  /**
-   * The schema reference.
+  /** Authored factory identity used by metadata/diagnostics; never resolve this from submitted source or a package name.
+   * @param {any[]} args - Trusted authored constructor arguments; this reference is not a general-purpose execution interface.
+   * @returns {BaseSchema<unknown, unknown, BaseIssue<unknown>> | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>} Inert schema descriptor retaining declared capabilities; no source string is evaluated.
    */
   readonly reference: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...args: any[]
   ) =>
     | BaseSchema<unknown, unknown, BaseIssue<unknown>>
     | BaseSchemaAsync<unknown, unknown, BaseIssue<unknown>>;
-  /**
-   * Whether it's async.
-   */
+  /** Explicit sync/async contract; synchronous parsing rejects async work instead of invoking it. */
   readonly async: true;
-  /**
-   * Parses unknown input values.
-   *
-   * @param dataset The input dataset.
-   * @param config The configuration.
-   *
-   * @returns The output dataset.
-   *
+  /** Parse a candidate dataset under the shared root execution policy.
+   * @param {UnknownDataset} dataset - Private candidate dataset; raw values and issue objects are not safe public diagnostics.
+   * @param {Config<BaseIssue<unknown>>} config - Root budgets, cooperative cancellation and private issue policy; callbacks own external work they start.
+   * @returns {Promise<OutputDataset<TOutput, TIssue>>} Declared output/private issue dataset; budget failures and operational exceptions propagate without implying rollback.
    * @internal
    */
   readonly '~run': (

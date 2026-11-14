@@ -1,0 +1,28 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  shareLinks,
+  validatedShareUrl,
+  shareCapabilities,
+  shareOrCopy,
+} from '../dist/index.js';
+test('safe links', () => {
+  /** Fixed social-link output checked for literal query encoding. */
+  const links = shareLinks({
+    url: 'https://example.com/a?q=1&b=2',
+    title: 'Example',
+  });
+  assert.match(links.linkedin, /linkedin/);
+  assert.equal(new URL(links.x).hostname, 'twitter.com');
+  assert.throws(() => validatedShareUrl('javascript:alert(1)'));
+  assert.throws(() =>
+    validatedShareUrl('https://username:password@example.com')
+  );
+});
+test('server fallback', async () => {
+  assert.deepEqual(shareCapabilities(), { native: false, clipboard: false });
+  assert.equal(
+    await shareOrCopy({ url: 'https://example.com' }),
+    'unavailable'
+  );
+});

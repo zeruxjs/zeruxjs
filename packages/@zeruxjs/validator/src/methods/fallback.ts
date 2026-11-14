@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   BaseIssue,
   BaseSchema,
@@ -18,9 +19,9 @@ export type Fallback<
 > =
   | MaybeDeepReadonly<InferOutput<TSchema>>
   | ((
-    dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,
-    config?: Config<InferIssue<TSchema>>
-  ) => MaybeDeepReadonly<InferOutput<TSchema>>);
+      dataset?: OutputDataset<InferOutput<TSchema>, InferIssue<TSchema>>,
+      config?: Config<InferIssue<TSchema>>
+    ) => MaybeDeepReadonly<InferOutput<TSchema>>);
 
 /**
  * Schema with fallback type.
@@ -30,18 +31,18 @@ export type SchemaWithFallback<
   TFallback extends Fallback<TSchema>,
 > = TSchema & {
   /**
-   * The fallback value.
+   * Trusted output literal/factory retained by reference; type compatibility is not runtime revalidation.
    */
   readonly fallback: TFallback;
 };
 
 /**
- * Returns a fallback value as output if the input does not match the schema.
+ * Replace ordinary schema rejection with an explicitly trusted fallback value/factory. Operational, cancellation and budget failures still propagate; the replacement is not revalidated by the wrapped schema.
  *
- * @param schema The schema to catch.
- * @param fallback The fallback value.
+ * @param {TSchema} schema - Trusted declared schema whose ordinary issue result may select a fallback.
+ * @param {TFallback} fallback - Trusted output-compatible literal/factory retained by reference, not arbitrary source code.
  *
- * @returns The passed schema.
+ * @returns {SchemaWithFallback<TSchema, TFallback>} Inert fallback wrapper; literal/output identity is not deep-cloned.
  */
 // @__NO_SIDE_EFFECTS__
 export function fallback<
@@ -58,7 +59,8 @@ export function fallback<
       return _getStandardProps(this);
     },
     '~run'(dataset, config) {
-      const outputDataset = schema['~run'](dataset, config);
+      /** Completed schema dataset; only ordinary issues select replacement, never operational exceptions. */
+      const outputDataset = _runSchema(schema, dataset, config);
       return outputDataset.issues
         ? { typed: true, value: getFallback(this, outputDataset, config) }
         : outputDataset;

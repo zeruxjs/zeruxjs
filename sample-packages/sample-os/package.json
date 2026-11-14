@@ -1,0 +1,11 @@
+{
+  "name": "sample-os",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "dependencies": {
+    "systeminformation": "^5.33.19",
+    "zforge": "0.0.4"
+  }
+}

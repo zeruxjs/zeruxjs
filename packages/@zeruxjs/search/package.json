@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/search",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Powerfull Search",
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {
@@ -16,8 +16,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
-    "prepack": "npm run build"
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
+    "prepack": "npm run build",
+    "bench": "node --experimental-strip-types --expose-gc bench/search.ts"
   },
   "keywords": [
     "Powerfull Search"
@@ -25,10 +26,13 @@
   "exports": {
     ".": "./dist/index.js",
     "./http": "./dist/http.js",
-    "./persistence": "./dist/persistence.js"
+    "./persistence": "./dist/persistence.js",
+    "./adapters": "./dist/adapters.js"
   },
   "files": [
     "dist/",
+    "examples/",
+    "bench/",
     "README.md",
     "LICENSE-MIT",
     "LICENSE-APACHE"

@@ -4,3 +4,8 @@ export * from './announcer.js';
 export * from './focus.js';
 export * from './keyboard.js';
 export * from './dialog.js';
+export * from './props.js';
+export * from './preferences.js';
+export * from './preference-styles.js';
+export * from './speech.js';
+export * from './preference-panel.js';

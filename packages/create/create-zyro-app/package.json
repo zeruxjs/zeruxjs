@@ -1,9 +1,10 @@
 {
   "name": "create-zyro-app",
-  "version": "0.0.3",
-  "description": "Placeholder CLI for the future ZyroJS project generator",
+  "version": "0.0.4",
+  "description": "Safe standalone ZyroJS project generator with explicit rendering modes",
   "bin": {
-    "create-zyro": "./dist/index.js"
+    "create-zyro": "./dist/index.js",
+    "create-zyro-app": "./dist/index.js"
   },
   "type": "module",
   "license": "(MIT OR Apache-2.0)",
@@ -23,20 +24,37 @@
     "prepack": "npm run build"
   },
   "keywords": [
-    "placeholder",
-    "zyrojs"
+    "zyrojs",
+    "generator",
+    "hydration",
+    "static"
   ],
   "files": [
     "dist/",
     "README.md",
     "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "assets/",
+    "examples/"
   ],
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^25.4.0"
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./templates": {
+      "types": "./dist/templates.d.ts",
+      "import": "./dist/templates.js"
+    }
+  },
+  "dependencies": {
+    "zclivo": "0.0.4"
   }
 }

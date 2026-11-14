@@ -11,19 +11,19 @@ import { _addIssue } from '../utils/index.js';
  */
 export interface IsoDateIssue<TInput extends string> extends BaseIssue<TInput> {
   /**
-   * The issue kind.
+   * Fixed validation category; raw rejected values remain private.
    */
   readonly kind: 'validation';
   /**
-   * The issue type.
+   * Stable refinement discriminator for structured issue consumers.
    */
   readonly type: 'iso_date';
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expected: null;
   /**
-   * The received property.
+   * Private textual rejected-value diagnostic; do not expose it through public responses.
    */
   readonly received: `"${string}"`;
   /**
@@ -40,15 +40,15 @@ export interface IsoDateAction<
   TMessage extends ErrorMessage<IsoDateIssue<TInput>> | undefined,
 > extends BaseValidation<TInput, TInput, IsoDateIssue<TInput>> {
   /**
-   * The action type.
+   * Stable refinement discriminator; this action never coerces input into the declared schema type.
    */
   readonly type: 'iso_date';
   /**
-   * The action reference.
+   * Authored constructor identity; no handler is loaded from submitted data.
    */
   readonly reference: typeof isoDate;
   /**
-   * The expected property.
+   * Private diagnostic expectation, not escaped client feedback.
    */
   readonly expects: null;
   /**
@@ -56,45 +56,32 @@ export interface IsoDateAction<
    */
   readonly requirement: RegExp;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates an [ISO date](https://en.wikipedia.org/wiki/ISO_8601) validation action.
- *
- * Format: yyyy-mm-dd
- *
- * Hint: The regex used cannot validate the maximum number of days based on
- * year and month. For example, "2023-06-31" is valid although June has only
- * 30 days.
- *
- * @returns An ISO date action.
+/** Check the configured year-month-day text ranges; month-specific day counts and leap-year validity are not verified. This action neither establishes the input schema nor grants permissions.
+ * @returns {IsoDateAction<TInput, undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function isoDate<TInput extends string>(): IsoDateAction<
   TInput,
   undefined
 >;
 
-/**
- * Creates an [ISO date](https://en.wikipedia.org/wiki/ISO_8601) validation action.
- *
- * Format: yyyy-mm-dd
- *
- * Hint: The regex used cannot validate the maximum number of days based on
- * year and month. For example, "2023-06-31" is valid although June has only
- * 30 days.
- *
- * @param message The error message.
- *
- * @returns An ISO date action.
+/** Check the configured year-month-day text ranges; month-specific day counts and leap-year validity are not verified. This action neither establishes the input schema nor grants permissions.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {IsoDateAction<TInput, TMessage>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
  */
 export function isoDate<
   TInput extends string,
   const TMessage extends ErrorMessage<IsoDateIssue<TInput>> | undefined,
 >(message: TMessage): IsoDateAction<TInput, TMessage>;
 
+/** Check the configured year-month-day text ranges; month-specific day counts and leap-year validity are not verified. This action neither establishes the input schema nor grants permissions.
+ * @param {ErrorMessage<IsoDateIssue<string>>} message - Optional trusted private diagnostic text/callback; rejected values may be included in raw issues.
+ * @returns {IsoDateAction<string, ErrorMessage<IsoDateIssue<string>> | undefined>} Structured refinement retaining its requirement/message policy; use an explicit schema/pipe to validate input first.
+ */
 // @__NO_SIDE_EFFECTS__
 export function isoDate(
   message?: ErrorMessage<IsoDateIssue<string>>
@@ -107,6 +94,11 @@ export function isoDate(
     expects: null,
     requirement: ISO_DATE_REGEX,
     message,
+    /** Check the configured year-month-day text ranges; month-specific day counts and leap-year validity are not verified. Untyped datasets are left for the owning schema to reject.
+     * @param {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} dataset - Private current dataset; input type admission belongs to the preceding schema.
+     * @param {import('../types/index.js').Config<BaseIssue<unknown>>} config - Shared root issue budget, abort flags and private diagnostic policy.
+     * @returns {import('../types/index.js').OutputDataset<unknown, BaseIssue<unknown>>} Same dataset with a private issue on ordinary mismatch; native exceptions propagate without mutation replay.
+     */
     '~run'(dataset, config) {
       if (dataset.typed && !this.requirement.test(dataset.value)) {
         _addIssue(this, 'date', dataset, config);

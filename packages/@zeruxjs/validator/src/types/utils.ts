@@ -1,37 +1,37 @@
 /**
- * Checks if a type is `any`.
+ * Detect any at compile time for inference branches; performs no runtime validation.
  */
 export type IsAny<Type> = 0 extends 1 & Type ? true : false;
 
 /**
- * Checks if a type is `never`.
+ * Detect never without distributing over a union; performs no runtime validation.
  */
 export type IsNever<Type> = [Type] extends [never] ? true : false;
 
 /**
- * Extracts `null` from a type.
+ * Remove null only. This package-owned NonNullable differs from TypeScript’s built-in alias that also excludes undefined.
  */
 export type NonNullable<TValue> = TValue extends null ? never : TValue;
 
 /**
- * Extracts `null` and `undefined` from a type.
+ * Remove both null and undefined at compile time; a type annotation never filters runtime data.
  */
 export type NonNullish<TValue> = TValue extends null | undefined
   ? never
   : TValue;
 
 /**
- * Extracts `undefined` from a type.
+ * Remove undefined only, preserving null when present in the original type.
  */
 export type NonOptional<TValue> = TValue extends undefined ? never : TValue;
 
 /**
- * Constructs a type that is maybe readonly.
+ * Accept mutable or shallow-readonly typing without copying or freezing runtime values.
  */
 export type MaybeReadonly<TValue> = TValue | Readonly<TValue>;
 
 /**
- * Constructs a type that is deeply readonly.
+ * Map record/array branches to readonly properties at compile time; this does not freeze objects or create an immutable runtime snapshot.
  */
 export type DeepReadonly<TValue> = TValue extends
   | Record<string, unknown>
@@ -40,17 +40,17 @@ export type DeepReadonly<TValue> = TValue extends
   : TValue;
 
 /**
- * Constructs a type that is maybe deeply readonly.
+ * Accept original or recursively readonly record/array typing; runtime values still retain identity.
  */
 export type MaybeDeepReadonly<TValue> = TValue | DeepReadonly<TValue>;
 
 /**
- * Constructs a type that is maybe a promise.
+ * Accept a direct value or native Promise type; this does not schedule, await or cancel work.
  */
 export type MaybePromise<TValue> = TValue | Promise<TValue>;
 
 /**
- * Prettifies a type for better readability.
+ * Materialize an object-shaped mapped type for editor readability, with no emitted runtime code.
  *
  * Hint: This type has no effect and is only used so that TypeScript displays
  * the final type in the preview instead of the utility types used.
@@ -58,7 +58,7 @@ export type MaybePromise<TValue> = TValue | Promise<TValue>;
 export type Prettify<TObject> = { [TKey in keyof TObject]: TObject[TKey] } & {};
 
 /**
- * Marks specific keys as optional.
+ * Mark only selected declared keys optional in the type; no runtime fields, defaults or absence checks are created.
  */
 export type MarkOptional<TObject, TKeys extends keyof TObject> =
   // Mapping any entry to unknown preserves key order in final output
@@ -66,8 +66,7 @@ export type MarkOptional<TObject, TKeys extends keyof TObject> =
     Partial<Pick<TObject, TKeys>>;
 
 /**
- * Merges two objects. Overlapping entries from the second object overwrite
- * properties from the first object.
+ * Compute a second-definition-wins object type. This does not merge, clone or authorize any runtime objects.
  */
 export type Merge<TFirstObject, TSecondObject> = Omit<
   TFirstObject,
@@ -76,13 +75,13 @@ export type Merge<TFirstObject, TSecondObject> = Omit<
   TSecondObject;
 
 /**
- * Extracts first tuple item.
+ * Select the first type from a declared nonempty readonly/mutable tuple, without a runtime read.
  */
 export type FirstTupleItem<TTuple extends readonly [unknown, ...unknown[]]> =
   TTuple[0];
 
 /**
- * Extracts last tuple item.
+ * Select the final type from a declared nonempty tuple using its rest length; no runtime index validation occurs.
  */
 export type LastTupleItem<TTuple extends readonly [unknown, ...unknown[]]> =
   TTuple[TTuple extends readonly [unknown, ...infer TRest]
@@ -90,18 +89,16 @@ export type LastTupleItem<TTuple extends readonly [unknown, ...unknown[]]> =
     : never];
 
 /**
- * Converts union to intersection type.
+ * Infer an intersection through distributive function-parameter typing; no runtime function is invoked.
  */
-export type UnionToIntersect<TUnion> =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (TUnion extends any ? (arg: TUnion) => void : never) extends (
-    arg: infer Intersect
-  ) => void
-    ? Intersect
-    : never;
+export type UnionToIntersect<TUnion> = (
+  TUnion extends any ? (arg: TUnion) => void : never
+) extends (arg: infer Intersect) => void
+  ? Intersect
+  : never;
 
 /**
- * Converts union to tuple type using an accumulator.
+ * Recursively accumulate a type-level tuple; this is not runtime enumeration or sorting.
  *
  * For more information: {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-5.html#tail-recursion-elimination-on-conditional-types}
  */
@@ -113,6 +110,6 @@ type UnionToTupleHelper<TUnion, TResult extends unknown[]> =
     : TResult;
 
 /**
- * Converts union to tuple type.
+ * Compute a type-only tuple from union members; no runtime array, ordering policy or serialization is created.
  */
 export type UnionToTuple<TUnion> = UnionToTupleHelper<TUnion, []>;

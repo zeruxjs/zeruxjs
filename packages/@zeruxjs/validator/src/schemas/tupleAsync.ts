@@ -1,3 +1,4 @@
+import { _runSchema } from '../utils/_run.js';
 import type {
   ArrayPathItem,
   BaseIssue,
@@ -25,61 +26,50 @@ export interface TupleSchemaAsync<
   TupleIssue | InferTupleIssue<TItems>
 > {
   /**
-   * The schema type.
+   * Stable structural discriminator for issue and metadata consumers.
    */
   readonly type: 'tuple';
   /**
-   * The schema reference.
+   * Authored constructor identity; no runtime package discovery occurs.
    */
   readonly reference: typeof tuple | typeof tupleAsync;
   /**
-   * The expected property.
+   * Private root-type diagnostic, not an authorization or escaping policy.
    */
   readonly expects: 'Array';
   /**
-   * The items schema.
+   * Borrowed ordered child schemas; no deep isolation is introduced.
    */
   readonly items: TItems;
   /**
-   * The error message.
+   * Optional trusted private diagnostic text/callback.
    */
   readonly message: TMessage;
 }
 
-/**
- * Creates a tuple schema.
- *
- * Hint: This schema removes unknown items. The output will only include the
- * items you specify. To include unknown items, use `looseTupleAsync`. To
- * return an issue for unknown items, use `strictTupleAsync`. To include and
- * validate unknown items, use `tupleWithRestAsync`.
- *
- * @param items The items schema.
- *
- * @returns A tuple schema.
+/** Parse the declared positional prefix and omit trailing items; missing positions are delegated as undefined. Construction captures trusted child references without parsing input.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; this API does not clone or freeze the tuple.
+ * @returns {TupleSchemaAsync<TItems, undefined>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
  */
 export function tupleAsync<const TItems extends TupleItemsAsync>(
   items: TItems
 ): TupleSchemaAsync<TItems, undefined>;
 
-/**
- * Creates a tuple schema.
- *
- * Hint: This schema removes unknown items. The output will only include the
- * items you specify. To include unknown items, use `looseTupleAsync`. To
- * return an issue for unknown items, use `strictTupleAsync`. To include and
- * validate unknown items, use `tupleWithRestAsync`.
- *
- * @param items The items schema.
- * @param message The error message.
- *
- * @returns A tuple schema.
+/** Parse the declared positional prefix and omit trailing items; missing positions are delegated as undefined. Construction captures trusted child references without parsing input.
+ * @param {TItems} items - Borrowed trusted ordered child schemas; this API does not clone or freeze the tuple.
+ * @param {TMessage} message - Optional trusted private diagnostic text/callback, not sanitized client feedback.
+ * @returns {TupleSchemaAsync<TItems, TMessage>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
  */
 export function tupleAsync<
   const TItems extends TupleItemsAsync,
   const TMessage extends ErrorMessage<TupleIssue> | undefined,
 >(items: TItems, message: TMessage): TupleSchemaAsync<TItems, TMessage>;
 
+/** Parse the declared positional prefix and omit trailing items; missing positions are delegated as undefined. Construction captures trusted child references without parsing input.
+ * @param {TupleItemsAsync} items - Borrowed trusted ordered child schemas; this API does not clone or freeze the tuple.
+ * @param {ErrorMessage<TupleIssue>} message - Optional trusted private diagnostic text/callback, not sanitized client feedback.
+ * @returns {TupleSchemaAsync<TupleItemsAsync, ErrorMessage<TupleIssue> | undefined>} Inert asynchronous schema sharing root execution limits and cancellation when explicitly parsed.
+ */
 // @__NO_SIDE_EFFECTS__
 export function tupleAsync(
   items: TupleItemsAsync,
@@ -93,25 +83,40 @@ export function tupleAsync(
     async: true,
     items,
     message,
+    /** Adapt explicit validation to the bounded shared root execution path.
+     * @returns {object} Inert Standard Schema V1 adapter.
+     */
     get '~standard'() {
       return _getStandardProps(this);
     },
+    /** Parse the declared positional prefix and omit trailing items; missing positions are delegated as undefined. Child parsing starts concurrently; abortEarly affects result accumulation after that work starts.
+     * @param {import('../types/index.js').UnknownDataset} dataset - Private candidate structural input; raw child issues retain its original values/paths.
+     * @param {import('../types/index.js').Config<import('../types/index.js').BaseIssue<unknown>>} config - Shared root budgets, cancellation and private diagnostic policy.
+     * @returns {Promise<OutputDataset<unknown, import('../types/index.js').BaseIssue<unknown>>>} Declared structural output or private issues; root execution drains owned started callbacks on operational failure.
+     */
     async '~run'(dataset, config) {
       // Get input value from dataset
+      /** Borrowed structural input retained for own-field reads and private issue paths. */
       const input = dataset.value;
 
       // If root type is valid, check nested types
       if (Array.isArray(input)) {
         // Set typed to `true` and value to empty array
-        // @ts-expect-error
+        // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
         dataset.typed = true;
         dataset.value = [];
 
         // Parse schema of each tuple item
+        /** Concurrent declared-position results retained in tuple order for issue accumulation. */
         const itemDatasets = await Promise.all(
           this.items.map(async (item, key) => {
+            /** Original field/position value, or undefined for a missing optional/defaulted input. */
             const value = input[key];
-            return [key, value, await item['~run']({ value }, config)] as const;
+            return [
+              key,
+              value,
+              await _runSchema(item, { value }, config),
+            ] as const;
           })
         );
 
@@ -120,6 +125,7 @@ export function tupleAsync(
           // If there are issues, capture them
           if (itemDataset.issues) {
             // Create tuple path item
+            /** Private parent path segment retaining original input/value; public feedback must sanitize it. */
             const pathItem: ArrayPathItem = {
               type: 'array',
               origin: 'value',
@@ -133,14 +139,14 @@ export function tupleAsync(
               if (issue.path) {
                 issue.path.unshift(pathItem);
               } else {
-                // @ts-expect-error
+                // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
                 issue.path = [pathItem];
               }
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues?.push(issue);
             }
             if (!dataset.issues) {
-              // @ts-expect-error
+              // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
               dataset.issues = itemDataset.issues;
             }
 
@@ -157,7 +163,7 @@ export function tupleAsync(
           }
 
           // Add item to dataset
-          // @ts-expect-error
+          // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
           dataset.value.push(itemDataset.value);
         }
 
@@ -167,7 +173,7 @@ export function tupleAsync(
       }
 
       // Return output dataset
-      // @ts-expect-error
+      // @ts-expect-error -- Runtime validation narrows this generic branch beyond static inference.
       return dataset as OutputDataset<
         unknown[],
         TupleIssue | BaseIssue<unknown>

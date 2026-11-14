@@ -1,0 +1,133 @@
+import type { ZuixConfig } from 'zuixs';
+import { siteKeyframes } from '../scripts/site-design.ts';
+/** Classes live in index.html and the generated package-card template. Only reset/theme selectors remain global. */
+export default {
+  /** Keep global CSS limited to reset/theme recipes; components use utilities. */
+  preflight: false,
+  /** Prefix shared utility classes to avoid collisions with authored markup. */
+  prefix: 'ui-',
+  /** Keyframes used by the homepage and shared site design helpers. */
+  keyframes: {
+    'home-flow':
+      '0%{opacity:0;transform:translateY(0)}25%,70%{opacity:1}100%{opacity:0;transform:translateY(26px)}',
+    ...siteKeyframes,
+    'home-float':
+      '0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}',
+  },
+  /** Responsive breakpoints and a named spacing token used by templates. */
+  extend: {
+    screens: { tablet: '551px', desktop: '851px' },
+    spacing: { neighbor: '15px' },
+  },
+  /** Global selectors that provide accessibility and theme behavior. */
+  recipes: [
+    {
+      selector: ':root[data-motion="paused"] *, :root:not([data-motion]) *',
+      apply: ['ui-![animation:none]', 'ui-![transition:none]'],
+    },
+    {
+      selector: 'a',
+      apply: ['ui-text-[inherit]', 'ui-[text-decoration:none]'],
+    },
+    { selector: 'button, input', apply: ['ui-[font:inherit]'] },
+    {
+      selector:
+        'a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible',
+      apply: [
+        'ui-[outline:3px_solid_var(--accent)]',
+        'ui-outline-offset-[5px]',
+      ],
+    },
+    {
+      selector: ':root',
+      apply: [
+        'ui-[font-family:Inter,_ui-sans-serif,_system-ui,_-apple-system,_BlinkMacSystemFont,_Segoe_UI,_sans-serif]',
+        'ui-text-[var(--text)]',
+        'ui-[background:var(--bg)]',
+        'ui-leading-[1.7]',
+        'ui-[--accent:#087e65]',
+        'ui-[--muted:#66776f]',
+        'ui-[--line:#dde6df]',
+      ],
+    },
+    {
+      selector: '*',
+      apply: ['ui-[box-sizing:border-box]'],
+    },
+    {
+      selector: '[hidden]',
+      apply: ['ui-!hidden'],
+    },
+    {
+      selector: ':root',
+      apply: [
+        'ui-[--bg:#f8f9fe]',
+        'ui-[--surface:#ffffff]',
+        'ui-[--text:#20233c]',
+        'ui-[--muted:#606682]',
+        'ui-[--line:#dfe3f1]',
+        'ui-[--panel:#f0f2fb]',
+        'ui-[--accent:#5546d9]',
+        'ui-[--accent-soft:#eeebff]',
+        'ui-[--on-accent:#ffffff]',
+        'ui-[--secondary:#06686c]',
+        'ui-[--glow:#8170ee15]',
+        'ui-[--selection:#d9d3ff]',
+        'ui-[--header:rgba(248,249,254,0.94)]',
+        'ui-[--code:#171c35]',
+        'ui-[--code-text:#e4e8ff]',
+        'ui-[--shadow:0_12px_32px_rgba(45,38,101,0.10)]',
+        'ui-color-scheme-light',
+      ],
+    },
+    {
+      selector: ':root[data-theme="dark"]',
+      apply: [
+        'ui-[--bg:#101321]',
+        'ui-[--surface:#191d31]',
+        'ui-[--text:#ecedff]',
+        'ui-[--muted:#b0b5d0]',
+        'ui-[--line:#303650]',
+        'ui-[--panel:#20263d]',
+        'ui-[--accent:#b6aaff]',
+        'ui-[--accent-soft:#302849]',
+        'ui-[--on-accent:#191329]',
+        'ui-[--secondary:#68d5d1]',
+        'ui-[--glow:#8170ee19]',
+        'ui-[--selection:#493d73]',
+        'ui-[--header:rgba(16,19,33,0.94)]',
+        'ui-[--code:#0d1020]',
+        'ui-[--code-text:#e3e7ff]',
+        'ui-[--shadow:0_16px_40px_rgba(0,0,0,0.24)]',
+        'ui-color-scheme-dark',
+      ],
+    },
+    {
+      selector: ':root:not([data-theme="light"])',
+      apply: [
+        'ui-[--bg:#101321]',
+        'ui-[--surface:#191d31]',
+        'ui-[--text:#ecedff]',
+        'ui-[--muted:#b0b5d0]',
+        'ui-[--line:#303650]',
+        'ui-[--panel:#20263d]',
+        'ui-[--accent:#b6aaff]',
+        'ui-[--accent-soft:#302849]',
+        'ui-[--on-accent:#191329]',
+        'ui-[--secondary:#68d5d1]',
+        'ui-[--glow:#8170ee19]',
+        'ui-[--selection:#493d73]',
+        'ui-[--header:rgba(16,19,33,0.94)]',
+        'ui-[--code:#0d1020]',
+        'ui-[--code-text:#e3e7ff]',
+        'ui-[--shadow:0_16px_40px_rgba(0,0,0,0.24)]',
+        'ui-color-scheme-dark',
+      ],
+      media: '(prefers-color-scheme: dark)',
+    },
+    {
+      selector: '::selection',
+      apply: ['ui-[background:var(--selection)]', 'ui-text-[var(--text)]'],
+    },
+  ],
+} satisfies ZuixConfig;

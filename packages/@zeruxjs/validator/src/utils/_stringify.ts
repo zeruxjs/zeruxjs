@@ -1,14 +1,11 @@
-/**
- * Stringifies an unknown input to a literal or type string.
- *
- * @param input The unknown input.
- *
- * @returns A literal or type string.
- *
+/** Describe private input as a literal/type name without JSON serialization; constructor metadata and proxies remain trusted runtime behavior.
+ * @param {unknown} input - Private rejected value; strings are deliberately not escaped or truncated here.
+ * @returns {string} Private unescaped diagnostic text, never safe HTML or a redacted audit value.
  * @internal
  */
 // @__NO_SIDE_EFFECTS__
 export function _stringify(input: unknown): string {
+  /** Native typeof discriminator; object constructor-name lookup is handled separately. */
   const type = typeof input;
   if (type === 'string') {
     return `"${input}"`;

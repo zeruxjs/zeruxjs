@@ -1,6 +1,6 @@
 {
   "name": "@zeruxjs/validator",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Type-safe schema and HTTP input validation for ZeruxJS",
   "author": "",
   "type": "module",
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "exports": {
@@ -20,6 +20,14 @@
     "./http": {
       "types": "./dist/integrations/http.d.ts",
       "import": "./dist/integrations/http.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
+    },
+    "./schemas": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.js"
     }
   },
   "license": "(MIT OR Apache-2.0)",

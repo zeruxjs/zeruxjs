@@ -5,19 +5,19 @@ import type { BaseTransformation } from '../types/index.js';
  */
 export interface TrimAction extends BaseTransformation<string, string, never> {
   /**
-   * The action type.
+   * Stable transformation discriminator; this action emits no validation issue itself.
    */
   readonly type: 'trim';
   /**
-   * The action reference.
+   * Authored constructor identity; no source text is evaluated.
    */
   readonly reference: typeof trim;
 }
 
 /**
- * Creates a trim transformation action.
+ * Remove native ECMAScript whitespace from both ends without changing internal whitespace. Creates a trim transformation action.
  *
- * @returns A trim action.
+ * @returns {TrimAction} An inert trim action.
  */
 // @__NO_SIDE_EFFECTS__
 export function trim(): TrimAction {
@@ -26,6 +26,10 @@ export function trim(): TrimAction {
     type: 'trim',
     reference: trim,
     async: false,
+    /** Apply the explicit string transformation after the pipeline establishes a typed string.
+     * @param {import('../types/index.js').SuccessDataset<string>} dataset - Private typed string dataset; this is not an arbitrary unknown-input parser.
+     * @returns {import('../types/index.js').SuccessDataset<string>} Same dataset with transformed text; no HTML escaping, authorization or deep copying is implied.
+     */
     '~run'(dataset) {
       dataset.value = dataset.value.trim();
       return dataset;

@@ -5,15 +5,15 @@ import type { BaseIssue } from '../../types/index.js';
  */
 export interface ObjectWithRestIssue extends BaseIssue<unknown> {
   /**
-   * The issue kind.
+   * Fixed schema failure category; raw issues retain private candidate input.
    */
   readonly kind: 'schema';
   /**
-   * The issue type.
+   * Stable structural discriminator for issue consumers.
    */
   readonly type: 'object_with_rest';
   /**
-   * The expected property.
+   * Private type/key diagnostic; never proof of permission or sanitized output.
    */
   readonly expected: 'Object' | `"${string}"`;
 }

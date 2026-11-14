@@ -1,26 +1,74 @@
+/** Fixed route cards use authored values only; no stored HTML or secrets enter this static template. */
 const sections = [
-  { href: "/playground", title: "Playground", body: "HTML page route with middleware state and controller data." },
-  { href: "/blog/zerux-runtime", title: "Dynamic Blog Route", body: "Checks `[slug]` route params and composable formatting." },
-  { href: "/api/health", title: "API Health", body: "JSON route handler using middleware and controller references." },
-  { href: "/api/echo", title: "API Echo", body: "POST endpoint for request body and query parsing." },
-  { href: "/db-demo", title: "DB Demo", body: "Creates a table on demand and inserts rows through @zeruxjs/db." },
-  { href: "/plugin/runtime", title: "Plugin Route", body: "Route added at runtime by a Zerux plugin." },
-  { href: "/boom", title: "Intentional Error", body: "Throws an `HttpError` so error handling and logs are visible." }
+  {
+    href: '/workspace',
+    title: 'Local Integration Workspace',
+    body: 'ZyroJS UI, SQLite notes, local objects/assets, search, protocols, analytics, reports and consent-controlled tools.',
+  },
+  {
+    href: '/playground',
+    title: 'Playground',
+    body: 'HTML page route with middleware state and controller data.',
+  },
+  {
+    href: '/index.html',
+    title: 'Standalone ZyroJS Counter',
+    body: 'Interactive component using the installed ZyroJS runtime.',
+  },
+  {
+    href: '/blog/zerux-runtime',
+    title: 'Dynamic Blog Route',
+    body: 'Checks `[slug]` route params and composable formatting.',
+  },
+  {
+    href: '/api/health',
+    title: 'API Health',
+    body: 'JSON route handler using middleware and controller references.',
+  },
+  {
+    href: '/api/echo',
+    title: 'API Echo',
+    body: 'POST endpoint for request body and query parsing.',
+  },
+  {
+    href: '/db-demo',
+    title: 'Optional MySQL Demo',
+    body: 'Requires ENABLE_MYSQL_DEMO and a real MySQL connection. SQLite examples are in the workspace.',
+  },
+  {
+    href: '/plugin/runtime',
+    title: 'Plugin Route',
+    body: 'Route added at runtime by a Zerux plugin.',
+  },
+  {
+    href: '/plugin/workers',
+    title: 'Worker Demo',
+    body: 'Heartbeat state and a real worker-thread calculation.',
+  },
+  {
+    href: '/boom',
+    title: 'Intentional Error',
+    body: 'Throws an `HttpError` so error handling and logs are visible.',
+  },
 ];
 
+/** Authored explanatory feature labels, not measured service counts or health guarantees. */
 const stats = [
-  { label: "pages", value: "nested app routes" },
-  { label: "middleware", value: "request context + headers" },
-  { label: "controllers", value: "string references" },
-  { label: "plugins", value: "runtime route injection" }
+  { label: 'pages', value: 'nested app routes' },
+  { label: 'middleware', value: 'request context + headers' },
+  { label: 'controllers', value: 'string references' },
+  { label: 'plugins', value: 'runtime route injection' },
 ];
 
+/** Render the static local example index without starting services.
+ * @returns {string} Authored HTML containing only fixed route metadata.
+ */
 export default () => `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ZeruxJS Playground</title>
+    <title>ZeruxJS Local Integration App</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -196,7 +244,7 @@ export default () => `<!DOCTYPE html>
               public assets, logging, and framework error responses.
             </p>
             <div class="hero-actions">
-              <a class="primary" href="/playground">Open Playground</a>
+              <a class="primary" href="/workspace">Open Local Workspace</a>
               <a class="secondary" href="/plugin/runtime">See Plugin Route</a>
               <a class="secondary" href="/public-note.txt">Public Asset</a>
             </div>
@@ -212,23 +260,31 @@ export default () => `<!DOCTYPE html>
         </div>
 
         <div class="stats">
-          ${stats.map((item) => `
+          ${stats
+            .map(
+              (item) => `
             <article class="card">
               <div class="pill">${item.label}</div>
               <strong>${item.value}</strong>
             </article>
-          `).join("")}
+          `
+            )
+            .join('')}
         </div>
       </section>
 
       <section class="routes">
-        ${sections.map((item) => `
+        ${sections
+          .map(
+            (item) => `
           <a class="route-card" href="${item.href}">
             <div class="pill">${item.href}</div>
             <h2>${item.title}</h2>
             <p>${item.body}</p>
           </a>
-        `).join("")}
+        `
+          )
+          .join('')}
       </section>
 
       <section class="footer">

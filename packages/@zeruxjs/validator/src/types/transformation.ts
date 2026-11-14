@@ -10,52 +10,42 @@ export interface BaseTransformation<
   TOutput,
   TIssue extends BaseIssue<unknown>,
 > {
-  /**
-   * The object kind.
-   */
+  /** Fixed transformation category; a typed pipeline must establish admissible input before invoking it. */
   readonly kind: 'transformation';
-  /**
-   * The transformation type.
-   */
+  /** Stable authored transformation discriminator used by structured diagnostics. */
   readonly type: string;
-  /**
-   * The transformation reference.
+  /** Authored factory identity used by metadata/diagnostics; never resolve this from submitted source or a package name.
+   * @param {any[]} args - Trusted authored constructor arguments; this reference is not a general-purpose execution interface.
+   * @returns {BaseTransformation<any, any, BaseIssue<unknown>>} Inert transformation descriptor retaining declared capabilities; no source string is evaluated.
    */
   readonly reference: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...args: any[]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => BaseTransformation<any, any, BaseIssue<unknown>>;
-  /**
-   * Whether it's async.
-   */
+  /** Explicit sync/async contract; synchronous parsing rejects async work instead of invoking it. */
   readonly async: false;
-  /**
-   * Transforms known input values.
-   *
-   * @param dataset The input dataset.
-   * @param config The configuration.
-   *
-   * @returns The output dataset.
-   *
+  /** Transform an already typed dataset under the current root execution policy.
+   * @param {SuccessDataset<TInput>} dataset - Private typed input dataset; transformations may preserve nested object identity.
+   * @param {Config<BaseIssue<unknown>>} config - Root budgets, cooperative cancellation and private issue policy; callbacks own external work they start.
+   * @returns {OutputDataset<TOutput, BaseIssue<unknown> | TIssue>} Declared output/private issue dataset; budget failures and operational exceptions propagate without implying rollback.
    * @internal
    */
   readonly '~run': (
     dataset: SuccessDataset<TInput>,
     config: Config<BaseIssue<unknown>>
   ) => OutputDataset<TOutput, BaseIssue<unknown> | TIssue>;
-  /**
-   * The input, output and issue type.
-   *
+  /** Optional type-only input/output/issue inference; it stores no runtime validator or submitted value.
    * @internal
    */
   readonly '~types'?:
-  | {
-    readonly input: TInput;
-    readonly output: TOutput;
-    readonly issue: TIssue;
-  }
-  | undefined;
+    | {
+        /** Declared pre-transformation value type, established by the preceding schema/pipeline stage. */
+        readonly input: TInput;
+        /** Declared post-transformation type; runtime callbacks remain trusted application code. */
+        readonly output: TOutput;
+        /** Declared private issue union; transforms and operational exceptions are distinct outcomes. */
+        readonly issue: TIssue;
+      }
+    | undefined;
 }
 
 /**
@@ -69,28 +59,21 @@ export interface BaseTransformationAsync<
   BaseTransformation<TInput, TOutput, TIssue>,
   'reference' | 'async' | '~run'
 > {
-  /**
-   * The transformation reference.
+  /** Authored factory identity used by metadata/diagnostics; never resolve this from submitted source or a package name.
+   * @param {any[]} args - Trusted authored constructor arguments; this reference is not a general-purpose execution interface.
+   * @returns {BaseTransformation<any, any, BaseIssue<unknown>> | BaseTransformationAsync<any, any, BaseIssue<unknown>>} Inert transformation descriptor retaining declared capabilities; no source string is evaluated.
    */
   readonly reference: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...args: any[]
-  ) => // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) =>
     | BaseTransformation<any, any, BaseIssue<unknown>>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     | BaseTransformationAsync<any, any, BaseIssue<unknown>>;
-  /**
-   * Whether it's async.
-   */
+  /** Explicit sync/async contract; synchronous parsing rejects async work instead of invoking it. */
   readonly async: true;
-  /**
-   * Transforms known input values.
-   *
-   * @param dataset The input dataset.
-   * @param config The configuration.
-   *
-   * @returns The output dataset.
-   *
+  /** Transform an already typed dataset under the current root execution policy.
+   * @param {SuccessDataset<TInput>} dataset - Private typed input dataset; transformations may preserve nested object identity.
+   * @param {Config<BaseIssue<unknown>>} config - Root budgets, cooperative cancellation and private issue policy; callbacks own external work they start.
+   * @returns {Promise<OutputDataset<TOutput, BaseIssue<unknown> | TIssue>>} Declared output/private issue dataset; budget failures and operational exceptions propagate without implying rollback.
    * @internal
    */
   readonly '~run': (
@@ -103,7 +86,6 @@ export interface BaseTransformationAsync<
  * Generic transformation type.
  */
 export type GenericTransformation<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,
@@ -113,7 +95,6 @@ export type GenericTransformation<
  * Generic transformation async type.
  */
 export type GenericTransformationAsync<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TInput = any,
   TOutput = TInput,
   TIssue extends BaseIssue<unknown> = BaseIssue<unknown>,
