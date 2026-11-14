@@ -54,7 +54,7 @@
   "devDependencies": {
     "@types/node": "^25.4.0",
     "parse5": "7.3.0",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "repository": {
     "type": "git",

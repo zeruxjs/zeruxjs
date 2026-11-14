@@ -73,7 +73,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.4.0",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "zlocale": "0.0.4"
   },
   "bundleDependencies": [
