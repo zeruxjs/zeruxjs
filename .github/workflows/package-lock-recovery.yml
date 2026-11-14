@@ -48,6 +48,8 @@ jobs:
         run: npm run build:workspaces -- --concurrency auto
       - name: Create reviewed recovery branch
         id: branch
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           branch="automation/lock-recovery-${GITHUB_RUN_ID}"
           git switch --create "$branch"
@@ -56,6 +58,7 @@ jobs:
           git -c user.name='github-actions[bot]' \
             -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
             commit -m 'chore: recover workspace lockfile'
+          gh auth setup-git
           git push --set-upstream origin "$branch"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
       - name: Open recovery pull request

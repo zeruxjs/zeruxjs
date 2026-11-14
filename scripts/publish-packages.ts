@@ -127,7 +127,10 @@ async function metadata(name, version) {
     name.length > 214 ||
     !/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/.test(name) ||
     typeof version !== 'string' ||
-    !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)
+    (version !== 'latest' &&
+      !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(
+        version
+      ))
   ) {
     throw Error('Invalid public registry package identity');
   }
