@@ -11,9 +11,9 @@
     "packages/@zeruxjs/ai/src/registry.ts",
     "packages/@zeruxjs/ai/src/tools.ts",
     "packages/@zeruxjs/ai/src/tool-transports.ts",
-    "packages/@zeruxjs/ai/examples/tools.mjs",
+    "packages/@zeruxjs/ai/examples/tools.ts",
     "packages/@zeruxjs/ai/src/content.ts",
-    "packages/@zeruxjs/ai/examples/content.mjs",
+    "packages/@zeruxjs/ai/examples/content.ts",
     "packages/@zeruxjs/ai/src/structured.ts",
     "packages/@zeruxjs/ai/examples/structured.mts",
     "packages/@zeruxjs/ai/evaluation/cases.json"
@@ -140,7 +140,7 @@ ownership remain explicit. Retrieval stays in ai-model; Figma is a tool/data
 integration rather than a model provider.
 
 See the package README's capability/version matrix, official API references and
-`examples/providers.mjs`. Fixture checks use ztrial's scoped HTTP fake, not live
+`examples/providers.ts`. Fixture checks use ztrial's scoped HTTP fake, not live
 Anthropic/Gemini/DeepSeek/Z.AI acceptance. Live checks need authorized credentials,
 enabled account models, quota and network access.
 
@@ -163,7 +163,7 @@ Optional fixed zhost calls use authenticated, allowlisted endpoints with rejecte
 redirects and bounded JSON/SSE readers. Trusted in-memory OpenAPI subset imports
 require per-operation approval and return inert descriptors only. No package,
 command, URL or remote schema is executed from model input. See the package README
-and `examples/tools.mjs` for limits, cancellation and deployment prerequisites.
+and `examples/tools.ts` for limits, cancellation and deployment prerequisites.
 
 ## Inert media and source data
 

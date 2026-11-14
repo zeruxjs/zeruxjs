@@ -171,7 +171,7 @@ policies and do not mistake them for authentication. CSP nonce generation alread
 uses native randomBytes with a 16–64-byte size bound; valid syntax alone cannot
 prove entropy, and a nonce is never authorization.
 
-Run `npm run build` then `node --test test/*.test.cjs` in this package. Focused tests
+Run `npm run build` then `node --experimental-strip-types --test test/*.test.ts` in this package. Focused tests
 exercise script/style-breaking values, algorithm/key/nonce policies, metadata and
 ciphertext tampering, rotation, native-provider failure, timing-safe comparison
 results, cleanup, runtime header policies and an offline npm-installed declaration

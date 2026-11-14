@@ -8,9 +8,9 @@
     "packages/@zeruxjs/ai-model/README.md",
     "packages/@zeruxjs/ai-model/package.json",
     "packages/@zeruxjs/ai-model/src/corpus.ts",
-    "packages/@zeruxjs/ai-model/examples/corpus.mjs",
+    "packages/@zeruxjs/ai-model/examples/corpus.ts",
     "packages/@zeruxjs/ai-model/src/evidence.ts",
-    "packages/@zeruxjs/ai-model/examples/evidence.mjs"
+    "packages/@zeruxjs/ai-model/examples/evidence.ts"
   ],
   "related": [
     "packages",

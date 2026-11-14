@@ -1,7 +1,7 @@
 import { installNavigationPrefetch } from '@zeruxjs/performance/navigation';
 
 /** Progressive enhancement for already-rendered documentation. No telemetry, external services or cookies. */
-import { installThemeControl } from '../../../../scripts/site-theme.mjs';
+import { installThemeControl } from '../../../../scripts/site-theme.ts';
 installThemeControl();
 for (const button of document.querySelectorAll('.copy-code')) {
   if (!navigator.clipboard?.writeText) continue;

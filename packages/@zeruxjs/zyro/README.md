@@ -159,7 +159,7 @@ still belongs to their original owner.
 ## Focused verification
 
 From this package run `npm run build`, then
-`node --test test/advanced.test.mjs test/integration.test.mjs test/subscription-scope.test.mjs test/renderer.test.mjs test/renderer-public.test.mjs test/renderer-framework.test.mjs`.
+`node --experimental-strip-types --test test/advanced.test.ts test/integration.test.ts test/subscription-scope.test.ts test/renderer.test.ts test/renderer-public.test.ts test/renderer-framework.test.ts`.
 Build the required standalone ZyroJS/security and framework packages first when
 their compiled exports are absent. The installed tarball fixture verifies core
 imports/types without the optional runtime, then bridge declarations and this

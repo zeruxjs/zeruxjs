@@ -36,7 +36,7 @@ npm run build
 
 Build required workspace dependencies first. Run focused existing checks when needed; full test/lint/typecheck suites require an explicit request. Do not bump versions during development unless requested. See [AGENTS.md](AGENTS.md) for repository editing and verification rules. Application development servers may already be running; consult their READMEs before starting or rebuilding them.
 
-For a clean package source build, use the dependency-aware `node scripts/build-workspaces.mjs --scope <package>` command. Compile-time imports of optional workspace peers are declared as development dependencies. The explicitly staged zforge build compiles its independent core before zhost/ZeruxJS and then requires its full strict build; this avoids relying on stale declarations while retaining optional consumer integrations. Bootstrap metadata is repository build tooling, not application configuration.
+For a clean package source build, use the dependency-aware `node --experimental-strip-types scripts/build-workspaces.ts --scope <package>` command. Compile-time imports of optional workspace peers are declared as development dependencies. The explicitly staged zforge build compiles its independent core before zhost/ZeruxJS and then requires its full strict build; this avoids relying on stale declarations while retaining optional consumer integrations. Bootstrap metadata is repository build tooling, not application configuration.
 
 ## Monorepo lint commands
 

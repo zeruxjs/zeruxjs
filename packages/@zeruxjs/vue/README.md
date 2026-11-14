@@ -218,7 +218,7 @@ ZyroJS. The framework still supplies no automatic Vue browser bundling/hydration
 From this package run npm run build and focused tests:
 
 ```sh
-node --test test/advanced.test.mjs test/integration.test.mjs test/vue-scope.test.mjs test/renderer-server.test.mjs test/renderer-dom.test.mjs test/renderer-public.test.mjs test/renderer-framework.test.mjs
+node --experimental-strip-types --test test/advanced.test.ts test/integration.test.ts test/vue-scope.test.ts test/renderer-server.test.ts test/renderer-dom.test.ts test/renderer-public.test.ts test/renderer-framework.test.ts
 ```
 
 Tests use real Vue 3.5.44 plus development-only jsdom 30.1.3 on Node 24.15.0.

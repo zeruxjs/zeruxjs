@@ -5,9 +5,9 @@
   "section": "Contributing",
   "order": 10,
   "sources": [
-    "apps/zerux-docs/src/site.config.mjs",
-    "apps/zerux-docs/src/lib/content.mjs",
-    "apps/zerux-docs/src/lib/markdown.mjs"
+    "apps/zerux-docs/src/site.config.ts",
+    "apps/zerux-docs/src/lib/content.ts",
+    "apps/zerux-docs/src/lib/markdown.ts"
   ],
   "related": [
     "capabilities",
@@ -47,7 +47,7 @@ Run npm run build in apps/zerux-docs. The build rejects missing metadata, unknow
 
 ## Add a documentation version
 
-Before bumping live packages, run npm run snapshot -- <old-version>. Commit the reference.snapshot.json file, mark that version reference as snapshot in src/site.config.mjs, and pin its ref to a Git commit/tag. Add the new version and copy/review its Markdown directory, then set site.latest. Version switching keeps the current slug when it exists or falls back to introduction.
+Before bumping live packages, run npm run snapshot -- <old-version>. Commit the reference.snapshot.json file, mark that version reference as snapshot in src/site.config.ts, and pin its ref to a Git commit/tag. Add the new version and copy/review its Markdown directory, then set site.latest. Version switching keeps the current slug when it exists or falls back to introduction.
 
 Do not leave old documentation reading current manifests: that silently changes archived API contracts. The live reference builder requires the framework version to match the live docs version; independently released ecosystem packages keep their own versions.
 

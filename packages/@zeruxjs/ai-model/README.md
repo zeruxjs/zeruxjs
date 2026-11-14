@@ -43,7 +43,7 @@ Snapshot imports reject duplicate IDs without replacing existing documents. IDs 
 `@zeruxjs/ai-model/corpus` adds a local generator, validated snapshots and an
 authorized evidence reader. Root/legacy imports remain available. Imports never
 scan a repository, start a watcher, evaluate source or call an AI provider. The
-[public-import example](examples/corpus.mjs) explicitly selects public package
+[public-import example](examples/corpus.ts) explicitly selects public package
 manifests, export source declarations and authored documentation. No glob or
 package discovery occurs. Retrieval remains here; model transport remains in AI.
 
@@ -156,7 +156,7 @@ external model credentials are needed only if the host elects to call a provider
 
 `@zeruxjs/ai-model/evidence` exports `createEvidenceRetriever`,
 `createEvidenceAssistant` and `validateEvidenceCitations`. See
-[the public-import example](examples/evidence.mjs). It consumes a validated corpus
+[the public-import example](examples/evidence.ts). It consumes a validated corpus
 and trusted current manifest hash; it never reads source files per question.
 The existing lexical/assistant APIs retain their defaults and behavior.
 `DocumentKnowledgeBase.search(query,limit,ranking?)` additionally accepts explicit
@@ -251,7 +251,7 @@ do not prove a claim, and no tool permission follows from a citation.
 
 ### Reproducible small ranking comparison
 
-`test/evidence.test.mjs` defines fixture zx018-v1: public routing/cache/session
+`test/evidence.test.ts` defines fixture zx018-v1: public routing/cache/session
 notes, Chinese route text, accented French café text, duplicate chunks and a long
 repeated-keyword distractor. A hidden fixture is excluded for both rankings.
 The same five queries/expected top source are:

@@ -231,7 +231,7 @@ if (host) {
 ```
 
 See `lib/workspace/application.ts` for service ownership, `client/workspace.ts` for disposable
-browser integrations and `test/workspace.test.mjs` for isolated full request flows.
+browser integrations and `test/workspace.test.ts` for isolated full request flows.
 Build APIs follow [esbuild's JavaScript API](https://esbuild.github.io/api/#build);
 SQLite behavior is exercised on Node 24.15; the [official SQLite reference](https://nodejs.org/api/sqlite.html) describes the current upstream API, not a claim that every
 future Node SQLite API is supported.

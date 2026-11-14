@@ -216,12 +216,12 @@ Install dependencies from the committed lockfile with `npm ci`, use isolated Red
 
 ```bash
 # Real standalone, two BullMQ service instances, delayed/retry/concurrent workers:
-QUEUE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/queue/test/live-redis-integration.test.mjs
+QUEUE_REDIS_URL=redis://127.0.0.1:6379 node --experimental-strip-types --test packages/@zeruxjs/queue/test/live-redis-integration.test.ts
 # Standalone namespace safety:
-CACHE_REDIS_URL=redis://127.0.0.1:6379 node --test packages/@zeruxjs/cache-redis/test/live-redis.test.mjs
+CACHE_REDIS_URL=redis://127.0.0.1:6379 node --experimental-strip-types --test packages/@zeruxjs/cache-redis/test/live-redis.test.ts
 # Real Redis Cluster masters, e.g. ephemeral ports (never production):
-QUEUE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/queue/test/live-redis-integration.test.mjs
-CACHE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --test packages/@zeruxjs/cache-redis/test/live-redis.test.mjs
+QUEUE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --experimental-strip-types --test packages/@zeruxjs/queue/test/live-redis-integration.test.ts
+CACHE_REDIS_CLUSTER_NODES=127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002 node --experimental-strip-types --test packages/@zeruxjs/cache-redis/test/live-redis.test.ts
 ```
 
 Use dedicated throwaway test Redis instances, correct authentication and TLS as appropriate. Live tests do not intentionally stop Redis: a full outage/restart and worker crash-injection rehearsal, DST boundary verification, cluster resharding, and long-running load/retention/ACL testing are **separate operational gates**. In an offline environment these suites are intentionally skipped; mocked tests are not live certification. The clean `npm ci` check is also not satisfied by locally generated `dist` files.

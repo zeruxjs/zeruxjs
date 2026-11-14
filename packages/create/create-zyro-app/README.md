@@ -41,11 +41,11 @@ console.log(plan.files); // inspect without writing
 // await writeProjectPlanAsync(plan); // explicit write
 ```
 
-See [the inert example](examples/plan.mjs). The generator and `/templates` export share the same plans; no source-internal imports are needed.
+See [the inert example](examples/plan.ts). The generator and `/templates` export share the same plans; no source-internal imports are needed.
 
 ## Verification and limits
 
-Run `npm run build --workspace=create-zyro-app` and `node --test packages/create/create-zyro-app/test/consumer.test.mjs` from the repository. Fixtures install local workspace packages offline into temporary consumers, build all eight mode/language combinations twice, typecheck, serve `/demo`, exercise DOM/hydration in jsdom and clean owned servers/files. These are not clean-registry installation or real-browser acceptance. Production hosting, TLS, assistive technology and other browser engines remain unqualified.
+Run `npm run build --workspace=create-zyro-app` and `node --experimental-strip-types --test packages/create/create-zyro-app/test/consumer.test.ts` from the repository. Fixtures install local workspace packages offline into temporary consumers, build all eight mode/language combinations twice, typecheck, serve `/demo`, exercise DOM/hydration in jsdom and clean owned servers/files. These are not clean-registry installation or real-browser acceptance. Production hosting, TLS, assistive technology and other browser engines remain unqualified.
 
 License: MIT OR Apache-2.0.
 

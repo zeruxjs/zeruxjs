@@ -117,7 +117,7 @@ export function createZyroProjectGenerator(basePath = '/') {
         ['src/public-props.' + extension]: props,
         'public/style.css':
           'body{font-family:system-ui,sans-serif;color:#172033;background:white}main{max-width:40rem;margin:2rem auto;padding:1rem}label,input,button{display:block;margin-block:1rem}button:focus-visible,input:focus-visible{outline:3px solid #0645ad;outline-offset:3px}\n',
-        'scripts/build.mjs': asset('build.mjs').replace(
+        'scripts/build.mjs': asset('build.ts').replace(
           '__MODE_JSON__',
           JSON.stringify(mode)
         ),
@@ -135,7 +135,7 @@ export function createZyroProjectGenerator(basePath = '/') {
           JSON.stringify('./App.' + extension)
         );
       } else {
-        files['scripts/serve.mjs'] = asset('serve.mjs');
+        files['scripts/serve.mjs'] = asset('serve.ts');
       }
       if (ts) {
         files['tsconfig.json'] =

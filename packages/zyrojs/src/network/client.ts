@@ -39,16 +39,16 @@ export interface CallOptions {
   headers?: HeadersInit;
 }
 /**
- * Application function absolute.
- * @param {string} base - Input value for this operation.
- * @param {string} path - Input value for this operation.
- * @returns {string} Result produced by this operation.
+ * Resolve an authored absolute path using standard URL semantics; reject non-HTTP(S) schemes.
+ * @param {string} base - Trusted configured HTTP(S) base URL.
+ * @param {string} path - Trusted absolute request path; this helper is not an SSRF allowlist.
+ * @returns {string} Resolved HTTP(S) request URL; not a destination authorization guarantee.
  */
 const absolute = (base: string, path: string): string => {
   if (!path.startsWith('/')) {
     throw new TypeError('Protocol path must be absolute');
   }
-  /** Stores the url value used by this module. */
+  /** Resolved HTTP(S) endpoint; host-owned base/path inputs still require destination authorization. */
   const url = new URL(path, base);
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new TypeError('Unsupported protocol URL');
@@ -56,9 +56,9 @@ const absolute = (base: string, path: string): string => {
   return url.toString();
 };
 /**
- * Application function validSegment.
- * @param {string} value - Input value for this operation.
- * @returns {unknown} Result produced by this operation.
+ * Restrict authored service/procedure identifiers before inserting them in request paths.
+ * @param {string} value - Trusted authored service/procedure name to check against the supported grammar.
+ * @returns {boolean} Whether the identifier fits the supported path grammar.
  */
 const validSegment = (value: string) => /^[A-Za-z][\w.]{0,127}$/.test(value);
 /** Client for bounded protocol calls over an injected or captured Fetch transport. */
@@ -73,7 +73,7 @@ export class ProtocolClient {
    * @param {ProtocolClientOptions} config - Client transport and budget options.
    */
   constructor(config: ProtocolClientOptions = {}) {
-    /** Stores the base value used by this module. */
+    /** Explicit configured base, browser origin or standalone localhost fallback. */
     const base =
       config.baseUrl ??
       (typeof location !== 'undefined' ? location.origin : 'http://localhost');
@@ -102,12 +102,12 @@ export class ProtocolClient {
   }
   /** Never retries side-effecting RPC calls implicitly. */
   /**
-   * post.
-   * @param {string} path - Input value for this operation.
-   * @param {unknown} data - Input value for this operation.
-   * @param {CallOptions} options - Input value for this operation.
-   * @param {Record<string, string>} extraHeaders - Input value for this operation.
-   * @returns {Promise<{ status: number; body: unknown }>} Result produced by this operation.
+   * Send one bounded JSON request without retrying potentially side-effecting work.
+   * @param {string} path - Trusted absolute request path; this helper is not an SSRF allowlist.
+   * @param {unknown} data - Trusted application payload serialized as JSON; never interpreted as executable source.
+   * @param {CallOptions} options - Borrowed cancellation and per-call headers.
+   * @param {Record<string, string>} extraHeaders - Trusted protocol-required headers applied after generic headers.
+   * @returns {Promise<{ status: number; body: unknown }>} Bounded parsed JSON body and HTTP status; private causes/details remain caller-owned.
    */
   async post(
     path: string,
@@ -115,13 +115,13 @@ export class ProtocolClient {
     options: CallOptions = {},
     extraHeaders: Record<string, string> = {}
   ): Promise<{ status: number; body: unknown }> {
-    /** Stores the parent value used by this module. */
+    /** Borrowed per-call signal; its listener is removed on every terminal path. */
     const parent = options.signal;
-    /** Stores the controller value used by this module. */
+    /** Per-request cancellation owner, also used by the optional cooperative deadline. */
     const controller = new AbortController();
     /**
-     * Application function abort.
-     * @returns {unknown} Result produced by this operation.
+     * Forward borrowed cancellation without taking ownership of the parent signal.
+     * @returns {void} Forwards cancellation to the request-owned controller.
      */
     const abort = () => controller.abort(parent?.reason);
     if (parent?.aborted) {
@@ -129,7 +129,7 @@ export class ProtocolClient {
     } else {
       parent?.addEventListener('abort', abort, { once: true });
     }
-    /** Stores the timeout value used by this module. */
+    /** Owned request timer, cleared in finally; no retry or side-effect replay is scheduled. */
     const timeout = this.config.timeoutMs
       ? setTimeout(
           () => controller.abort(new Error('Protocol request timed out')),
@@ -137,12 +137,12 @@ export class ProtocolClient {
         )
       : undefined;
     try {
-      /** Stores the initial value used by this module. */
+      /** Trusted lazy headers may contain credentials and must never be logged. */
       const initial =
         typeof this.config.headers === 'function'
           ? await this.config.headers()
           : this.config.headers;
-      /** Stores the headers value used by this module. */
+      /** Fresh merged headers; protocol-required fields override generic call headers. */
       const headers = new Headers(initial);
       new Headers(options.headers).forEach((value, name) =>
         headers.set(name, value)
@@ -152,7 +152,7 @@ export class ProtocolClient {
       for (const [key, value] of Object.entries(extraHeaders)) {
         headers.set(key, value);
       }
-      /** Stores the response value used by this module. */
+      /** Single Fetch outcome; successful parsing does not establish application authorization. */
       const response = await this.transport(absolute(this.base, path), {
         method: 'POST',
         headers,
@@ -161,9 +161,9 @@ export class ProtocolClient {
         body: JSON.stringify(data),
         cache: 'no-store',
       });
-      /** Stores the limit value used by this module. */
+      /** Finite response accumulation ceiling, checked against declared and actual bytes. */
       const limit = this.config.maxResponseBytes ?? 4 * 1024 * 1024;
-      /** Stores the length value used by this module. */
+      /** Content-Length is an early guard only; actual stream bytes are counted independently. */
       const length = response.headers.get('content-length');
       if (length && Number(length) > limit) {
         throw new ProtocolClientError('Response too large', 413);
@@ -180,14 +180,14 @@ export class ProtocolClient {
       if (!response.body) {
         throw new ProtocolClientError('Missing response body', response.status);
       }
-      /** Stores the reader value used by this module. */
+      /** Exclusive response reader, released in finally after bounded accumulation. */
       const reader = response.body.getReader();
-      /** Stores the chunks value used by this module. */
+      /** Bounded binary pieces retained until decoding; no unbounded response.json buffering. */
       const chunks: Uint8Array[] = [];
       let size = 0;
       try {
         while (true) {
-          /** Stores the next value used by this module. */
+          /** Next native stream result; byte accounting happens before retaining the chunk. */
           const next = await reader.read();
           if (next.done) {
             break;
@@ -201,7 +201,7 @@ export class ProtocolClient {
       } finally {
         reader.releaseLock();
       }
-      /** Stores the bytes value used by this module. */
+      /** One exact-sized buffer assembled only after all chunks fit the response budget. */
       const bytes = new Uint8Array(size);
       let offset = 0;
       for (const chunk of chunks) {
@@ -231,11 +231,11 @@ export class ProtocolClient {
     }
   }
   /**
-   * rpc.
-   * @param {string} method - Input value for this operation.
-   * @param {unknown} params - Input value for this operation.
-   * @param {CallOptions} options - Input value for this operation.
-   * @returns {Promise<T>} Result produced by this operation.
+   * Call JSON-RPC and require the matching protocol version/correlation ID.
+   * @param {string} method - Trusted registered remote method; authorization is enforced by the remote host.
+   * @param {unknown} params - Inert JSON parameters; remote handlers remain explicitly registered code.
+   * @param {CallOptions} options - Borrowed cancellation and per-call headers.
+   * @returns {Promise<T>} Correlated result; T is a host schema assertion, not runtime result validation.
    */
   async rpc<T = unknown>(
     method: string,
@@ -245,15 +245,15 @@ export class ProtocolClient {
     if (!/^[a-zA-Z][\w.:/-]{0,127}$/.test(method)) {
       throw new TypeError('Invalid RPC method');
     }
-    /** Stores the id value used by this module. */
+    /** Per-client correlation counter; not an idempotency key or tenant identifier. */
     const id = ++this.sequence;
-    /** Stores the { body } value used by this module. */
+    /** Transport body still requires operation-specific envelope validation. */
     const { body } = await this.post(
       '/rpc',
       { jsonrpc: '2.0', id, method, params },
       options
     );
-    /** Stores the result value used by this module. */
+    /** Untrusted response envelope checked by the selected protocol operation. */
     const result = body as {
       id?: unknown;
       jsonrpc?: unknown;
@@ -277,18 +277,18 @@ export class ProtocolClient {
     return result.result as T;
   }
   /**
-   * notify.
-   * @param {string} method - Input value for this operation.
-   * @param {unknown} params - Input value for this operation.
-   * @param {CallOptions} options - Input value for this operation.
-   * @returns {Promise<void>} Result produced by this operation.
+   * Send a JSON-RPC notification and require HTTP 204 without inventing a delivery receipt.
+   * @param {string} method - Trusted registered remote method; authorization is enforced by the remote host.
+   * @param {unknown} params - Inert JSON parameters; remote handlers remain explicitly registered code.
+   * @param {CallOptions} options - Borrowed cancellation and per-call headers.
+   * @returns {Promise<void>} Resolves on HTTP 204; this is not exactly-once processing.
    */
   async notify(
     method: string,
     params?: unknown,
     options?: CallOptions
   ): Promise<void> {
-    /** Stores the { status } value used by this module. */
+    /** Notifications require the expected no-content acknowledgement. */
     const { status } = await this.post(
       '/rpc',
       { jsonrpc: '2.0', method, params },
@@ -302,20 +302,20 @@ export class ProtocolClient {
     }
   }
   /**
-   * mcp.
-   * @param {string} method - Input value for this operation.
-   * @param {unknown} params - Input value for this operation.
-   * @param {CallOptions} options - Input value for this operation.
-   * @returns {Promise<T>} Result produced by this operation.
+   * Call the JSON-response MCP subset; this method does not parse an SSE response body.
+   * @param {string} method - Trusted registered remote method; authorization is enforced by the remote host.
+   * @param {unknown} params - Inert JSON parameters; remote handlers remain explicitly registered code.
+   * @param {CallOptions} options - Borrowed cancellation and per-call headers.
+   * @returns {Promise<T>} Supported JSON MCP result; SSE responses require a separate reader.
    */
   async mcp<T = unknown>(
     method: string,
     params?: unknown,
     options?: CallOptions
   ): Promise<T> {
-    /** Stores the id value used by this module. */
+    /** Per-client correlation counter; not an idempotency key or tenant identifier. */
     const id = ++this.sequence;
-    /** Stores the { body } value used by this module. */
+    /** Transport body still requires operation-specific envelope validation. */
     const { body } = await this.post(
       '/mcp',
       { jsonrpc: '2.0', id, method, params },
@@ -325,7 +325,7 @@ export class ProtocolClient {
         'MCP-Protocol-Version': '2025-11-25',
       }
     );
-    /** Stores the result value used by this module. */
+    /** Untrusted response envelope checked by the selected protocol operation. */
     const result = body as {
       jsonrpc?: string;
       id?: unknown;
@@ -346,12 +346,12 @@ export class ProtocolClient {
     return result.result as T;
   }
   /**
-   * connect.
-   * @param {string} service - Input value for this operation.
-   * @param {string} method - Input value for this operation.
-   * @param {unknown} message - Input value for this operation.
-   * @param {CallOptions} options - Input value for this operation.
-   * @returns {Promise<T>} Result produced by this operation.
+   * Call the supported unary JSON Connect endpoint; streaming has a separate API.
+   * @param {string} service - Validated authored service identifier.
+   * @param {string} method - Trusted registered remote method; authorization is enforced by the remote host.
+   * @param {unknown} message - JSON request message; not executable code.
+   * @param {CallOptions} options - Borrowed cancellation and per-call headers.
+   * @returns {Promise<T>} Unary JSON message; native codec/schema validation remains host-owned.
    */
   async connect<T = unknown>(
     service: string,
@@ -366,11 +366,11 @@ export class ProtocolClient {
       .body as T;
   }
   /**
-   * trpc.
-   * @param {string} name - Input value for this operation.
-   * @param {unknown} input - Input value for this operation.
-   * @param {CallOptions} options - Input value for this operation.
-   * @returns {Promise<T>} Result produced by this operation.
+   * Call one named tRPC JSON procedure and unwrap its supported response envelope.
+   * @param {string} name - Validated authored procedure identifier.
+   * @param {unknown} input - JSON procedure input; server validation/authorization remain required.
+   * @param {CallOptions} options - Borrowed cancellation and per-call headers.
+   * @returns {Promise<T>} Unwrapped supported result envelope.
    */
   async trpc<T = unknown>(
     name: string,
@@ -380,7 +380,7 @@ export class ProtocolClient {
     if (!validSegment(name)) {
       throw new TypeError('Invalid tRPC method');
     }
-    /** Stores the result value used by this module. */
+    /** Untrusted response envelope checked by the selected protocol operation. */
     const result = (await this.post(`/trpc/${name}`, input, options)).body as {
       result?: { data: T };
       error?: unknown;
@@ -397,9 +397,9 @@ export class ProtocolClient {
   }
 }
 /**
- * Application function createProtocolClient.
- * @param {ProtocolClientOptions} options - Input value for this operation.
- * @returns {unknown} Result produced by this operation.
+ * Create an inert protocol client borrowing the configured Fetch transport.
+ * @param {ProtocolClientOptions} options - Borrowed cancellation and per-call headers.
+ * @returns {ProtocolClient} Inert client borrowing the configured transport.
  */
 export const createProtocolClient = (options?: ProtocolClientOptions) =>
   new ProtocolClient(options);

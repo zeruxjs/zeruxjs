@@ -1,12 +1,12 @@
 import { h, render, signal, unmount } from './index.js';
 /** Standalone browser example. Invoke mountCounter after the DOM is available. */
 /**
- * mountCounter.
- * @param {HTMLElement} container - Input value for this operation.
- * @returns {() => void} Result produced by this operation.
+ * Mount the public counter example into a host-provided browser container.
+ * @param {HTMLElement} container - Dedicated host-owned element; no DOM lookup or app startup occurs automatically.
+ * @returns {() => void} Explicit teardown removing the root’s listeners, effects and nodes.
  */
 export function mountCounter(container: HTMLElement): () => void {
-  /** Stores the count value used by this module. */
+  /** Setup-local counter signal read by owned dynamic text; no global state is shared. */
   const count = signal(0);
   render(
     h(

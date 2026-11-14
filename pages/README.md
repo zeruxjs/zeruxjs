@@ -2,7 +2,7 @@
 
 This is the source for the domain homepage at `/`. It introduces ZeruxJS, ZyroJS, ZenixJS and the shared public package catalog. Dedicated site builds are mounted below independent paths such as `/zeruxjs/`.
 
-`index.html` is a static template. `scripts/build-sites.mjs` inserts the public package catalog and places Zuixs-generated styles/browser code under `/site-assets/`. Do not deploy this source directory directly.
+`index.html` is a static template. `scripts/build-sites.ts` inserts the public package catalog and places Zuixs-generated styles/browser code under `/site-assets/`. Do not deploy this source directory directly.
 
 Develop the homepage and all configured sites from this directory:
 
@@ -31,13 +31,13 @@ Docs search loads its browser module and compact index on demand, using **@zerux
 
 ### Utility-first styling
 
-Use `ui-` utility classes in templates for new layouts and components. `zuix.config.mjs` now contains only global resets and theme variables. Component styling lives directly in literal utility classes in `index.html` and the generated package-card template in `scripts/build-sites.mjs`. This is the Zuixs equivalent of applying utilities to a reusable component; recipes preserve source order and are compiled before explicit template utilities. Style values and unsupported utility names are validated by Zuixs, and invalid recipes fail the build.
+Use `ui-` utility classes in templates for new layouts and components. `zuix.config.mjs` now contains only global resets and theme variables. Component styling lives directly in literal utility classes in `index.html` and the generated package-card template in `scripts/build-sites.ts`. This is the Zuixs equivalent of applying utilities to a reusable component; recipes preserve source order and are compiled before explicit template utilities. Style values and unsupported utility names are validated by Zuixs, and invalid recipes fail the build.
 
 The build generates the final stylesheet (`site-assets/style.css` for the homepage, `assets/docs.css` for docs). Do not edit generated files. To change a component, change its template classes. Use existing theme scales first, arbitrary values such as `ui-p-[13px]` for precise values, and properties such as `ui-[scroll-margin-top:96px]` where a named utility is unnecessary. `ui-!hidden` marks an important utility. State selectors and media/feature/container queries belong to the recipe configuration. No browser styling runtime is shipped.
 
 ## Shared appearance and Markdown
 
-The header offers system/light/dark appearance, shared with the docs and synchronized across tabs. Theme tokens and reduced-motion-aware animation recipes come from `../scripts/site-design.mjs`; all styles remain Zuixs-generated. Local fonts, subtle gradients and theme-aware component surfaces require no third-party browser requests.
+The header offers system/light/dark appearance, shared with the docs and synchronized across tabs. Theme tokens and reduced-motion-aware animation recipes come from `../scripts/site-design.ts`; all styles remain Zuixs-generated. Local fonts, subtle gradients and theme-aware component surfaces require no third-party browser requests.
 
 `/index.md` provides the ecosystem content and public package directory. `/zeruxjs.md` provides the handbook portal; individual docs expose their own `.md` alternatives and View/Copy Markdown controls. The build emits real static Markdown, records hashes and verifies that deployment preserves it. GitHub Pages deploys the prebuilt artifact with `.nojekyll`, without converting these files to HTML. Hosting MIME types are provider-controlled.
 

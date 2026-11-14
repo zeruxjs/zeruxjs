@@ -19,7 +19,7 @@ and its deterministic archive retain their own bytes and license requirements.
 Do not reformat them as package source or replace pinned versions merely to make
 a readability check pass.
 
-The parent package's [prepack preparation](../scripts/prepare-stylelint-bundle.mjs)
+The parent package's [prepack preparation](../scripts/prepare-stylelint-bundle.ts)
 owns the executable integration. It mirrors repository depth in an owned temporary
 directory so the local archive path resolves correctly, runs the locked npm
 installation with dependency scripts disabled, verifies the reviewed braces and

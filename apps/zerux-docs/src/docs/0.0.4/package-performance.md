@@ -165,7 +165,7 @@ transformation. Conditional evaluation stays with the origin; HEAD/304 do not
 consume source bodies. Native streaming retains backpressure and disconnect
 cleanup. Build-time minification remains in TypeScript tooling.
 
-See the package README and `examples/response.mjs` for exact limits, lifecycle and
+See the package README and `examples/response.ts` for exact limits, lifecycle and
 HTTP semantics. Local identity/gzip/Brotli measurements are workload observations,
 not evidence of general latency gains or production/CDN/browser qualification.
 

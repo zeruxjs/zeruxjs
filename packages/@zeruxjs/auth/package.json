@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.cjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "keywords": [

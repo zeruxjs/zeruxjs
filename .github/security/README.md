@@ -101,7 +101,7 @@ Official references:
 
 ## Local validation
 
-Run `node --test scripts/codeql-workflow.test.mjs` for the existing CodeQL policy
+Run `node --experimental-strip-types --test scripts/codeql-workflow.test.ts` for the existing CodeQL policy
 checks. Validate `codeql.yml` and `security.yml` with a reviewed actionlint binary;
 parse Dependabot YAML and verify its declared manifest directories. These are
 configuration checks, not successful GitHub-hosted scanner executions. No packages

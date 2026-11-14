@@ -64,7 +64,7 @@ Add a disjoint entry to `sites.config.mjs`:
   id: 'zyrojs',
   mount: '/zyrojs',
   directory: 'apps/zyro-docs',
-  build: ['node', 'scripts/build.mjs'],
+  build: ['node', '--experimental-strip-types', 'scripts/build.ts'],
   watch: ['src', 'public', 'scripts'],
   output: 'dist/zyrojs'
 }
@@ -88,7 +88,7 @@ Site tooling uses the current checkout, including unpublished changes: the locke
 
 The published tree includes `/index.md`, `/zeruxjs.md` and raw Markdown alternatives for every docs route. GitHub Actions verifies their content hashes before publishing, and `verifySites` checks them again in the complete output-branch tree. The workflow deploys the uploaded static artifact directly; it has no Jekyll or Markdown-to-HTML step. Keep `.nojekyll` in the output root if hosting the branch directly. Do not add a subsequent site generator or SPA fallback that rewrites `.md` requests. GitHub Pages controls response MIME headers, so browsers may display or download the raw content.
 
-Palette and motion changes in `scripts/site-design.mjs`, and theme changes in `scripts/site-theme.mjs`, trigger the Pages workflow alongside template/content changes. All of these build from the checkout without publishing workspace packages to npm.
+Palette and motion changes in `scripts/site-design.ts`, and theme changes in `scripts/site-theme.ts`, trigger the Pages workflow alongside template/content changes. All of these build from the checkout without publishing workspace packages to npm.
 
 ## Version branch previews
 

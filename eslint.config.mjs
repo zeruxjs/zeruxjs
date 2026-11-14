@@ -113,11 +113,20 @@ export default [
       'packages/zforge/assets/**/*.js',
       'sample-packages/*/src/client.js',
       'pages/app.js',
-      'scripts/site-theme.mjs',
-      'packages/**/test/*browser.test.mjs',
-      'packages/**/test/*-dom.test.mjs',
+      'scripts/site-theme.ts',
+      'packages/**/test/*browser.test.ts',
+      'packages/**/test/*-dom.test.ts',
     ],
     languageOptions: { globals: globals.browser },
+  },
+  {
+    // Migrated CommonJS-compatible tests retain require-based fixture loading so
+    // Node's native TypeScript stripping does not transpile module semantics.
+    name: 'repository/typescript-test-interop',
+    files: ['packages/**/test/**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
   },
   {
     name: 'repository/generator-template',

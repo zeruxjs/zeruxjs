@@ -63,7 +63,7 @@ Plugins are **trusted executable code**, not sandboxed extensions. Entry paths a
 
 ```sh
 npm run build
-node --test test/*.test.mjs
+node --experimental-strip-types --test test/*.test.ts
 ```
 
 ## Safe app starter
@@ -315,7 +315,7 @@ Synchronous writing cannot observe OS signals while JavaScript is busy; use the 
 writer for owned cancellation and await settlement. No force overwrite/cleanup of an
 unowned directory is offered.
 
-[Public-import example](examples/generator.mjs) shows planning/writing and shared
+[Public-import example](examples/generator.ts) shows planning/writing and shared
 command registration. Regression checks include native write/promotion failure,
 concurrent target appearance, dangling links/parent links, capability denial,
 interactive/flag equivalence, deterministic files and real SIGINT during a controlled

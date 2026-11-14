@@ -6,7 +6,7 @@
   "section": "Fundamentals",
   "order": 0,
   "sources": [
-    "apps/zerux-docs/examples/renderer-data-queue.mjs",
+    "apps/zerux-docs/examples/renderer-data-queue.ts",
     "packages/zeruxjs/src/renderers.ts",
     "packages/@zeruxjs/db-sqllite/src/index.ts",
     "packages/@zeruxjs/queue-bullmq/src/index.ts"
@@ -24,7 +24,7 @@
 
 ZyroJS renders a public synthetic SQLite row through the ZeruxJS renderer registry. A BullMQ worker reads the same bounded data using an opaque known reference. No private subject data, cookie identity, hidden migration, browser hydration or mutation/outbox atomicity is implied.
 
-The complete [public-import source](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/apps/zerux-docs/examples/renderer-data-queue.mjs) exports `initializeTutorialDatabase` and `registerTutorial`. Importing it creates no database, queue or listener. Copy that authored file into `src/tutorial.mjs` in a local application; no import from package `src`/`dist` internals is needed.
+The complete [public-import source](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/apps/zerux-docs/examples/renderer-data-queue.ts) exports `initializeTutorialDatabase` and `registerTutorial`. Importing it creates no database, queue or listener. Copy that authored file into `src/tutorial.mjs` in a local application; no import from package `src`/`dist` internals is needed.
 
 ## Prerequisites
 

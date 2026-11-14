@@ -8,8 +8,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
-    "prepack": "node scripts/prepare-stylelint-bundle.mjs && npm run build"
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
+    "prepack": "node --experimental-strip-types scripts/prepare-stylelint-bundle.ts && npm run build"
   },
   "exports": {
     ".": {

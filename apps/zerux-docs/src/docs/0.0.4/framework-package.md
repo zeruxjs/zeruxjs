@@ -100,7 +100,7 @@ compliance guarantee is implied.
 Private expiring JSONL exports use approved projections and bounded streams, with
 per-chunk authorization/expiry checks and no public URLs. Host routes still own
 CSRF/authentication, private attachment headers and disconnect cleanup. The public
-`examples/privacy.mjs` demonstrates explicit injection. Synthetic fixtures verify
+`examples/privacy.ts` demonstrates explicit injection. Synthetic fixtures verify
 checkpoint recovery and partial completion; no real user-data deletion was run.
 
 ## Local integration hosts

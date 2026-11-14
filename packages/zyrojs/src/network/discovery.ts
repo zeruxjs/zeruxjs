@@ -61,9 +61,9 @@ export class DiscoveryHttpError extends Error {
   }
 }
 /**
- * safePath.
- * @param {string} value - Input value for this operation.
- * @returns {string} Result produced by this operation.
+ * Reject absolute-origin/query/fragment/backslash overrides in configured endpoint paths.
+ * @param {string} value - Trusted configuration candidate still requiring runtime path validation.
+ * @returns {string} Validated origin-relative path without query/fragment overrides.
  */
 function safePath(value: string): string {
   if (
@@ -79,12 +79,12 @@ function safePath(value: string): string {
 }
 /** Browser/SSR client for Zerux Search and Feed endpoints, without hidden global state. */
 /**
- * createDiscoveryClient.
- * @param {DiscoveryClientOptions} config - Input value for this operation.
- * @returns {unknown} Result produced by this operation.
+ * Create an inert client with instance-owned conditional feed cache and request cancellation.
+ * @param {DiscoveryClientOptions} config - Explicit origin/routes, borrowed transport and bounded request policy.
+ * @returns {object} Instance-owned search/suggest/feed methods and explicit disposal.
  */
 export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
-  /** Stores the origin value used by this module. */
+  /** Validated private client origin; credentials/query/hash are not accepted in this configuration. */
   const origin = new URL(
     config.baseUrl ??
       (typeof location !== 'undefined' ? location.origin : 'http://localhost')
@@ -99,18 +99,18 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     throw new TypeError('Invalid discovery origin');
   }
   /**
-   * Application function endpoint.
-   * @param {string} pathname - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Resolve only a validated origin-relative configured route.
+   * @param {string} pathname - Fixed configured route; search text is added separately as encoded query values.
+   * @returns {URL} Resolved fixed endpoint, before query values are added.
    */
   const endpoint = (pathname: string) => new URL(safePath(pathname), origin);
-  /** Stores the searchPath value used by this module. */
+  /** Fixed origin-relative search route; no caller-controlled endpoint discovery. */
   const searchPath = safePath(config.searchPath ?? '/search');
-  /** Stores the feedPath value used by this module. */
+  /** Fixed origin-relative feed route used by every representation. */
   const feedPath = safePath(config.feedPath ?? '/feed');
-  /** Stores the timeout value used by this module. */
+  /** Finite cooperative request deadline, cleared when the request settles. */
   const timeout = config.timeoutMs ?? 10000;
-  /** Stores the maxBytes value used by this module. */
+  /** Maximum accumulated response bytes for search, suggestions or feed representations. */
   const maxBytes = config.maxResponseBytes ?? 2_097_152;
   if (
     !Number.isSafeInteger(timeout) ||
@@ -122,28 +122,28 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
   ) {
     throw new RangeError('Invalid discovery limits');
   }
-  /** Stores the transport value used by this module. */
+  /** Borrowed Fetch implementation; disposal never closes a host/global transport pool. */
   const transport = config.fetch ?? fetch;
-  /** Stores the controllers value used by this module. */
+  /** Active request controllers signalled on dispose; noncooperative transports may settle later. */
   const controllers = new Set<AbortController>();
   let disposed = false;
-  /** Stores the feedCache value used by this module. */
+  /** At most one conditional representation per supported format; not a shared tenant cache. */
   const feedCache = new Map<
     string,
     { etag: string; body: string; contentType: string }
   >();
   /**
- * get.
- * @param {URL} url - Input value for this operation.
- * @param {string} accept - Input value for this operation.
- * @param {AbortSignal} signal - Input value for this operation.
- * @param {string} etag - Input value for this operation.
+ * Fetch one bounded representation with cooperative deadline and detached signal listeners.
+ * @param {URL} url - Internally constructed approved discovery endpoint.
+ * @param {string} accept - Required representation MIME type.
+ * @param {AbortSignal} signal - Borrowed cooperative caller cancellation.
+ * @param {string} etag - Prior server validator for this same cached representation.
  * @returns {Promise<{
     status: number;
     body: string;
     etag?: string;
     contentType: string;
-  }>} Result produced by this operation.
+  }>} Bounded decoded representation plus HTTP validator metadata.
  */
   async function get(
     url: URL,
@@ -159,12 +159,12 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     if (disposed) {
       throw new Error('Discovery client disposed');
     }
-    /** Stores the controller value used by this module. */
+    /** This request’s cancellation owner, removed from the active set in finally. */
     const controller = new AbortController();
     controllers.add(controller);
     /**
-     * Application function abort.
-     * @returns {unknown} Result produced by this operation.
+     * Forward this request’s borrowed cancellation into its owned controller.
+     * @returns {void} Signals this request’s owned controller.
      */
     const abort = () => controller.abort(signal?.reason);
     if (signal?.aborted) {
@@ -172,18 +172,18 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     } else {
       signal?.addEventListener('abort', abort, { once: true });
     }
-    /** Stores the timer value used by this module. */
+    /** Owned cooperative deadline; signalling does not prove a remote request was rolled back. */
     const timer = setTimeout(
       () => controller.abort(new Error('Discovery request timed out')),
       timeout
     );
     try {
-      /** Stores the headers value used by this module. */
+      /** Fresh negotiation/validator headers with credentials explicitly omitted. */
       const headers = new Headers({ accept });
       if (etag) {
         headers.set('if-none-match', etag);
       }
-      /** Stores the response value used by this module. */
+      /** One response; optional feed cache is reused only after a matching 304. */
       const response = await transport(url.toString(), {
         method: 'GET',
         headers,
@@ -205,7 +205,7 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
           response.status
         );
       }
-      /** Stores the declared value used by this module. */
+      /** Declared byte count is only an early guard; streamed byte counts remain authoritative. */
       const declared = Number(response.headers.get('content-length'));
       if (Number.isFinite(declared) && declared > maxBytes) {
         throw new DiscoveryHttpError('Discovery response too large', 413);
@@ -213,14 +213,14 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
       if (!response.body) {
         throw new DiscoveryHttpError('Missing response body', 502);
       }
-      /** Stores the reader value used by this module. */
+      /** Exclusive body reader released even if decoding/accumulation fails. */
       const reader = response.body.getReader();
-      /** Stores the chunks value used by this module. */
+      /** Bounded response pieces, combined only after byte accounting succeeds. */
       const chunks: Uint8Array[] = [];
       let size = 0;
       try {
         while (true) {
-          /** Stores the next value used by this module. */
+          /** Transport read result; accumulated size is checked before retaining the chunk. */
           const next = await reader.read();
           if (next.done) {
             break;
@@ -235,7 +235,7 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
       } finally {
         reader.releaseLock();
       }
-      /** Stores the bytes value used by this module. */
+      /** Exact-sized completed body decoded with fatal UTF-8 handling. */
       const bytes = new Uint8Array(size);
       let offset = 0;
       for (const chunk of chunks) {
@@ -255,11 +255,11 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     }
   }
   /**
-   * Application function integer.
-   * @param {number | undefined} value - Input value for this operation.
-   * @param {string} name - Input value for this operation.
-   * @param {number} max - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Reject unsafe/negative/oversized pagination values before sending a request.
+   * @param {number | undefined} value - Trusted configuration candidate still requiring runtime path validation.
+   * @param {string} name - Fixed diagnostic label for the pagination field.
+   * @param {number} max - Maximum allowed pagination value.
+   * @returns {number | undefined} Validated pagination value, preserving omission.
    */
   const integer = (value: number | undefined, name: string, max: number) => {
     if (
@@ -271,10 +271,10 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     return value;
   };
   /**
-   * Application function search.
-   * @param {string} q - Input value for this operation.
-   * @param {DiscoverySearchOptions} options - Input value for this operation.
-   * @returns {Promise<DiscoverySearchResponse<T>>} Result produced by this operation.
+   * Request bounded search data; generic document types are a host contract, not runtime schema validation.
+   * @param {string} q - Query text capped at 1024 JavaScript code units, encoded as a value rather than a URL.
+   * @param {DiscoverySearchOptions} options - Pagination/matching policy and cooperative signal for this request.
+   * @returns {Promise<DiscoverySearchResponse<T>>} Parsed search envelope; document schema remains a host contract.
    */
   const search = async <T = unknown>(
     q: string,
@@ -283,7 +283,7 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     if (typeof q !== 'string' || q.length > 1024) {
       throw new TypeError('Invalid search query');
     }
-    /** Stores the url value used by this module. */
+    /** Fixed configured endpoint with query values encoded through URLSearchParams. */
     const url = endpoint(searchPath);
     url.searchParams.set('q', q);
     if (options.limit !== undefined) {
@@ -304,7 +304,7 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     if (options.prefix) {
       url.searchParams.set('prefix', '1');
     }
-    /** Stores the result value used by this module. */
+    /** Bounded response requiring representation-specific validation before exposure. */
     const result = await get(url, 'application/json', options.signal);
     if (!/application\/json/i.test(result.contentType)) {
       throw new DiscoveryHttpError('Unexpected search content type', 502);
@@ -312,10 +312,10 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     return JSON.parse(result.body) as DiscoverySearchResponse<T>;
   };
   /**
-   * Application function suggest.
-   * @param {string} q - Input value for this operation.
-   * @param {AbortSignal} signal - Input value for this operation.
-   * @returns {Promise<string[]>} Result produced by this operation.
+   * Request suggestions and independently validate every returned string.
+   * @param {string} q - Query text capped at 1024 JavaScript code units, encoded as a value rather than a URL.
+   * @param {AbortSignal} signal - Borrowed cooperative caller cancellation.
+   * @returns {Promise<string[]>} Validated suggestion strings.
    */
   const suggest = async (
     q: string,
@@ -324,16 +324,16 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     if (typeof q !== 'string' || q.length > 1024) {
       throw new TypeError('Invalid suggestion query');
     }
-    /** Stores the url value used by this module. */
+    /** Fixed configured endpoint with query values encoded through URLSearchParams. */
     const url = endpoint(searchPath);
     url.searchParams.set('q', q);
     url.searchParams.set('suggest', '1');
-    /** Stores the result value used by this module. */
+    /** Bounded response requiring representation-specific validation before exposure. */
     const result = await get(url, 'application/json', signal);
     if (!/application\/json/i.test(result.contentType)) {
       throw new DiscoveryHttpError('Unexpected suggestion content type', 502);
     }
-    /** Stores the parsed value used by this module. */
+    /** Suggestion payload independently checked for an array of strings. */
     const parsed = JSON.parse(result.body) as { suggestions?: unknown };
     if (
       !Array.isArray(parsed.suggestions) ||
@@ -344,10 +344,10 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     return parsed.suggestions;
   };
   /**
-   * Application function feed.
-   * @param {'rss' | 'atom' | 'json'} format - Input value for this operation.
-   * @param {AbortSignal} signal - Input value for this operation.
-   * @returns {Promise<string>} Result produced by this operation.
+   * Fetch one negotiated feed, retaining only a server-validated conditional representation.
+   * @param {'rss' | 'atom' | 'json'} format - Explicit supported RSS, Atom or JSON representation.
+   * @param {AbortSignal} signal - Borrowed cooperative caller cancellation.
+   * @returns {Promise<string>} Negotiated feed text, reused only after a valid conditional response.
    */
   const feed = async (
     format: 'rss' | 'atom' | 'json' = 'rss',
@@ -356,17 +356,17 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     if (!['rss', 'atom', 'json'].includes(format)) {
       throw new TypeError('Invalid feed format');
     }
-    /** Stores the accept value used by this module. */
+    /** Exact requested feed representation, never inferred from untrusted endpoint text. */
     const accept = {
       rss: 'application/rss+xml',
       atom: 'application/atom+xml',
       json: 'application/feed+json',
     }[format];
-    /** Stores the url value used by this module. */
+    /** Fixed configured endpoint with query values encoded through URLSearchParams. */
     const url = endpoint(feedPath);
-    /** Stores the cached value used by this module. */
+    /** Previous representation used only with its server ETag. */
     const cached = feedCache.get(format);
-    /** Stores the result value used by this module. */
+    /** Bounded response requiring representation-specific validation before exposure. */
     const result = await get(url, accept, signal, cached?.etag);
     if (result.status === 304) {
       if (!cached) {
@@ -394,10 +394,10 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
     feed,
     /** A Zyro reactive resource with explicit refresh/cancel/dispose. */
     /**
-     * searchResource.
-     * @param {string} q - Input value for this operation.
-     * @param {Omit<DiscoverySearchOptions, 'signal'>} options - Input value for this operation.
-     * @returns {RemoteResource<DiscoverySearchResponse<T>>} Result produced by this operation.
+     * Create inert reactive search state; explicit refresh starts the request.
+     * @param {string} q - Query text capped at 1024 JavaScript code units, encoded as a value rather than a URL.
+     * @param {Omit<DiscoverySearchOptions, 'signal'>} options - Pagination/matching policy and cooperative signal for this request.
+     * @returns {RemoteResource<DiscoverySearchResponse<T>>} Inert resource; refresh starts the request and dispose fences state commits.
      */
     searchResource<T = unknown>(
       q: string,
@@ -408,15 +408,15 @@ export function createDiscoveryClient(config: DiscoveryClientOptions = {}) {
       );
     },
     /**
-     * clearFeedCache.
-     * @returns {unknown} Result produced by this operation.
+     * Drop all local feed validators/bodies without touching active requests.
+     * @returns {void} Drops only local conditional representation state.
      */
     clearFeedCache() {
       feedCache.clear();
     },
     /**
-     * dispose.
-     * @returns {unknown} Result produced by this operation.
+     * Reject future requests, signal active controllers and clear private representation state.
+     * @returns {void} Fences future calls and signals active requests; borrowed transport remains open.
      */
     dispose() {
       disposed = true;

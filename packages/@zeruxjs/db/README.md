@@ -93,7 +93,7 @@ export async function savePair(adapter: PinnedTransactionAdapter, verifiedTenant
 }
 ```
 
-`createPinnedTransaction` is inert until called and loads no drivers. It is an adapter extension point, not an in-memory implementation or proof of live rollback. The deterministic pinned executor in `test/transactions.test.cjs` verifies the shared lifecycle with synthetic state; it is not a production database adapter.
+`createPinnedTransaction` is inert until called and loads no drivers. It is an adapter extension point, not an in-memory implementation or proof of live rollback. The deterministic pinned executor in `test/transactions.test.ts` verifies the shared lifecycle with synthetic state; it is not a production database adapter.
 
 ## Owned migration coordination
 

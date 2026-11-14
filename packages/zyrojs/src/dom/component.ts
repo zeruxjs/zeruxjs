@@ -14,7 +14,7 @@ let rendering = 0;
 /** Signal convenience hooks allocate resources and must run in setup, never in a repeated render. */
 /**
  * Reject resource allocation during repeated render; one-time setup owns hooks.
- * @returns {void} Result produced by this operation.
+ * @returns {void} Returns outside repeated render; otherwise throws an ownership diagnostic.
  */
 export function assertSetupHook(): void {
   if (rendering) {

@@ -1,9 +1,9 @@
 import { validateNavigationUrl } from '@zeruxjs/security/encoding';
 import { HydrationError } from './hydration-protocol.js';
 /**
- * Application function hydrationTag.
- * @param {unknown} tag - Input value for this operation.
- * @returns {tag is string} Result produced by this operation.
+ * Restrict V1 to supported HTML tags; raw-text, executable and foreign-content tags reject.
+ * @param {unknown} tag - Candidate authored tag name, not a template or executable source.
+ * @returns {tag is string} Whether this tag is supported by the hydration protocol.
  */
 export const hydrationTag = (tag: unknown): tag is string =>
   typeof tag === 'string' &&
@@ -11,19 +11,19 @@ export const hydrationTag = (tag: unknown): tag is string =>
   !/^(?:script|style|textarea|title|iframe|object|embed|base|meta|link|noscript|plaintext|xmp|noembed|noframes|template|svg|math)$/.test(
     tag
   );
-/** Stores the urlAttribute value used by this module. */
+/** URL-bearing attributes require navigation URL policy in addition to HTML escaping. */
 const urlAttribute =
   /^(?:href|src|action|poster|cite|background|xlink:href|formaction|data|manifest|codebase|longdesc|ping|profile|usemap)$/i;
 /** V1 is HTML only; executable/raw-text/foreign-content trees require a future explicit protocol. */
 /**
- * hydrationAttributes.
- * @param {Record<string, unknown>} props - Input value for this operation.
- * @returns {Record<string, string>} Result produced by this operation.
+ * Project authored props into deterministic scalar attributes under V1 safety/form policies.
+ * @param {Record<string, unknown>} props - Trusted authored props; function values execute as application code, never from public JSON.
+ * @returns {Record<string, string>} Validated names/values ready for destination-specific encoding.
  */
 export function hydrationAttributes(
   props: Record<string, unknown>
 ): Record<string, string> {
-  /** Stores the attrs value used by this module. */
+  /** Null-prototype scalar output prevents inherited names from becoming attributes. */
   const attrs: Record<string, string> = Object.create(null);
   if (
     ['password', 'file'].includes(String(props.type).toLowerCase()) &&
@@ -34,7 +34,7 @@ export function hydrationAttributes(
       'ZyroJS: password/file values cannot be server-rendered'
     );
   }
-  /** Stores the names value used by this module. */
+  /** Sort own prop names to make server serialization and adoption comparisons deterministic. */
   const names = Object.keys(props);
   if (names.length > 1024) {
     throw new HydrationError(

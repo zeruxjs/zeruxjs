@@ -16,9 +16,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build",
-    "bench": "node --expose-gc bench/search.mjs"
+    "bench": "node --experimental-strip-types --expose-gc bench/search.ts"
   },
   "keywords": [
     "Powerfull Search"

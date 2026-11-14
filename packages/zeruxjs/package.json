@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "exports": {
@@ -149,8 +149,8 @@
     "LICENSE-APACHE",
     "assets/json/schema.config.json",
     "assets/json/mime.json",
-    "examples/route-data-cache.mjs",
-    "examples/privacy.mjs"
+    "examples/route-data-cache.ts",
+    "examples/privacy.ts"
   ],
   "publishConfig": {
     "access": "public"

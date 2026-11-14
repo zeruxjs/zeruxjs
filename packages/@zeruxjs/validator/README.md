@@ -252,7 +252,7 @@ functional parse APIs when relying on their own-field and root-budget contracts.
 | JSON Schema / `ajvSafeParse` helpers          | Existing limited local conversion/checking subset; not the AJV engine or full JSON Schema |
 | Valibot-style names / Standard Schema adapter | Existing named subset; no full Valibot conformance claim                                  |
 
-After changing source, run `npm run build`, then `node --test test/*.test.mjs` in
+After changing source, run `npm run build`, then `node --experimental-strip-types --test test/*.test.ts` in
 this package. The foundation suite checks normal/denied inputs, inference against
 an offline npm-installed archive using the shared TypeScript tooling, unions,
 default order, limits, async misuse, dependency failures, hook exceptions and

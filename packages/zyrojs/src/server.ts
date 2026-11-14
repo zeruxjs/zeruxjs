@@ -39,16 +39,16 @@ export interface HydratableOutput {
   /** Identifier prefix used while rendering the output. */
   readonly idPrefix: string;
 }
-/** Stores the voidTag value used by this module. */
+/** HTML void elements have no closing tag and cannot own child or opaque fragment content. */
 const voidTag =
   /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/;
 /** Synchronous whole-root SSR with versioned markers and separately encoded, validated public props. */
 /**
- * renderToHydratable.
- * @param {Component<P>} component - Input value for this operation.
- * @param {unknown} input - Input value for this operation.
- * @param {ServerRenderOptions<P>} options - Input value for this operation.
- * @returns {HydratableOutput} Result produced by this operation.
+ * Render a bounded synchronous V1 root with deterministic markers and separately encoded public data.
+ * @param {Component<P>} component - Trusted authored component matching the client tree; never loaded from public input.
+ * @param {unknown} input - Candidate root props projected by the required host public-props validator.
+ * @param {ServerRenderOptions<P>} options - Unique stable root prefix, public validation, cooperative signal and rendering budgets.
+ * @returns {HydratableOutput} Frozen complete HTML/data candidate; all render scopes are disposed before return.
  */
 export function renderToHydratable<P extends Record<string, any>>(
   component: Component<P>,
@@ -59,30 +59,30 @@ export function renderToHydratable<P extends Record<string, any>>(
     throw new TypeError('ZyroJS: a component is required');
   }
   validatePrefix(options?.idPrefix);
-  /** Stores the { validateProps, signal, idPrefix, ...limitInput } value used by this module. */
+  /** Separate host validation/identity from traversal budgets before any component code runs. */
   const { validateProps, signal, idPrefix, ...limitInput } = options;
-  /** Stores the limits value used by this module. */
+  /** Validated byte, depth and node caps for this single synchronous render. */
   const limits = hydrationLimits(limitInput);
-  /** Stores the props value used by this module. */
+  /** Detached inert public props; the host validator remains responsible for excluding private facts. */
   const props = publicProps(
     input,
     { validateProps, signal },
     limits.maxPropsBytes
   );
-  /** Stores the data value used by this module. */
+  /** Script-context encoded public data, separate from HTML text/attribute encoders. */
   const data = serializeHydrationData(
     { version: 1, idPrefix, props },
     limits.maxPropsBytes
   );
-  /** Stores the scope value used by this module. */
+  /** Request-local effect owner, always disposed before returning output or propagating failure. */
   const scope = createEffectScope();
   let nodes = 0,
     components = 0,
     bytes = 0;
   /**
-   * Application function emit.
-   * @param {string} text - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Count UTF-8 bytes before accepting each fragment into the output.
+   * @param {string} text - Already encoded fragment to include exactly once.
+   * @returns {string} Accepted fragment, or throws before exceeding the byte budget.
    */
   const emit = (text: string) => {
     bytes += new TextEncoder().encode(text).length;
@@ -95,10 +95,10 @@ export function renderToHydratable<P extends Record<string, any>>(
     return text;
   };
   /**
-   * Application function flatten.
-   * @param {VNodeChild[]} values - Input value for this operation.
-   * @param {number} depth - Input value for this operation.
-   * @returns {VNodeChild[]} Result produced by this operation.
+   * Flatten child arrays while bounding depth/length and rejecting duplicate sibling keys.
+   * @param {VNodeChild[]} values - Authored child collection; arrays are flattened, null/boolean placeholders omitted.
+   * @param {number} depth - Current traversal depth checked against the configured maximum.
+   * @returns {VNodeChild[]} Validated child order without mounting subscriptions.
    */
   const flatten = (values: VNodeChild[], depth: number): VNodeChild[] => {
     if (depth > limits.maxDepth || values.length > limits.maxNodes) {
@@ -107,9 +107,9 @@ export function renderToHydratable<P extends Record<string, any>>(
         'ZyroJS: child collection exceeds limit'
       );
     }
-    /** Stores the result value used by this module. */
+    /** Attempt-local result; errors propagate before successful output can be returned. */
     const result: VNodeChild[] = [];
-    /** Stores the keys value used by this module. */
+    /** Sibling-key uniqueness guard after nested child arrays are flattened. */
     const keys = new Set<unknown>();
     for (const value of values) {
       if (Array.isArray(value)) {
@@ -129,7 +129,7 @@ export function renderToHydratable<P extends Record<string, any>>(
       }
     }
     for (const value of result) {
-      /** Stores the key value used by this module. */
+      /** Optional sibling identity; only unique finite numbers or strings are accepted. */
       const key: unknown =
         value && typeof value === 'object' && 'props' in value
           ? value.props.key
@@ -151,10 +151,10 @@ export function renderToHydratable<P extends Record<string, any>>(
     return result;
   };
   /**
-   * Application function render.
-   * @param {VNodeChild} value - Input value for this operation.
-   * @param {number} depth - Input value for this operation.
-   * @returns {string} Result produced by this operation.
+   * Serialize one child while retaining protocol markers and request-local setup ownership.
+   * @param {VNodeChild} value - Trusted authored node or scalar; promises and unsupported objects reject.
+   * @param {number} depth - Current traversal depth checked against the configured maximum.
+   * @returns {string} Encoded subtree with every emitted byte included in the request budget.
    */
   const render = (value: VNodeChild, depth: number): string => {
     checkAbort(signal);
@@ -179,27 +179,27 @@ export function renderToHydratable<P extends Record<string, any>>(
         emit('<!--zyro-->')
       );
     }
-    /** Stores the vnode value used by this module. */
+    /** Structural node candidate; invalid object children are rejected below. */
     const vnode =
       value && typeof value === 'object' ? (value as VNode) : undefined;
     if (typeof value === 'function' || typeof vnode?.type === 'function') {
-      /** Stores the fn value used by this module. */
+      /** Trusted authored component/dynamic child, never code read from the serialized payload. */
       const fn =
         typeof value === 'function'
           ? value
           : (vnode!.type as (...args: any[]) => any);
-      /** Stores the definition value used by this module. */
+      /** Explicit setup registration; ordinary function children have no setup definition. */
       const definition = getComponentDefinition(fn);
-      /** Stores the props value used by this module. */
+      /** Detached inert public props; the host validator remains responsible for excluding private facts. */
       const props = vnode
         ? { ...vnode.props, children: vnode.children }
         : undefined;
       let content: string;
-      /** Stores the setupScope value used by this module. */
+      /** Child setup owner registered under the request scope; failed setup disposes immediately. */
       const setupScope = createEffectScope();
       scope.add(() => setupScope.dispose());
       try {
-        /** Stores the componentId value used by this module. */
+        /** Preorder component counter shared with matching client traversal for deterministic setup IDs. */
         const componentId = ++components;
         let run: (...args: any[]) => any;
         try {
@@ -220,7 +220,7 @@ export function renderToHydratable<P extends Record<string, any>>(
             'ZyroJS: setup must return a render function'
           );
         }
-        /** Stores the result value used by this module. */
+        /** Attempt-local result; errors propagate before successful output can be returned. */
         const result = runComponentRender(() => run(props));
         checkAbort(signal);
         content = render(result, depth + 1);
@@ -244,11 +244,11 @@ export function renderToHydratable<P extends Record<string, any>>(
           'ZyroJS: unsupported hydratable HTML tag'
         );
       }
-      /** Stores the attrs value used by this module. */
+      /** Validated scalar attributes in deterministic name order; callbacks never become HTML. */
       const attrs = hydrationAttributes(vnode.props);
-      /** Stores the children value used by this module. */
+      /** Flattened, key-checked managed children with structural limits applied. */
       const children = flatten(vnode.children, depth);
-      /** Stores the raw value used by this module. */
+      /** Only an approved opaque sanitizer token can supply raw fragment content. */
       const raw = trustedHTMLValue(vnode.props, children.length > 0);
       if (raw !== undefined && voidTag.test(vnode.type)) {
         throw new HydrationError(
@@ -262,11 +262,11 @@ export function renderToHydratable<P extends Record<string, any>>(
           'ZyroJS: void elements cannot have children'
         );
       }
-      /** Stores the attributes value used by this module. */
+      /** Quoted attribute values encoded independently from text and script data. */
       const attributes = Object.entries(attrs)
         .map(([name, value]) => ` ${name}="${escapeHtmlAttribute(value)}"`)
         .join('');
-      /** Stores the open value used by this module. */
+      /** Count opening-tag bytes exactly once before accumulating child/closing output. */
       const open = emit(`<${vnode.type}${attributes}>`);
       return voidTag.test(vnode.type)
         ? open
@@ -282,7 +282,7 @@ export function renderToHydratable<P extends Record<string, any>>(
         'ZyroJS: invalid hydration child'
       );
     }
-    /** Stores the text value used by this module. */
+    /** Scalar text representation; NUL and unpaired surrogates cannot round-trip through the protocol. */
     const text =
       value === null || value === undefined || typeof value === 'boolean'
         ? ''
@@ -304,7 +304,7 @@ export function renderToHydratable<P extends Record<string, any>>(
     );
   };
   try {
-    /** Stores the html value used by this module. */
+    /** Complete candidate output; no partially rendered HTML is returned after failure. */
     const html = scope.run(() =>
       untracked(
         () =>

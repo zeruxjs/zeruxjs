@@ -104,7 +104,7 @@ validates every extension before changing hooks and returns an idempotent dispos
 
 ## Focused verification
 
-From this package, run `npm run build` then `node --test test/*.test.mjs`.
+From this package, run `npm run build` then `node --experimental-strip-types --test test/*.test.ts`.
 The foundation check packs the built package and required installed dependencies,
 installs them offline into a disposable npm prefix, and checks declarations via
 public exports with no source aliases. It also compiles representative server,

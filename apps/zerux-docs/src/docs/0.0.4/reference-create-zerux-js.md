@@ -44,7 +44,7 @@ and cancellation are supplied by zclivo. No install, server start, port takeover
 unreviewed template loading occurs. Use another port on conflict; never stop an
 unrelated app to make this sample run.
 
-The package README and public `examples/generate.mjs` document exact flags, runtime
+The package README and public `examples/generate.ts` document exact flags, runtime
 versions and renderer prerequisites. Qualification covers all six language/renderer
 combinations with offline local-link installs, actual builds/typechecks and owned
 production HTTP fixtures. It is not clean-registry, live-browser, hydration or

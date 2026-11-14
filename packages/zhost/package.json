@@ -8,8 +8,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "node --test test/*.test.mjs",
-    "test:fleet": "npm run build && node --test test/fleet-*.test.mjs test/autoscale-policy.test.mjs",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "test:fleet": "npm run build && node --experimental-strip-types --test test/fleet-*.test.ts test/autoscale-policy.test.ts",
     "prepack": "npm run build"
   },
   "exports": {

@@ -114,7 +114,7 @@ Verification builds both performance and analytics and uses observer/lifecycle/F
 It borrows a hosting owner: no zlib implementation, codec pool, request-time
 minifier or dependency on zhost is imported. Explicitly pass
 `createCompressionOwner` from `zhost/compression`, as in
-[the public-import example](examples/response.mjs). Importing either entry starts
+[the public-import example](examples/response.ts). Importing either entry starts
 no server or remote connection. The host closes the compression owner after
 stopping admission. Do not apply this adapter after headers commit, or combine it
 with another compression middleware on the same response.

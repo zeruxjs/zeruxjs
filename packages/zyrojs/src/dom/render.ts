@@ -40,18 +40,18 @@ interface Mounted {
   /** Dispose the mounted range and its owned effects/listeners. */
   destroy(): void;
 }
-/** Stores the roots value used by this module. */
+/** Weak exact-container ownership map; replacing a root changes which cleanup handle is authoritative. */
 const roots = new WeakMap<Node, Mounted>();
-/** Stores the manuallyMounted value used by this module. */
+/** Additional mounted subtrees tracked independently and drained together by unmount. */
 const manuallyMounted = new WeakMap<Node, Set<Mounted>>();
 /**
- * Application function flat.
- * @param {VNodeChild[]} items - Input value for this operation.
- * @param {unknown} depth - Input value for this operation.
- * @returns {VNodeChild[]} Result produced by this operation.
+ * Flatten managed child arrays; apply additional structural caps during protocol initialization.
+ * @param {VNodeChild[]} items - Authored child list; nested arrays flatten and null/boolean placeholders are omitted.
+ * @param {unknown} depth - Current flattening depth, bounded during protocol initialization.
+ * @returns {VNodeChild[]} Normalized child order with initial-hydration structural checks.
  */
 const flat = (items: VNodeChild[], depth = 0): VNodeChild[] => {
-  /** Stores the session value used by this module. */
+  /** Captured adoption session; later updates retain its identity but skip initial-adoption-only work. */
   const session = currentHydration();
   if (
     session?.initializing &&
@@ -62,7 +62,7 @@ const flat = (items: VNodeChild[], depth = 0): VNodeChild[] => {
       'ZyroJS: hydration children exceed structural limits'
     );
   }
-  /** Stores the result value used by this module. */
+  /** Attempt-local output; ownership is retained until reconciliation or rendering succeeds. */
   const result: VNodeChild[] = [];
   for (const item of items) {
     if (Array.isArray(item)) {
@@ -84,9 +84,9 @@ const flat = (items: VNodeChild[], depth = 0): VNodeChild[] => {
   return result;
 };
 /**
- * Application function isVNode.
- * @param {VNodeChild} value - Input value for this operation.
- * @returns {value is VNode} Result produced by this operation.
+ * Recognize the structural node shape; this predicate is not a public-data validator.
+ * @param {VNodeChild} value - Authored child/property value; executable functions must be trusted application code.
+ * @returns {value is VNode} Whether the value has a structural VNode shape.
  */
 const isVNode = (value: VNodeChild): value is VNode =>
   !!value &&
@@ -94,9 +94,9 @@ const isVNode = (value: VNodeChild): value is VNode =>
   !Array.isArray(value) &&
   'type' in value;
 /**
- * Application function safeUrl.
- * @param {string} value - Input value for this operation.
- * @returns {boolean} Result produced by this operation.
+ * Apply legacy DOM scheme checks; stricter hydration URL policy is owned separately.
+ * @param {string} value - Authored child/property value; executable functions must be trusted application code.
+ * @returns {boolean} Whether the legacy scheme denylist accepts this value.
  */
 const safeUrl = (value: string): boolean =>
   !/^(?:javascript|vbscript|data|file):/i.test(
@@ -107,37 +107,37 @@ const safeUrl = (value: string): boolean =>
     )
   );
 /**
- * Application function dangerousAttr.
- * @param {string} key - Input value for this operation.
- * @returns {boolean} Result produced by this operation.
+ * Recognize raw HTML and unsafe inline-handler attribute spellings.
+ * @param {string} key - Authored prop/attribute name; events and bindings have separate ownership paths.
+ * @returns {boolean} Whether this spelling is excluded from direct native writes.
  */
 const dangerousAttr = (key: string): boolean =>
   /^(?:innerhtml|outerhtml|srcdoc|srcset|formaction)$/i.test(key) ||
   (/^on/i.test(key) && !/^on[A-Z]/.test(key));
 /**
- * Application function uriAttr.
- * @param {string} key - Input value for this operation.
- * @returns {boolean} Result produced by this operation.
+ * Identify URL attributes handled by this legacy DOM/static path.
+ * @param {string} key - Authored prop/attribute name; events and bindings have separate ownership paths.
+ * @returns {boolean} Whether the legacy path treats this name as URL-bearing.
  */
 const uriAttr = (key: string): boolean =>
   /^(?:href|src|action|poster|cite|background|xlink:href)$/i.test(key);
 /**
- * Application function isEvent.
- * @param {string} key - Input value for this operation.
- * @returns {boolean} Result produced by this operation.
+ * Recognize authored camel-case native event props.
+ * @param {string} key - Authored prop/attribute name; events and bindings have separate ownership paths.
+ * @returns {boolean} Whether the prop has the authored camel-case event spelling.
  */
 const isEvent = (key: string): boolean => /^on[A-Z]/.test(key);
 /**
- * Application function validStyle.
- * @param {unknown} value - Input value for this operation.
- * @returns {value is Record<string, string | number>} Result produced by this operation.
+ * Accept only an object-shaped style map; each property/value is checked separately.
+ * @param {unknown} value - Authored child/property value; executable functions must be trusted application code.
+ * @returns {value is Record<string, string | number>} Whether a nonarray object can be inspected as a style map.
  */
 const validStyle = (value: unknown): value is Record<string, string | number> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 /**
- * Application function safeStyle.
- * @param {unknown} value - Input value for this operation.
- * @returns {boolean} Result produced by this operation.
+ * Reject rule delimiters and active URL/expression constructs in an individual style value.
+ * @param {unknown} value - Authored child/property value; executable functions must be trusted application code.
+ * @returns {boolean} Whether an individual scalar style value passes the legacy checks.
  */
 const safeStyle = (value: unknown): boolean =>
   typeof value === 'string' || typeof value === 'number'
@@ -145,11 +145,11 @@ const safeStyle = (value: unknown): boolean =>
     : false;
 
 /**
- * setProp.
- * @param {Element} el - Input value for this operation.
- * @param {string} key - Input value for this operation.
- * @param {unknown} value - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Apply one native scalar property/attribute under the legacy DOM safety rules.
+ * @param {Element} el - Native element owned by the current mounted subtree.
+ * @param {string} key - Authored prop/attribute name; events and bindings have separate ownership paths.
+ * @param {unknown} value - Authored child/property value; executable functions must be trusted application code.
+ * @returns {void} Applies or removes the supported native value.
  */
 function setProp(el: Element, key: string, value: unknown): void {
   if (
@@ -163,7 +163,7 @@ function setProp(el: Element, key: string, value: unknown): void {
     return;
   }
   if (key === 'style') {
-    /** Stores the style value used by this module. */
+    /** Native style declaration; raw CSS strings never enter this path. */
     const style = (el as HTMLElement).style;
     if (!style) {
       return;
@@ -192,7 +192,7 @@ function setProp(el: Element, key: string, value: unknown): void {
       value ?? (key === 'value' ? '' : false);
     return;
   }
-  /** Stores the name value used by this module. */
+  /** Normalize className only; native attribute APIs perform escaping, not URL authorization. */
   const name = key === 'className' ? 'class' : key;
   if (
     uriAttr(name) &&
@@ -212,12 +212,12 @@ function setProp(el: Element, key: string, value: unknown): void {
   }
 }
 /**
- * patchProperties.
- * @param {Element} el - Input value for this operation.
- * @param {Record<string, unknown>} next - Input value for this operation.
- * @param {Record<string, unknown>} old - Input value for this operation.
- * @param {EffectScope} scope - Input value for this operation.
- * @returns {() => void} Result produced by this operation.
+ * Attach current props and retain exact cleanup for each ref, event and reactive binding.
+ * @param {Element} el - Native element owned by the current mounted subtree.
+ * @param {Record<string, unknown>} next - Next authored description; retained type/key determines whether state can be reused.
+ * @param {Record<string, unknown>} old - Previous authored props used to remove obsolete native attributes.
+ * @param {EffectScope} scope - Explicit synchronous owner for acquired effects/listeners and descendant cleanup.
+ * @returns {() => void} Disposer for exact property-owned listeners, refs and effects.
  */
 function patchProperties(
   el: Element,
@@ -225,13 +225,13 @@ function patchProperties(
   old: Record<string, unknown>,
   scope: EffectScope
 ): () => void {
-  /** Stores the disposers value used by this module. */
+  /** Property-owned subscriptions/listeners/refs, released on replacement or partial failure. */
   const disposers: (() => void)[] = [];
   /**
-   * Application function apply.
-   * @param {string} key - Input value for this operation.
-   * @param {unknown} value - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Attach one supported prop, rolling back its resources if a later prop fails.
+   * @param {string} key - Authored prop/attribute name; events and bindings have separate ownership paths.
+   * @param {unknown} value - Authored child/property value; executable functions must be trusted application code.
+   * @returns {void} Attaches supported prop resources or rejects invalid ref ownership.
    */
   const apply = (key: string, value: unknown) => {
     if (
@@ -240,34 +240,34 @@ function patchProperties(
       typeof value === 'object' &&
       'value' in value
     ) {
-      /** Stores the field value used by this module. */
+      /** Native two-way form property selected from the supported binding names. */
       const field = key === 'bind:value' ? 'value' : 'checked';
-      /** Stores the source value used by this module. */
+      /** Borrowed mutable signal; replacing/disposal removes listeners but does not destroy the source. */
       const source = value as { value: unknown };
-      /** Stores the hydration value used by this module. */
+      /** During initial adoption live form state wins; writes are deferred until root commit. */
       const hydration = currentHydration();
       if (hydration?.active) {
-        /** Stores the live value used by this module. */
+        /** Preserve edits made before hydration rather than overwriting them with server defaults. */
         const live = (el as unknown as Record<string, unknown>)[field];
         hydration.bindings.push(() => {
           source.value = live;
         });
       }
-      /** Stores the stop value used by this module. */
+      /** Owned binding effect disposer; removed together with its matching native listener. */
       const stop = scope.run(() =>
         effect(() => {
-          /** Stores the next value used by this module. */
+          /** Capture the next value/node before mutating the current DOM or publishing an update. */
           const next = source.value;
           if (!hydration?.active) {
             setProp(el, field, next);
           }
         })
       );
-      /** Stores the eventName value used by this module. */
+      /** Native value/checked change event paired with this specific binding. */
       const eventName = field === 'value' ? 'input' : 'change';
       /**
-       * Application function listener.
-       * @returns {unknown} Result produced by this operation.
+       * Copy current native form state into the borrowed mutable binding signal.
+       * @returns {void} Publishes the current native form value to its borrowed binding.
        */
       const listener = () => {
         source.value = (el as unknown as Record<string, unknown>)[field];
@@ -285,7 +285,7 @@ function patchProperties(
         disposers.push(() => (value as (node: Element | null) => void)(null));
         (value as (node: Element | null) => void)(el);
       } else if (typeof value === 'object' && 'current' in value) {
-        /** Stores the ref value used by this module. */
+        /** Borrowed current holder; cleanup clears it only if it still points to this element. */
         const ref = value as { current: Element | null };
         ref.current = el;
         disposers.push(() => {
@@ -300,7 +300,7 @@ function patchProperties(
       if (typeof value !== 'function') {
         return;
       }
-      /** Stores the listener value used by this module. */
+      /** Exact function identity retained for matching removeEventListener. */
       const listener = value as EventListener;
       el.addEventListener(key.slice(2).toLowerCase(), listener);
       disposers.push(() =>
@@ -310,7 +310,7 @@ function patchProperties(
       disposers.push(
         scope.run(() =>
           effect(() => {
-            /** Stores the next value used by this module. */
+            /** Capture the next value/node before mutating the current DOM or publishing an update. */
             const next = (value as () => unknown)();
             if (
               !(
@@ -333,8 +333,8 @@ function patchProperties(
     }
   };
   /**
-   * Application function dispose.
-   * @returns {unknown} Result produced by this operation.
+   * Drain property resources once in reverse acquisition order.
+   * @returns {void} Attempts all captured property disposers.
    */
   const dispose = () => disposeAll(disposers.splice(0).reverse());
   try {
@@ -361,15 +361,15 @@ function patchProperties(
   }
 }
 /**
- * between.
- * @param {Node} start - Input value for this operation.
- * @param {Node} end - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Remove the inclusive owned DOM range while preserving traversal before each removal.
+ * @param {Node} start - First owned node or root marker.
+ * @param {Node} end - Inclusive closing node or marker.
+ * @returns {void} Removes the inclusive native range.
  */
 function between(start: Node, end: Node): void {
   let current: Node | null = start;
   while (current) {
-    /** Stores the next value used by this module. */
+    /** Capture the next value/node before mutating the current DOM or publishing an update. */
     const next: Node | null = current === end ? null : current.nextSibling;
     current.parentNode?.removeChild(current);
     current = next;
@@ -377,23 +377,23 @@ function between(start: Node, end: Node): void {
 }
 /** Move complete ranges; avoid touching already-positioned DOM (including focused inputs). */
 /**
- * moveBefore.
- * @param {Mounted} item - Input value for this operation.
- * @param {Node} parent - Input value for this operation.
- * @param {Node | null} anchor - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Move a complete owned range, preserving already-positioned nodes and best-effort native focus.
+ * @param {Mounted} item - Mounted range whose native identity must be retained.
+ * @param {Node} parent - Native parent receiving this owned subtree/range.
+ * @param {Node | null} anchor - Insertion boundary, or null to append.
+ * @returns {void} Moves the range with best-effort focus/selection restoration.
  */
 function moveBefore(item: Mounted, parent: Node, anchor: Node | null): void {
   if (item.end.nextSibling === anchor) {
     return;
   }
-  /** Stores the doc value used by this module. */
+  /** Owner document supplies native nodes and best-effort focus restoration. */
   const doc = parent.ownerDocument;
-  /** Stores the focused value used by this module. */
+  /** Existing focused element; only a still-connected element can be restored after range moves. */
   const focused = doc?.activeElement as HTMLElement | null;
-  /** Stores the input value used by this module. */
+  /** Potential text control used only for supported selection-range restoration. */
   const input = focused as HTMLInputElement | null;
-  /** Stores the selection value used by this module. */
+  /** Snapshot supported selection positions/direction before moving the owned range. */
   const selection =
     input && typeof input.selectionStart === 'number'
       ? ([
@@ -404,7 +404,7 @@ function moveBefore(item: Mounted, parent: Node, anchor: Node | null): void {
       : undefined;
   let node: Node | null = item.start;
   while (node) {
-    /** Stores the next value used by this module. */
+    /** Capture the next value/node before mutating the current DOM or publishing an update. */
     const next: Node | null = node === item.end ? null : node.nextSibling;
     parent.insertBefore(node, anchor);
     node = next;
@@ -422,16 +422,16 @@ function moveBefore(item: Mounted, parent: Node, anchor: Node | null): void {
   }
 }
 /**
- * validateChildren.
- * @param {VNodeChild[]} values - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Reject invalid/duplicate sibling keys before changing the child inventory.
+ * @param {VNodeChild[]} values - Normalized sibling descriptions for this child owner.
+ * @returns {void} Returns only for valid unique sibling keys.
  */
 function validateChildren(values: VNodeChild[]): void {
-  /** Stores the keys value used by this module. */
+  /** Sibling identity set; duplicate or nonfinite identities reject before reconciliation. */
   const keys = new Set<unknown>();
   for (const child of values) {
     if (isVNode(child) && child.props.key !== undefined) {
-      /** Stores the key value used by this module. */
+      /** Optional authored sibling identity, separate from application authorization or data identity. */
       const key: unknown = child.props.key;
       if (
         (typeof key !== 'string' &&
@@ -447,40 +447,40 @@ function validateChildren(values: VNodeChild[]): void {
   }
 }
 /**
- * childrenOwner.
- * @param {Node} parent - Input value for this operation.
- * @param {Node | null} anchor - Input value for this operation.
- * @param {EffectScope} scope - Input value for this operation.
- * @returns {unknown} Result produced by this operation.
+ * Retain sibling reconciliation state and register descendant disposal with the parent scope.
+ * @param {Node} parent - Native parent receiving this owned subtree/range.
+ * @param {Node | null} anchor - Insertion boundary, or null to append.
+ * @param {EffectScope} scope - Explicit synchronous owner for acquired effects/listeners and descendant cleanup.
+ * @returns {(values: VNodeChild[]) => void} Stateful child updater whose descendants are disposed by the supplied scope.
  */
 function childrenOwner(parent: Node, anchor: Node | null, scope: EffectScope) {
   let children: Mounted[] = [];
   scope.add(() => {
-    /** Stores the old value used by this module. */
+    /** Detach the previous child inventory before invoking any reentrant disposer. */
     const old = children;
     children = [];
     disposeAll(old.map((child) => () => child.destroy()));
   });
-  /** Stores the session value used by this module. */
+  /** Captured adoption session; later updates retain its identity but skip initial-adoption-only work. */
   const session = currentHydration();
   return (values: VNodeChild[]) =>
     withHydration(session, () => {
       validateChildren(values);
-      /** Stores the available value used by this module. */
+      /** Prior children not yet reused; leftovers are disposed after successful reconciliation. */
       const available = new Set(children);
-      /** Stores the keyed value used by this module. */
+      /** Exact keyed lookup; unkeyed positions cannot steal keyed component state. */
       const keyed = new Map(
         children
           .filter((child) => child.key !== undefined)
           .map((child) => [child.key, child])
       );
-      /** Stores the updated value used by this module. */
+      /** New child inventory retains every acquired child even if a later sibling fails. */
       const updated: Mounted[] = [];
       try {
         for (let index = 0; index < values.length; index++) {
-          /** Stores the candidate value used by this module. */
+          /** Current authored child to match by type/key or construct with its own scope. */
           const candidate = values[index];
-          /** Stores the key value used by this module. */
+          /** Optional authored sibling identity, separate from application authorization or data identity. */
           const key = isVNode(candidate) ? candidate.props.key : undefined;
           let old = key === undefined ? children[index] : keyed.get(key);
           if (
@@ -510,7 +510,7 @@ function childrenOwner(parent: Node, anchor: Node | null, scope: EffectScope) {
       let position = anchor;
       for (let i = updated.length - 1; i >= 0; i--) {
         // Move each retained child backward so its final order matches the VNode list.
-        /** Stores the child value used by this module. */
+        /** Retained range moved backward relative to the next already-positioned sibling. */
         const child = updated[i];
         if (!child) {
           continue;
@@ -521,12 +521,12 @@ function childrenOwner(parent: Node, anchor: Node | null, scope: EffectScope) {
     });
 }
 /**
- * disposeAll.
- * @param {(() => void)[]} callbacks - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Attempt every supplied cleanup and aggregate failures after resource release attempts.
+ * @param {(() => void)[]} callbacks - Explicit cleanup order chosen by the caller.
+ * @returns {void} Attempts every callback and throws AggregateError after failures.
  */
 function disposeAll(callbacks: (() => void)[]): void {
-  /** Stores the errors value used by this module. */
+  /** Attempt all cleanup callbacks, then report their failures together. */
   const errors: unknown[] = [];
   for (const callback of callbacks) {
     try {
@@ -540,11 +540,11 @@ function disposeAll(callbacks: (() => void)[]): void {
   }
 }
 /**
- * releaseNode.
- * @param {HydrationSession | undefined} session - Input value for this operation.
- * @param {Node} start - Input value for this operation.
- * @param {unknown} end - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Preserve adopted server nodes during failed precommit work; remove created/committed nodes.
+ * @param {HydrationSession | undefined} session - Optional protocol session determining precommit versus committed node ownership.
+ * @param {Node} start - First owned node or root marker.
+ * @param {unknown} end - Inclusive closing node or marker.
+ * @returns {void} Removes owned nodes while preserving uncommitted adopted server nodes.
  */
 function releaseNode(
   session: HydrationSession | undefined,
@@ -557,12 +557,12 @@ function releaseNode(
 }
 /** Each node owns a scope; construction failure rolls back its partial subtree. */
 /**
- * construct.
- * @param {VNodeChild} value - Input value for this operation.
- * @param {Node} parent - Input value for this operation.
- * @param {Node | null} anchor - Input value for this operation.
- * @param {EffectScope} owner - Input value for this operation.
- * @returns {Mounted} Result produced by this operation.
+ * Account protocol depth and construct one independently disposable subtree.
+ * @param {VNodeChild} value - Authored child/property value; executable functions must be trusted application code.
+ * @param {Node} parent - Native parent receiving this owned subtree/range.
+ * @param {Node | null} anchor - Insertion boundary, or null to append.
+ * @param {EffectScope} owner - Parent ownership context for constructing or reconciling this subtree.
+ * @returns {Mounted} Independently disposable subtree with depth accounting restored.
  */
 function construct(
   value: VNodeChild,
@@ -570,9 +570,9 @@ function construct(
   anchor: Node | null,
   owner: EffectScope
 ): Mounted {
-  /** Stores the session value used by this module. */
+  /** Captured adoption session; later updates retain its identity but skip initial-adoption-only work. */
   const session = currentHydration();
-  /** Stores the counted value used by this module. */
+  /** Only initial protocol traversal contributes to the session structural-depth budget. */
   const counted = !!session?.initializing;
   if (counted && ++session!.depth > session!.limits.maxDepth + 1) {
     session!.depth--;
@@ -590,12 +590,12 @@ function construct(
   }
 }
 /**
- * constructNode.
- * @param {VNodeChild} value - Input value for this operation.
- * @param {Node} parent - Input value for this operation.
- * @param {Node | null} anchor - Input value for this operation.
- * @param {EffectScope} _owner - Input value for this operation.
- * @returns {Mounted} Result produced by this operation.
+ * Acquire one subtree with local rollback; async children and unsupported objects reject.
+ * @param {VNodeChild} value - Authored child/property value; executable functions must be trusted application code.
+ * @param {Node} parent - Native parent receiving this owned subtree/range.
+ * @param {Node | null} anchor - Insertion boundary, or null to append.
+ * @param {EffectScope} _owner - Parent ownership context for constructing or reconciling this subtree.
+ * @returns {Mounted} Mounted node/range; failure rolls back acquired scope resources.
  */
 function constructNode(
   value: VNodeChild,
@@ -608,7 +608,7 @@ function constructNode(
       'ZyroJS: Promise children are unsupported; expose async state through a signal'
     );
   }
-  /** Stores the session value used by this module. */
+  /** Captured adoption session; later updates retain its identity but skip initial-adoption-only work. */
   const session = currentHydration();
   checkAbort(session?.signal);
   if (session?.initializing && ++session.nodes > session.limits.maxNodes) {
@@ -618,9 +618,9 @@ function constructNode(
     );
   }
   validateChildren([value]);
-  /** Stores the scope value used by this module. */
+  /** Node-local owner for descendants, effects, listeners and native range cleanup. */
   const scope = createEffectScope();
-  /** Stores the doc value used by this module. */
+  /** Owner document supplies native nodes and best-effort focus restoration. */
   const doc = parent.ownerDocument ?? (parent as Document);
   try {
     if (
@@ -628,11 +628,11 @@ function constructNode(
       typeof value === 'function' ||
       (isVNode(value) && typeof value.type === 'function')
     ) {
-      /** Stores the range value used by this module. */
+      /** Existing marker range during adoption; fresh mounting creates its own markers. */
       const range = session?.active ? claimRange(session, parent) : undefined;
-      /** Stores the start value used by this module. */
+      /** First owned marker/node; retained identity anchors keyed moves and subtree teardown. */
       const start = range?.start ?? doc.createComment('zyro-start');
-      /** Stores the marker value used by this module. */
+      /** Closing owned range boundary; children are inserted before it. */
       const marker = range?.end ?? doc.createComment('zyro');
       if (!range) {
         parent.insertBefore(start, anchor);
@@ -640,7 +640,7 @@ function constructNode(
       }
       scope.add(() => releaseNode(session, marker));
       scope.add(() => releaseNode(session, start));
-      /** Stores the updateChildren value used by this module. */
+      /** Child-list owner retaining reconciliation state and all acquired descendant ranges. */
       const updateChildren = childrenOwner(parent, marker, scope);
       if (Array.isArray(value)) {
         updateChildren(flat(value));
@@ -652,9 +652,9 @@ function constructNode(
           end: marker,
           type: Array,
           /**
-           * update.
-           * @param {unknown} next - Input value for this operation.
-           * @returns {unknown} Result produced by this operation.
+           * Update this retained range without reallocating compatible component setup.
+           * @param {unknown} next - Next authored description; retained type/key determines whether state can be reused.
+           * @returns {void} Updates this retained owner or rejects unsupported next content.
            */
           update(next) {
             updateChildren(flat(next as VNodeChild[]));
@@ -662,32 +662,32 @@ function constructNode(
           destroy: () => scope.dispose(),
         };
       }
-      /** Stores the componentVNode value used by this module. */
+      /** Optional component node supplies current props/key; standalone function children have none. */
       const componentVNode = isVNode(value) ? value : undefined;
-      /** Stores the component value used by this module. */
+      /** Trusted authored function identity; never loaded from serialized public data. */
       const component = componentVNode
         ? (componentVNode.type as (...args: any[]) => any)
         : (value as (...args: any[]) => any);
-      /** Stores the definition value used by this module. */
+      /** Explicit setup registration distinguishes stateful setup from ordinary function children. */
       const definition = componentVNode
         ? getComponentDefinition(component)
         : undefined;
       let currentVNode = componentVNode;
       let renderComponent = component;
-      /** Stores the componentId value used by this module. */
+      /** Preorder protocol identity shared with server setup; ordinary mounts do not allocate IDs. */
       const componentId = session ? ++session.components : 0;
       let setupFailed = false;
       let setupError: unknown;
       if (definition) {
-        /** Stores the setupScope value used by this module. */
+        /** One-time setup resources, registered under the node owner and cleaned on setup failure. */
         const setupScope = createEffectScope();
         scope.add(() => setupScope.dispose());
         try {
           renderComponent = setupScope.run(() =>
             untracked(() => {
               /**
-               * Application function setup.
-               * @returns {unknown} Result produced by this operation.
+               * Run registered setup once with the initial authored props and deterministic ID context.
+               * @returns {unknown} Trusted registered setup result, checked to be a synchronous render function.
                */
               const setup = () =>
                 definition.setup({
@@ -717,7 +717,7 @@ function constructNode(
           }
         }
       }
-      /** Stores the revision value used by this module. */
+      /** Internal props-update signal; setup remains stable while current render receives fresh props. */
       const revision = signal(0);
       scope.run(() =>
         effect(() => {
@@ -727,7 +727,7 @@ function constructNode(
             if (setupFailed) {
               throw setupError;
             }
-            /** Stores the result value used by this module. */
+            /** Attempt-local output; ownership is retained until reconciliation or rendering succeeds. */
             const result = runComponentRender(() =>
               currentVNode
                 ? renderComponent({
@@ -759,9 +759,9 @@ function constructNode(
         type: component,
         key: componentVNode?.props.key,
         /**
-         * update.
-         * @param {unknown} next - Input value for this operation.
-         * @returns {unknown} Result produced by this operation.
+         * Update this retained range without reallocating compatible component setup.
+         * @param {unknown} next - Next authored description; retained type/key determines whether state can be reused.
+         * @returns {void} Updates this retained owner or rejects unsupported next content.
          */
         update(next) {
           if (isVNode(next)) {
@@ -792,7 +792,7 @@ function constructNode(
         }
       }
       let currentVNode = value;
-      /** Stores the el value used by this module. */
+      /** Adopted or newly created native element; property/listener ownership stays with its scope. */
       const el = session?.active
         ? (claim(session, parent, 1, value.type) as Element)
         : doc.createElement(value.type);
@@ -804,7 +804,7 @@ function constructNode(
       scope.add(() => releaseNode(session, el));
       let propDispose: () => void = () => {};
       scope.add(() => propDispose());
-      /** Stores the updateChildren value used by this module. */
+      /** Child-list owner retaining reconciliation state and all acquired descendant ranges. */
       const updateChildren = childrenOwner(el, null, scope);
       let raw = trustedHTMLValue(value.props, flat(value.children).length > 0);
       propDispose = patchProperties(el, value.props, {}, scope);
@@ -830,16 +830,16 @@ function constructNode(
         key: value.props.key,
         type: value.type,
         /**
-         * update.
-         * @param {unknown} next - Input value for this operation.
-         * @returns {unknown} Result produced by this operation.
+         * Update this retained range without reallocating compatible component setup.
+         * @param {unknown} next - Next authored description; retained type/key determines whether state can be reused.
+         * @returns {void} Updates this retained owner or rejects unsupported next content.
          */
         update(next) {
           if (!isVNode(next)) {
             return;
           }
           validateChildren(flat(next.children));
-          /** Stores the nextRaw value used by this module. */
+          /** New approved opaque leaf; managed children must be disposed before replacing its HTML. */
           const nextRaw = trustedHTMLValue(
             next.props,
             flat(next.children).length > 0
@@ -873,7 +873,7 @@ function constructNode(
     if (value !== null && typeof value === 'object') {
       throw new TypeError('ZyroJS: invalid child value');
     }
-    /** Stores the expectedText value used by this module. */
+    /** Exact scalar text expected from the matching server tree. */
     const expectedText =
       value === null || value === undefined || typeof value === 'boolean'
         ? ''
@@ -901,9 +901,9 @@ function constructNode(
       end: text,
       type: '#text',
       /**
-       * update.
-       * @param {unknown} next - Input value for this operation.
-       * @returns {unknown} Result produced by this operation.
+       * Update this retained range without reallocating compatible component setup.
+       * @param {unknown} next - Next authored description; retained type/key determines whether state can be reused.
+       * @returns {void} Updates this retained owner or rejects unsupported next content.
        */
       update(next) {
         text.textContent =
@@ -926,9 +926,9 @@ function constructNode(
   }
 }
 /**
- * kind.
- * @param {VNodeChild} value - Input value for this operation.
- * @returns {unknown} Result produced by this operation.
+ * Classify reconciliation identity by array, component/element type or scalar text.
+ * @param {VNodeChild} value - Authored child/property value; executable functions must be trusted application code.
+ * @returns {unknown} Reconciliation type identity, not a validated public schema.
  */
 function kind(value: VNodeChild): unknown {
   if (Array.isArray(value)) {
@@ -943,13 +943,13 @@ function kind(value: VNodeChild): unknown {
   return '#text';
 }
 /**
- * reconcile.
- * @param {Mounted} current - Input value for this operation.
- * @param {VNodeChild} next - Input value for this operation.
- * @param {Node} parent - Input value for this operation.
- * @param {Node | null} anchor - Input value for this operation.
- * @param {EffectScope} owner - Input value for this operation.
- * @returns {Mounted} Result produced by this operation.
+ * Retain compatible type/key ownership; otherwise construct a candidate and dispose the old subtree.
+ * @param {Mounted} current - Existing mounted range and its resource ownership.
+ * @param {VNodeChild} next - Next authored description; retained type/key determines whether state can be reused.
+ * @param {Node} parent - Native parent receiving this owned subtree/range.
+ * @param {Node | null} anchor - Insertion boundary, or null to append.
+ * @param {EffectScope} owner - Parent ownership context for constructing or reconciling this subtree.
+ * @returns {Mounted} Retained or newly acquired owner; failed replacement releases its candidate.
  */
 function reconcile(
   current: Mounted,
@@ -971,7 +971,7 @@ function reconcile(
     (isVNode(next) && next.props.key !== current.key) ||
     (next && typeof next === 'object' && 'then' in next)
   ) {
-    /** Stores the created value used by this module. */
+    /** Construct replacement before releasing prior ownership; failed cleanup also releases the candidate. */
     const created = construct(next, parent, current.start, owner);
     try {
       current.destroy();
@@ -993,15 +993,15 @@ function reconcile(
 }
 /** Mount an additional subtree. Call unmount(container) to clear both root and manually-mounted trees. */
 /**
- * mount.
- * @param {VNodeChild} vnode - Input value for this operation.
- * @param {Node} container - Input value for this operation.
- * @returns {Node | undefined} Result produced by this operation.
+ * Append an independently tracked subtree; unmount(container) also releases manual mounts.
+ * @param {VNodeChild} vnode - Trusted authored description; no module/source text is evaluated.
+ * @param {Node} container - Host-owned native root; do not share its ownership with another renderer.
+ * @returns {Node | undefined} First mounted node; unmount(container) owns teardown of this additional subtree.
  */
 export function mount(vnode: VNodeChild, container: Node): Node | undefined {
-  /** Stores the scope value used by this module. */
+  /** Node-local owner for descendants, effects, listeners and native range cleanup. */
   const scope = createEffectScope();
-  /** Stores the item value used by this module. */
+  /** Exact acquired subtree/root identity, retained for owner-specific release. */
   const item = construct(vnode, container, null, scope);
   let items = manuallyMounted.get(container);
   if (!items) {
@@ -1013,13 +1013,13 @@ export function mount(vnode: VNodeChild, container: Node): Node | undefined {
 }
 /** Reconcile a managed root; keyed child nodes retain their browser identity. */
 /**
- * render.
- * @param {VNodeChild} vnode - Input value for this operation.
- * @param {Node} container - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Reconcile the managed root while preserving compatible keyed component state.
+ * @param {VNodeChild} vnode - Trusted authored description; no module/source text is evaluated.
+ * @param {Node} container - Host-owned native root; do not share its ownership with another renderer.
+ * @returns {void} Reconciles the exact-container managed root.
  */
 export function render(vnode: VNodeChild, container: Node): void {
-  /** Stores the previous value used by this module. */
+  /** Existing root for this exact container; compatible type/key retains node identity. */
   const previous = roots.get(container);
   if (previous) {
     roots.set(
@@ -1035,11 +1035,11 @@ export function render(vnode: VNodeChild, container: Node): void {
 }
 /** Compatibility wrapper for the prior patch(vnode, oldVNode) API. */
 /**
- * patch.
- * @param {Node} container - Input value for this operation.
- * @param {VNodeChild} vnode - Input value for this operation.
- * @param {VNode} _oldVNode - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Preserve the legacy patch signature by delegating to exact-container root reconciliation.
+ * @param {Node} container - Host-owned native root; do not share its ownership with another renderer.
+ * @param {VNodeChild} vnode - Trusted authored description; no module/source text is evaluated.
+ * @param {VNode} _oldVNode - Legacy compatibility argument; live ownership is read from the container registry.
+ * @returns {void} Delegates to managed-root render; legacy oldVNode is ignored.
  */
 export function patch(
   container: Node,
@@ -1049,14 +1049,14 @@ export function patch(
   render(vnode, container);
 }
 /**
- * unmount.
- * @param {Node} container - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Clear root registrations before attempting every root/manual-subtree disposer.
+ * @param {Node} container - Host-owned native root; do not share its ownership with another renderer.
+ * @returns {void} Clears registrations and attempts all root/manual subtree cleanups.
  */
 export function unmount(container: Node): void {
-  /** Stores the root value used by this module. */
+  /** Managed render root removed from the ownership map before running user cleanup. */
   const root = roots.get(container);
-  /** Stores the manual value used by this module. */
+  /** Snapshot additional mounts so reentrant cleanup cannot hide resources from this drain. */
   const manual = [...(manuallyMounted.get(container) ?? [])];
   roots.delete(container);
   manuallyMounted.delete(container);
@@ -1067,12 +1067,12 @@ export function unmount(container: Node): void {
 }
 /** Escaped static HTML string for SSR. No implicit script, raw HTML, or hydration is supported. */
 /**
- * renderToString.
- * @param {VNodeChild} value - Input value for this operation.
- * @returns {string} Result produced by this operation.
+ * Render static marker-free HTML in a temporary effect scope that always disposes.
+ * @param {VNodeChild} value - Authored child/property value; executable functions must be trusted application code.
+ * @returns {string} Escaped marker-free static HTML after temporary scope cleanup.
  */
 export function renderToString(value: VNodeChild): string {
-  /** Stores the scope value used by this module. */
+  /** Node-local owner for descendants, effects, listeners and native range cleanup. */
   const scope = createEffectScope();
   try {
     return scope.run(() => untracked(() => renderStatic(value)));
@@ -1081,15 +1081,15 @@ export function renderToString(value: VNodeChild): string {
   }
 }
 /**
- * renderStatic.
- * @param {VNodeChild} value - Input value for this operation.
- * @returns {string} Result produced by this operation.
+ * Serialize the legacy static subset without hydration markers or attached listeners.
+ * @param {VNodeChild} value - Authored child/property value; executable functions must be trusted application code.
+ * @returns {string} Legacy static subtree serialization without hydration data.
  */
 function renderStatic(value: VNodeChild): string {
   /**
-   * Application function escape.
-   * @param {unknown} text - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Encode legacy static text/quoted attribute delimiters; never use this for script data.
+   * @param {unknown} text - Scalar authored value converted to text before HTML escaping.
+   * @returns {string} HTML-escaped scalar text, unsuitable for script/URL policy contexts.
    */
   const escape = (text: unknown) =>
     String(text)
@@ -1121,12 +1121,12 @@ function renderStatic(value: VNodeChild): string {
     return escape(value);
   }
   if (typeof value.type === 'function') {
-    /** Stores the definition value used by this module. */
+    /** Explicit setup registration distinguishes stateful setup from ordinary function children. */
     const definition = getComponentDefinition(value.type);
-    /** Stores the props value used by this module. */
+    /** Current authored component props and children; these callbacks are trusted application code. */
     const props = { ...value.props, children: value.children };
     try {
-      /** Stores the render value used by this module. */
+      /** One-time setup result or ordinary component function; asynchronous returns remain unsupported. */
       const render = definition ? definition.setup(props) : value.type;
       if (typeof render !== 'function') {
         throw new TypeError(
@@ -1157,7 +1157,7 @@ function renderStatic(value: VNodeChild): string {
     ) {
       continue;
     }
-    /** Stores the val value used by this module. */
+    /** Evaluate only trusted authored reactive attribute callbacks; public JSON cannot carry functions. */
     const val: unknown = typeof raw === 'function' ? raw() : raw;
     if (
       val === null ||
@@ -1167,16 +1167,16 @@ function renderStatic(value: VNodeChild): string {
     ) {
       continue;
     }
-    /** Stores the attr value used by this module. */
+    /** Static attribute name normalized and checked before quoted-value encoding. */
     const attr = name === 'className' ? 'class' : name;
     if (!/^[a-zA-Z_:][\w:.-]*$/.test(attr)) {
       continue;
     }
     attrs += val === true ? ` ${attr}` : ` ${attr}="${escape(val)}"`;
   }
-  /** Stores the raw value used by this module. */
+  /** Opaque HTML is accepted only through the exact sanitizer-token registry. */
   const raw = trustedHTMLValue(value.props, flat(value.children).length > 0);
-  /** Stores the children value used by this module. */
+  /** Either approved opaque content or recursively encoded managed children, never both. */
   const children = raw ?? flat(value.children).map(renderStatic).join('');
   if (
     /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/i.test(
@@ -1191,13 +1191,13 @@ function renderStatic(value: VNodeChild): string {
 /**
  * Internal helper: adopt a validated protocol tree into the existing reconciler.
  *
- * adoptHydrationRoot.
- * @param {VNodeChild} value - Input value for this operation.
- * @param {Node} container - Input value for this operation.
- * @param {HydrationSession} session - Input value for this operation.
- * @param {Node} start - Input value for this operation.
- * @param {Node} end - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Commit an exactly consumed protocol tree; failed adoption disposes acquired resources.
+ * @param {VNodeChild} value - Authored child/property value; executable functions must be trusted application code.
+ * @param {Node} container - Host-owned native root; do not share its ownership with another renderer.
+ * @param {HydrationSession} session - Optional protocol session determining precommit versus committed node ownership.
+ * @param {Node} start - First owned node or root marker.
+ * @param {Node} end - Inclusive closing node or marker.
+ * @returns {void} Registers the fully consumed committed protocol owner.
  */
 export function adoptHydrationRoot(
   value: VNodeChild,
@@ -1233,16 +1233,16 @@ export function adoptHydrationRoot(
       type: item.type,
       key: item.key,
       /**
-       * update.
-       * @param {unknown} next - Input value for this operation.
-       * @returns {unknown} Result produced by this operation.
+       * Update this retained range without reallocating compatible component setup.
+       * @param {unknown} next - Next authored description; retained type/key determines whether state can be reused.
+       * @returns {void} Updates this retained owner or rejects unsupported next content.
        */
       update(next) {
         withHydration(session, () => item!.update(next));
       },
       /**
-       * destroy.
-       * @returns {unknown} Result produced by this operation.
+       * Release this exact subtree and its owned native markers/resources.
+       * @returns {void} Attempts this owner’s subtree, marker and attached cleanup.
        */
       destroy() {
         disposeAll([
@@ -1267,11 +1267,11 @@ export function adoptHydrationRoot(
 /**
  * Internal helper: explicit mismatch recovery uses normal mounting with the same deterministic ID scope.
  *
- * replaceHydrationRoot.
- * @param {VNodeChild} value - Input value for this operation.
- * @param {Node} container - Input value for this operation.
- * @param {HydrationSession} session - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Explicitly discard server children and mount a bounded replacement with matching ID context.
+ * @param {VNodeChild} value - Authored child/property value; executable functions must be trusted application code.
+ * @param {Node} container - Host-owned native root; do not share its ownership with another renderer.
+ * @param {HydrationSession} session - Optional protocol session determining precommit versus committed node ownership.
+ * @returns {void} Registers an explicit replacement root; initial server edits are discarded.
  */
 export function replaceHydrationRoot(
   value: VNodeChild,
@@ -1305,9 +1305,9 @@ export function replaceHydrationRoot(
   }
 }
 /**
- * hydrationRootOwned.
- * @param {Node} container - Input value for this operation.
- * @returns {boolean} Result produced by this operation.
+ * Report existing root/manual ownership before protocol acquisition begins.
+ * @param {Node} container - Host-owned native root; do not share its ownership with another renderer.
+ * @returns {boolean} Whether any managed or manual subtree already owns this container.
  */
 export function hydrationRootOwned(container: Node): boolean {
   return roots.has(container) || !!manuallyMounted.get(container)?.size;
@@ -1316,16 +1316,16 @@ export function hydrationRootOwned(container: Node): boolean {
 /**
  * Internal helper: tie abort listeners to the exact mounted owner, not to a process-global registry.
  *
- * attachHydrationCleanup.
- * @param {Node} container - Input value for this operation.
- * @param {() => void} cleanup - Input value for this operation.
- * @returns {() => void} Result produced by this operation.
+ * Bind cleanup to an exact mounted identity so stale handles cannot unmount newer roots.
+ * @param {Node} container - Host-owned native root; do not share its ownership with another renderer.
+ * @param {() => void} cleanup - Host abort/session release callback, attempted even when subtree destruction fails.
+ * @returns {() => void} Owner-specific release handle; stale handles cannot release a newer root.
  */
 export function attachHydrationCleanup(
   container: Node,
   cleanup: () => void
 ): () => void {
-  /** Stores the item value used by this module. */
+  /** Exact acquired subtree/root identity, retained for owner-specific release. */
   const item = roots.get(container);
   if (!item) {
     throw new HydrationError(
@@ -1333,12 +1333,12 @@ export function attachHydrationCleanup(
       'ZyroJS: hydration root unavailable'
     );
   }
-  /** Stores the owner value used by this module. */
+  /** Wrapper identity binds abort cleanup to this mounted root, fencing stale handles. */
   const owner: Mounted = {
     ...item,
     /**
-     * destroy.
-     * @returns {unknown} Result produced by this operation.
+     * Release this exact subtree and its owned native markers/resources.
+     * @returns {void} Attempts this owner’s subtree, marker and attached cleanup.
      */
     destroy() {
       try {

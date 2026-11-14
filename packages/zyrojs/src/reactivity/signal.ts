@@ -17,8 +17,8 @@ class SignalImpl<T> implements Signal<T> {
    */
   constructor(private current: T) {}
   /**
-   * value.
-   * @returns {T} Result produced by this operation.
+   * Read or replace signal state; reads track and Object.is-equal writes do not notify.
+   * @returns {T} Current value; getter reads subscribe the active effect.
    */
   get value(): T {
     /** Currently tracking effect; each subscription registers its own removal with that effect. */
@@ -30,9 +30,9 @@ class SignalImpl<T> implements Signal<T> {
     return this.current;
   }
   /**
-   * value.
-   * @param {T} next - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Read or replace signal state; reads track and Object.is-equal writes do not notify.
+   * @param {T} next - Replacement value; Object.is equality suppresses notifications.
+   * @returns {void} Publishes a changed value and schedules current subscribers.
    */
   set value(next: T) {
     if (Object.is(this.current, next)) {
@@ -46,8 +46,8 @@ class SignalImpl<T> implements Signal<T> {
     });
   }
   /**
-   * peek.
-   * @returns {T} Result produced by this operation.
+   * Read retained state without subscribing the current effect.
+   * @returns {T} Current value without subscription.
    */
   peek(): T {
     return this.current;
@@ -87,10 +87,10 @@ export function reactive<T extends object>(target: T): T {
   /** Enumeration version, changed when own properties are added or removed. */
   const keys = signal(0);
   /**
-   * Application function track.
-   * @param {Map<PropertyKey, Signal<number>>} store - Input value for this operation.
-   * @param {PropertyKey} property - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Lazily register this property’s version signal as a dependency.
+   * @param {Map<PropertyKey, Signal<number>>} store - Property-specific read or membership dependency versions.
+   * @param {PropertyKey} property - Native string/symbol property identity.
+   * @returns {void} Registers this property read with the active effect.
    */
   const track = (
     store: Map<PropertyKey, Signal<number>>,
@@ -104,10 +104,10 @@ export function reactive<T extends object>(target: T): T {
     void version.value;
   };
   /**
-   * Application function notify.
-   * @param {Map<PropertyKey, Signal<number>>} store - Input value for this operation.
-   * @param {PropertyKey} property - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Increment an already observed property version after successful native mutation.
+   * @param {Map<PropertyKey, Signal<number>>} store - Property-specific read or membership dependency versions.
+   * @param {PropertyKey} property - Native string/symbol property identity.
+   * @returns {void} Notifies only observers of this property.
    */
   const notify = (
     store: Map<PropertyKey, Signal<number>>,
@@ -123,10 +123,10 @@ export function reactive<T extends object>(target: T): T {
   const proxy = new Proxy(target, {
     /**
      * get.
-     * @param {unknown} obj - Input value for this operation.
-     * @param {unknown} property - Input value for this operation.
-     * @param {unknown} receiver - Input value for this operation.
-     * @returns {unknown} Result produced by this operation.
+     * @param {unknown} obj - Original proxied target; native Reflect semantics are preserved.
+     * @param {unknown} property - Native string/symbol property identity.
+     * @param {unknown} receiver - Original proxy receiver used by getters/setters.
+     * @returns {unknown} Native property value or its eligible nested proxy.
      */
     get(obj, property, receiver) {
       track(versions, property);
@@ -149,9 +149,9 @@ export function reactive<T extends object>(target: T): T {
     },
     /**
      * has.
-     * @param {unknown} obj - Input value for this operation.
-     * @param {unknown} property - Input value for this operation.
-     * @returns {unknown} Result produced by this operation.
+     * @param {unknown} obj - Original proxied target; native Reflect semantics are preserved.
+     * @param {unknown} property - Native string/symbol property identity.
+     * @returns {boolean} Native property existence, including inherited properties.
      */
     has(obj, property) {
       track(membership, property);
@@ -159,8 +159,8 @@ export function reactive<T extends object>(target: T): T {
     },
     /**
      * ownKeys.
-     * @param {unknown} obj - Input value for this operation.
-     * @returns {unknown} Result produced by this operation.
+     * @param {unknown} obj - Original proxied target; native Reflect semantics are preserved.
+     * @returns {(string | symbol)[]} Native own keys after registering enumeration dependency.
      */
     ownKeys(obj) {
       void keys.value;
@@ -168,11 +168,11 @@ export function reactive<T extends object>(target: T): T {
     },
     /**
      * set.
-     * @param {unknown} obj - Input value for this operation.
-     * @param {unknown} property - Input value for this operation.
-     * @param {unknown} value - Input value for this operation.
-     * @param {unknown} receiver - Input value for this operation.
-     * @returns {unknown} Result produced by this operation.
+     * @param {unknown} obj - Original proxied target; native Reflect semantics are preserved.
+     * @param {unknown} property - Native string/symbol property identity.
+     * @param {unknown} value - New property value passed to the native write.
+     * @param {unknown} receiver - Original proxy receiver used by getters/setters.
+     * @returns {boolean} Whether the native write succeeded; successful changes notify dependent observers.
      */
     set(obj, property, value, receiver) {
       /** Value before the attempted write, used for Object.is change detection. */
@@ -198,9 +198,9 @@ export function reactive<T extends object>(target: T): T {
     },
     /**
      * deleteProperty.
-     * @param {unknown} obj - Input value for this operation.
-     * @param {unknown} property - Input value for this operation.
-     * @returns {unknown} Result produced by this operation.
+     * @param {unknown} obj - Original proxied target; native Reflect semantics are preserved.
+     * @param {unknown} property - Native string/symbol property identity.
+     * @returns {boolean} Whether native deletion succeeded.
      */
     deleteProperty(obj, property) {
       /** Own-property membership before mutation; inherited properties do not count. */
@@ -217,10 +217,10 @@ export function reactive<T extends object>(target: T): T {
     },
     /**
      * defineProperty.
-     * @param {unknown} obj - Input value for this operation.
-     * @param {unknown} property - Input value for this operation.
-     * @param {unknown} descriptor - Input value for this operation.
-     * @returns {unknown} Result produced by this operation.
+     * @param {unknown} obj - Original proxied target; native Reflect semantics are preserved.
+     * @param {unknown} property - Native string/symbol property identity.
+     * @param {unknown} descriptor - Native property descriptor; failed definitions do not publish notifications.
+     * @returns {boolean} Whether native definition succeeded.
      */
     defineProperty(obj, property, descriptor) {
       /** Own-property membership before mutation; inherited properties do not count. */

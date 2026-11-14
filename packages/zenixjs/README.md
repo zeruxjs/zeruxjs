@@ -14,7 +14,7 @@ no connections or listeners. No automatic config key is added; the separate gene
 
 ## Explicit startup
 
-[Public-import example](examples/application.mjs) creates a file-backed core and
+[Public-import example](examples/application.ts) creates a file-backed core and
 setup store, installs routes into a trusted ZeruxJS plugin API and registers cleanup.
 All identity, secrets, CSRF and provider settings must be private host configuration,
 not public build manifests or request-supplied objects. Supply these contracts:
@@ -156,7 +156,7 @@ is started, stopped or restarted on import. The public example registers this or
 through framework plugin disposal.
 
 Build with `npm run build --workspace=zenixjs`; focused checks:
-`node --test packages/zenixjs/test/application.test.mjs`. Native SQLite fixtures check
+`node --experimental-strip-types --test packages/zenixjs/test/application.test.ts`. Native SQLite fixtures check
 concurrent/repeated setup, privileged recovery, denied editor/CSRF/origin, duplicate
 fields, draft privacy, stored XSS, publication, labels, cleanup and an actual ephemeral
 HTTP request through the ZeruxJS Fetch registration. They use synthetic accounts/data.
@@ -176,7 +176,7 @@ console.log({ version, status, capabilities });
 // Importing metadata opens no database, session service or HTTP listener.
 ```
 
-Use the package's public `examples/application.mjs` to install the application
+Use the package's public `examples/application.ts` to install the application
 from a trusted host plugin. Its database/core/application cleanup order is explicit;
 private authentication and CSRF implementations must be supplied separately.
 `createZenixApplication` owns request admission, readers, previews and its renderer.

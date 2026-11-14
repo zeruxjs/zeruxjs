@@ -23,8 +23,8 @@ export const sites = {
       id: 'zeruxjs',
       mount: '/zeruxjs',
       directory: 'apps/zerux-docs',
-      build: ['node', 'scripts/build.mjs'],
-      developmentBuild: ['node', 'scripts/build.mjs', '--development'],
+      build: ['node', '--experimental-strip-types', 'scripts/build.ts'],
+      developmentBuild: ['node', '--experimental-strip-types', 'scripts/build.ts', '--development'],
       watch: [
         'src',
         'public',

@@ -1,4 +1,4 @@
-import { installThemeControl } from '../scripts/site-theme.mjs';
+import { installThemeControl } from '../scripts/site-theme.ts';
 import { installNavigationPrefetch } from '@zeruxjs/performance/navigation';
 
 installThemeControl();

@@ -30,11 +30,11 @@ console.log(plan.files); // inspect only
 // await writeProjectPlanAsync(plan);
 ```
 
-The root and `/templates` exports expose the same generator. See [inert example](examples/plan.mjs). Executable policies are trusted authored server modules, never discovered plugins or saved content. Host authentication resources remain borrowed; generated teardown drains the application before core/database shutdown and cleans failed startup. No hydration/browser secret bundle is supplied.
+The root and `/templates` exports expose the same generator. See [inert example](examples/plan.ts). Executable policies are trusted authored server modules, never discovered plugins or saved content. Host authentication resources remain borrowed; generated teardown drains the application before core/database shutdown and cleans failed startup. No hydration/browser secret bundle is supplied.
 
 ## Verification and limits
 
-`npm run build --workspace=create-zenix-js` and `node --test packages/create/create-zenix-app/test/generator.test.mjs` check CLI safety and an isolated consumer using offline workspace links. The fixture builds, migrates/reloads synthetic SQLite, exercises unconfigured/missing-dependency failure, installs an explicitly denying synthetic policy and drains cleanup. It does not prove clean registry installation, real auth/TLS/proxy deployment or browser/assistive-technology behavior. Existing Zenix application tests qualify its setup/editor/publication behavior separately. Do not claim complete CMS parity or automatic security compliance.
+`npm run build --workspace=create-zenix-js` and `node --experimental-strip-types --test packages/create/create-zenix-app/test/generator.test.ts` check CLI safety and an isolated consumer using offline workspace links. The fixture builds, migrates/reloads synthetic SQLite, exercises unconfigured/missing-dependency failure, installs an explicitly denying synthetic policy and drains cleanup. It does not prove clean registry installation, real auth/TLS/proxy deployment or browser/assistive-technology behavior. Existing Zenix application tests qualify its setup/editor/publication behavior separately. Do not claim complete CMS parity or automatic security compliance.
 
 License: MIT OR Apache-2.0.
 

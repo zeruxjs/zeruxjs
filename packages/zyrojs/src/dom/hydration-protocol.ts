@@ -1,6 +1,6 @@
 import { serializeJsonForScript } from '@zeruxjs/security/encoding';
 
-/** Stores the HYDRATION_VERSION value used by this module. */
+/** Wire-format discriminator; changing markers/data requires an explicitly compatible protocol version. */
 export const HYDRATION_VERSION = 1 as const;
 export interface HydrationLimits {
   /** Maximum number of nodes accepted during hydration. */
@@ -45,13 +45,13 @@ export class HydrationError extends Error {
   }
 }
 /**
- * checkAbort.
- * @param {AbortSignal} signal - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Throw a coded cooperative abort at a synchronous traversal checkpoint.
+ * @param {AbortSignal} signal - Optional host-owned cancellation signal; it cannot interrupt arbitrary synchronous code.
+ * @returns {void} Returns while active; throws a coded abort with private original cause otherwise.
  */
 export function checkAbort(signal?: AbortSignal): void {
   if (signal?.aborted) {
-    /** Stores the error value used by this module. */
+    /** Coded abort preserves the original reason privately as cause. */
     const error = new HydrationError(
       'RENDER_ABORTED',
       'ZyroJS: render aborted',
@@ -62,9 +62,9 @@ export function checkAbort(signal?: AbortSignal): void {
   }
 }
 /**
- * validatePrefix.
- * @param {unknown} value - Input value for this operation.
- * @returns {asserts value is string} Result produced by this operation.
+ * Validate the short root identifier used in comments and generated component IDs.
+ * @param {unknown} value - Candidate prefix, never an authorization credential.
+ * @returns {asserts value is string} Narrows a valid prefix or throws before it enters protocol markers.
  */
 export function validatePrefix(value: unknown): asserts value is string {
   if (
@@ -78,19 +78,19 @@ export function validatePrefix(value: unknown): asserts value is string {
   }
 }
 /**
- * hydrationLimits.
- * @param {HydrationLimits} input - Input value for this operation.
- * @returns {unknown} Result produced by this operation.
+ * Reject unknown/out-of-range budgets and fill explicit V1 defaults.
+ * @param {HydrationLimits} input - Candidate data or configuration validated before protocol use.
+ * @returns {Record<keyof HydrationLimits, number>} Validated explicit budgets with defaults applied.
  */
 export function hydrationLimits(input: HydrationLimits = {}) {
-  /** Stores the bounds value used by this module. */
+  /** Per-limit default and hard maximum; unknown configuration keys reject. */
   const bounds = {
     maxNodes: [10000, 100000],
     maxDepth: [64, 128],
     maxBytes: [1024 * 1024, 16 * 1024 * 1024],
     maxPropsBytes: [65536, 1024 * 1024],
   } as const;
-  /** Stores the result value used by this module. */
+  /** Validated effective limit record, built only after rejecting unknown keys. */
   const result = {} as Record<keyof typeof bounds, number>;
   if (
     !input ||
@@ -100,7 +100,7 @@ export function hydrationLimits(input: HydrationLimits = {}) {
     throw new TypeError('ZyroJS: invalid hydration limits');
   }
   for (const key of Object.keys(bounds) as (keyof typeof bounds)[]) {
-    /** Stores the value value used by this module. */
+    /** Configured integer budget or its documented default. */
     const value = input[key] ?? bounds[key][0];
     if (!Number.isSafeInteger(value) || value < 1 || value > bounds[key][1]) {
       throw new RangeError('ZyroJS: invalid hydration limit');
@@ -111,11 +111,11 @@ export function hydrationLimits(input: HydrationLimits = {}) {
 }
 /** Clone only inert JSON data. No getters/toJSON, class instances, prototype keys or implicit omission. */
 /**
- * publicProps.
- * @param {unknown} input - Input value for this operation.
- * @param {HydrationPolicy<P>} policy - Input value for this operation.
- * @param {unknown} maxBytes - Input value for this operation.
- * @returns {P} Result produced by this operation.
+ * Project with host validation, then clone only bounded inert public JSON records.
+ * @param {unknown} input - Candidate data or configuration validated before protocol use.
+ * @param {HydrationPolicy<P>} policy - Required trusted public projection and optional cooperative cancellation signal.
+ * @param {unknown} maxBytes - UTF-8 payload ceiling; structural caps apply independently.
+ * @returns {P} Detached bounded inert record after the host’s public-data projection.
  */
 export function publicProps<P>(
   input: unknown,
@@ -134,15 +134,15 @@ export function publicProps<P>(
     throw new TypeError('ZyroJS: invalid render signal');
   }
   checkAbort(policy.signal);
-  /** Stores the validated value used by this module. */
+  /** Trusted schema projection executes first; only its inert result is eligible for serialization. */
   const validated = policy.validateProps(input);
   checkAbort(policy.signal);
   let entries = 0,
     bytes = 0;
   /**
-   * Application function countText.
-   * @param {string} text - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Accumulate UTF-8 key/string bytes before constructing an oversized clone.
+   * @param {string} text - Current string or own record key.
+   * @returns {void} Accumulates UTF-8 size or throws before exceeding the payload budget.
    */
   const countText = (text: string) => {
     bytes += new TextEncoder().encode(text).length;
@@ -153,13 +153,13 @@ export function publicProps<P>(
       );
     }
   };
-  /** Stores the ancestors value used by this module. */
+  /** Current traversal ancestry detects cycles while allowing repeated noncyclic references. */
   const ancestors = new Set<object>();
   /**
-   * Application function visit.
-   * @param {unknown} value - Input value for this operation.
-   * @param {number} depth - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Clone one inert JSON value without invoking accessors or serialization hooks.
+   * @param {unknown} value - Candidate prefix, never an authorization credential.
+   * @param {number} depth - Current JSON nesting depth, capped independently of HTML depth.
+   * @returns {unknown} Inert cloned value, rejecting cycles/accessors/unsupported types.
    */
   const visit = (value: unknown, depth: number): unknown => {
     checkAbort(policy.signal);
@@ -191,7 +191,7 @@ export function publicProps<P>(
         'ZyroJS: public props must be acyclic inert JSON data'
       );
     }
-    /** Stores the array value used by this module. */
+    /** Arrays require dense numeric own data slots; plain records have separate prototype checks. */
     const array = Array.isArray(value);
     if (
       !array &&
@@ -213,7 +213,7 @@ export function publicProps<P>(
       );
     }
     ancestors.add(value);
-    /** Stores the result value used by this module. */
+    /** Detached dense array or null-prototype record; no getters are copied. */
     const result: any = array ? [] : Object.create(null);
     for (const key of Reflect.ownKeys(value)) {
       if (array && key === 'length') {
@@ -238,7 +238,7 @@ export function publicProps<P>(
         );
       }
       countText(key);
-      /** Stores the descriptor value used by this module. */
+      /** Inspect data slots without invoking getters or toJSON methods. */
       const descriptor = Object.getOwnPropertyDescriptor(value, key)!;
       if (
         !descriptor.enumerable ||
@@ -265,7 +265,7 @@ export function publicProps<P>(
     ancestors.delete(value);
     return result;
   };
-  /** Stores the result value used by this module. */
+  /** Final cloned public record, checked again against serialized byte size. */
   const result = visit(validated, 0) as P;
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
     throw new HydrationError(
@@ -283,16 +283,16 @@ export function publicProps<P>(
 }
 /** Script-data encoding is separate from HTML attribute/text encoding. */
 /**
- * serializeHydrationData.
- * @param {HydrationData<P>} data - Input value for this operation.
- * @param {unknown} maxBytes - Input value for this operation.
- * @returns {string} Result produced by this operation.
+ * Encode validated hydration data for an application/json script text sink.
+ * @param {HydrationData<P>} data - Host-validated public protocol envelope; never private state or executable callbacks.
+ * @param {unknown} maxBytes - UTF-8 payload ceiling; structural caps apply independently.
+ * @returns {string} Script-safe JSON text for an application/json script text sink.
  */
 export function serializeHydrationData<P>(
   data: HydrationData<P>,
   maxBytes = 65536
 ): string {
-  /** Stores the json value used by this module. */
+  /** Independent script-data encoding prevents script termination and separator injection. */
   const json = serializeJsonForScript(data);
   if (new TextEncoder().encode(json).length > maxBytes) {
     throw new HydrationError(
@@ -303,11 +303,11 @@ export function serializeHydrationData<P>(
   return json;
 }
 /**
- * readHydrationData.
- * @param {string} json - Input value for this operation.
- * @param {HydrationPolicy<P>} policy - Input value for this operation.
- * @param {unknown} maxBytes - Input value for this operation.
- * @returns {HydrationData<P>} Result produced by this operation.
+ * Parse a bounded exact-version envelope and revalidate public props on the receiving side.
+ * @param {string} json - Script textContent; JSON.parse is used without evaluating source.
+ * @param {HydrationPolicy<P>} policy - Required trusted public projection and optional cooperative cancellation signal.
+ * @param {unknown} maxBytes - UTF-8 payload ceiling; structural caps apply independently.
+ * @returns {HydrationData<P>} Exact V1 envelope with independently validated detached props.
  */
 export function readHydrationData<P>(
   json: string,
@@ -356,18 +356,18 @@ export function readHydrationData<P>(
 }
 let ids: { prefix: string; component: number; local: number } | undefined;
 /**
- * withComponentIds.
- * @param {string} prefix - Input value for this operation.
- * @param {number} component - Input value for this operation.
- * @param {() => T} fn - Input value for this operation.
- * @returns {T} Result produced by this operation.
+ * Install setup-only deterministic counters and restore the enclosing context in finally.
+ * @param {string} prefix - Validated host-unique root prefix shared with the client tree.
+ * @param {number} component - Preorder component index for this render/hydration session.
+ * @param {() => T} fn - Trusted synchronous setup callback; ID context never extends across await.
+ * @returns {T} Synchronous setup result with enclosing ID context restored.
  */
 export function withComponentIds<T>(
   prefix: string,
   component: number,
   fn: () => T
 ): T {
-  /** Stores the previous value used by this module. */
+  /** Restore the enclosing synchronous ID context after nested setup or failure. */
   const previous = ids;
   ids = { prefix, component, local: 0 };
   try {
@@ -378,8 +378,8 @@ export function withComponentIds<T>(
 }
 /** Setup-only deterministic IDs. The same component tree and unique host prefix must reach both ends. */
 /**
- * useId.
- * @returns {string} Result produced by this operation.
+ * Allocate a deterministic setup-local ID within the current protocol component.
+ * @returns {string} Deterministic root/component/local identifier; never an authorization token.
  */
 export function useId(): string {
   if (!ids) {

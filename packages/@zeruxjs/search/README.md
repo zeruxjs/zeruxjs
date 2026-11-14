@@ -74,7 +74,7 @@ Node persistence helpers accept `{snapshotVersion:2}` for V2 saves; omission kee
 
 ## Repeatable measurements and qualification
 
-After building, run `npm run bench` from this package (or `node --expose-gc bench/search.mjs`). The deterministic fixture uses 600 public synthetic documentation-shaped records, weighted title/section/text fields, four exact queries, 200 queries/run and five fresh-index runs. It reports build/query wall times, GC-assisted heap deltas and result/score digests. Heap delta is not peak RSS or a memory ceiling, and timings are machine/runtime/workload dependent.
+After building, run `npm run bench` from this package (or `node --experimental-strip-types --expose-gc bench/search.ts`). The deterministic fixture uses 600 public synthetic documentation-shaped records, weighted title/section/text fields, four exact queries, 200 queries/run and five fresh-index runs. It reports build/query wall times, GC-assisted heap deltas and result/score digests. Heap delta is not peak RSS or a memory ceiling, and timings are machine/runtime/workload dependent.
 
 On Node 24.15.0 in this workspace, a comparison with the prior source produced median build/query times of 4.421/47.565 ms and heap delta 1,122,136 bytes; the updated implementation measured 21.541/62.345 ms and 1,324,568 bytes on the same fixture. All four exact result/score digests matched. Validation and atomic staging add cost; this is **not a performance-gain claim**. Profiling motivated eliminating duplicate single-analyzer score maps and long repeated analyzer prefixes; no unprofiled trie/regex/backend rewrite was added. Re-run the authored harness before drawing deployment conclusions.
 

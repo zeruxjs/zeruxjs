@@ -22,7 +22,7 @@ npm run preview
 
 ## Static deployment
 
-For an isolated docs preview, use the app commands below. For deployment, use the combined site builder in `pages/` and the GitHub Actions workflow documented in `SITE_DEPLOYMENT.md` at the repository root. The app output in `dist/` contains the `zeruxjs/` folder. Serve directory `index.html` files and configure `404.html` as the missing-page response. Do not configure an SPA fallback. The app is mounted at `/zeruxjs/`; `dist/zeruxjs/` must be served at that same path. The combined ecosystem builder puts the shared homepage at `/` and includes this app under `/zeruxjs/`. Set `site.origin` in `src/site.config.mjs` to your public domain origin before deployment to emit canonical/OG URLs and `sitemap.xml`; `robots.txt` then includes that sitemap. No domain is guessed for local builds.
+For an isolated docs preview, use the app commands below. For deployment, use the combined site builder in `pages/` and the GitHub Actions workflow documented in `SITE_DEPLOYMENT.md` at the repository root. The app output in `dist/` contains the `zeruxjs/` folder. Serve directory `index.html` files and configure `404.html` as the missing-page response. Do not configure an SPA fallback. The app is mounted at `/zeruxjs/`; `dist/zeruxjs/` must be served at that same path. The combined ecosystem builder puts the shared homepage at `/` and includes this app under `/zeruxjs/`. Set `site.origin` in `src/site.config.ts` to your public domain origin before deployment to emit canonical/OG URLs and `sitemap.xml`; `robots.txt` then includes that sitemap. No domain is guessed for local builds.
 
 Every document contains its full article, navigation, related links, source references and metadata in HTML. Search, code copying, package filtering, theme persistence and active-heading tracking are progressive enhancements. Reading and navigating require no JavaScript. No telemetry, external fonts or third-party browser services are loaded.
 
@@ -32,7 +32,7 @@ This is build-time server rendering/static generation. It is intentionally an ap
 
 ```text
 src/
-  site.config.mjs             Reads zerux.config.js and provides URL helpers
+  site.config.ts             Reads zerux.config.js and provides URL helpers
   docs/
     0.0.4/
       introduction.md         One Markdown document per topic
@@ -40,15 +40,15 @@ src/
       package-cache.md
       ...
   lib/
-    content.mjs               Metadata, sources and navigation validation
-    markdown.mjs              Markdown rendering, safe links, heading anchors
-    reference.mjs             Live/frozen package references
-    template.mjs              Reusable layouts, portal and navigation
+    content.ts                Metadata, sources and navigation validation
+    markdown.ts              Markdown rendering, safe links, heading anchors
+    reference.ts             Live/frozen package references
+    template.ts              Reusable layouts, portal and navigation
 scripts/
-  build.mjs                   Staging, rendering, validation and promotion
-  check.mjs                   Static route/link/anchor/search verification
-  snapshot.mjs                Freeze release references before version bumps
-  serve.mjs                   Local preview and content/asset watching
+  build.ts                   Staging, rendering, validation and promotion
+  check.ts                   Static route/link/anchor/search verification
+  snapshot.ts                Freeze release references before version bumps
+  serve.ts                   Local preview and content/asset watching
 public/
   favicon.svg
   assets/search.js
@@ -78,7 +78,7 @@ Create `src/docs/<version>/<slug>.md` with JSON metadata delimited by `---`:
 Explain the behavior and its boundary. Link to [routing](routing.md).
 ```
 
-The filename determines `/zeruxjs/docs/<version>/<slug>/`. Section names come from `site.config.mjs`; order controls navigation within a section. Sources must be real repository files for live versions. Related slugs must exist in the same version. For an ecosystem guide, add `"package": "@zeruxjs/cache"`; the builder appends the actual export map, runtime requirements and a collapsible README.
+The filename determines `/zeruxjs/docs/<version>/<slug>/`. Section names come from `site.config.ts`; order controls navigation within a section. Sources must be real repository files for live versions. Related slugs must exist in the same version. For an ecosystem guide, add `"package": "@zeruxjs/cache"`; the builder appends the actual export map, runtime requirements and a collapsible README.
 
 Use level-two/three headings, standard Markdown tables/lists/links and language-tagged code fences. A fence can include `title="app/page.ts"` to label a code block. Headings receive stable, deduplicated anchors. Raw HTML is escaped and MDX/JavaScript is not executed. Documentation links use `<slug>.md` and optional fragments; README-relative links resolve to their repository source.
 
@@ -136,13 +136,13 @@ Build manifests record SHA-256 hashes for every export. The docs checker, combin
 
 ## Appearance and interaction
 
-The homepage and docs share a system/light/dark preference stored under `zerux-theme`; existing `zerux-docs-theme` preferences migrate on use. A small early head script restores the preference before CSS paints. Storage is optional and no account, network call or cookie is needed. Without JavaScript, the operating system color scheme still applies. Shared build-time palette and motion recipes live in `scripts/site-design.mjs`, and browser controls in `scripts/site-theme.mjs`.
+The homepage and docs share a system/light/dark preference stored under `zerux-theme`; existing `zerux-docs-theme` preferences migrate on use. A small early head script restores the preference before CSS paints. Storage is optional and no account, network call or cookie is needed. Without JavaScript, the operating system color scheme still applies. Shared build-time palette and motion recipes live in `scripts/site-design.ts`, and browser controls in `scripts/site-theme.ts`.
 
 The interface uses indigo/teal accents, theme-aware surfaces, component hover feedback and short entry animations. Motion is enabled only when the visitor allows it. Page tools, a reading-position indicator and `/` or Cmd/Ctrl-K search shortcuts support navigation; typing in inputs does not trigger the `/` shortcut.
 
 ## Application configuration
 
-`zerux.config.js` now owns the documentation settings under its app-specific `documentation` namespace. `src/site.config.mjs` imports that object; it is not an unused example. Keep the combined site mount aligned with `documentation.basePath`. See the authored `zerux-config` guide for config file precedence and runtime settings. This remains a static exporter built using workspace packages; adding the config does not turn `zerux build` into a general static-export command.
+`zerux.config.js` now owns the documentation settings under its app-specific `documentation` namespace. `src/site.config.ts` imports that object; it is not an unused example. Keep the combined site mount aligned with `documentation.basePath`. See the authored `zerux-config` guide for config file precedence and runtime settings. This remains a static exporter built using workspace packages; adding the config does not turn `zerux build` into a general static-export command.
 
 Production output now minifies HTML as well as CSS and JavaScript. The HTML pass compacts structural whitespace and comments while preserving `pre`, `textarea`, script and style payloads; line breaks inside code examples remain intentional. Development HTML remains readable. The native version disclosure gains outside-click, focus-out and Escape dismissal when JavaScript is available.
 
@@ -154,7 +154,7 @@ The Guide collection includes a Configuration chapter group containing a handboo
 
 Every public package now has an authored setup/status page. Preserve established `reference-*` slugs when replacing generated reference content so published URLs remain valid. Package sections cover installation, actual integration path, TypeScript, operations/lifecycle and relevant public option types. Source-backed field tables describe declared values; optional is not a default and a root index signature is not feature activation. Update both prose and option contracts when source APIs change, and freeze release references before a version bump.
 
-Primary collections are defined once in `src/lib/navigation.mjs` and shared by the HTML and raw Markdown portal; course learning paths remain in `src/lib/learning-paths.mjs`. Validate self-contained examples with the installed public declarations; report real integration/browser checks separately from typechecks.
+Primary collections are defined once in `src/lib/navigation.ts` and shared by the HTML and raw Markdown portal; course learning paths remain in `src/lib/learning-paths.ts`. Validate self-contained examples with the installed public declarations; report real integration/browser checks separately from typechecks.
 
 Documentation retention: keep major/minor documentation lines, with only the latest patch for each retained line. The current 0.0 line is documented at 0.0.4; 0.0.2 is removed rather than duplicated.
 
@@ -162,7 +162,7 @@ This branch previews docs 0.0.4 with `packageVersion: "0.0.4"`, so package insta
 
 ## Learning, task finding and browser-local progress
 
-The 0.0.4 preview adds an eight-lesson course, symptom-based solution finder, glossary and contextual plain-language explanations. `src/lib/academy.mjs` defines lesson identities, objectives and knowledge checks; `academy-template.mjs` renders their static HTML. Lessons themselves remain ordinary authored Markdown. Keep code examples tied to real public contracts, include expected outcomes and a practical exercise, and validate new course references before exporting. The raw Markdown exports include the same questions/explanations. Add Learning metadata to the configured navigation rather than building a separate hidden application.
+The 0.0.4 preview adds an eight-lesson course, symptom-based solution finder, glossary and contextual plain-language explanations. `src/lib/academy.ts` defines lesson identities, objectives and knowledge checks; `academy-template.ts` renders their static HTML. Lessons themselves remain ordinary authored Markdown. Keep code examples tied to real public contracts, include expected outcomes and a practical exercise, and validate new course references before exporting. The raw Markdown exports include the same questions/explanations. Add Learning metadata to the configured navigation rather than building a separate hidden application.
 
 `public/assets/learning.js` enhances native radio/checkbox controls, awards 10 points once per correct question and completes a lesson only after all answers and the exercise confirmation. Progress, bookmarks and recent pages use a bounded validated localStorage schema scoped by docs mount/version. No account, telemetry, cookies or network progress service exists. Corrupt/blocked storage does not prevent reading; points are self-assessment, never certification. Export/reset are explicit actions. Every lesson and explanation remains available without JavaScript, and no lesson is locked behind points.
 
@@ -174,7 +174,7 @@ Keyboard help documents Ctrl/Command+K, optional `/` and `?`, result arrows and 
 
 Page metadata now includes truthful WebSite/TechArticle/LearningResource JSON-LD, descriptions, canonical URLs and social-card metadata. The preview's public origin/deploymentPath ensure canonicals and sitemap entries point into `/branch/v0.0.4`; the combined publisher keeps branch previews noindex to avoid competing with released docs. No fake reviews, certifications, author credentials or update dates are emitted.
 
-Offline support is explicitly opt-in: `offline.js` registers `sw.js` only after Enable offline reading. `scripts/offline.mjs` generates an allowlisted worker scoped to this exact docs mount. The manifest uses relative URLs so branch previews remain isolated. Known HTML uses network-first with a bounded timeout/cache; versioned assets/search data are cached separately. Only same-origin allowlisted GET URLs are eligible; query-bearing documents, APIs and external requests bypass it. Catalog/course content does not cause an application runtime or database startup.
+Offline support is explicitly opt-in: `offline.js` registers `sw.js` only after Enable offline reading. `scripts/offline.ts` generates an allowlisted worker scoped to this exact docs mount. The manifest uses relative URLs so branch previews remain isolated. Known HTML uses network-first with a bounded timeout/cache; versioned assets/search data are cached separately. Only same-origin allowlisted GET URLs are eligible; query-bearing documents, APIs and external requests bypass it. Catalog/course content does not cause an application runtime or database startup.
 
 The worker keeps at most a bounded set of previously read eligible pages/assets, with a 1 MiB per-response budget and an explicit offline fallback. Unvisited/oversized pages are not promised offline. It waits for an explicit update action before replacing an active worker, and cleanup touches only this mount's cache prefix. Removal keeps learning progress. Installation is browser-dependent; no push notifications or account background services are used. `manifest.webmanifest` and code-native PNG/SVG icons support install prompts on eligible secure origins. Preview server MIME types include manifest/PNG files.
 
@@ -182,7 +182,7 @@ Run the static validator after every build. It now checks one main heading, land
 
 ## Reconciled navigation and presentation
 
-The primary navigation has **Get Started, Structure, Guide, API, Deploy and Examples**, with contextual chapter sidebars, a desktop on-page outline, raw Markdown actions and native mobile disclosures. `src/lib/navigation.mjs` is the single taxonomy for header/sidebar/previous-next. Existing versioned slugs and archived reference behavior remain unchanged. An optional `navigation` metadata field selects one of `start`, `structure`, `guide`, `api`, `deploy`, `examples`; unknown values fail content loading. Otherwise existing section/package metadata determines the collection. API package chapters are grouped by responsibility. All sidebar disclosures start expanded on desktop and mobile, with or without JavaScript; visitors can collapse them manually.
+The primary navigation has **Get Started, Structure, Guide, API, Deploy and Examples**, with contextual chapter sidebars, a desktop on-page outline, raw Markdown actions and native mobile disclosures. `src/lib/navigation.ts` is the single taxonomy for header/sidebar/previous-next. Existing versioned slugs and archived reference behavior remain unchanged. An optional `navigation` metadata field selects one of `start`, `structure`, `guide`, `api`, `deploy`, `examples`; unknown values fail content loading. Otherwise existing section/package metadata determines the collection. API package chapters are grouped by responsibility. All sidebar disclosures start expanded on desktop and mobile, with or without JavaScript; visitors can collapse them manually.
 
 The layout follows the reading/navigation pattern of the [Nuxt docs reference](https://nuxt.com/docs/4.x/getting-started/introduction), using original templates/Zuixs recipes and the existing shared lavender/teal light/dark palette. It imports no Nuxt UI assets or remote fonts. `docs-layout.recipes.mjs` owns this app's chrome, after shared and learning recipes. It does not change package styles or the ecosystem homepage. All six tabs and all article content work without JavaScript; search/theme/progress/offline remain optional local enhancements. No Community collection was added.
 
@@ -190,7 +190,7 @@ Structure documentation covers every accepted `type` (`fix`, `dynamic`, `functio
 
 Every public package has exactly one authored package guide. Feature guides such as GraphQL are not duplicate package claims. The Valkey guide consumes the implemented optional adapter; MCP documentation points to `zhost/protocols`, and a regression check prevents a separate removed MCP workspace/dependency from returning. Generators and CMS chapters describe source-implemented modes and mandatory private host policies, without implying workspace versions were published.
 
-The portable public-import example is `examples/renderer-data-queue.mjs`, linked from the Examples collection. Importing it is inert. Its explicit synthetic SQLite initialization is separate from runtime registration; queue jobs carry a known reference and shutdown closes the worker before the database. The fixture injects a queue, so successful docs checks do not establish live Redis acceptance or DB/broker atomicity.
+The portable public-import example is `examples/renderer-data-queue.ts`, linked from the Examples collection. Importing it is inert. Its explicit synthetic SQLite initialization is separate from runtime registration; queue jobs carry a known reference and shutdown closes the worker before the database. The fixture injects a queue, so successful docs checks do not establish live Redis acceptance or DB/broker atomicity.
 
 ### Focused checks
 
@@ -198,9 +198,9 @@ The portable public-import example is `examples/renderer-data-queue.mjs`, linked
 # Build with already-built required workspace tools; no runtime services start.
 npm run build --ignore-scripts --workspace=zeruxjs-docs
 npm run check --workspace=zeruxjs-docs
-node --test apps/zerux-docs/test/reconciliation.test.mjs
+node --experimental-strip-types --test apps/zerux-docs/test/reconciliation.test.ts
 # Optional installed Chrome; fails if unavailable. No HTTP service or external fetches.
-node apps/zerux-docs/scripts/browser-check.mjs
+node --experimental-strip-types apps/zerux-docs/scripts/browser-check.ts
 ```
 
 The native browser fixture uses Chrome CDP pipes and serves generated files through request interception; all external requests are denied. It checks desktop/mobile overflow, light/dark palette, six tabs, headings, no-JavaScript reading and keyboard search. Browser profiles/processes are owned and removed on exit. `CHROME_BIN` chooses a trusted installed executable; `DOCS_SCREENSHOTS` optionally writes local verification images outside the app. Chrome 156 Linux was exercised in this task; other engines and assistive technologies were not. Never label an injected provider fixture or a static export as production integration acceptance.

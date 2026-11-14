@@ -6,8 +6,8 @@ on:
     paths:
       - 'packages/**/package.json'
       - 'package-lock.json'
-      - 'scripts/publish-packages.mjs'
-      - 'scripts/workspace-publish.mjs'
+      - 'scripts/publish-packages.ts'
+      - 'scripts/workspace-publish.ts'
       - '.github/workflows/package-publish.yml'
   workflow_dispatch:
     inputs:
@@ -41,7 +41,7 @@ jobs:
           node-version: '24.15.0'
       - name: Compare every package version with npm and plan retries
         id: plan
-        run: node scripts/publish-packages.mjs --plan
+        run: node --experimental-strip-types scripts/publish-packages.ts --plan
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         id: plan_artifact
         if: always()
@@ -98,7 +98,7 @@ jobs:
       - name: Build workspaces in parallel
         run: npm run build:workspaces -- --concurrency auto
       - name: Pack selected releases and record archive integrity
-        run: node scripts/publish-packages.mjs --pack
+        run: node --experimental-strip-types scripts/publish-packages.ts --pack
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         id: prepared_artifact
         if: always()
@@ -134,7 +134,7 @@ jobs:
           merge-multiple: true
           path: .npm-release/
       - name: Publish exact verified archives through npm trusted publishing
-        run: node scripts/publish-packages.mjs --publish
+        run: node --experimental-strip-types scripts/publish-packages.ts --publish
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

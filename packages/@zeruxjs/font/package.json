@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsc && esbuild src/browser.ts --bundle --platform=browser --format=esm --outfile=dist/browser.mjs",
     "dev": "tsc --watch",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"
   },
   "keywords": [

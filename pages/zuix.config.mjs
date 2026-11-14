@@ -1,4 +1,4 @@
-import { siteKeyframes } from '../scripts/site-design.mjs';
+import { siteKeyframes } from '../scripts/site-design.ts';
 /** Classes live in index.html and the generated package-card template. Only reset/theme selectors remain global. */
 export default {
   /** Keep global CSS limited to reset/theme recipes; components use utilities. */

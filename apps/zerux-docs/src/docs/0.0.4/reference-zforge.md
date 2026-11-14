@@ -110,7 +110,7 @@ handler settlement. Legacy shared UI/HTTP/WS module registration remains separat
 TracingAdapter. Per-app count/byte/TTL caps and generation fencing bound retention.
 Headers are MIME/length only, bodies default to omitted, and normalized error codes
 exclude causes/stacks. Host authorization remains required when mounting its escaped
-request table. The package README and `examples/modules.mjs` describe the public
+request table. The package README and `examples/modules.ts` describe the public
 integration; importing either entry starts no server. Node ephemeral HTTP fixtures
 are not browser, remote TLS or full MCP/gRPC qualification.
 
@@ -127,10 +127,10 @@ credential/deadline. They do not write assignments or emit analytics. The separa
 stateless evaluator preserves consent/tenant/environment gates; durable `preserve`
 history is deliberately unsupported. Audit metadata excludes private traits and
 raw callback output. Dispose/reload drains the generation and closes the evaluator.
-The package's `examples/experiments.mjs` demonstrates public imports and explicit
+The package's `examples/experiments.ts` demonstrates public imports and explicit
 policies. Host authentication/audit durability and browser UI remain integrations
 that require their own acceptance checks.
 
 ## Clean source builds
 
-The repository build planner compiles zforge's independent strict core first, then its hosting/framework owners, then the normal full strict package build. This explicit manifest metadata resolves declaration cycles for optional integrations; it does not create runtime services. Use `node scripts/build-workspaces.mjs --scope zforge` in a checkout. The intermediate `build:core` does not certify the full archive. Published consumers still select the actual optional peers and own host authorization and teardown.
+The repository build planner compiles zforge's independent strict core first, then its hosting/framework owners, then the normal full strict package build. This explicit manifest metadata resolves declaration cycles for optional integrations; it does not create runtime services. Use `node --experimental-strip-types scripts/build-workspaces.ts --scope zforge` in a checkout. The intermediate `build:core` does not certify the full archive. Published consumers still select the actual optional peers and own host authorization and teardown.

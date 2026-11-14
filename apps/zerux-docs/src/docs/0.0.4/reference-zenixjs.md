@@ -28,7 +28,7 @@ version/module format remains compatible. The separate create-zenix-js generator
 preview/public-page/logout routes under a configured base path. Native forms work
 without JavaScript. Host persistent authentication, session cookies, CSRF/admission
 policy and private setup secrets are mandatory; no administrator password is bundled.
-The package's `examples/application.mjs` shows public imports and plugin disposal.
+The package's `examples/application.ts` shows public imports and plugin disposal.
 
 ## Setup and editorial boundaries
 
@@ -60,7 +60,7 @@ console.log({ version, status, capabilities });
 // Importing metadata opens no database, session service or HTTP listener.
 ```
 
-Use the package's public `examples/application.mjs` to install the application
+Use the package's public `examples/application.ts` to install the application
 from a trusted host plugin. Its database/core/application cleanup order is explicit;
 private authentication and CSRF implementations must be supplied separately.
 `createZenixApplication` owns request admission, readers, previews and its renderer.

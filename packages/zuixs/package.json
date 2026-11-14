@@ -11,8 +11,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test:smoke": "npm run build && node tests/smoke.mjs",
-    "test": "npm run build && node --test tests/*.mjs",
+    "test:smoke": "npm run build && node --experimental-strip-types tests/smoke.ts",
+    "test": "npm run build && node --experimental-strip-types --test tests/*.test.ts tests/smoke.ts",
     "prepack": "npm run build"
   },
   "exports": {

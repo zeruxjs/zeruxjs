@@ -4,7 +4,7 @@
   "description": "Explicit process-local route data policies and tenant-scoped invalidation.",
   "section": "Fundamentals",
   "order": 45,
-  "sources": ["packages/zeruxjs/src/route-data-cache.ts", "packages/zeruxjs/examples/route-data-cache.mjs", "packages/zeruxjs/README.md"],
+  "sources": ["packages/zeruxjs/src/route-data-cache.ts", "packages/zeruxjs/examples/route-data-cache.ts", "packages/zeruxjs/README.md"],
   "related": ["plugins"]
 }
 ---
@@ -25,4 +25,4 @@ post-commit action callback. Close the coordinator before its borrowed cache;
 cooperative cancellation cannot force a handler or backend to finish.
 
 See the framework README's “Opt-in route data cache” section and
-`packages/zeruxjs/examples/route-data-cache.mjs` for exact bounds and public imports.
+`packages/zeruxjs/examples/route-data-cache.ts` for exact bounds and public imports.

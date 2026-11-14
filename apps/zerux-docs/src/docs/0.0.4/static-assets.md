@@ -7,7 +7,7 @@
   "sources": [
     "packages/zeruxjs/src/bootstrap/runtime.ts",
     "packages/zeruxjs/src/commands/project-builder.ts",
-    "apps/zerux-docs/scripts/build.mjs"
+    "apps/zerux-docs/scripts/build.ts"
   ],
   "related": [
     "package-files",

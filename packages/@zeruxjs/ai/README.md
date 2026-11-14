@@ -33,7 +33,7 @@ optional `chatResult()` / `streamEvents()` methods. Existing structural provider
 and ai-model retrieval consumers need no changes. Retrieval belongs to ai-model;
 model transport belongs here. Figma is a tool/data source, not a model adapter.
 
-[Public-import example](examples/providers.mjs) constructs an application-owned
+[Public-import example](examples/providers.ts) constructs an application-owned
 `createAiProviderRegistry`. Explicit names register borrowed instances, not package
 names or discovered code. Registration tokens remove only their own entry;
 duplicate names/capacity reject. Default registry capacity is 16 (maximum 128).
@@ -137,7 +137,7 @@ The optional Node-only `@zeruxjs/ai/tools` entry exports `createToolExecutor`,
 `createZhostToolHandler` and `approvedOpenApiToolOperations`. Core/root imports do
 not load this entry or Node crypto. Existing root and legacy deep imports remain
 available. Importing tools starts no handlers, listeners, fetches or timers.
-See [the public-import example](examples/tools.mjs); its validator is supplied by
+See [the public-import example](examples/tools.ts); its validator is supplied by
 the host and no validator runtime dependency is added to AI.
 
 Register trusted handler functions explicitly; names, descriptions and declarative
@@ -274,7 +274,7 @@ model and handle provider rejection.
 | audio      | rejects           | WAV/MP3/MPEG/AIFF/AAC/OGG/FLAC MIME subset         | inline bytes only                                         |
 | video      | rejects           | MP4/MPEG/MOV/AVI/FLV/MPG/WebM/WMV/3GPP MIME subset | inline bytes only                                         |
 
-See [the public example](examples/content.mjs). Source file parts work with
+See [the public example](examples/content.ts). Source file parts work with
 JavaScript/TypeScript, Python, Go, Rust, Java, C/C++, shell, SQL, JSON and other
 text languages; they are **not compiled, imported, evaluated, written or run**.
 No extension activates a runtime. Only explicit JSON parts/outputs are parsed,
@@ -431,7 +431,7 @@ tool call is executed from it.
 
 `evaluation/cases.json` is the versioned zx100-local-v1 public fixture; its model is
 **deterministic-fixture-v1**, not a live model. Run package-local build/tests,
-including `test/structured-evaluation.test.mjs`, to produce a fixture-hash-tagged
+including `test/structured-evaluation.test.ts`, to produce a fixture-hash-tagged
 report. It separately counts four schema accept/reject checks, three citation-ID
 checks and three retrieval-answerability checks, plus expected-source/quoted
 prompt-boundary checks. Malformed/type-invalid outputs, inert code strings,

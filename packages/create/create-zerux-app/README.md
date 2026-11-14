@@ -23,7 +23,7 @@ project prints help. Explicit `--interactive` requires a terminal in the binary;
 forms work. Shared flags cover name/destination, language (`--js`/`--ts` aliases),
 port, template, renderer, mode, dry-run, interactive and yes. Conflicting spellings,
 unknown flags or repeated values reject. The public example is
-[examples/generate.mjs](examples/generate.mjs).
+[examples/generate.ts](examples/generate.ts).
 
 This checkout implements new source contracts without a version bump or publication.
 Before using a registry artifact, inspect its exports/help: a published 0.0.4 may
@@ -116,7 +116,7 @@ public imports are fixed reviewed code, not discovered packages or client string
 
 ```sh
 npm run build --workspace=create-zerux-js
-node --test packages/create/create-zerux-app/test/*.test.mjs
+node --experimental-strip-types --test packages/create/create-zerux-app/test/*.test.ts
 ```
 
 All six renderer/language consumers were generated in temporary directories. Each

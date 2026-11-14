@@ -6,6 +6,7 @@
     "strict": true,
     "esModuleInterop": true,
     "allowJs": true,
+    "allowImportingTsExtensions": true,
     "checkJs": false,
     "noEmit": true,
     "types": ["node"]

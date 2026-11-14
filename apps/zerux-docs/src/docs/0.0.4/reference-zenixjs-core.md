@@ -49,7 +49,7 @@ import {version, status, capabilities} from '@zenixjs/core';
 import {createCms, cmsRolePermissions} from '@zenixjs/core/cms';
 ```
 
-The package's `examples/cms.mjs` shows private dependency injection and a minimal
+The package's `examples/cms.ts` shows private dependency injection and a minimal
 draft/publication flow. Host session proof, Origin/CSRF policy, media providers and
 private rendering remain explicit. Native SQLite fixtures check file-backed reopen,
 rollback, revision conflicts and denied sites; no browser/admin/provider qualification

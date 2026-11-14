@@ -24,21 +24,21 @@ export interface ServerEvent {
   retry?: number;
 }
 /**
- * readEventStream.
- * @param {string} url - Input value for this operation.
- * @param {EventStreamOptions} options - Input value for this operation.
- * @returns {AsyncGenerator<ServerEvent>} Result produced by this operation.
+ * Lazily read bounded SSE text; iterator return cancels and releases the acquired reader.
+ * @param {string} url - Explicit endpoint; Fetch/network destination authorization is host policy.
+ * @param {EventStreamOptions} options - Borrowed Fetch/signal plus headers, credentials, cursor and per-event budget.
+ * @returns {AsyncGenerator<ServerEvent>} Inert text events; caller validates payload schemas and handles reconnection.
  */
 export async function* readEventStream(
   url: string,
   options: EventStreamOptions = {}
 ): AsyncGenerator<ServerEvent> {
-  /** Stores the limit value used by this module. */
+  /** Finite UTF-8 event/buffer budget checked while consuming fragmented chunks. */
   const limit = options.maxEventBytes ?? 64 * 1024;
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 4 * 1024 * 1024) {
     throw new RangeError('Invalid SSE event limit');
   }
-  /** Stores the headers value used by this module. */
+  /** Fresh per-request headers; caller input is never mutated. */
   const headers = new Headers(options.headers);
   headers.set('Accept', 'text/event-stream');
   if (options.lastEventId) {
@@ -47,7 +47,7 @@ export async function* readEventStream(
     }
     headers.set('Last-Event-ID', options.lastEventId);
   }
-  /** Stores the response value used by this module. */
+  /** Borrowed transport result; reader ownership begins only after status/type validation. */
   const response = await (options.fetch ?? fetch)(url, {
     headers,
     signal: options.signal,
@@ -64,9 +64,9 @@ export async function* readEventStream(
   ) {
     throw new TypeError('Expected SSE content type');
   }
-  /** Stores the reader value used by this module. */
+  /** Single stream reader, cancelled and released on completion, failure or iterator return. */
   const reader = response.body.getReader();
-  /** Stores the decoder value used by this module. */
+  /** Incremental UTF-8 decoder retains incomplete code points between transport chunks. */
   const decoder = new TextDecoder();
   let buffer = '';
   let data: string[] = [];
@@ -75,9 +75,9 @@ export async function* readEventStream(
   let id: string | undefined;
   let retry: number | undefined;
   /**
-   * Application function parseLine.
-   * @param {string} line - Input value for this operation.
-   * @returns {ServerEvent | undefined} Result produced by this operation.
+   * Update SSE framing state and emit only when a complete data block ends.
+   * @param {string} line - One decoded line without its transport newline.
+   * @returns {ServerEvent | undefined} Completed data event at its boundary, otherwise undefined.
    */
   const parseLine = (line: string): ServerEvent | undefined => {
     if (!line) {
@@ -85,7 +85,7 @@ export async function* readEventStream(
         event = 'message';
         return undefined;
       }
-      /** Stores the result value used by this module. */
+      /** Detached event assembled at a blank-line boundary; cursor may persist across events. */
       const result = {
         event,
         data: data.join('\n'),
@@ -101,11 +101,11 @@ export async function* readEventStream(
     if (line.startsWith(':')) {
       return undefined;
     }
-    /** Stores the colon value used by this module. */
+    /** First field delimiter; one optional leading value space is removed per SSE framing. */
     const colon = line.indexOf(':');
-    /** Stores the field value used by this module. */
+    /** SSE field name; unsupported fields/comments do not execute or alter application code. */
     const field = colon < 0 ? line : line.slice(0, colon);
-    /** Stores the value value used by this module. */
+    /** Decoded field data; event payload remains inert text for the caller to validate. */
     const value = colon < 0 ? '' : line.slice(colon + 1).replace(/^ /, '');
     if (field === 'data') {
       eventBytes += new TextEncoder().encode(value).byteLength + 1;
@@ -124,7 +124,7 @@ export async function* readEventStream(
   };
   try {
     while (true) {
-      /** Stores the { value, done } value used by this module. */
+      /** One borrowed stream chunk; parser state survives arbitrary network fragmentation. */
       const { value, done } = await reader.read();
       if (done) {
         break;
@@ -135,10 +135,10 @@ export async function* readEventStream(
       }
       let newline: number;
       while ((newline = buffer.indexOf('\n')) >= 0) {
-        /** Stores the line value used by this module. */
+        /** Complete logical line with an optional CR removed from CRLF framing. */
         const line = buffer.slice(0, newline).replace(/\r$/, '');
         buffer = buffer.slice(newline + 1);
-        /** Stores the parsed value used by this module. */
+        /** Only a completed data event is yielded; comments/metadata lines remain parser state. */
         const parsed = parseLine(line);
         if (parsed) {
           yield parsed;
@@ -149,7 +149,7 @@ export async function* readEventStream(
     if (buffer) {
       parseLine(buffer);
     }
-    /** Stores the last value used by this module. */
+    /** Flush the final accumulated event after decoder completion. */
     const last = parseLine('');
     if (last) {
       yield last;

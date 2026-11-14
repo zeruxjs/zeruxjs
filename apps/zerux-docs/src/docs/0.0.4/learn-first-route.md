@@ -5,7 +5,7 @@
   "section": "Learning",
   "order": 20,
   "sources": [
-    "apps/zerux-docs/src/lib/academy.mjs",
+    "apps/zerux-docs/src/lib/academy.ts",
     "packages/zeruxjs/src/bootstrap/types.ts",
     "packages/zlocale/src/index.ts"
   ],

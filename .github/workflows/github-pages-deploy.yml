@@ -54,21 +54,21 @@ jobs:
           }
           NODE
       - name: Build workspace CSS, browser bundler, search, navigation and security tooling in parallel
-        run: node scripts/build-workspaces.mjs --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security
+        run: node --experimental-strip-types scripts/build-workspaces.ts --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security
       - name: Build shared homepage and every configured site
-        run: node scripts/build-sites.mjs
+        run: node --experimental-strip-types scripts/build-sites.ts
       - name: Verify raw Markdown and static Pages artifact (no Jekyll rendering)
         run: |
           node --input-type=module <<'NODE'
-          import { verifySites, output } from './scripts/build-sites.mjs';
-          const { previewMount } = await import('./scripts/site-preview.mjs');
+          import { verifySites, output } from './scripts/build-sites.ts';
+          const { previewMount } = await import('./scripts/site-preview.ts');
           const result = await verifySites(output, { mount: previewMount() });
           if (!result.markdown) throw new Error('Raw Markdown exports missing');
           console.log(`[sites] ${result.markdown} unchanged Markdown exports verified; deployment uploads prebuilt static files without Jekyll.`);
           NODE
       - name: Publish generated folders to master-site and prepare complete artifact
         id: publish
-        run: node scripts/publish-sites.mjs
+        run: node --experimental-strip-types scripts/publish-sites.ts
       - name: Upload the master-site static tree for Pages
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:

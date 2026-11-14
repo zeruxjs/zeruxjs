@@ -119,7 +119,7 @@ depends on the host's cluster durability policy, not merely this receipt. See
 
 Run `npm run build --workspace=@zeruxjs/search`, then
 `npm run build --workspace=@zeruxjs/search-elastic` and
-`node --test packages/@zeruxjs/search-elastic/test/*.test.mjs`.
+`node --experimental-strip-types --test packages/@zeruxjs/search-elastic/test/*.test.ts`.
 Unit fixtures cover direct input/query/mapping validation, tenant IDs/response
 checks, partial failures, version conflicts, borrowed ownership and cancellation.
 A disposable OpenSSL-generated local HTTPS fixture exercises the actual official

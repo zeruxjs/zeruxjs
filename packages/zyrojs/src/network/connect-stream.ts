@@ -5,13 +5,13 @@ import {
   type CallOptions,
 } from './client.js';
 /**
- * connectJsonStream.
- * @param {string} service - Input value for this operation.
- * @param {string} method - Input value for this operation.
- * @param {AsyncIterable<unknown> | Iterable<unknown>} input - Input value for this operation.
+ * Exchange bounded JSON frames; host signal owns cancellation and upload support depends on Fetch.
+ * @param {string} service - Validated trusted service identifier.
+ * @param {string} method - Validated trusted method identifier.
+ * @param {AsyncIterable<unknown> | Iterable<unknown>} input - Trusted message iterable; asynchronous iteration itself is not forcibly cancellable.
  * @param {ProtocolClientOptions &
-    CallOptions & { maxMessageBytes?: number }} options - Input value for this operation.
- * @returns {AsyncGenerator<T>} Result produced by this operation.
+    CallOptions & { maxMessageBytes?: number }} options - Borrowed transport/signal, framing budget and headers; timeoutMs is not applied by this streaming helper.
+ * @returns {AsyncGenerator<T>} Parsed messages; returning the iterator cancels/releases its response reader.
  */
 export async function* connectJsonStream<T = unknown>(
   service: string,
@@ -26,21 +26,21 @@ export async function* connectJsonStream<T = unknown>(
   ) {
     throw new TypeError('Invalid Connect service or method');
   }
-  /** Stores the max value used by this module. */
+  /** Per-message byte ceiling; response message count has a separate hard bound. */
   const max = options.maxMessageBytes ?? 1024 * 1024;
   if (!Number.isSafeInteger(max) || max < 1 || max > 16 * 1024 * 1024) {
     throw new RangeError('Invalid Connect stream limit');
   }
-  /** Stores the base value used by this module. */
+  /** Trusted configured base or browser/standalone fallback. */
   const base =
     options.baseUrl ??
     (typeof location !== 'undefined' ? location.origin : 'http://localhost');
-  /** Stores the url value used by this module. */
+  /** Validated HTTP(S) service path; host egress authorization remains separate. */
   const url = new URL(`/${service}/${method}`, base);
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new TypeError('Unsupported Connect URL');
   }
-  /** Stores the headers value used by this module. */
+  /** Fresh negotiated framing headers; lazy credential providers are trusted application code. */
   const headers = new Headers(
     typeof options.headers === 'function'
       ? await options.headers()
@@ -48,22 +48,22 @@ export async function* connectJsonStream<T = unknown>(
   );
   headers.set('Accept', 'application/connect+json');
   headers.set('Content-Type', 'application/connect+json');
-  /** Stores the encoder value used by this module. */
+  /** UTF-8 request encoder; every JSON message is bounded before framing. */
   const encoder = new TextEncoder();
   /**
-   * requestBody.
-   * @returns {unknown} Result produced by this operation.
+   * Serialize one input message at a time into the supported five-byte envelope.
+   * @returns {AsyncGenerator<Uint8Array>} Bounded framed request messages from the trusted input iterable.
    */
   async function* requestBody() {
     for await (const value of input) {
-      /** Stores the body value used by this module. */
+      /** One serialized message; arbitrary input iterables remain trusted host code. */
       const body = encoder.encode(JSON.stringify(value));
       if (body.length > max) {
         throw new RangeError('Connect request message too large');
       }
-      /** Stores the frame value used by this module. */
+      /** Five-byte header plus one bounded payload, never an executable module. */
       const frame = new Uint8Array(body.length + 5);
-      /** Stores the view value used by this module. */
+      /** Network-order length writer for the frame header. */
       const view = new DataView(frame.buffer);
       view.setUint32(1, body.length);
       frame.set(body, 5);
@@ -71,15 +71,15 @@ export async function* connectJsonStream<T = unknown>(
     }
   }
   // Browser streaming upload requires duplex: 'half', currently a Fetch extension.
-  /** Stores the response value used by this module. */
+  /** One streaming Fetch response; no automatic replay after emitted request bytes. */
   const response = await (options.fetch ?? fetch)(url, {
     method: 'POST',
     headers,
     body: new ReadableStream<Uint8Array>({
       /**
-       * start.
-       * @param {unknown} controller - Input value for this operation.
-       * @returns {unknown} Result produced by this operation.
+       * Feed the request stream explicitly; this implementation does not promise pull-based upload backpressure.
+       * @param {unknown} controller - Native request-body stream controller owned by this call.
+       * @returns {Promise<void>} Request stream feeding settlement; arbitrary input iteration is cooperative.
        */
       async start(controller) {
         try {
@@ -116,7 +116,7 @@ export async function* connectJsonStream<T = unknown>(
       response.status
     );
   }
-  /** Stores the reader value used by this module. */
+  /** Acquired response reader; generator finally cancels it and releases its lock. */
   const reader = response.body.getReader();
   let frame = new Uint8Array(5);
   let received = 0;
@@ -124,14 +124,14 @@ export async function* connectJsonStream<T = unknown>(
   let total = 0;
   try {
     while (true) {
-      /** Stores the { value, done } value used by this module. */
+      /** Transport chunk may contain partial or multiple frames. */
       const { value, done } = await reader.read();
       if (done) {
         break;
       }
       let offset = 0;
       while (offset < value.length) {
-        /** Stores the amount value used by this module. */
+        /** Copy only the remaining bytes for the current header/payload boundary. */
         const amount = Math.min(expected - received, value.length - offset);
         frame.set(value.subarray(offset, offset + amount), received);
         received += amount;
@@ -140,14 +140,14 @@ export async function* connectJsonStream<T = unknown>(
           continue;
         }
         if (expected === 5) {
-          /** Stores the length value used by this module. */
+          /** Untrusted announced payload length checked before allocating a full frame. */
           const length = new DataView(frame.buffer).getUint32(1);
           if (length > max) {
             throw new RangeError('Connect response message too large');
           }
           expected = 5 + length;
           if (length > 0) {
-            /** Stores the full value used by this module. */
+            /** Bounded payload allocation after validating the network-order length. */
             const full = new Uint8Array(expected);
             full.set(frame);
             frame = full;
@@ -155,9 +155,9 @@ export async function* connectJsonStream<T = unknown>(
           }
         }
         // The frame always has a five-byte header; the fallback satisfies strict indexing.
-        /** Stores the flags value used by this module. */
+        /** Framing flags; unsupported compression/flag combinations reject. */
         const flags = frame[0] ?? 0;
-        /** Stores the payload value used by this module. */
+        /** Fatal UTF-8 decoding rejects malformed wire text before JSON parsing. */
         const payload = new TextDecoder('utf-8', { fatal: true }).decode(
           frame.subarray(5, expected)
         );
@@ -169,7 +169,7 @@ export async function* connectJsonStream<T = unknown>(
           throw new RangeError('Connect stream message limit exceeded');
         }
         if ((flags & 0x80) !== 0) {
-          /** Stores the trailer value used by this module. */
+          /** Terminal error metadata; no arbitrary callbacks or code are executed. */
           const trailer = JSON.parse(payload) as {
             error?: { code?: string; message?: string };
           };

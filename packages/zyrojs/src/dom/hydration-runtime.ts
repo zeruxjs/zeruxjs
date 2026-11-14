@@ -47,7 +47,7 @@ export interface HydrationSession {
   signal?: AbortSignal;
   /** Bounded limits governing this session. */
   limits: ReturnType<typeof hydrationLimits>;
-  /** Cleanup callbacks owned by the session. */
+  /** Deferred live-form-to-signal commits, applied only after successful root adoption. */
   bindings: (() => void)[];
   /** Cursor positions associated with hydrated parent nodes. */
   cursors: Map<Node, Node | null>;
@@ -58,21 +58,21 @@ export interface HydrationSession {
 }
 let current: HydrationSession | undefined;
 /**
- * Application function currentHydration.
- * @returns {unknown} Result produced by this operation.
+ * Read the active synchronous adoption session without acquiring a resource.
+ * @returns {HydrationSession | undefined} Active synchronous session, if any.
  */
 export const currentHydration = () => current;
 /**
- * withHydration.
- * @param {HydrationSession | undefined} session - Input value for this operation.
- * @param {() => T} fn - Input value for this operation.
- * @returns {T} Result produced by this operation.
+ * Install a session for one synchronous traversal and restore the caller’s session.
+ * @param {HydrationSession | undefined} session - Attempt-local cursors, limits and commit state; never shared across roots.
+ * @param {() => T} fn - Trusted synchronous traversal; no asynchronous session propagation is provided.
+ * @returns {T} Callback result after restoring the enclosing session.
  */
 export function withHydration<T>(
   session: HydrationSession | undefined,
   fn: () => T
 ): T {
-  /** Stores the previous value used by this module. */
+  /** Enclosing synchronous adoption context restored even if component traversal throws. */
   const previous = current;
   current = session;
   try {
@@ -82,18 +82,18 @@ export function withHydration<T>(
   }
 }
 /**
- * mismatch.
- * @param {HydrationSession} session - Input value for this operation.
- * @param {string} expected - Input value for this operation.
- * @param {Node | null} node - Input value for this operation.
- * @returns {never} Result produced by this operation.
+ * Throw a structural mismatch with value-free node-category diagnostics.
+ * @param {HydrationSession} session - Attempt-local cursors, limits and commit state; never shared across roots.
+ * @param {string} expected - Fixed structural expectation; callers must not insert private values.
+ * @param {Node | null} node - Actual candidate DOM node, inspected only for its category.
+ * @returns {never} Always throws a value-free structural mismatch.
  */
 export function mismatch(
   session: HydrationSession,
   expected: string,
   node: Node | null
 ): never {
-  /** Stores the actual value used by this module. */
+  /** Path/value-free observation; diagnostics never include DOM text or attribute contents. */
   let actual = 'other';
   if (!node) {
     actual = 'missing';
@@ -114,10 +114,10 @@ export function mismatch(
   );
 }
 /**
- * cursor.
- * @param {HydrationSession} session - Input value for this operation.
- * @param {Node} parent - Input value for this operation.
- * @returns {Node | null} Result produced by this operation.
+ * Read this parent’s next unclaimed child without advancing ownership.
+ * @param {HydrationSession} session - Attempt-local cursors, limits and commit state; never shared across roots.
+ * @param {Node} parent - Host DOM parent whose children this session is adopting.
+ * @returns {Node | null} Next unclaimed child, or null when the parent is exhausted.
  */
 export function cursor(session: HydrationSession, parent: Node): Node | null {
   return session.cursors.has(parent)
@@ -125,12 +125,12 @@ export function cursor(session: HydrationSession, parent: Node): Node | null {
     : (parent.childNodes[0] ?? null);
 }
 /**
- * claim.
- * @param {HydrationSession} session - Input value for this operation.
- * @param {Node} parent - Input value for this operation.
- * @param {number} type - Input value for this operation.
- * @param {string} expected - Input value for this operation.
- * @returns {Node} Result produced by this operation.
+ * Validate the next node’s category/tag/marker before advancing the parent cursor.
+ * @param {HydrationSession} session - Attempt-local cursors, limits and commit state; never shared across roots.
+ * @param {Node} parent - Host DOM parent whose children this session is adopting.
+ * @param {number} type - Expected native DOM nodeType.
+ * @param {string} expected - Fixed structural expectation; callers must not insert private values.
+ * @returns {Node} Validated node with the parent cursor advanced to its next sibling.
  */
 export function claim(
   session: HydrationSession,
@@ -139,7 +139,7 @@ export function claim(
   expected: string
 ): Node {
   checkAbort(session.signal);
-  /** Stores the node value used by this module. */
+  /** Next unclaimed node in this parent; successful claims advance exactly one cursor. */
   const node = cursor(session, parent);
   if (
     !node ||
@@ -159,16 +159,16 @@ export function claim(
   return node;
 }
 /**
- * claimRange.
- * @param {HydrationSession} session - Input value for this operation.
- * @param {Node} parent - Input value for this operation.
- * @returns {{ start: Node; end: Node }} Result produced by this operation.
+ * Find the matching range end with nested-marker accounting and a finite scan cap.
+ * @param {HydrationSession} session - Attempt-local cursors, limits and commit state; never shared across roots.
+ * @param {Node} parent - Host DOM parent whose children this session is adopting.
+ * @returns {{ start: Node; end: Node }} Claimed balanced marker boundaries.
  */
 export function claimRange(
   session: HydrationSession,
   parent: Node
 ): { start: Node; end: Node } {
-  /** Stores the start value used by this module. */
+  /** Claimed opening marker; scan nested ranges without stealing a sibling’s closing marker. */
   const start = claim(session, parent, 8, 'zyro-start');
   let depth = 0,
     count = 0,
@@ -194,11 +194,11 @@ export function claimRange(
   return mismatch(session, 'range-end', node);
 }
 /**
- * finishRange.
- * @param {HydrationSession} session - Input value for this operation.
- * @param {Node} parent - Input value for this operation.
- * @param {Node} end - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Require exact range consumption before advancing beyond its closing marker.
+ * @param {HydrationSession} session - Attempt-local cursors, limits and commit state; never shared across roots.
+ * @param {Node} parent - Host DOM parent whose children this session is adopting.
+ * @param {Node} end - Expected closing marker for this owned range.
+ * @returns {void} Advances past an exactly consumed closing marker or throws.
  */
 export function finishRange(
   session: HydrationSession,
@@ -211,25 +211,25 @@ export function finishRange(
   session.cursors.set(parent, end.nextSibling);
 }
 /**
- * checkAttributes.
- * @param {HydrationSession} session - Input value for this operation.
- * @param {Element} el - Input value for this operation.
- * @param {Record<string, unknown>} props - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Require exact names and values from the shared hydratable attribute projection.
+ * @param {HydrationSession} session - Attempt-local cursors, limits and commit state; never shared across roots.
+ * @param {Element} el - Borrowed server element being validated before props/listeners attach.
+ * @param {Record<string, unknown>} props - Trusted authored props matching server-rendered attributes.
+ * @returns {void} Returns only when actual and projected attribute names/values match exactly.
  */
 export function checkAttributes(
   session: HydrationSession,
   el: Element,
   props: Record<string, unknown>
 ): void {
-  /** Stores the expected value used by this module. */
+  /** Same scalar projection used by server serialization; callback props remain trusted code. */
   const expected = hydrationAttributes(props);
-  /** Stores the actual value used by this module. */
+  /** Path/value-free observation; diagnostics never include DOM text or attribute contents. */
   const actual: Record<string, string> = Object.create(null);
   for (const attribute of Array.from(el.attributes)) {
     actual[attribute.name] = attribute.value;
   }
-  /** Stores the names value used by this module. */
+  /** Sorted exact attribute names, including detection of unexpected server attributes. */
   const names = Object.keys(expected).sort();
   if (
     JSON.stringify(names) !== JSON.stringify(Object.keys(actual).sort()) ||
@@ -240,11 +240,11 @@ export function checkAttributes(
 }
 /** Preflight bounds actual server DOM before invoking application setup. No DOM values enter diagnostics. */
 /**
- * validateHydrationTree.
- * @param {Node} container - Input value for this operation.
- * @param {ReturnType<typeof hydrationLimits>} limits - Input value for this operation.
- * @param {AbortSignal} signal - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Bound existing DOM before invoking component setup; do not expose DOM values in errors.
+ * @param {Node} container - Unowned host root whose descendants are preflighted.
+ * @param {ReturnType<typeof hydrationLimits>} limits - Validated node, depth and byte ceilings.
+ * @param {AbortSignal} signal - Optional cooperative cancellation checked for each visited node.
+ * @returns {void} Returns after bounded preflight; throws before application setup on failure.
  */
 export function validateHydrationTree(
   container: Node,
@@ -254,10 +254,10 @@ export function validateHydrationTree(
   let nodes = 0,
     bytes = 0;
   /**
-   * Application function visit.
-   * @param {Node} node - Input value for this operation.
-   * @param {number} depth - Input value for this operation.
-   * @returns {unknown} Result produced by this operation.
+   * Accumulate bounded native DOM shape/text/attribute sizes without executing application code.
+   * @param {Node} node - Actual candidate DOM node, inspected only for its category.
+   * @param {number} depth - Native subtree depth relative to the root children.
+   * @returns {void} Accumulates native tree budgets, rejecting overflow or cancellation.
    */
   const visit = (node: Node, depth: number) => {
     checkAbort(signal);

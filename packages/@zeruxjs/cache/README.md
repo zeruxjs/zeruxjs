@@ -45,7 +45,7 @@ Concurrent misses for the same key **within one manager process** share one pend
 - Memory cache is per process: no persistence, synchronization, or cross-worker coordination.
 - Conditional writes are atomic only when the provider supports them. `setMany` across multiple keys is not guaranteed atomic.
 
-Run package tests after building: `npm run build && node --test test/*.test.mjs`.
+Run package tests after building: `npm run build && node --experimental-strip-types --test test/*.test.ts`.
 
 ## Scoped managers
 

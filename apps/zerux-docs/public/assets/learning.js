@@ -1,4 +1,4 @@
-import { lessons } from '../../src/lib/academy.mjs';
+import { lessons } from '../../src/lib/academy.ts';
 
 /** Browser-only learning enhancements. Storage is optional, bounded and never sent over the network. */
 const base = document.body.dataset.basePath;

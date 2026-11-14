@@ -61,7 +61,7 @@ When running in development mode (`details.dev` provided), `zhost` will:
 
 The portless proxy now validates Host / HTTP/2 authority before routing, handles IPv6 authorities, and prefers the longest matching registered suffix. Untrusted `Forwarded` and `X-Forwarded-*` input is discarded; the proxy reconstructs forwarding headers from the socket and requested authority. Malformed hop counts are rejected, and upstream HTTP and WebSocket handshake requests have a 30-second socket timeout.
 
-Run focused regression tests after building: `node --test test/request-security.test.mjs`. This local development proxy is **not** a substitute for an authenticated public reverse proxy.
+Run focused regression tests after building: `node --experimental-strip-types --test test/request-security.test.ts`. This local development proxy is **not** a substitute for an authenticated public reverse proxy.
 
 ## Proxy lifecycle and WebSocket behavior
 
@@ -69,7 +69,7 @@ The portless proxy supports HTTP/1.1, HTTP/2 over TLS, and HTTP/1.1 WebSocket up
 
 `portlessStop()` rejects malformed PID files and refuses to signal a process unless the expected proxy is responding. If the PID no longer exists, it removes the stale marker. **Note:** an HTTP health check does not establish cryptographic process identity; do not share the proxy state directory with untrusted users. The proxy remains intended for local development. A bounded connection drain is available through `connectionTracker.drain`; stronger process ownership verification still requires a separate trusted control boundary.
 
-Focused regression tests are in `test/websocket-proxy.test.mjs` and `test/lifecycle.test.mjs`.
+Focused regression tests are in `test/websocket-proxy.test.ts` and `test/lifecycle.test.ts`.
 
 ### Atomic proxy state and recovery
 
@@ -122,7 +122,7 @@ based on file age alone. Verified dead owners can be recovered. An ownerless,
 malformed, or unverifiable lock requires manual inspection.
 
 To run the route-focused regression tests after compiling the package:
-`node --test test/routes.test.mjs test/route-leases.test.mjs`.
+`node --experimental-strip-types --test test/routes.test.ts test/route-leases.test.ts`.
 
 **Deployment note:** This continues to be a local-development proxy. Route
 leases prevent accidental cleanup races; they do not provide user isolation,
@@ -168,8 +168,8 @@ group termination is strongest on POSIX; native Windows process-tree supervision
 still needs its own integration suite. This tool is intended for local developer
 applications, not untrusted multi-tenant process execution.
 
-Focused checks after compilation: `node --test test/process-supervisor.test.mjs
-test/cli-run-arguments.test.mjs test/app-supervision-integration.test.mjs`.
+Focused checks after compilation: `node --experimental-strip-types --test test/process-supervisor.test.ts
+test/cli-run-arguments.test.ts test/app-supervision-integration.test.ts`.
 
 ## HTTP health checks and bounded restart policies
 
@@ -213,7 +213,7 @@ not a privilege boundary for executing untrusted commands. Windows process tree
 behavior and cross-process recovery still need native integration testing.
 
 Regression suite (after building dependencies and `zhost`):
-`node --test test/*.test.mjs`.
+`node --experimental-strip-types --test test/*.test.ts`.
 
 ## Runtime status and coordinated manual reload
 
@@ -324,7 +324,7 @@ if (committed) {
 - This is still a local-development proxy. It is not an internet-facing load
   balancer, authenticated service mesh, or distributed routing coordinator.
 
-After a package build, run `node --test test/backend-*.test.mjs` for the new
+After a package build, run `node --experimental-strip-types --test test/backend-*.test.ts` for the new
 pool, handover, and WebSocket integration regression tests.
 
 ## Rolling application deployments
@@ -394,7 +394,7 @@ The controller passes the correct `PORT` to each child even if an existing
   after the verification window has ended.
 
 Focused validation: build `zhost`, then run
-`node --test test/rolling-app.test.mjs test/backend-*.test.mjs`.
+`node --experimental-strip-types --test test/rolling-app.test.ts test/backend-*.test.ts`.
 
 ## Rolling CLI & cross-process deployment control
 
@@ -443,7 +443,7 @@ another user. Abrupt supervisor termination (for example `SIGKILL` or power
 loss) cannot guarantee cleanup of detached application children; stale routes
 are filtered by owner liveness and require inspection. Multi-file crash
 consistency, distributed scheduling and external load-balancer draining are
-not provided. Run `node --test test/rolling-cli-control.test.mjs` against fresh
+not provided. Run `node --experimental-strip-types --test test/rolling-cli-control.test.ts` against fresh
 compiled output for a separate-process smoke test.
 
 ### Recovering rolling applications after a hard crash
@@ -1211,7 +1211,7 @@ for work and destroys remaining sockets at its deadline. Deadlines are integer
 0–300000ms (default 10000); repeated drain calls share the first result. Socket
 closure does not establish that an upstream business operation rolled back.
 
-The focused `test/proxy-resilience.test.mjs` workload sends 24 concurrent loopback
+The focused `test/proxy-resilience.test.ts` workload sends 24 concurrent loopback
 GETs to a 40ms-delayed backend with admission 4, identity responses and no HTTP
 agent reuse. It reports runtime, elapsed time, status counts and peak upstream
 concurrency, and asserts zero retained connection/admission counts. Separate cases

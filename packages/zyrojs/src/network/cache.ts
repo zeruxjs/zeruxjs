@@ -2,7 +2,7 @@
 export interface QueryCacheOptions {
   /** Maximum number of completed entries retained by the cache. */
   maxEntries?: number;
-  /** Default entry lifetime in milliseconds; zero disables expiry. */
+  /** Default entry lifetime in milliseconds; zero disables completed-value storage. */
   defaultTtlMs?: number;
 }
 export interface CacheQueryOptions {
@@ -16,7 +16,7 @@ export interface CacheQueryOptions {
 interface Entry {
   /** Cached query result. */
   value: unknown;
-  /** Absolute expiry time in milliseconds, or zero when unbounded. */
+  /** Absolute expiry time in milliseconds, used for lazy expiry checks. */
   expiresAt: number;
   /** Tags used for explicit invalidation. */
   tags: string[];
@@ -47,19 +47,19 @@ export class QueryCache {
     }
   }
   /**
-   * size.
-   * @returns {unknown} Result produced by this operation.
+   * Count retained completed entries; expired entries are removed lazily on reads.
+   * @returns {number} Retained completed-entry count before lazy expiry cleanup.
    */
   get size() {
     return this.entries.size;
   }
   /**
-   * get.
-   * @param {string} key - Input value for this operation.
-   * @returns {T | undefined} Result produced by this operation.
+   * Read a live entry and update LRU order; values are borrowed, not cloned.
+   * @param {string} key - Host-scoped identity; include tenant/application dimensions for private data.
+   * @returns {T | undefined} Borrowed live value, or undefined after miss/expiry.
    */
   get<T>(key: string): T | undefined {
-    /** Stores the item value used by this module. */
+    /** Completed entry; reads evict expired entries and move live entries to the newest LRU position. */
     const item = this.entries.get(key);
     if (!item) {
       return undefined;
@@ -73,14 +73,14 @@ export class QueryCache {
     return item.value as T;
   }
   /**
-   * set.
-   * @param {string} key - Input value for this operation.
-   * @param {T} value - Input value for this operation.
-   * @param {CacheQueryOptions} options - Input value for this operation.
-   * @returns {void} Result produced by this operation.
+   * Retain a successful value under finite TTL/LRU policy; zero TTL deletes it.
+   * @param {string} key - Host-scoped identity; include tenant/application dimensions for private data.
+   * @param {T} value - Borrowed successful result, retained without a defensive clone.
+   * @param {CacheQueryOptions} options - TTL/tag policy and optional caller-wait cancellation.
+   * @returns {void} Stores under TTL/LRU policy or removes the entry when TTL is zero.
    */
   set<T>(key: string, value: T, options: CacheQueryOptions = {}): void {
-    /** Stores the ttl value used by this module. */
+    /** Effective retention; zero explicitly removes the entry rather than storing indefinitely. */
     const ttl = options.ttlMs ?? this.ttl;
     if (!Number.isSafeInteger(ttl) || ttl < 0 || ttl > 86_400_000) {
       throw new RangeError('Invalid cache TTL');
@@ -101,11 +101,11 @@ export class QueryCache {
   }
   /** Cache only successful computations. Aborted callers do not poison the shared result. */
   /**
-   * query.
-   * @param {string} key - Input value for this operation.
-   * @param {() => Promise<T>} load - Input value for this operation.
-   * @param {CacheQueryOptions} options - Input value for this operation.
-   * @returns {Promise<T>} Result produced by this operation.
+   * Coalesce same-key loads; caller cancellation does not forcibly stop shared loader work.
+   * @param {string} key - Host-scoped identity; include tenant/application dimensions for private data.
+   * @param {() => Promise<T>} load - Trusted asynchronous loader, invoked once per current pending key.
+   * @param {CacheQueryOptions} options - TTL/tag policy and optional caller-wait cancellation.
+   * @returns {Promise<T>} Current shared load result; caller abort rejects only its wait.
    */
   async query<T>(
     key: string,
@@ -115,7 +115,7 @@ export class QueryCache {
     if (options.signal?.aborted) {
       throw options.signal.reason;
     }
-    /** Stores the hit value used by this module. */
+    /** Only non-undefined completed values count as hits; undefined results trigger another load. */
     const hit = this.get<T>(key);
     if (hit !== undefined) {
       return hit;
@@ -142,8 +142,8 @@ export class QueryCache {
     }
     return new Promise<T>((resolve, reject) => {
       /**
-       * Application function abort.
-       * @returns {unknown} Result produced by this operation.
+       * Reject only this wait and detach its abort listener; shared work may settle later.
+       * @returns {void} Rejects this wait and removes its abort listener.
        */
       const abort = () => {
         options.signal?.removeEventListener('abort', abort);
@@ -167,18 +167,18 @@ export class QueryCache {
     });
   }
   /**
-   * invalidate.
-   * @param {string} key - Input value for this operation.
-   * @returns {boolean} Result produced by this operation.
+   * Fence the current pending task from caching and remove this completed key.
+   * @param {string} key - Host-scoped identity; include tenant/application dimensions for private data.
+   * @returns {boolean} Whether a completed entry existed; pending commits are fenced regardless.
    */
   invalidate(key: string): boolean {
     this.pending.delete(key);
     return this.entries.delete(key);
   }
   /**
-   * invalidateTag.
-   * @param {string} tag - Input value for this operation.
-   * @returns {number} Result produced by this operation.
+   * Remove completed tagged entries only; pending loads are not tag-indexed or fenced.
+   * @param {string} tag - Exact completed-entry tag to invalidate.
+   * @returns {number} Number of completed entries removed; pending loads remain unchanged.
    */
   invalidateTag(tag: string): number {
     let count = 0;
@@ -191,8 +191,8 @@ export class QueryCache {
     return count;
   }
   /**
-   * clear.
-   * @returns {void} Result produced by this operation.
+   * Remove completed entries and fence pending commits without cancelling loader promises.
+   * @returns {void} Clears values and pending commit identities without cancelling loaders.
    */
   clear(): void {
     this.entries.clear();
@@ -200,9 +200,9 @@ export class QueryCache {
   }
 }
 /**
- * Application function createQueryCache.
- * @param {QueryCacheOptions} options - Input value for this operation.
- * @returns {unknown} Result produced by this operation.
+ * Create an inert per-instance cache; no timers or network requests start here.
+ * @param {QueryCacheOptions} options - TTL/tag policy and optional caller-wait cancellation.
+ * @returns {QueryCache} Independent cache with no timer or network acquisition.
  */
 export const createQueryCache = (options?: QueryCacheOptions) =>
   new QueryCache(options);
