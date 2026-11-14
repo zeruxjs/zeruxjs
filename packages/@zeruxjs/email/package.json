@@ -24,7 +24,7 @@
   "dependencies": {
     "html-to-text": "^10.0.1",
     "imapflow": "^1.0.0",
-    "juice": "^11.0.0",
+    "juice": "^12.2.1",
     "mailparser": "^3.14.3",
     "node-pop3": "^0.15.1",
     "nodemailer": "^10.5.0",
