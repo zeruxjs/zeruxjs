@@ -73,9 +73,12 @@ test('packed public Memcached helper declarations and README example compile', (
     }
     writeFileSync(path.join(dir, 'package.json'), '{"type":"module"}');
     /** Authored direct-helper example compiled but not called against an external server. */
-    const example = readFileSync(path.join(pkg, 'README.md'), 'utf8')
+    const match = readFileSync(path.join(pkg, 'README.md'), 'utf8')
       .split('## Bounded direct helper')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(match, 'Authored public TypeScript example is required');
+    /** Matched example remains source text; compiling it does not contact Memcached. */
+    const example = match[1];
     writeFileSync(path.join(dir, 'example.ts'), example);
     execFileSync(
       process.execPath,
@@ -100,7 +103,8 @@ test('packed public Memcached helper declarations and README example compile', (
       encoding: 'utf8',
     });
     assert.equal(
-      JSON.parse(readFileSync(path.join(installed, 'package.json'))).name,
+      JSON.parse(readFileSync(path.join(installed, 'package.json'), 'utf8'))
+        .name,
       '@zeruxjs/cache-memcache'
     );
   } finally {

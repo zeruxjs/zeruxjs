@@ -1,16 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createQueueService, QUEUE_JOB_LIMITS } from '@zeruxjs/queue-bullmq';
+import {
+  createQueueService,
+  QUEUE_JOB_LIMITS,
+  type JobData,
+  type JobProcessor,
+  type QueueJobOptions,
+  type BullQueueLike,
+} from '@zeruxjs/queue-bullmq';
 /** Create isolated injected native constructors and operation logs without opening Redis connections.
  * @returns {unknown} Injected test receipt or intentional fixture failure.
  */
 function fixture() {
   /** Fixture-native operation log; contains synthetic values only. */
-  const log = [];
+  const log: Array<string | [string, unknown]> = [];
   /** Injected worker instances retained only for exercising actual wrapper callbacks. */
-  const workers = [];
+  const workers: Worker[] = [];
   /** Injected event instances used to verify startup/shutdown ownership. */
-  const events = [];
+  const events: QueueEvents[] = [];
   /** Injected native driver double; this fixture does not certify broker behavior.
    */
   class Queue {
@@ -24,10 +31,10 @@ function fixture() {
     /** Capture a synthetic native enqueue so wrapper validation/snapshotting can be asserted.
      * @param {unknown} name - Synthetic native argument supplied by the queue wrapper.
      * @param {unknown} data - Synthetic native argument supplied by the queue wrapper.
-     * @param {unknown} opts - Synthetic native argument supplied by the queue wrapper.
+     * @param {QueueJobOptions} _opts - Synthetic native argument supplied by the queue wrapper.
      * @returns {Promise<unknown>} Injected test receipt or intentional fixture failure.
      */
-    async add(name, data, opts) {
+    async add(name: string, data: JobData, _opts?: QueueJobOptions) {
       log.push(['add', data]);
       return { id: 'one', name, data };
     }
@@ -35,35 +42,68 @@ function fixture() {
      * @param {unknown} jobs - Synthetic native argument supplied by the queue wrapper.
      * @returns {Promise<unknown>} Injected test receipt or intentional fixture failure.
      */
-    async addBulk(jobs) {
+    async addBulk(jobs: Parameters<BullQueueLike['addBulk']>[0]) {
       log.push(['bulk', jobs]);
       return jobs;
     }
-    /** Expose synthetic native close settlement or the fixture force-close receipt.
-     * @returns {Promise<unknown>} Injected test receipt or intentional fixture failure.
+    /** Reject unexercised native lookup rather than silently pretending to implement it.
+     * @returns {Promise<never>} Always rejects in this focused fixture.
+     */
+    async getJob(): Promise<never> {
+      throw Error('unexpected getJob');
+    }
+    /** Reject unexercised counter queries.
+     * @returns {Promise<never>} Always rejects in this focused fixture.
+     */
+    async getJobCounts(): Promise<never> {
+      throw Error('unexpected getJobCounts');
+    }
+    /** Reject unexercised queue pause.
+     * @returns {Promise<never>} Always rejects in this focused fixture.
+     */
+    async pause(): Promise<never> {
+      throw Error('unexpected pause');
+    }
+    /** Reject unexercised queue resume.
+     * @returns {Promise<never>} Always rejects in this focused fixture.
+     */
+    async resume(): Promise<never> {
+      throw Error('unexpected resume');
+    }
+    /** Observe this fixture-owned queue closing.
+     * @returns {Promise<void>} Synthetic close settlement.
      */
     async close() {
       log.push('queue-close');
     }
     /** Capture the native scheduling template without creating a real broker schedule.
      * @param {unknown} id - Synthetic native argument supplied by the queue wrapper.
-     * @param {unknown} repeat - Synthetic native argument supplied by the queue wrapper.
-     * @param {unknown} template - Synthetic native argument supplied by the queue wrapper.
+     * @param {Record<string, unknown>} _repeat - Synthetic native argument supplied by the queue wrapper.
+     * @param {object} template - Validated native scheduler template.
+     * @param {string} template.name - Code-owned job name.
+     * @param {JobData} template.data - Bounded synthetic task payload.
+     * @param {QueueJobOptions} [template.opts] - Validated scheduler job options.
      * @returns {Promise<unknown>} Injected test receipt or intentional fixture failure.
      */
-    async upsertJobScheduler(id, repeat, template) {
+    async upsertJobScheduler(
+      id: string,
+      _repeat: Record<string, unknown>,
+      template: { name: string; data: JobData; opts?: QueueJobOptions }
+    ) {
       log.push(['scheduler', template]);
-      return { id };
+      return { id, name: template.name, data: template.data };
     }
   }
   /** Injected native driver double; this fixture does not certify broker behavior.
    */
   class Worker {
+    /** Actual wrapper callback retained for lifecycle and payload guard assertions. */
+    readonly processor: JobProcessor;
     /** Construct an injected synthetic native owner; retain only state needed by lifecycle assertions.
-     * @param {unknown} name - Synthetic native argument supplied by the queue wrapper.
-     * @param {unknown} processor - Synthetic native argument supplied by the queue wrapper.
+     * @param {string} _name - Synthetic queue label, unused by this injected owner.
+     * @param {JobProcessor} processor - Synthetic native argument supplied by the queue wrapper.
      */
-    constructor(name, processor) {
+    constructor(_name: string, processor: JobProcessor) {
       this.processor = processor;
       workers.push(this);
     }
@@ -77,7 +117,7 @@ function fixture() {
      * @param {unknown} force - Synthetic native argument supplied by the queue wrapper.
      * @returns {Promise<unknown>} Injected test receipt or intentional fixture failure.
      */
-    async close(force) {
+    async close(force?: boolean) {
       log.push(force ? 'force-close' : 'worker-close');
     }
   }
@@ -123,7 +163,10 @@ test('direct and bulk data snapshot/byte/count/depth checks run before any nativ
     /** In-flight injected enqueue receipt observed after source mutation. */
     const pending = queue.add('send', data);
     data.nested.ok = false;
-    assert.equal((await pending).data.nested.ok, true);
+    /** Read native JSON fields only after checking the public unknown payload boundary. */
+    const nested = (await pending).data.nested;
+    assert.ok(nested && typeof nested === 'object' && 'ok' in nested);
+    assert.equal(nested.ok, true);
     assert.equal(QUEUE_JOB_LIMITS.maxBulk, 256);
     /** Injected bounded batch receipt. */
     const bulk = await queue.addBulk([
@@ -155,16 +198,17 @@ test('direct and bulk data snapshot/byte/count/depth checks run before any nativ
       new Date(),
     ]) {
       assert.throws(
-        () => queue.add('send', data),
-        (error) => !/SECRET/.test(error.message)
+        () => Reflect.apply(queue.add, queue, ['send', data]),
+        (error: unknown) =>
+          error instanceof Error && !/SECRET/.test(error.message)
       );
     }
     /** Synthetic cyclic payload; never execute serialization hooks. */
-    const cycle = {};
+    const cycle: Record<string, unknown> = {};
     cycle.cycle = cycle;
     assert.throws(() => queue.add('send', cycle));
     /** Synthetic over-depth payload. */
-    const deep = {};
+    const deep: Record<string, unknown> = {};
     let node = deep;
     // Exercise only the finite synthetic invalid cases, archive targets or fixed depth bound.
     for (let i = 0; i < 34; i++) {
@@ -206,7 +250,8 @@ test('direct and bulk data snapshot/byte/count/depth checks run before any nativ
 test('worker counts survive force-close until processor and original native close really settle', async () => {
   /** Fresh isolated driver fixture; no live provider is contacted. */
   const f = fixture();
-  let complete, finishClose;
+  let complete: (() => void) | undefined;
+  let finishClose: (() => void) | undefined;
   /** Injected native driver double; this fixture does not certify broker behavior.
    */
   class Worker extends f.driver.Worker {
@@ -214,11 +259,13 @@ test('worker counts survive force-close until processor and original native clos
      * @param {unknown} force - Synthetic native argument supplied by the queue wrapper.
      * @returns {unknown} Injected test receipt or intentional fixture failure.
      */
-    close(force) {
+    close(force?: boolean): Promise<void> {
       if (force) {
         return Promise.resolve();
       }
-      return new Promise((resolve) => (finishClose = resolve));
+      return new Promise<void>((resolve) => {
+        finishClose = resolve;
+      });
     }
   }
   /** Owned queue wrapper closed by this synthetic fixture. */
@@ -228,7 +275,10 @@ test('worker counts survive force-close until processor and original native clos
       shutdownGraceMs: 5,
       workers: {
         jobs: {
-          processor: () => new Promise((resolve) => (complete = resolve)),
+          processor: () =>
+            new Promise<void>((resolve) => {
+              complete = resolve;
+            }),
         },
       },
     },
@@ -249,6 +299,8 @@ test('worker counts survive force-close until processor and original native clos
     assert.equal(status.activeProcessors, 1);
     assert.equal(status.pendingClosures, 1);
     assert.equal(JSON.stringify(status).includes('id'), false);
+    assert.ok(complete);
+    assert.ok(finishClose);
     complete();
     finishClose();
     await running;
@@ -267,10 +319,14 @@ test('listener/stream startup failures close already acquired worker, events, qu
   /** Fresh isolated driver fixture; no live provider is contacted. */
   const f = fixture();
   /** Injected owned Cluster instances used only to check cleanup/fallback. */
-  const clusters = [];
+  const clusters: Cluster[] = [];
   /** Injected native driver double; this fixture does not certify broker behavior.
    */
   class Cluster {
+    /** Observed owned-client close state; initialized before shutdown. */
+    closed = false;
+    /** Forced-disconnect attempts after failed quit. */
+    disconnected = 0;
     /** Construct an injected synthetic native owner; retain only state needed by lifecycle assertions.
      */
     constructor() {
@@ -289,7 +345,7 @@ test('listener/stream startup failures close already acquired worker, events, qu
     /** Register a synthetic listener receipt or exercise intentional startup failure.
      * @returns {unknown} Injected test receipt or intentional fixture failure.
      */
-    on() {
+    on(): never {
       throw Error('listener failed');
     }
   }
@@ -334,10 +390,14 @@ test('failed owned Cluster quit uses disconnect, records failure and never repea
   /** Fresh isolated driver fixture; no live provider is contacted. */
   const f = fixture();
   /** Injected owned Cluster instances used only to check cleanup/fallback. */
-  const clusters = [];
+  const clusters: Cluster[] = [];
   /** Injected native driver double; this fixture does not certify broker behavior.
    */
   class Cluster {
+    /** Observed owned-client close state; initialized before shutdown. */
+    closed = false;
+    /** Forced-disconnect attempts after failed quit. */
+    disconnected = 0;
     /** Construct an injected synthetic native owner; retain only state needed by lifecycle assertions.
      */
     constructor() {
@@ -394,18 +454,21 @@ test('incoming invalid jobs and handler rejection never leak active slots or inv
   /** Borrowed wrapped worker callback tested for payload guards and closed-state denial. */
   const process = f.workers[0].processor;
   await assert.rejects(
-    process({ name: 'send', data: { huge: 'x'.repeat(70000) } }),
+    async () => process({ name: 'send', data: { huge: 'x'.repeat(70000) } }),
     /byte limit/
   );
   assert.equal(calls, 0);
   assert.equal(service.shutdownStatus().activeProcessors, 0);
   await assert.rejects(
-    process({ name: 'send', data: { id: 'one' } }),
+    async () => process({ name: 'send', data: { id: 'one' } }),
     /handler failed/
   );
   assert.equal(calls, 1);
   assert.equal(service.shutdownStatus().activeProcessors, 0);
   await service.close();
-  await assert.rejects(process({ name: 'send', data: {} }), /closed/);
+  await assert.rejects(
+    async () => process({ name: 'send', data: {} }),
+    /closed/
+  );
   assert.equal(calls, 1);
 });

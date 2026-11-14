@@ -4,7 +4,8 @@ import { createRequire } from 'node:module';
 /** Resolve built CommonJS exports from this ESM fixture. */
 const require = createRequire(import.meta.url);
 /** Public connector factory used only with synthetic injection. */
-const { createConnector } = require('../dist/index.js');
+const { createConnector } =
+  require('../dist/index.js') as typeof import('@zeruxjs/db-mysql');
 /** Synthetic private execution identity; no configured database endpoint. */
 const context = {
   connection: { slug: 'mysql', name: 'mysql', connector: 'mysql', options: {} },
@@ -13,7 +14,7 @@ test('injected mysql2 Promise-style query result is not double-wrapped', async (
   /** Owned wrapper around a borrowed scripted client/executor. */
   const connector = await createConnector({
     client: {
-      query: async (_sql, _args) => [
+      query: async (_sql: string, _args: unknown[] = []) => [
         [{ id: 2, name: 'Alice' }],
         [{ name: 'id' }],
       ],
@@ -29,7 +30,7 @@ test('injected mysql2 Promise-style query result is not double-wrapped', async (
   await connector.disconnect();
 });
 test('MySQL injected executor uses parameter placeholders and returns affected rows', async (t) => {
-  let received;
+  let received: { sql: string; params: unknown[] } | undefined;
   /** Owned wrapper around a borrowed scripted client/executor. */
   const connector = await createConnector({
     executor: async (sql, params) => {
@@ -50,6 +51,7 @@ test('MySQL injected executor uses parameter placeholders and returns affected r
   );
   assert.equal(result.affectedCount, 2);
   assert.equal(result.insertedIds, undefined);
+  assert.ok(received);
   assert.match(received.sql, /\?/);
   assert.deepEqual(received.params, ['new', 2]);
   await connector.disconnect();

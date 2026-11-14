@@ -1,3 +1,4 @@
+import type { FontAssetManifest, FontLicense } from '@zeruxjs/font/build';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -5,7 +6,7 @@ import {
   createFontLoadScope,
   loadFont,
 } from '../dist/index.js';
-import { createFontZuixAdapter } from '../dist/zuix.js';
+import { createFontZuixAdapter, type FontToken } from '../dist/zuix.js';
 import { createFontStylesheetHandler } from '../dist/http.js';
 import { createZuix } from 'zuixs';
 /** Create matching synthetic registry/build records for actual local compiler integration checks.
@@ -26,14 +27,14 @@ function fixture() {
     sources: [{ url: '/shop/fonts/b.woff2' }],
   });
   /** Synthetic attribution for injected asset records, not a real font license grant. */
-  const license = {
+  const license: FontLicense = {
     id: 'MIT',
     source: 'local:test',
     attribution: 'Synthetic',
     redistributionAllowed: true,
   };
   /** Synthetic matching build manifest used for actual local Zuixs compilation. */
-  const assets = {
+  const assets: FontAssetManifest = {
     schema: 1,
     digest: 'fixture',
     css: { file: 'font.css', url: '/shop/fonts/font.css', sha256: 'fixture' },
@@ -65,10 +66,12 @@ function fixture() {
     ],
     preloads: [],
   };
+  /** Mutable fixture selections used to prove the adapter copies its caller-owned input. */
+  const fonts: FontToken[] = [{ token: 'body', key: 'body' }];
   return {
     registry,
     assets,
-    fonts: [{ token: 'body', key: 'body' }],
+    fonts,
     icons: [
       { token: 'star', key: 'star' },
       { token: 'mark', key: 'mark' },
@@ -127,7 +130,10 @@ test('explicit font/theme/icon adapter emits selected deterministic mounted asse
   });
   /** Initial selected-registry CSS representation before the explicit mutation. */
   const first = handler(new Request('https://test/fonts.css'));
-  assert.match(first.headers.get('link'), /\/shop\/fonts\/a.woff2/);
+  /** Preload metadata is required for the explicitly selected face. */
+  const link = first.headers.get('link');
+  assert.ok(link);
+  assert.match(link, /\/shop\/fonts\/a.woff2/);
   adapter.registry.add('new', {
     family: 'New',
     sources: [{ url: '/shop/fonts/new.woff2' }],
@@ -140,13 +146,16 @@ test('explicit font/theme/icon adapter emits selected deterministic mounted asse
 test('collisions, mismatched manifest, unsafe fallbacks and missing assets reject before compilation', () => {
   // Mutate one independent input contract at a time; each must fail before compilation.
   for (const mutate of [
-    (i) => i.fonts.push({ token: 'body', key: 'unused' }),
-    (i) => i.icons.push({ token: 'body', key: 'mark' }),
-    (i) => (i.fonts[0].token = 'x;}'),
-    (i) => (i.fonts[0].key = 'missing'),
-    (i) => (i.assets.fonts[0].url = 'https://remote/font'),
-    (i) => (i.fonts[0].fallback = ['bad;}']),
-    (i) => i.assets.fonts.push(i.assets.fonts[0]),
+    (i: ReturnType<typeof fixture>) =>
+      i.fonts.push({ token: 'body', key: 'unused' }),
+    (i: ReturnType<typeof fixture>) =>
+      i.icons.push({ token: 'body', key: 'mark' }),
+    (i: ReturnType<typeof fixture>) => (i.fonts[0].token = 'x;}'),
+    (i: ReturnType<typeof fixture>) => (i.fonts[0].key = 'missing'),
+    (i: ReturnType<typeof fixture>) =>
+      (i.assets.fonts[0].url = 'https://remote/font'),
+    (i: ReturnType<typeof fixture>) => (i.fonts[0].fallback = ['bad;}']),
+    (i: ReturnType<typeof fixture>) => i.assets.fonts.push(i.assets.fonts[0]),
   ]) {
     /** Detached fixture inputs; later mutations must not affect adapter snapshots. */
     const input = fixture();
@@ -193,7 +202,7 @@ test('font loading is optional, failure-redacted, cancelled and disposed without
   t.after(() => failed.dispose());
   await assert.rejects(
     failed.load('Brand'),
-    (e) => e.message === 'Font loading failed'
+    (e: unknown) => e instanceof Error && e.message === 'Font loading failed'
   );
   failed.dispose();
   await assert.rejects(
@@ -206,7 +215,7 @@ test('font loading is optional, failure-redacted, cancelled and disposed without
         },
       },
     }),
-    (e) => e.message === 'Font loading failed'
+    (e: unknown) => e instanceof Error && e.message === 'Font loading failed'
   );
   /** Already-aborted caller controller; no native load should begin. */
   const controller = new AbortController();

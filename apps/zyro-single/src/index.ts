@@ -2,7 +2,7 @@ import { h, render, useState, useEffect, type LegacyNode } from './zyro.js';
 
 /** Describe the historical standalone counter using its bundled compatibility runtime.
  * The bundled helper runs setup once during this initial mount; it has no modern unmount contract.
- * @returns {object} Authored node description; user values remain scalar text and fixed callbacks.
+ * @returns {LegacyNode} Authored node description; user values remain scalar text and fixed callbacks.
  */
 function App(): LegacyNode {
   /** Mount-local count and setter; the bundled runtime retains reactive subscriptions for the page lifetime. */

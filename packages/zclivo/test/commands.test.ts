@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { requiredMessage } from './helpers.ts';
 import { CommandRegistry, ZeruxCLI } from '../dist/index.js';
 test('supports multiple keyword registries, alias dispatch, help, docs and completion', async () => {
   /** Invocation-local fixture registry; no process listeners or command execution on registration. */
   const registry = new CommandRegistry();
   /** Captured synthetic help output compared without using process console state. */
-  const messages = [];
+  const messages: string[] = [];
   registry.registerKey('zerux', 'Framework');
   registry.register(
     'zerux',
@@ -60,15 +61,14 @@ test('handler exceptions return errors without forcing process exit', async () =
   /** Explicit dispatch receipt checked for ordinary handler failure. */
   const result = await registry.dispatch('demo', ['fail']);
   assert.equal(result.exitCode, 1);
-  assert.match(result.message, /boom/);
+  assert.match(requiredMessage(result), /boom/);
 });
 test('legacy addKey and addCommand retains registry compatibility', (t) => {
   /** Owned legacy compatibility instance; no addKey scheduling occurs in this fixture. */
   const cli = new ZeruxCLI(['dev', '--port', '4000']);
   t.after(() => cli.dispose());
-  let value;
   cli.addCommand('zerux', 'dev', (args) => {
-    value = args.namedArgs.port;
+    assert.equal(args.namedArgs.port, '4000');
   });
   cli.registry.registerKey('zerux');
   assert.ok(cli.registry.lookup('zerux', 'dev'));

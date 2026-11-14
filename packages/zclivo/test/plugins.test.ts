@@ -10,7 +10,7 @@ import { resolvePluginEntry } from '../dist/plugins.js';
  * @param {(root: string, pkg: string) => void} testFn - Trusted fixture callback; no package code is imported.
  * @returns {void} Completes after removing only the owned fixture tree.
  */
-function fixture(testFn) {
+function fixture(testFn: (root: string, pkg: string) => void): void {
   /** Owned temporary package/escape-path fixture removed in finally. */
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zclivo-plugins-'));
   /** Owned synthetic installed package root used for canonical containment checks. */

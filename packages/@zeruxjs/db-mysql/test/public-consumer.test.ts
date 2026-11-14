@@ -73,9 +73,12 @@ test('packed public MySQL transaction declarations and README example compile', 
     }
     writeFileSync(path.join(dir, 'package.json'), '{"type":"module"}');
     /** Authored borrowed-pool example compiled without contacting MySQL. */
-    const example = readFileSync(path.join(pkg, 'README.md'), 'utf8')
+    const match = readFileSync(path.join(pkg, 'README.md'), 'utf8')
       .split('## Pinned transactions')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(match, 'Authored borrowed-pool example is required');
+    /** Matched source compiles without opening a native database connection. */
+    const example = match[1];
     writeFileSync(path.join(dir, 'example.ts'), example);
     execFileSync(
       process.execPath,
@@ -100,7 +103,8 @@ test('packed public MySQL transaction declarations and README example compile', 
       encoding: 'utf8',
     });
     assert.equal(
-      JSON.parse(readFileSync(path.join(installed, 'package.json'))).name,
+      JSON.parse(readFileSync(path.join(installed, 'package.json'), 'utf8'))
+        .name,
       '@zeruxjs/db-mysql'
     );
   } finally {

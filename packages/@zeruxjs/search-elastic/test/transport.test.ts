@@ -1,19 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import https from 'node:https';
+import type { Socket } from 'node:net';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { once } from 'node:events';
-import { createElasticSearchAdapter } from '@zeruxjs/search-elastic';
+import {
+  createElasticSearchAdapter,
+  type ElasticSearchAdapter,
+} from '@zeruxjs/search-elastic';
 
 test('official client uses authenticated verified TLS, rejects redirects, and drains owned sockets', async () => {
   /** Owned temporary certificate directory; remove recursively in teardown. */
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'zx057-tls-'));
-  let server, adapter;
+  let server: https.Server | undefined;
+  let adapter: ElasticSearchAdapter | undefined;
   /** Owned local HTTPS fixture sockets; destroy them before closing the listener. */
-  const sockets = new Set();
+  const sockets = new Set<Socket>();
   let credentials,
     redirect = false,
     requests = 0;
@@ -65,7 +70,10 @@ test('official client uses authenticated verified TLS, rejects redirects, and dr
     server.listen(0, '127.0.0.1');
     await once(server, 'listening');
     /** Explicit owned local HTTPS fixture or opt-in isolated live-engine endpoint. */
-    const endpoint = `https://127.0.0.1:${server.address().port}`;
+    const address = server.address();
+    assert.ok(address && typeof address !== 'string');
+    /** Bound TCP endpoint from this owned fixture, not an operator-provided server. */
+    const endpoint = `https://127.0.0.1:${address.port}`;
     /** Explicit local HTTPS fixture policy with fixed synthetic credentials. */
     const config = {
       index: 'fixture-v1',
@@ -110,7 +118,11 @@ test('official client uses authenticated verified TLS, rejects redirects, and dr
         signal: new AbortController().signal,
         deadline: Date.now() + 1000,
       }),
-      (error) => ['UNAVAILABLE', 'UNSUPPORTED'].includes(error.code)
+      (error: unknown) =>
+        error instanceof Error &&
+        'code' in error &&
+        typeof error.code === 'string' &&
+        ['UNAVAILABLE', 'UNSUPPORTED'].includes(error.code)
     );
     assert.equal(requests, prior + 1);
     await adapter.close();
@@ -125,8 +137,12 @@ test('official client uses authenticated verified TLS, rejects redirects, and dr
         socket.destroy();
       }
       try {
-        if (server?.listening) {
-          await new Promise((r) => server.close(r));
+        /** Stable fixture listener snapshot retained through asynchronous close. */
+        const listener = server;
+        if (listener?.listening) {
+          await new Promise<void>((resolve, reject) =>
+            listener.close((error) => (error ? reject(error) : resolve()))
+          );
         }
       } finally {
         await fs.rm(dir, { recursive: true, force: true });

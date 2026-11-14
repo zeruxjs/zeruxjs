@@ -320,11 +320,159 @@ function ancestors(value: unknown, mode: string): string[] {
   return values;
 }
 
-/** Snapshot trusted host policy and module declarations before any response. No request/header inputs, nonce generation, service registration or I/O occurs here.
- * @param {SecurityPolicyOptions} options - Explicit bounded host resources, approvals, framing, transport and isolation policy.
- * @returns {object} Frozen inert composer; createResponse owns fresh per-response nonce generation.
+/** Captured state for one synchronous composition; never retained across applications. */
+interface PolicyCompositionContext {
+  /** Validated host runtime policy. */
+  mode: 'production' | 'development';
+  /** Exact host isolation settings. */
+  hostIsolation: ReturnType<typeof isolation>;
+  /** Effective resource sets, mutated only after grant checks. */
+  baseline: Map<CspResourceDirective, Set<string>>;
+  /** Original host grants; another module cannot enlarge these. */
+  hostResources: Map<CspResourceDirective, Set<string>>;
+  /** Independently captured per-module grants. */
+  approvals: Map<string, Map<CspResourceDirective, Set<string>>>;
+  /** Explicit nonce targets selected by the host. */
+  nonceTargets: ('script-src' | 'style-src')[];
+  /** Module IDs already checked in sorted declaration order. */
+  ids: Set<string>;
+  /** Redacted conflicts collected before rejecting the complete policy. */
+  conflicts: PolicyConflict[];
+}
+/** Check one module's shape, identity, nonce and isolation before merging its resource requirements.
+ * @param {ModuleSecurityRequirements} request - Explicit trusted declaration, still runtime-validated.
+ * @param {PolicyCompositionContext} context - Private state belonging to this composition only.
+ * @returns {void} Collects conflicts or throws for malformed declarations.
  */
-export function createSecurityPolicy(options: SecurityPolicyOptions = {}) {
+function applyModuleRequirement(
+  request: ModuleSecurityRequirements,
+  context: PolicyCompositionContext
+): void {
+  /** Owner-local state preserves sorted identity checks and original host grants. */
+  const { ids, nonceTargets, conflicts, hostIsolation } = context;
+  object(request, 'module requirement');
+  if (
+    Object.keys(request).some(
+      (key) =>
+        !['module', 'resources', 'isolation', 'requiresNonce'].includes(key)
+    )
+  ) {
+    throw new TypeError('Unknown module requirement');
+  }
+  /** Validated public module label used only for deterministic grant/conflict association. */
+  const id = request.module;
+  if (
+    typeof id !== 'string' ||
+    !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(id) ||
+    ['__proto__', 'constructor', 'prototype'].includes(id) ||
+    ids.has(id)
+  ) {
+    throw new TypeError('Invalid or duplicate policy module');
+  }
+  ids.add(id);
+  if (
+    request.requiresNonce !== undefined &&
+    typeof request.requiresNonce !== 'boolean'
+  ) {
+    throw new TypeError('Invalid module nonce requirement');
+  }
+  if (request.requiresNonce && !nonceTargets.includes('script-src')) {
+    conflicts.push({
+      module: id,
+      directive: 'script-src',
+      reason: 'nonce-disabled',
+    });
+  }
+  if (request.isolation !== undefined) {
+    object(request.isolation, 'module isolation');
+    if (
+      Object.keys(request.isolation).some(
+        (key) => !['coop', 'coep', 'corp'].includes(key)
+      )
+    ) {
+      throw new TypeError('Unknown module isolation requirement');
+    }
+    isolation(request.isolation);
+    // A module may require matching isolation but may not negotiate a weaker host setting.
+    for (const name of ['coop', 'coep', 'corp'] as const) {
+      if (
+        request.isolation[name] !== undefined &&
+        request.isolation[name] !== hostIsolation[name]
+      ) {
+        conflicts.push({
+          module: id,
+          directive: name,
+          reason: 'isolation-mismatch',
+        });
+      }
+    }
+  }
+  mergeModuleResources(request, id, context);
+}
+/** Merge only independently approved sources; an earlier module never grants another module permission.
+ * @param {ModuleSecurityRequirements} request - Shape-validated module declaration.
+ * @param {string} id - Validated unique module identity.
+ * @param {PolicyCompositionContext} context - Private host grants and accumulating output.
+ * @returns {void} Retains bounded resource sets and redacted conflicts.
+ */
+function mergeModuleResources(
+  request: ModuleSecurityRequirements,
+  id: string,
+  context: PolicyCompositionContext
+): void {
+  /** Original approvals remain separate from the mutable effective source sets. */
+  const { baseline, hostResources, approvals, mode, conflicts } = context;
+  // Check each module requirement only against original host policy and that module’s exact approvals.
+  for (const [directive, values] of resources(request.resources, mode, true)) {
+    /** Captured effective host directive set; modules may not remove its explicit prohibitions. */
+    const host = baseline.get(directive)!;
+    // Deterministically validate source grants and collect conflicts without reflecting source values.
+    for (const token of [...values].sort()) {
+      // Approvals are checked against the original host policy, never another module's grant.
+      /** Original host allowance for this directive, without another module’s grants. */
+      const explicit = hostResources.get(directive);
+      /** Whether this exact source was approved by the original host policy. */
+      const originallyAllowed =
+        explicit?.has(token) ?? (token === "'self'" && !host.has("'none'"));
+      if (host.has("'none'") && token !== "'none'") {
+        conflicts.push({
+          module: id,
+          directive,
+          reason: 'host-denies-directive',
+        });
+      } else if (token === "'none'" && !host.has(token)) {
+        conflicts.push({
+          module: id,
+          directive,
+          reason: 'incompatible-denial',
+        });
+      } else if (
+        !originallyAllowed &&
+        !host.has("'none'") &&
+        !approvals.get(id)?.get(directive)?.has(token)
+      ) {
+        conflicts.push({
+          module: id,
+          directive,
+          reason: 'source-not-approved',
+        });
+      } else {
+        host.add(token);
+      }
+      if (host.size > 64) {
+        throw new RangeError('Too many composed CSP sources');
+      }
+    }
+  }
+}
+
+/** Validate top-level host settings in their original rejection order.
+ * @param {SecurityPolicyOptions} options - Trusted configuration, still validated at runtime.
+ * @returns {'production' | 'development'} Validated explicit/default mode.
+ */
+function validatePolicyOptions(
+  options: SecurityPolicyOptions
+): 'production' | 'development' {
   object(options, 'security policy');
   if (
     Object.keys(options).some(
@@ -363,6 +511,16 @@ export function createSecurityPolicy(options: SecurityPolicyOptions = {}) {
       'Development framing is prohibited in production policy'
     );
   }
+  return mode;
+}
+
+/** Snapshot trusted host policy and module declarations before any response. No request/header inputs, nonce generation, service registration or I/O occurs here.
+ * @param {SecurityPolicyOptions} options - Explicit bounded host resources, approvals, framing, transport and isolation policy.
+ * @returns {object} Frozen inert composer; createResponse owns fresh per-response nonce generation.
+ */
+export function createSecurityPolicy(options: SecurityPolicyOptions = {}) {
+  /** Validate top-level host facts before capturing any module grants. */
+  const mode = validatePolicyOptions(options);
   /** Captured host isolation requirements against which modules are checked. */
   const hostIsolation = isolation(options);
   /** Host resource policy under composition; explicit none remains a hard prohibition. */
@@ -426,6 +584,17 @@ export function createSecurityPolicy(options: SecurityPolicyOptions = {}) {
   const ids = new Set<string>();
   /** Fixed module/directive/reason diagnostics; source URLs and secrets are excluded. */
   const conflicts: PolicyConflict[] = [];
+  /** One owner-local composition state; helpers cannot invent or share host approvals. */
+  const context: PolicyCompositionContext = {
+    mode,
+    hostIsolation,
+    baseline,
+    hostResources,
+    approvals,
+    nonceTargets,
+    ids,
+    conflicts,
+  };
   // Sort before merging so diagnostics and directives do not depend on registration order.
   for (const request of [...requests].sort((a, b) => {
     if (a?.module < b?.module) {
@@ -436,109 +605,7 @@ export function createSecurityPolicy(options: SecurityPolicyOptions = {}) {
     }
     return 0;
   })) {
-    object(request, 'module requirement');
-    if (
-      Object.keys(request).some(
-        (key) =>
-          !['module', 'resources', 'isolation', 'requiresNonce'].includes(key)
-      )
-    ) {
-      throw new TypeError('Unknown module requirement');
-    }
-    /** Validated public module label used only for deterministic grant/conflict association. */
-    const id = request.module;
-    if (
-      typeof id !== 'string' ||
-      !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(id) ||
-      ['__proto__', 'constructor', 'prototype'].includes(id) ||
-      ids.has(id)
-    ) {
-      throw new TypeError('Invalid or duplicate policy module');
-    }
-    ids.add(id);
-    if (
-      request.requiresNonce !== undefined &&
-      typeof request.requiresNonce !== 'boolean'
-    ) {
-      throw new TypeError('Invalid module nonce requirement');
-    }
-    if (request.requiresNonce && !nonceTargets.includes('script-src')) {
-      conflicts.push({
-        module: id,
-        directive: 'script-src',
-        reason: 'nonce-disabled',
-      });
-    }
-    if (request.isolation !== undefined) {
-      object(request.isolation, 'module isolation');
-      if (
-        Object.keys(request.isolation).some(
-          (key) => !['coop', 'coep', 'corp'].includes(key)
-        )
-      ) {
-        throw new TypeError('Unknown module isolation requirement');
-      }
-      isolation(request.isolation);
-      // A module may require matching isolation but may not negotiate a weaker host setting.
-      for (const name of ['coop', 'coep', 'corp'] as const) {
-        if (
-          request.isolation[name] !== undefined &&
-          request.isolation[name] !== hostIsolation[name]
-        ) {
-          conflicts.push({
-            module: id,
-            directive: name,
-            reason: 'isolation-mismatch',
-          });
-        }
-      }
-    }
-    // Check each module requirement only against original host policy and that module’s exact approvals.
-    for (const [directive, values] of resources(
-      request.resources,
-      mode,
-      true
-    )) {
-      /** Captured effective host directive set; modules may not remove its explicit prohibitions. */
-      const host = baseline.get(directive)!;
-      // Deterministically validate source grants and collect conflicts without reflecting source values.
-      for (const token of [...values].sort()) {
-        // Approvals are checked against the original host policy, never another module's grant.
-        /** Original host allowance for this directive, without another module’s grants. */
-        const explicit = hostResources.get(directive);
-        /** Whether this exact source was approved by the original host policy. */
-        const originallyAllowed =
-          explicit?.has(token) ?? (token === "'self'" && !host.has("'none'"));
-        if (host.has("'none'") && token !== "'none'") {
-          conflicts.push({
-            module: id,
-            directive,
-            reason: 'host-denies-directive',
-          });
-        } else if (token === "'none'" && !host.has(token)) {
-          conflicts.push({
-            module: id,
-            directive,
-            reason: 'incompatible-denial',
-          });
-        } else if (
-          !originallyAllowed &&
-          !host.has("'none'") &&
-          !approvals.get(id)?.get(directive)?.has(token)
-        ) {
-          conflicts.push({
-            module: id,
-            directive,
-            reason: 'source-not-approved',
-          });
-        } else {
-          host.add(token);
-        }
-        if (host.size > 64) {
-          throw new RangeError('Too many composed CSP sources');
-        }
-      }
-    }
+    applyModuleRequirement(request, context);
   }
   // Explicit none cannot coexist with a per-response nonce allowance.
   for (const directive of nonceTargets) {
@@ -626,7 +693,11 @@ export function createSecurityPolicy(options: SecurityPolicyOptions = {}) {
       }
       return Object.freeze({
         nonce,
-        headers: Object.freeze({
+        headers: Object.freeze<
+          Record<string, string> & {
+            'content-security-policy': string;
+          }
+        >({
           ...headerBase,
           'content-security-policy': csp,
         }),

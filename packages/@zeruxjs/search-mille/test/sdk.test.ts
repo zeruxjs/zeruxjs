@@ -14,7 +14,12 @@ test('official SDK builds private auth requests; transport bounds/parses bytes a
     requests = 0,
     cancelled = 0;
   /** Synthetic outgoing SDK requests captured only for fixed auth/signal/redirect assertions. */
-  const seen = [];
+  const seen: Array<{
+    url: string;
+    headers: Headers;
+    signal: RequestInit['signal'];
+    redirect: RequestInit['redirect'];
+  }> = [];
   /** Owned wrapper used by synthetic SDK or opt-in live fixtures; always await close. */
   const adapter = await createMilleSearchAdapter({
     index: 'catalog',
@@ -24,6 +29,7 @@ test('official SDK builds private auth requests; transport bounds/parses bytes a
     allowedEndpoints: ['https://meili.example'],
     apiKey: 'private-fixture-key',
     fetch: async (url, init) => {
+      assert.ok(init);
       requests++;
       seen.push({
         url: String(url),
@@ -71,8 +77,10 @@ test('official SDK builds private auth requests; transport bounds/parses bytes a
     const before = requests;
     await assert.rejects(
       adapter.health(call()),
-      (e) =>
+      (e: unknown) =>
+        e instanceof Error &&
         e.name === 'MilleBackendError' &&
+        'backendCode' in e &&
         e.backendCode === 'index_not_found' &&
         !JSON.stringify(e).includes('private')
     );
@@ -80,7 +88,11 @@ test('official SDK builds private auth requests; transport bounds/parses bytes a
     mode = 'down';
     await assert.rejects(
       adapter.health(call()),
-      (e) => e.code === 'UNAVAILABLE' && !e.message.includes('private')
+      (e: unknown) =>
+        e instanceof Error &&
+        'code' in e &&
+        e.code === 'UNAVAILABLE' &&
+        !e.message.includes('private')
     );
   } finally {
     await adapter.close();
@@ -112,7 +124,9 @@ test('owned configuration rejects insecure/unapproved endpoints and conflicting 
     { code: 'DENIED' }
   );
   await assert.rejects(
-    createMilleSearchAdapter({ ...config, tls: { rejectUnauthorized: false } }),
+    Reflect.apply(createMilleSearchAdapter, undefined, [
+      { ...config, tls: { rejectUnauthorized: false } },
+    ]),
     { code: 'INVALID' }
   );
 });

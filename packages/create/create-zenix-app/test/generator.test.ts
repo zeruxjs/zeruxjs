@@ -21,7 +21,11 @@ const root = () => fs.mkdtempSync(path.join(os.tmpdir(), 'zx088-'));
  * @param {object} extra - Synthetic environment additions; never real account secrets.
  * @returns {string} Captured UTF-8 process output or throws the child-process failure.
  */
-function run(cwd, args, extra = {}) {
+function run(
+  cwd: string,
+  args: string[],
+  extra: NodeJS.ProcessEnv = {}
+): string {
   return execFileSync(process.execPath, args, {
     cwd,
     env: { ...env, ...extra },
@@ -35,9 +39,13 @@ test('CLI help/version/dry-run and unsupported configurations leave no files; ca
   const cwd = root();
   try {
     /** Captured synthetic CLI messages used to assert help/version behavior. */
-    const output = [];
+    const output: string[] = [];
     /** Injected fixture output callbacks and isolated working directory. */
-    const io = { cwd, out: (x) => output.push(x), err: (x) => output.push(x) };
+    const io = {
+      cwd,
+      out: (x: string) => output.push(x),
+      err: (x: string) => output.push(x),
+    };
     assert.equal(await runCreateZenix(['--version'], io), 0);
     assert.equal(output[0], '0.0.4');
     assert.equal(await runCreateZenix(['--help'], io), 0);
@@ -118,7 +126,7 @@ test('generated isolated consumer builds; host prerequisites fail closed; explic
     assert.equal(pkg.private, true);
     assert.equal(pkg.dependencies.react, undefined);
     /** Explicit allowlist of local workspace dependencies for the isolated consumer. */
-    const mapping = {
+    const mapping: Record<string, string> = {
       '@zenixjs/core': 'packages/@zenixjs/core',
       '@zeruxjs/db-sqlite': 'packages/@zeruxjs/db-sqllite',
       zenixjs: 'packages/zenixjs',

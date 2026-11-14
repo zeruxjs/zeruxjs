@@ -4,10 +4,16 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
+import type { TenantPrincipal } from '@zeruxjs/auth';
+import type { ZeruxPluginApi, ZeruxRequestContext } from 'zeruxjs';
 import { once } from 'node:events';
 import { createCms, cmsRolePermissions } from '@zenixjs/core/cms';
 import { createConnector } from '@zeruxjs/db-sqlite';
-import { createZenixApplication } from 'zenixjs/application';
+import {
+  createZenixApplication,
+  type ZenixOptions,
+  type ZenixSession,
+} from 'zenixjs/application';
 import { createSqliteSetupStore } from 'zenixjs/setup-store';
 import { JSDOM } from 'jsdom';
 import { validateComponentProps } from '@zeruxjs/accessibility';
@@ -29,7 +35,7 @@ const reader = {
   permissions: cmsRolePermissions.reader,
 };
 /** Explicit synthetic opaque session bindings; no real credentials are used. */
-const sessions = {
+const sessions: Record<string, ZenixSession> = {
   admin: { principal: admin, key: 'admin-binding' },
   other: { principal: admin, key: 'other-binding' },
 };
@@ -52,13 +58,13 @@ async function fixture() {
     adapter: 'sqlite',
     connection: db,
     migrate: true,
-    resolvePrincipal: async (p) => (p === admin || p === reader ? p : null),
+    resolvePrincipal: async (p) => principal(p),
     authorizeMedia: async () => false,
   });
   /** Borrowed setup journal over the owned fixture connector. */
   const setupStore = createSqliteSetupStore({ connection: db, migrate: true });
   /** Trusted synthetic host policies; deliberately permissive fixtures are not production auth. */
-  const options = {
+  const options: ZenixOptions = {
     cms,
     scope,
     setupStore,
@@ -97,9 +103,14 @@ async function fixture() {
    * @returns {Request} Isolated in-memory request; construction starts no network operation.
    */
   function request(
-    route,
-    { method = 'GET', body, cookie = 'sid=admin', headers = {} } = {}
-  ) {
+    route: string,
+    {
+      method = 'GET',
+      body,
+      cookie = 'sid=admin',
+      headers = {},
+    }: FixtureRequestOptions = {}
+  ): Request {
     return new Request(options.origin + '/cms' + route, {
       method,
       headers: {
@@ -127,7 +138,10 @@ async function fixture() {
    * @param {object} init - Synthetic request choices.
    * @returns {Promise<Response>} Actual fixture application response.
    */
-  const call = (route, init) => app.handle(request(route, init));
+  const call = (
+    route: string,
+    init?: FixtureRequestOptions
+  ): Promise<Response> => app.handle(request(route, init));
   return {
     filename: path.join(dir, 'cms.sqlite'),
     app,
@@ -137,9 +151,9 @@ async function fixture() {
     options,
     request,
     call,
-    setCsrf: (v) => (csrfAllowed = v),
-    setRecovery: (v) => (recoveryAllowed = v),
-    setSecret: (v) => (setupSecret = v),
+    setCsrf: (v: boolean) => (csrfAllowed = v),
+    setRecovery: (v: boolean) => (recoveryAllowed = v),
+    setSecret: (v: boolean) => (setupSecret = v),
     async close() {
       await app.close();
       await cms.close();
@@ -152,7 +166,7 @@ async function fixture() {
  * @param {object} f - Owned isolated synthetic CMS fixture.
  * @returns {Promise<void>} Resolves only after checking the real setup response status.
  */
-async function setup(f) {
+async function setup(f: Awaited<ReturnType<typeof fixture>>): Promise<void> {
   /** Completed synthetic response inspected without logging private content. */
   const response = await f.call('/setup', {
     method: 'POST',
@@ -263,7 +277,7 @@ test('login, denied editor, private session-bound previews, stored XSS and publi
       body: { username: 'operator', password: 'fixture-password' },
     });
     assert.equal(login.status, 303);
-    assert.match(login.headers.get('set-cookie'), /HttpOnly/);
+    assert.match(header(login, 'set-cookie'), /HttpOnly/);
     await setup(f);
     assert.equal(
       (await f.call('/editor', { cookie: 'sid=other' })).status,
@@ -301,12 +315,12 @@ test('login, denied editor, private session-bound previews, stored XSS and publi
       body: { expected: '1' },
     });
     /** Private fixture-only preview URL kept out of diagnostics. */
-    const previewPath = p.headers.get('location').replace('/cms', '');
+    const previewPath = header(p, 'location').replace('/cms', '');
     /** Completed synthetic response inspected without logging private content. */
     const response = await f.call(previewPath);
     assert.equal(response.status, 200);
-    assert.match(response.headers.get('x-robots-tag'), /noindex/);
-    assert.match(response.headers.get('cache-control'), /no-store/);
+    assert.match(header(response, 'x-robots-tag'), /noindex/);
+    assert.match(header(response, 'cache-control'), /no-store/);
     assert.doesNotMatch(await response.text(), /<script>/i);
     assert.equal(
       (await f.call(previewPath, { cookie: 'sid=other' })).status,
@@ -325,7 +339,7 @@ test('login, denied editor, private session-bound previews, stored XSS and publi
     assert.match(html, /&lt;script&gt;/i);
     assert.match(html, /Draft only/);
     assert.doesNotMatch(html, /csrf-fixture|sid=|host-secret/);
-    assert.match(page.headers.get('content-security-policy'), /default-src/);
+    assert.match(header(page, 'content-security-policy'), /default-src/);
     assert.equal(
       (await f.call('/page', { method: 'HEAD', cookie: '' })).body,
       null
@@ -348,25 +362,25 @@ test('login, denied editor, private session-bound previews, stored XSS and publi
     /** Owned jsdom realm; finally closes it after accessibility assertions. */
     const dom = new JSDOM(await editor.text());
     try {
-      for (const control of dom.window.document.querySelectorAll(
-        'input:not([type=hidden]),textarea'
-      )) {
+      for (const control of dom.window.document.querySelectorAll<
+        HTMLInputElement | HTMLTextAreaElement
+      >('input:not([type=hidden]),textarea')) {
         assert.ok(
           dom.window.document.querySelector('label[for="' + control.id + '"]')
         );
         assert.equal(
           validateComponentProps(
             control,
-            { label: control.getAttribute('aria-label') },
+            { label: control.getAttribute('aria-label') ?? undefined },
             { root: dom.window.document, requireLabel: true }
           ).length,
           0
         );
       }
-      assert.equal(
-        dom.window.document.querySelector('textarea').value,
-        'New draft'
-      );
+      /** Stored draft must remain native text rather than executable markup. */
+      const textarea = dom.window.document.querySelector('textarea');
+      assert.ok(textarea);
+      assert.equal(textarea.value, 'New draft');
     } finally {
       dom.window.close();
     }
@@ -409,28 +423,31 @@ test('interrupted setup remains claimed and needs trusted operator recovery', as
     await f.close();
   }
 });
-test('actual Zerux Fetch registration binds reviewed origin rather than its neutral URL', async () => {
+test('registered Zerux Fetch bridge binds reviewed origin with only explicitly provided fixture capabilities', async () => {
   /** Owned isolated CMS fixture; every test closes it in finally. */
   const f = await fixture();
   /** Fixture-only route registrations used to exercise real Fetch transport binding. */
-  const routes = [];
+  const routes: Array<Parameters<ZeruxPluginApi['addRoute']>[0]> = [];
   /** Owned ephemeral loopback fixture server closed in finally; no user app starts. */
   const server = http.createServer(async (req, res) => {
     try {
       /** Exact fixture handler selected from this application's explicit registrations. */
       const route = routes.find(
-        (r) => r.pattern === new URL(req.url, 'http://localhost').pathname
+        (r) =>
+          r.pattern === new URL(req.url ?? '/', 'http://localhost').pathname
       );
       if (!route) {
         res.writeHead(404).end();
         return;
       }
-      await route.handler({
-        req,
-        res,
-        url: new URL(req.url, 'http://localhost'),
-        method: req.method,
-      });
+      await route.handler(
+        capabilities<ZeruxRequestContext>({
+          req,
+          res,
+          url: new URL(req.url ?? '/', 'http://localhost'),
+          method: req.method ?? 'GET',
+        })
+      );
     } catch {
       res.destroy();
     }
@@ -438,11 +455,16 @@ test('actual Zerux Fetch registration binds reviewed origin rather than its neut
   try {
     server.listen(0, '127.0.0.1');
     await once(server, 'listening');
-    f.options.origin = 'http://127.0.0.1:' + server.address().port;
+    /** Actual ephemeral TCP binding, checked before synthetic requests use it. */
+    const address = server.address();
+    assert.ok(address && typeof address !== 'string');
+    f.options.origin = 'http://127.0.0.1:' + address.port;
     /** Owned application under test; await close before borrowed core/store shutdown. */
     const app = createZenixApplication(f.options);
     try {
-      app.install({ addRoute: (r) => routes.push(r) });
+      app.install(
+        capabilities<ZeruxPluginApi>({ addRoute: (r) => routes.push(r) })
+      );
       /** Completed synthetic response inspected without logging private content. */
       const response = await fetch(f.options.origin + '/cms/login');
       assert.equal(response.status, 200);
@@ -453,7 +475,7 @@ test('actual Zerux Fetch registration binds reviewed origin rather than its neut
         const request = http.get(
           {
             host: '127.0.0.1',
-            port: server.address().port,
+            port: address.port,
             path: '/cms/login',
             headers: { host: 'evil.test' },
           },
@@ -477,14 +499,15 @@ test('actual Zerux Fetch registration binds reviewed origin rather than its neut
 test('close cancels cooperative host authentication, clears previews and leaves borrowed core/store open', async () => {
   /** Owned isolated CMS fixture; every test closes it in finally. */
   const f = await fixture();
-  let started;
+  let started: (() => void) | undefined;
   /** Barrier proving cooperative host authentication started before application close. */
-  const began = new Promise((r) => (started = r));
+  const began = new Promise<void>((r) => (started = r));
   /** Owned application under test; await close before borrowed core/store shutdown. */
   const app = createZenixApplication({
     ...f.options,
     authenticate: (request) =>
       new Promise((resolve, reject) => {
+        assert.ok(started);
         started();
         request.signal.addEventListener(
           'abort',
@@ -521,7 +544,7 @@ test('completed setup survives closing/reopening the durable native connection',
       adapter: 'sqlite',
       connection: db,
       migrate: false,
-      resolvePrincipal: (p) => (p === admin || p === reader ? p : null),
+      resolvePrincipal: (p) => principal(p),
       authorizeMedia: () => false,
     });
     /** Borrowed setup journal on a reopened owned native fixture connection. */
@@ -547,7 +570,10 @@ test('expired preview fails closed and unreviewed plugin configuration rejects',
   const clock = Date.now;
   try {
     assert.throws(
-      () => createZenixApplication({ ...f.options, plugins: ['unreviewed'] }),
+      () =>
+        Reflect.apply(createZenixApplication, undefined, [
+          { ...f.options, plugins: ['unreviewed'] },
+        ]),
       /Unknown/
     );
     await setup(f);
@@ -561,7 +587,7 @@ test('expired preview fails closed and unreviewed plugin configuration rejects',
       body: { expected: '1' },
     });
     /** Private fixture preview path, never published or logged. */
-    const preview = receipt.headers.get('location').replace('/cms', '');
+    const preview = header(receipt, 'location').replace('/cms', '');
     /** Fixed fixture time captured before deterministic expiry simulation. */
     const now = clock();
     Date.now = () => now + 60001;
@@ -571,3 +597,58 @@ test('expired preview fails closed and unreviewed plugin configuration rejects',
     await f.close();
   }
 });
+
+/** Synthetic form transport choices; no real account credentials or remote origin is used. */
+interface FixtureRequestOptions {
+  /** Explicit request method, default GET. */
+  method?: string;
+  /** Inert form fields or a deliberate malformed encoded form. */
+  body?: string | Record<string, string>;
+  /** Opaque fixture session selector, not a browser role claim. */
+  cookie?: string;
+  /** Fixed header overrides for Origin/CSRF denial cases. */
+  headers?: Record<string, string>;
+}
+/** Require publication/session metadata before using it in subsequent assertions.
+ * @param {Response} response - Actual synthetic application response.
+ * @param {string} name - Expected response header.
+ * @returns {string} Present value; missing metadata fails the fixture.
+ */
+function header(response: Response, name: string): string {
+  /** Nullable native value is narrowed by the explicit presence assertion. */
+  const value = response.headers.get(name);
+  assert.ok(value !== null);
+  return value;
+}
+
+/** Resolve only the two explicitly owned fixture identities; never infer a principal from a request role.
+ * @param {unknown} value - Synthetic host proof passed through the actual core boundary.
+ * @returns {TenantPrincipal | null} Known fixture identity or denied proof.
+ */
+function principal(value: unknown): TenantPrincipal | null {
+  if (value === admin) {
+    return admin;
+  }
+  if (value === reader) {
+    return reader;
+  }
+  return null;
+}
+/** Deliberate partial framework transport probe; unsupported capabilities throw rather than fake success.
+ * @template T
+ * @param {Partial<T>} value - Explicit typed capabilities exercised by this bridge-only fixture.
+ * @returns {T} Guarded test double, not a complete framework runtime or plugin implementation.
+ */
+function capabilities<T extends object>(value: Partial<T>): T {
+  return new Proxy(value, {
+    get(target, key, receiver) {
+      if (!Object.hasOwn(target, key)) {
+        throw new Error(`Unexpected fixture capability: ${String(key)}`);
+      }
+      return Reflect.get(target, key, receiver);
+    },
+    set() {
+      throw new Error('Fixture capabilities are borrowed');
+    },
+  }) as T;
+}

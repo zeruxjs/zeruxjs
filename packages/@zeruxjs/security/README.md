@@ -390,3 +390,9 @@ JWKS responses must be JSON with 1–16 unique-kid asymmetric signing keys. The 
 Verifier tokens are capped at 16 KiB; verification pending work defaults to 32 (maximum 256) and timeout to 2 seconds (maximum 120 seconds). Signer pending work has the same configurable count bound. Verification accepts an optional signal/absolute Unix-millisecond deadline. Cancellation rejects the caller, but retains its native pending slot until actual settlement. Store/network transports must cooperate; `close()` drains and may wait for an uncooperative dependency. Set `ownJwks:true` only when the verifier owns that source; otherwise close it separately. JWKS fetch state and verification diagnostics contain only counts/closed state, not URLs, tokens or keys.
 
 Fixed `JwtVerificationError.code` values are `JWT_REJECTED`, `JWT_UNAVAILABLE`, `JWT_OVERLOAD`, `JWT_CLOSED`. Messages never include claims/keys/URLs. Original JOSE/network/replay causes remain private server diagnostics and must not be serialized to clients. Issuance never grants authorization automatically. See [JOSE verification options](https://github.com/panva/jose/blob/main/docs/jwt/verify/interfaces/JWTVerifyOptions.md) for the maintained primitive; this wrapper intentionally narrows its supported profiles.
+
+The composed response exposes a readonly string header map, including the required
+CSP field and configured isolation/framing headers. Its synchronous implementation
+validates top-level host settings, then applies each sorted module declaration and
+merges independently approved resource sets. Original host grants remain separate
+from effective output: one module cannot grant permissions to a later module.

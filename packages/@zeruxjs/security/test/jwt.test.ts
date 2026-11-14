@@ -1,18 +1,25 @@
+import type {
+  JwtVerificationPolicy,
+  JwtVerificationKey,
+  JwtReplayStore,
+  JwtSignerOptions,
+} from '@zeruxjs/security/jwt';
+import type { JWK } from 'jose';
 import { createRequire } from 'node:module';
 /** CommonJS bridge retained for the package's existing require-based fixtures. */
 const require = createRequire(import.meta.url);
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
-const { test } = require('node:test');
+const { test }: typeof import('node:test') = require('node:test');
 /** Native strict assertions; failures must remain visible after fixture cleanup. */
-const assert = require('node:assert/strict');
+const assert: typeof import('node:assert/strict') = require('node:assert/strict');
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
-const { randomBytes } = require('node:crypto');
+const { randomBytes }: typeof import('node:crypto') = require('node:crypto');
 /** Built public security exports under test; tests never import private source aliases. */
-const security = require('../dist/jwt-entry.js');
+const security: typeof import('@zeruxjs/security/jwt') = require('../dist/jwt-entry.js');
 /** Installed maintained JOSE runtime exercised with local synthetic keys; no model/provider network. */
-const jose = require('jose');
+const jose: typeof import('jose') = require('jose');
 /** Exact explicit synthetic issuer/audience/type/claim/clock verification policy. */
-const base = {
+const base: JwtVerificationPolicy = {
   algorithms: ['HS256'],
   issuer: 'https://issuer.example',
   audience: 'client',
@@ -31,7 +38,7 @@ const claims = {
   iat: 1000,
 };
 /** Ephemeral local symmetric JWK fixture; never printed or sent to a remote source. */
-const hs = {
+const hs: JwtVerificationKey = {
   kty: 'oct',
   k: randomBytes(64).toString('base64url'),
   alg: 'HS256',
@@ -43,7 +50,11 @@ const hs = {
  * @param {object} header - Explicit synthetic protected-header overrides for negative tests.
  * @returns {Promise<string>} Locally signed fixture token.
  */
-async function sign(payload = claims, key = hs, header = {}) {
+async function sign(
+  payload: Record<string, unknown> = claims,
+  key: JWK & { alg: string; kid: string } = hs,
+  header: Record<string, unknown> = {}
+): Promise<string> {
   /** Native JOSE key imported only for local fixture signing. */
   const imported = await jose.importJWK(key, key.alg);
   return new jose.SignJWT(payload)
@@ -90,10 +101,12 @@ test('JWT claim/algorithm/type/key policy is explicit and malformed dates fail',
     const none = `${Buffer.from(JSON.stringify({ alg: 'none', kid: 'key', typ: 'JWT' })).toString('base64url')}.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.`;
     await assert.rejects(verifier.verify(none), { code: 'JWT_REJECTED' });
     assert.throws(() =>
-      security.createJwtVerifier({
-        policy: { ...base, algorithms: ['none'] },
-        keys: [hs],
-      })
+      Reflect.apply(security.createJwtVerifier, security, [
+        {
+          policy: { ...base, algorithms: ['none'] },
+          keys: [hs],
+        },
+      ])
     );
     assert.throws(() => security.validateJwtKey({ ...hs, k: 'YQ' }), {
       code: 'JWT_REJECTED',
@@ -148,11 +161,11 @@ test('iat only has an age/future policy when declared; optional typ remains expl
 });
 test('atomic JTI consume occurs only after verification, concurrent replay denied, outage is unavailable', async () => {
   /** Fixture-only replay reservations; atomic insert semantics are controlled explicitly. */
-  const seen = new Set();
+  const seen = new Set<string>();
   /** Synthetic replay-store input ledger used to assert opaque identities. */
-  const input = [];
+  const input: Parameters<JwtReplayStore['consume']>[0][] = [];
   /** Injected synthetic atomic/replay store; persistence/atomicity claims extend only to this fixture. */
-  const store = {
+  const store: JwtReplayStore = {
     async consume(value) {
       input.push(value);
       if (seen.has(value.key)) {
@@ -206,7 +219,9 @@ test('atomic JTI consume occurs only after verification, concurrent replay denie
     await assert.rejects(
       outage.verify(await sign({ ...claims, jti: 'x' })),
       (error) =>
-        error.code === 'JWT_UNAVAILABLE' && !error.message.includes('private')
+        error instanceof security.JwtVerificationError &&
+        error.code === 'JWT_UNAVAILABLE' &&
+        !error.message.includes('private')
     );
   } finally {
     await outage.close();
@@ -229,7 +244,7 @@ test('advertised JOSE variants use real runtime keys; disallowed curves and key 
     'ES384',
     'ES512',
     'EdDSA',
-  ]) {
+  ] as const) {
     let signing, key;
     if (algorithm.startsWith('HS')) {
       key = { ...hs, alg: algorithm };
@@ -289,7 +304,10 @@ test('advertised JOSE variants use real runtime keys; disallowed curves and key 
       alg: 'ES256K',
     },
   ]) {
-    assert.throws(() => security.validateJwtKey(key), { code: 'JWT_REJECTED' });
+    assert.throws(
+      () => Reflect.apply(security.validateJwtKey, security, [key]),
+      { code: 'JWT_REJECTED' }
+    );
   }
 });
 test('bounded JWKS rotation, failed refresh, no stale expired keys and cancelled readers', async () => {
@@ -329,7 +347,9 @@ test('bounded JWKS rotation, failed refresh, no stale expired keys and cancelled
     await assert.rejects(
       source.getKeys('two'),
       (error) =>
-        error.code === 'JWT_UNAVAILABLE' && !error.message.includes('secret')
+        error instanceof security.JwtVerificationError &&
+        error.code === 'JWT_UNAVAILABLE' &&
+        !error.message.includes('secret')
     );
   } finally {
     await source.close();
@@ -413,19 +433,24 @@ test('verification cancellation retains native slot until settlement and close r
   /** Explicit synthetic key/record input or fresh random key factory; never production secret material. */
   const key = {
     ...(await jose.exportJWK(pair.publicKey)),
-    alg: 'ES256',
+    alg: 'ES256' as const,
     kid: 'key',
   };
-  let release,
-    started,
-    closes = 0;
+  let release: (() => void) | undefined;
+  let started: (() => void) | undefined;
+  let closes = 0;
   /** Fixture readiness promise released by the deliberately held borrowed dependency. */
-  const ready = new Promise((resolve) => (started = resolve));
+  const ready = new Promise<void>((resolve) => {
+    started = resolve;
+  });
   /** Owned explicit JWKS fixture with injected bounded transport; always close it. */
   const source = {
     getKeys: async () => {
+      assert.ok(started);
       started();
-      await new Promise((resolve) => (release = resolve));
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
       return [key];
     },
     close() {
@@ -462,6 +487,7 @@ test('verification cancellation retains native slot until settlement and close r
   const closing = verifier.close().then(() => (settled = true));
   await Promise.resolve();
   assert.equal(settled, false);
+  assert.ok(release);
   release();
   await closing;
   assert.equal(closes, 0);
@@ -472,7 +498,7 @@ test('JWKS malformed/oversized payload and symmetric remote keys are unavailable
   for (const [body, maxBytes] of [
     [JSON.stringify({ keys: [hs] }), 1000],
     ['{'.repeat(100), 20],
-  ]) {
+  ] as const) {
     let cancelled = 0;
     /** Owned explicit JWKS fixture with injected bounded transport; always close it. */
     const source = security.createJwtJwks({
@@ -505,7 +531,7 @@ test('JWKS malformed/oversized payload and symmetric remote keys are unavailable
   }
 });
 test('asymmetric signer uses required bounded private material for RSA, EC and Ed25519', async () => {
-  for (const algorithm of ['PS256', 'ES256', 'EdDSA']) {
+  for (const algorithm of ['PS256', 'ES256', 'EdDSA'] as const) {
     /** Real ephemeral native/JOSE keypair; no provider or disk key store is contacted. */
     const pair = await jose.generateKeyPair(algorithm, { extractable: true });
     /** Ephemeral public verification JWK; asymmetric private material must not enter remote key sets. */
@@ -517,7 +543,7 @@ test('asymmetric signer uses required bounded private material for RSA, EC and E
     /** Explicit synthetic key material; fixture values are not production credentials. */
     const secret = await jose.exportJWK(pair.privateKey);
     /** Explicit synthetic policy input under test; mutation cannot silently widen captured state. */
-    const options = {
+    const options: JwtSignerOptions = {
       key: secret,
       kid: pub.kid,
       algorithm,
@@ -556,7 +582,9 @@ test('asymmetric signer uses required bounded private material for RSA, EC and E
           key: { ...secret, d: 'A'.repeat(2000) },
         }),
       (error) =>
-        error.code === 'JWT_REJECTED' && !error.message.includes('AAAA')
+        error instanceof security.JwtVerificationError &&
+        error.code === 'JWT_REJECTED' &&
+        !error.message.includes('AAAA')
     );
   }
 });

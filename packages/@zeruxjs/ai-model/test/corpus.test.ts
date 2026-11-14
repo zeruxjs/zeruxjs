@@ -114,10 +114,11 @@ test('deterministic corpus, metadata, incremental changed/removed files and no s
     });
     assert.deepEqual(removed.changes.removed, [doc]);
     assert.ok(
-      !removed.snapshot.documents.some((d) => d.metadata.sourcePath === doc)
+      !removed.snapshot.documents.some((d) => d.metadata?.sourcePath === doc)
     );
     // Every surviving chunk must retain content/package/symbol provenance after deletion.
     for (const d of removed.snapshot.documents) {
+      assert.ok(d.metadata);
       assert.ok(d.metadata.contentHash);
       assert.ok(d.metadata.packageVersion);
       assert.ok(d.metadata.symbols);
@@ -277,9 +278,12 @@ test('source-text hash binding survives envelope rehash, export mismatch rejects
    * @param {unknown} value - Synthetic JSON-compatible value; never evaluated as source.
    * @returns {string} Deterministic sorted-key JSON matching the fixture envelope policy.
    */
-  const canonical = (value) => {
+  const canonical = (value: unknown): string => {
     if (value === null || typeof value !== 'object') {
-      return JSON.stringify(value);
+      /** Fixture envelope values must have a JSON representation. */
+      const encoded = JSON.stringify(value);
+      assert.ok(encoded !== undefined);
+      return encoded;
     }
     if (Array.isArray(value)) {
       return '[' + value.map(canonical).join(',') + ']';
@@ -288,7 +292,12 @@ test('source-text hash binding survives envelope rehash, export mismatch rejects
       '{' +
       Object.keys(value)
         .sort()
-        .map((k) => JSON.stringify(k) + ':' + canonical(value[k]))
+        .map(
+          (k) =>
+            JSON.stringify(k) +
+            ':' +
+            canonical((value as Record<string, unknown>)[k])
+        )
         .join(',') +
       '}'
     );

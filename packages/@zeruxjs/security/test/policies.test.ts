@@ -2,29 +2,45 @@ import { createRequire } from 'node:module';
 /** CommonJS bridge retained for the package's existing require-based fixtures. */
 const require = createRequire(import.meta.url);
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
-const { test, mock } = require('node:test');
+const { test, mock }: typeof import('node:test') = require('node:test');
 /** Native strict assertions; failures must remain visible after fixture cleanup. */
-const assert = require('node:assert/strict');
+const assert: typeof import('node:assert/strict') = require('node:assert/strict');
 /** Native crypto module used for real algorithm fixtures and scoped failure injection. */
-const crypto = require('node:crypto');
+const crypto: typeof import('node:crypto') = require('node:crypto');
 /** Native isolated expression evaluation used only to verify generated encoder output, never untrusted server input. */
-const vm = require('node:vm');
+const vm: typeof import('node:vm') = require('node:vm');
 /** Native filesystem owner used only within private temporary consumer fixtures. */
-const fs = require('node:fs');
+const fs: typeof import('node:fs') = require('node:fs');
 /** Native temporary-directory discovery; no operator application paths are inspected. */
-const os = require('node:os');
+const os: typeof import('node:os') = require('node:os');
 /** Native path helpers for fixture-owned directories, never caller-selected shell interpolation. */
-const path = require('node:path');
+const path: typeof import('node:path') = require('node:path');
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
-const { execFileSync } = require('node:child_process');
+const {
+  execFileSync,
+}: typeof import('node:child_process') = require('node:child_process');
 /** Built public security exports under test; tests never import private source aliases. */
-const security = require('../dist/index.js');
+const security: typeof import('@zeruxjs/security') = require('../dist/index.js');
 /**
  * Explicit synthetic key/record input or fresh random key factory; never production secret material.
  * @param {string} id - Public synthetic key label; defaults to active.
  * @returns {object} Fresh native32-byte ephemeral key fixture.
  */
 const key = (id = 'active') => ({ id, key: crypto.randomBytes(32) });
+
+/** Validate npm archive receipts before treating their filenames as paths.
+ * @param {unknown} value - Parsed npm JSON, not an executable module.
+ * @returns {string} Explicit archive filename from the owned local pack command.
+ */
+function archiveFilename(value: unknown): string {
+  assert.ok(
+    value &&
+      typeof value === 'object' &&
+      'filename' in value &&
+      typeof value.filename === 'string'
+  );
+  return value.filename;
+}
 
 test('destination encoders block script/style breaking values and preserve legacy JSON behavior', () => {
   /** Fixed untrusted markup/control fixture; evaluation is confined to encoder-output assertions. */
@@ -254,17 +270,21 @@ test('algorithms, keys, limits and metadata fail closed without revealing inputs
   }
   assert.throws(
     () =>
-      security.createEncryptionKeyring({
-        current: { id: 'test', key: privateValue },
-      }),
+      Reflect.apply(security.createEncryptionKeyring, security, [
+        {
+          current: { id: 'test', key: privateValue },
+        },
+      ]),
     (error) => !String(error).includes(privateValue)
   );
   assert.throws(
     () =>
-      security.createEncryptionKeyring({
-        current: key(),
-        algorithm: privateValue,
-      }),
+      Reflect.apply(security.createEncryptionKeyring, security, [
+        {
+          current: key(),
+          algorithm: privateValue,
+        },
+      ]),
     (error) => !String(error).includes(privateValue)
   );
   /** Ephemeral current key fixture selected for new records. */
@@ -274,7 +294,10 @@ test('algorithms, keys, limits and metadata fail closed without revealing inputs
     /duplicate/
   );
   assert.throws(
-    () => security.createMessageAuthenticator({ current, algorithm: 'sha1' }),
+    () =>
+      Reflect.apply(security.createMessageAuthenticator, security, [
+        { current, algorithm: 'sha1' },
+      ]),
     /Unsupported/
   );
   assert.throws(
@@ -301,7 +324,7 @@ test('algorithms, keys, limits and metadata fail closed without revealing inputs
   }
   for (const algorithm of ['md5', 'sha1', 'private-secret-value']) {
     assert.throws(
-      () => security.hashData('private', algorithm),
+      () => Reflect.apply(security.hashData, security, ['private', algorithm]),
       (error) => !String(error).includes('private-secret-value')
     );
   }
@@ -349,43 +372,66 @@ test('native crypto dependency failures propagate separately from authentication
 test('runtime header policies and CSRF remain bounded and reject async or injected decisions', () => {
   assert.throws(
     () =>
-      security.serializeCookie('session', 'private', {
-        sameSite: 'Lax\r\nInjected: true',
-      }),
+      Reflect.apply(security.serializeCookie, security, [
+        'session',
+        'private',
+        {
+          sameSite: 'Lax\r\nInjected: true',
+        },
+      ]),
     /SameSite/
   );
   assert.throws(
-    () => security.serializeCookie('session', 'private', { secure: 'false' }),
+    () =>
+      Reflect.apply(security.serializeCookie, security, [
+        'session',
+        'private',
+        { secure: 'false' },
+      ]),
     /flag/
   );
   assert.throws(
     () =>
-      security.createSecurityHeaders({
-        frameOptions: 'DENY\r\nInjected: true',
-      }),
+      Reflect.apply(security.createSecurityHeaders, security, [
+        {
+          frameOptions: 'DENY\r\nInjected: true',
+        },
+      ]),
     /frame policy/
   );
   assert.throws(
-    () => security.createSecurityHeaders({ referrerPolicy: 'unknown' }),
+    () =>
+      Reflect.apply(security.createSecurityHeaders, security, [
+        { referrerPolicy: 'unknown' },
+      ]),
     /referrer policy/
   );
   assert.throws(
     () =>
-      security.evaluateCors('https://example.test', {
-        origins: async () => true,
-      }),
+      Reflect.apply(security.evaluateCors, security, [
+        'https://example.test',
+        {
+          origins: async () => true,
+        },
+      ]),
     /synchronous/
   );
   assert.throws(
     () =>
-      security.evaluateCors('https://example.test', {
-        origins: () => Promise.reject(new Error('predicate failure')),
-      }),
+      Reflect.apply(security.evaluateCors, security, [
+        'https://example.test',
+        {
+          origins: () => Promise.reject(new Error('predicate failure')),
+        },
+      ]),
     /synchronous/
   );
   assert.throws(
     () =>
-      security.evaluateCors('https://example.test', { origins: () => 'yes' }),
+      Reflect.apply(security.evaluateCors, security, [
+        'https://example.test',
+        { origins: () => 'yes' },
+      ]),
     /synchronous/
   );
   assert.equal(
@@ -403,7 +449,7 @@ test('runtime header policies and CSRF remain bounded and reject async or inject
   const token = csrf.issue('session');
   secret.fill(2);
   assert.equal(csrf.verify(token, 'session'), true);
-  assert.equal(csrf.verify([], 'session'), false);
+  assert.equal(Reflect.apply(csrf.verify, csrf, [[], 'session']), false);
   assert.equal(csrf.verify(token, 'other-session'), false);
   assert.throws(
     () =>
@@ -423,7 +469,7 @@ test('installed exports and declarations work through shared tooling without sou
      * @param {string[]} args - Explicit npm arguments passed without shell interpolation.
      * @returns {string} Captured stdout; child failures/timeouts propagate.
      */
-    const npm = (args) =>
+    const npm = (args: string[]): string =>
       execFileSync('npm', [...args, '--cache', path.join(root, 'cache')], {
         cwd: root,
         encoding: 'utf8',
@@ -434,7 +480,7 @@ test('installed exports and declarations work through shared tooling without sou
       JSON.parse(
         npm([
           'pack',
-          path.resolve(__dirname, '..'),
+          path.resolve(import.meta.dirname, '..'),
           '--ignore-scripts',
           '--json',
           '--pack-destination',
@@ -443,8 +489,8 @@ test('installed exports and declarations work through shared tooling without sou
       )
     )[0];
     /** Private offline consumer dependency map using only locally packed installed sources. */
-    const deps = {
-      '@zeruxjs/security': `file:${path.join(root, packed.filename)}`,
+    const deps: Record<string, string> = {
+      '@zeruxjs/security': `file:${path.join(root, archiveFilename(packed))}`,
     };
     for (const name of ['@types/node', 'undici-types', 'jose']) {
       /** Installed public package manifest path used to prepare the isolated offline consumer. */
@@ -462,7 +508,7 @@ test('installed exports and declarations work through shared tooling without sou
           ])
         )
       )[0];
-      deps[name] = `file:${path.join(root, dependency.filename)}`;
+      deps[name] = `file:${path.join(root, archiveFilename(dependency))}`;
     }
     fs.writeFileSync(
       path.join(root, 'package.json'),

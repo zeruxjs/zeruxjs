@@ -2,9 +2,9 @@ import { createRequire } from 'node:module';
 /** CommonJS bridge retained for the package's existing require-based fixtures. */
 const require = createRequire(import.meta.url);
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
-const { test } = require('node:test');
+const { test }: typeof import('node:test') = require('node:test');
 /** Native strict assertions; failures must remain visible after fixture cleanup. */
-const assert = require('node:assert/strict');
+const assert: typeof import('node:assert/strict') = require('node:assert/strict');
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
 const {
   createCsrfProtection,
@@ -14,7 +14,7 @@ const {
   serializeCookie,
   sanitizeRelativeAssetPath,
   buildContentSecurityPolicy,
-} = require('../dist/index.js');
+}: typeof import('@zeruxjs/security') = require('../dist/index.js');
 test('CSRF tokens bind session, time, and secret', () => {
   let now = 1000000;
   /** Independent legacy CSRF manager bound to a synthetic explicit secret/session. */
@@ -98,7 +98,9 @@ test('bounded limiter resets after expiry', () => {
 });
 test('security regression: bounded nonce, encoded traversals, and cookie control characters', () => {
   /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
-  const { createNonce } = require('../dist/index.js');
+  const {
+    createNonce,
+  }: typeof import('@zeruxjs/security') = require('../dist/index.js');
   assert.throws(() => createNonce(2 ** 24), /nonce size/i);
   assert.throws(() => createNonce(0), /nonce size/i);
   assert.ok(createNonce(16).length >= 22);
@@ -124,7 +126,9 @@ test('security regression: bounded nonce, encoded traversals, and cookie control
 });
 test('security parsers remain bounded and reject malicious randomized input', () => {
   /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
-  const { createNonce } = require('../dist/index.js');
+  const {
+    createNonce,
+  }: typeof import('@zeruxjs/security') = require('../dist/index.js');
   let s = 1234567;
   for (let i = 0; i < 2500; i++) {
     s = (Math.imul(s, 1664525) + 1013904223) >>> 0;

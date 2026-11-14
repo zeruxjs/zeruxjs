@@ -99,6 +99,7 @@
     "sample-packages/*"
   ],
   "devDependencies": {
+    "@types/jsdom": "30.0.0",
     "@zeruxjs/lint": "0.0.4",
     "@zeruxjs/performance": "0.0.4",
     "@zeruxjs/typescript": "0.0.4",

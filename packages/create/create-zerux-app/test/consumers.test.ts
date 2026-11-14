@@ -4,7 +4,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { createRequire } from 'node:module';
-import { execFileSync } from 'node:child_process';
+import {
+  execFileSync,
+  type ExecFileSyncOptionsWithStringEncoding,
+} from 'node:child_process';
 import { planZeruxApp } from 'create-zerux-js';
 import { writeProjectPlanAsync } from 'zclivo';
 /** Resolver for explicitly named installed packages; no arbitrary package discovery is executed. */
@@ -18,9 +21,13 @@ delete childEnv.NODE_TEST_CONTEXT;
  * @param {string} command - Trusted explicit executable.
  * @param {string[]} args - Trusted argument array, never shell-interpolated.
  * @param {object} options - Owned fixture cwd, encoding and finite deadline.
- * @returns {Buffer | string} Captured process output; throws when the child fails.
+ * @returns {string} Captured process output; throws when the child fails.
  */
-function execute(command, args, options) {
+function execute(
+  command: string,
+  args: string[],
+  options: ExecFileSyncOptionsWithStringEncoding
+): string {
   try {
     return execFileSync(command, args, {
       ...options,
@@ -28,12 +35,17 @@ function execute(command, args, options) {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
   } catch (error) {
+    assert.ok(error instanceof Error);
+    /** Child diagnostics are narrowed independently; bounded previews never execute output. */
+    const stdout = 'stdout' in error ? error.stdout : '';
+    /** Prefer bounded stderr when the native subprocess supplied it. */
+    const stderr = 'stderr' in error ? error.stderr : error.message;
     throw new Error(
       command +
         ' failed: ' +
-        String(error.stdout ?? '').slice(0, 3500) +
+        String(stdout ?? '').slice(0, 3500) +
         '\n' +
-        String(error.stderr ?? error.message).slice(0, 1500)
+        String(stderr ?? error.message).slice(0, 1500)
     );
   }
 }
@@ -41,17 +53,19 @@ function execute(command, args, options) {
  * @param {string} name - Dependency declared by the validated generated manifest.
  * @returns {string} Local installed package root; no network discovery or execution.
  */
-function dependency(name) {
+function dependency(name: string): string {
   if (name === 'typescript') {
     return path.dirname(require.resolve('typescript/package.json'));
   }
   /** Explicit mapping of selected local framework/renderer packages for offline fixtures. */
-  const workspace = {
+  const mapping: Record<string, string> = {
     zeruxjs: 'packages/zeruxjs',
     zyrojs: 'packages/zyrojs',
     '@zeruxjs/react': 'packages/@zeruxjs/react',
     '@zeruxjs/vue': 'packages/@zeruxjs/vue',
-  }[name];
+  };
+  /** Exact selected local dependency; absent entries resolve through their installed manifest. */
+  const workspace = mapping[name];
   return workspace
     ? path.join(repository, workspace)
     : path.dirname(require.resolve(name + '/package.json'));
@@ -66,7 +80,7 @@ test(
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zx086-consumers-'));
     try {
       for (const renderer of ['zyro', 'react', 'vue']) {
-        for (const language of ['javascript', 'typescript']) {
+        for (const language of ['javascript', 'typescript'] as const) {
           await t.test(renderer + ' ' + language, async () => {
             /** New isolated app directory for one renderer/language pair. */
             const destination = path.join(root, renderer + '-' + language);
@@ -84,7 +98,7 @@ test(
              * @param {string[]} args - Trusted explicit npm arguments without shell interpolation.
              * @returns {string} Captured UTF-8 child-process output.
              */
-            const run = (args) =>
+            const run = (args: string[]): string =>
               execute('npm', [...args, '--cache', path.join(root, 'cache')], {
                 cwd: destination,
                 encoding: 'utf8',

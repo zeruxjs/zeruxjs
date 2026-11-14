@@ -9,11 +9,12 @@ import { generateRepositoryCorpus } from '@zeruxjs/ai-model/corpus';
 import { createKnowledgeBase } from '@zeruxjs/ai-model';
 import {
   createEvidenceRetriever,
+  type EmbeddingEvidenceIndex,
   createEvidenceAssistant,
   validateEvidenceCitations,
 } from '@zeruxjs/ai-model/evidence';
 /** Fixed public multilingual/adversarial corpus, including a hidden source and repeated-keyword distractor. */
-const data = {
+const data: Record<string, string> = {
   'routing.md': 'Routing uses explicit request handlers.',
   'cache.md': 'Cache policies keep personalized content private.',
   'session.md': 'Session records require fresh authorization.',
@@ -93,7 +94,7 @@ test('declared query corpus compares old and weighted ranking with fixed corpus/
     const base = createKnowledgeBase();
     base.addMany(
       f.snapshot.documents.filter(
-        (d) => !d.metadata.sourcePath.endsWith('/hidden.md')
+        (d) => !d.metadata?.sourcePath.endsWith('/hidden.md')
       )
     );
     let baseline = 0,
@@ -104,7 +105,7 @@ test('declared query corpus compares old and weighted ranking with fixed corpus/
     // Use the same fixed labeled queries for both ranking configurations.
     for (const [query, expected] of queries) {
       /** Legacy top source from the exact same authorized population used by configured retrieval. */
-      const old = base.search(query, 1)[0]?.document.metadata.sourcePath;
+      const old = base.search(query, 1)[0]?.document.metadata?.sourcePath;
       if (old?.endsWith('/' + expected)) {
         baseline++;
       }
@@ -161,7 +162,10 @@ test('full prompt budgets, deterministic ties, duplicate/overlap removal and exa
     // Verify spans against original indexed Unicode text, independently of relevance scores.
     for (const s of result.sources) {
       /** Original public fixture source reconstructs the claimed Unicode-code-point span. */
-      const original = data[s.sourceId.split('/').at(-1)];
+      const sourceName = s.sourceId.split('/').at(-1);
+      assert.ok(sourceName);
+      /** Public original text selected by the validated source basename. */
+      const original = data[sourceName];
       if (original) {
         assert.equal(
           Array.from(original).slice(s.span.start, s.span.end).join(''),
@@ -238,6 +242,7 @@ test('thresholds/insufficient evidence prevent provider calls and citations must
       chat: async (messages) => {
         /** Fixture extracts only a returned serialized evidence ID to build its synthetic response. */
         const match = messages[1].content.match(/"id":"([^"]+)"/);
+        assert.ok(match);
         return 'Supported [evidence:' + match[1] + ']';
       },
     });
@@ -254,7 +259,7 @@ test('embedding receives authorized-only documents; unauthorized hits, outage an
   let invoked = 0,
     borrowedClose = 0;
   /** Explicit local embedding fixture records authorized candidates without generating/uploading vectors. */
-  const index = {
+  const index: EmbeddingEvidenceIndex = {
     capability: 'authorized-candidates-v1',
     location: 'local',
     model: 'fixture-v1',
@@ -264,13 +269,16 @@ test('embedding receives authorized-only documents; unauthorized hits, outage an
       assert.ok(
         input.documents.every((d) => !d.text.includes('HIDDEN_FIXTURE'))
       );
+      /** Returned fixture identity must be one of the submitted authorized candidates. */
+      const selected = input.documents.find((d) =>
+        d.metadata?.sourcePath.endsWith('/routing.md')
+      );
+      assert.ok(selected);
       return {
         coverage: 'partial',
         hits: [
           {
-            id: input.documents.find((d) =>
-              d.metadata.sourcePath.endsWith('/routing.md')
-            ).id,
+            id: selected.id,
             score: 0.9,
           },
         ],
@@ -308,8 +316,9 @@ test('embedding receives authorized-only documents; unauthorized hits, outage an
     await remote.close();
     /** Denied document identity is used only to forge a negative adapter hit. */
     const hidden = f.snapshot.documents.find((d) =>
-      d.metadata.sourcePath.endsWith('/hidden.md')
+      d.metadata?.sourcePath.endsWith('/hidden.md')
     );
+    assert.ok(hidden);
     /** Injected adapter returns a denied ID; result validation must fail closed. */
     const forged = createEvidenceRetriever(f.snapshot, {
       ...config(f.snapshot),
@@ -345,8 +354,10 @@ test('embedding receives authorized-only documents; unauthorized hits, outage an
 test('cancellation retains embedding slots and owned close drains native settlement', async () => {
   /** Disposable synthetic Git/filesystem fixture; finally cleanup removes its private temporary root. */
   const f = await fixture();
-  let finish,
-    closed = 0;
+  let finish:
+    | ((value: Awaited<ReturnType<EmbeddingEvidenceIndex['rank']>>) => void)
+    | undefined;
+  let closed = 0;
   /** Owned scoped retriever; fixture close drains injected adapter work before removing source files. */
   const retriever = createEvidenceRetriever(f.snapshot, {
     ...config(f.snapshot),
@@ -377,6 +388,7 @@ test('cancellation retains embedding slots and owned close drains native settlem
     const closing = retriever.close().then(() => (drained = true));
     await new Promise((r) => setImmediate(r));
     assert.equal(drained, false);
+    assert.ok(finish);
     finish({ coverage: 'complete', hits: [] });
     await closing;
     assert.equal(closed, 1);
@@ -387,8 +399,8 @@ test('cancellation retains embedding slots and owned close drains native settlem
 test('changed authorization after embedding rejects the whole ranking; custom estimators and no-room budgets fail safely', async () => {
   /** Disposable synthetic Git/filesystem fixture; finally cleanup removes its private temporary root. */
   const f = await fixture();
-  let allowed = true,
-    release;
+  let allowed = true;
+  let release: (() => void) | undefined;
   /** Owned scoped retriever; fixture close drains injected adapter work before removing source files. */
   const retriever = createEvidenceRetriever(f.snapshot, {
     ...config(f.snapshot),
@@ -412,6 +424,7 @@ test('changed authorization after embedding rejects the whole ranking; custom es
     const pending = retriever.retrieve('routing');
     await new Promise((r) => setImmediate(r));
     allowed = false;
+    assert.ok(release);
     release();
     await assert.rejects(pending, /authorization changed/);
     /** Minimal context budget returns insufficient rather than treating a tiny fragment as evidence. */
@@ -458,10 +471,10 @@ test('invalid ranking weights reject and owned resource close is idempotent', as
       })
     );
     assert.throws(() =>
-      createEvidenceRetriever(f.snapshot, {
-        ...config(f.snapshot),
-        ranking: { weights: { typo: 2 } },
-      })
+      Reflect.apply(createEvidenceRetriever, undefined, [
+        f.snapshot,
+        { ...config(f.snapshot), ranking: { weights: { typo: 2 } } },
+      ])
     );
     /** Owned scoped retriever; fixture close drains injected adapter work before removing source files. */
     const retriever = createEvidenceRetriever(f.snapshot, {

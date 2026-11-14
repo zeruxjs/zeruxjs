@@ -1,8 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { MySqlConnectionLike, MySqlPoolLike } from '@zeruxjs/db-mysql';
 import { createRequire } from 'node:module';
 /** Public native-pool wrapper under test. */
-const { createConnector } = createRequire(import.meta.url)('../dist/index.js');
+const { createConnector } = createRequire(import.meta.url)(
+  '../dist/index.js'
+) as typeof import('@zeruxjs/db-mysql');
 /** Synthetic private execution context. */
 const ctx = {
   connection: { slug: 'test', connector: 'mysql', name: 'test', options: {} },
@@ -13,19 +16,19 @@ const update = {
   table: 'jobs',
   values: { revision: 2 },
   where: { field: 'revision', operator: 'eq', value: 1 },
-};
+} as const;
 /** Provide one scripted native lease and explicit release/destroy/end counters without a server.
  * @param {string|undefined} fail - Optional fixed transaction-control statement that rejects.
  * @returns {object} Independent native-shaped pool plus observed ownership.
  */
-function fixture(fail) {
+function fixture(fail?: string) {
   /** Ordered synthetic control/execute observations without a native server. */
-  const calls = [];
+  const calls: Array<string | [string, unknown[] | undefined]> = [];
   let releases = 0,
     destroyed = 0,
     ended = 0;
   /** Scripted lease exposing query/execute/release/destroy ownership. */
-  const connection = {
+  const connection: MySqlConnectionLike = {
     query: async (sql) => {
       calls.push(sql);
       if (sql === fail) {
@@ -47,16 +50,18 @@ function fixture(fail) {
       destroyed++;
     },
   };
+  /** Borrowed native-shaped pool; no driver or server is loaded by this fixture. */
+  const pool: MySqlPoolLike = {
+    getConnection: async () => connection,
+    execute: connection.execute,
+    end: async () => {
+      ended++;
+    },
+  };
   return {
     calls,
     connection,
-    pool: {
-      getConnection: async () => connection,
-      execute: connection.execute,
-      end: async () => {
-        ended++;
-      },
-    },
+    pool,
     counts: () => ({ releases, destroyed, ended }),
   };
 }
@@ -115,9 +120,9 @@ test('callback and commit failures roll back; failed cleanup destroys', async (t
 test('late acquisition releases once and retains capacity until settlement', async (t) => {
   /** Independent borrowed native-pool fixture. */
   const f = fixture();
-  let resolve;
+  let resolve: ((value: MySqlConnectionLike) => void) | undefined;
   f.pool.getConnection = () =>
-    new Promise((r) => {
+    new Promise<MySqlConnectionLike>((r) => {
       resolve = r;
     });
   /** Owned wrapper disconnected after each test; native fixture pool stays borrowed. */
@@ -127,8 +132,9 @@ test('late acquisition releases once and retains capacity until settlement', asy
     maxPendingAcquires: 1,
   });
   t.after(() => db.disconnect());
-  await assert.rejects(db.execute(update, ctx), /deadline/);
-  await assert.rejects(db.execute(update, ctx), /capacity/);
+  await assert.rejects(async () => db.execute(update, ctx), /deadline/);
+  await assert.rejects(async () => db.execute(update, ctx), /capacity/);
+  assert.ok(resolve);
   resolve(f.connection);
   await new Promise((r) => setImmediate(r));
   assert.equal(f.counts().releases, 1);
@@ -142,7 +148,7 @@ test('unsafe config/returning reject before executing; changed counts and precis
     { ssl: 'Amazon RDS' },
     { acquireTimeoutMs: 0 },
   ]) {
-    await assert.rejects(createConnector(options));
+    await assert.rejects(Reflect.apply(createConnector, undefined, [options]));
   }
   /** Independent borrowed native-pool fixture. */
   const f = fixture();
@@ -170,14 +176,16 @@ test('unsafe config/returning reject before executing; changed counts and precis
 test('cooperative cancellation waits before rollback and release', async (t) => {
   /** Independent borrowed native-pool fixture. */
   const f = fixture();
-  let settle, started;
+  let settle: ((value: [unknown, unknown]) => void) | undefined;
+  let started: (() => void) | undefined;
   /** Handshake proving accepted native execution before cooperative abort. */
-  const ready = new Promise((r) => {
+  const ready = new Promise<void>((r) => {
     started = r;
   });
   f.connection.execute = () => {
+    assert.ok(started);
     started();
-    return new Promise((r) => {
+    return new Promise<[unknown, unknown]>((r) => {
       settle = r;
     });
   };
@@ -195,6 +203,7 @@ test('cooperative cancellation waits before rollback and release', async (t) => 
   controller.abort();
   await new Promise((r) => setImmediate(r));
   assert.equal(f.counts().releases, 0);
+  assert.ok(settle);
   settle([{ affectedRows: 1 }, []]);
   await assert.rejects(result);
   assert.equal(f.calls.at(-1), 'ROLLBACK');
@@ -205,6 +214,7 @@ test('query-only injection cannot advertise transactions', async (t) => {
   /** Owned wrapper disconnected after each test; native fixture pool stays borrowed. */
   const db = await createConnector({ executor: () => ({ affectedRows: 0 }) });
   t.after(() => db.disconnect());
+  assert.ok(db.capabilities);
   assert.equal(db.capabilities.transactions, 'unsupported');
   await assert.rejects(
     db.transaction(() => {}),
@@ -239,7 +249,7 @@ test('write tuples unwrap missing field metadata; unsafe injected integers rejec
   });
   t.after(() => unsafe.disconnect());
   await assert.rejects(
-    unsafe.execute({ op: 'select', table: 'jobs' }, ctx),
+    async () => unsafe.execute({ op: 'select', table: 'jobs' }, ctx),
     /Unsafe MySQL integer/
   );
   await unsafe.disconnect();
@@ -249,13 +259,23 @@ test('owned pool precision/TLS policies are configured lazily without networking
   const db = await createConnector({ ssl: {}, affectedRowsMode: 'changed' });
   t.after(() => db.disconnect());
   /** Lazy owned pool configuration inspected without executing or connecting. */
-  const config = db.getNativeConnection().pool.config.connectionConfig;
+  assert.ok(db.getNativeConnection);
+  /** Native diagnostic boundary must be narrowed before inspecting the fixture driver shape. */
+  const native = record(db.getNativeConnection());
+  /** Lazily created native pool, not an established database connection. */
+  const pool = record(native.pool);
+  /** Actual driver connection policy reached only after object checks. */
+  const config = record(record(pool.config).connectionConfig);
   assert.equal(config.multipleStatements, false);
   assert.equal(config.supportBigNumbers, true);
   assert.equal(config.bigNumberStrings, true);
   assert.equal(config.decimalNumbers, false);
-  assert.equal(config.ssl.rejectUnauthorized, true);
-  assert.equal(config.ssl.verifyIdentity, true);
+  /** Native TLS policy remains unknown until its object shape is checked. */
+  const ssl = record(config.ssl);
+  assert.equal(ssl.rejectUnauthorized, true);
+  assert.equal(ssl.verifyIdentity, true);
+  assert.equal(typeof config.clientFlags, 'number');
+  assert.ok(typeof config.clientFlags === 'number');
   assert.equal(config.clientFlags & 2, 0);
   await db.disconnect();
   await db.disconnect();
@@ -277,8 +297,11 @@ test('shared manager consumes MySQL pin and closes without ending borrowed pool'
     ],
   });
   try {
+    assert.ok(manager.capabilities);
+    assert.ok(manager.transaction);
     assert.equal(manager.capabilities().transactions, 'supported');
     await manager.transaction(async (tx) => {
+      assert.ok(tx.update);
       await tx.update({ table: 'jobs', values: { revision: 2 } });
       await tx.update({ table: 'jobs', values: { revision: 3 } });
     });
@@ -291,13 +314,14 @@ test('shared manager consumes MySQL pin and closes without ending borrowed pool'
 test('disconnect waits for an accepted pin before pool cleanup', async (t) => {
   /** Independent borrowed native-pool fixture. */
   const f = fixture();
-  let finish, ready;
+  let finish: (() => void) | undefined;
+  let ready: (() => void) | undefined;
   /** Handshake proving the pinned callback entered before shutdown. */
-  const started = new Promise((r) => {
+  const started = new Promise<void>((r) => {
     ready = r;
   });
   /** Explicit callback gate keeping one lease active during drain assertions. */
-  const wait = new Promise((r) => {
+  const wait = new Promise<void>((r) => {
     finish = r;
   });
   /** Owned wrapper disconnected after each test; native fixture pool stays borrowed. */
@@ -305,6 +329,7 @@ test('disconnect waits for an accepted pin before pool cleanup', async (t) => {
   t.after(() => db.disconnect());
   /** Accepted transaction whose lease cannot release before the callback completes. */
   const transaction = db.transaction(async () => {
+    assert.ok(ready);
     ready();
     await wait;
   });
@@ -317,9 +342,21 @@ test('disconnect waits for an accepted pin before pool cleanup', async (t) => {
   await new Promise((r) => setImmediate(r));
   assert.equal(closed, false);
   assert.equal(f.counts().releases, 0);
+  assert.ok(finish);
   finish();
   await transaction;
   await shutdown;
   assert.equal(f.counts().releases, 1);
   assert.equal(f.counts().ended, 0);
 });
+
+/** Narrow an unknown native diagnostic object for this synthetic driver inspection.
+ * @param {unknown} value - Native object returned through the deliberately unknown public diagnostic boundary.
+ * @returns {Record<string, unknown>} Checked record; missing native configuration fails the fixture.
+ */
+function record(value: unknown): Record<string, unknown> {
+  assert.ok(
+    value !== null && typeof value === 'object' && !Array.isArray(value)
+  );
+  return value as Record<string, unknown>;
+}

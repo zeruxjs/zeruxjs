@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { requiredMessage } from './helpers.ts';
 import {
   mkdtempSync,
   mkdirSync,
@@ -11,6 +12,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   CommandRegistry,
+  type ParsedArgs,
+  type CommandContext,
+  type OptionSchema,
   loadPlugins,
   stripTerminalCodes,
   formatError,
@@ -20,7 +24,9 @@ import {
 test('typed aliases, repeated values, booleans and separator retain positionals', async () => {
   /** Isolated command registry with only trusted synthetic handlers. */
   const registry = new CommandRegistry();
-  let captured;
+  let captured:
+    | { args: ParsedArgs; options: CommandContext['options'] }
+    | undefined;
   registry.register(
     'app',
     'build',
@@ -53,6 +59,7 @@ test('typed aliases, repeated values, booleans and separator retain positionals'
     ).exitCode,
     0
   );
+  assert.ok(captured);
   assert.deepEqual(captured.args.positionalArgs, ['file', '--help', '-d']);
   assert.deepEqual(
     { ...captured.options },
@@ -78,9 +85,12 @@ test('usage errors and conflict diagnostics do not execute handlers', async () =
       },
     }
   );
-  assert.match((await registry.dispatch('app', ['biuld'])).message, /build/);
   assert.match(
-    (await registry.dispatch('app', ['build', '--worker', '3'])).message,
+    requiredMessage(await registry.dispatch('app', ['biuld'])),
+    /build/
+  );
+  assert.match(
+    requiredMessage(await registry.dispatch('app', ['build', '--worker', '3'])),
     /Did you mean workers/
   );
   for (const args of [
@@ -94,7 +104,11 @@ test('usage errors and conflict diagnostics do not execute handlers', async () =
   }
   assert.equal(calls, 0);
   assert.throws(() => parseArguments(['--x\r\nInjected=value']));
-  assert.equal((await registry.dispatch('app', [null])).exitCode, 2);
+  assert.equal(
+    (await Reflect.apply(registry.dispatch, registry, ['app', [null]]))
+      .exitCode,
+    2
+  );
 });
 
 test('registration validates before mutation and snapshots nested definitions', () => {
@@ -106,20 +120,26 @@ test('registration validates before mutation and snapshots nested definitions', 
   );
   assert.deepEqual(registry.keywords(), []);
   assert.throws(() =>
-    registry.register('fresh', 'run', () => {}, {
-      flags: { value: { type: 'invalid' } },
-    })
+    Reflect.apply(registry.register, registry, [
+      'fresh',
+      'run',
+      () => {},
+      { flags: { value: { type: 'invalid' } } },
+    ])
   );
   /** Borrowed input schema mutated after registration to verify immutable snapshots. */
-  const flags = { mode: { type: 'string', choices: ['safe'] } };
+  const flags = {
+    mode: { type: 'string', choices: ['safe'] },
+  } satisfies OptionSchema;
   /** Borrowed input alias array mutated to prove registration isolation. */
   const aliases = ['r'];
   registry.register('app', 'run', () => {}, { flags, aliases });
   flags.mode.choices.push('unsafe');
   aliases.push('hacked');
-  assert.deepEqual(registry.lookup('app', 'run').options.flags.mode.choices, [
-    'safe',
-  ]);
+  /** Registered command snapshot must exist and retain its independent option choices. */
+  const registered = registry.lookup('app', 'run');
+  assert.ok(registered?.options.flags?.mode);
+  assert.deepEqual(registered.options.flags.mode.choices, ['safe']);
   assert.equal(registry.lookup('app', 'hacked'), undefined);
 });
 
@@ -131,7 +151,7 @@ test('async rejection retains cause and all cleanup failures while continuing LI
   /** Private synthetic cleanup failure retained separately from the handler error. */
   const cleanup = new Error('cleanup unavailable');
   /** Synthetic LIFO callback trace without application payloads. */
-  const order = [];
+  const order: number[] = [];
   registry.register('app', 'run', async (_args, context) => {
     context.onDispose(() => {
       order.push(1);
@@ -157,9 +177,9 @@ test('interruption waits for cooperative handler and clears its timer exactly on
   const registry = new CommandRegistry();
   /** Owned invocation cancellation controller; no process signal listeners are installed. */
   const controller = new AbortController();
-  let started;
+  let started: (() => void) | undefined;
   /** Synthetic barrier proving the cooperative handler acquired its timer first. */
-  const ready = new Promise((resolve) => {
+  const ready = new Promise<void>((resolve) => {
     started = resolve;
   });
   let cleaned = 0;
@@ -170,6 +190,7 @@ test('interruption waits for cooperative handler and clears its timer exactly on
       clearInterval(timer);
       cleaned++;
     });
+    assert.ok(started);
     started();
     await new Promise((resolve) =>
       context.signal.addEventListener('abort', resolve, { once: true })
@@ -186,7 +207,7 @@ test('interruption waits for cooperative handler and clears its timer exactly on
   assert.equal(result.exitCode, 130);
   assert.equal(result.cancelled, true);
   assert.equal(cleaned, 1);
-  assert.doesNotMatch(result.message, /private/);
+  assert.doesNotMatch(requiredMessage(result), /private/);
   assert.equal(
     (
       await registry.dispatch('app', ['wait'], undefined, {
@@ -234,7 +255,7 @@ function fixture() {
    * @param {string} source - Fixed authored registration source.
    * @returns {void} Writes inert fixture package files without importing them.
    */
-  const plugin = (name, source) => {
+  const plugin = (name: string, source: string): void => {
     /** Owned synthetic node_modules package directory inside this fixture only. */
     const dir = join(root, 'node_modules', name);
     mkdirSync(dir, { recursive: true });
@@ -335,9 +356,9 @@ test('plugin disposal interrupts active commands, removes owned entries and repo
 test('concurrent registration does not overwrite a live registry change', async () => {
   /** Isolated command registry with only trusted synthetic handlers. */
   const registry = new CommandRegistry();
-  let resume;
+  let resume: (() => void) | undefined;
   /** Synthetic registration barrier controlling concurrent live mutation. */
-  const gate = new Promise((resolve) => {
+  const gate = new Promise<void>((resolve) => {
     resume = resolve;
   });
   /** Owned dispatch or registration promise kept pending until the explicit fixture releases it. */
@@ -346,6 +367,7 @@ test('concurrent registration does not overwrite a live registry change', async 
     await gate;
   });
   registry.register('app', 'live', () => {});
+  assert.ok(resume);
   resume();
   await assert.rejects(pending, /Registry changed/);
   assert.equal(registry.lookup('app', 'staged'), undefined);
@@ -396,7 +418,7 @@ test('standalone entry point sanitizes unknown-command diagnostics and suggests 
   /** Explicit legacy synchronous entry used to inspect fixed diagnostic policy. */
   const { runZcli } = await import('../dist/bin.js');
   /** Captured synthetic terminal-safe output. */
-  const messages = [];
+  const messages: string[] = [];
   assert.equal(
     runZcli(
       ['creat'],
@@ -417,11 +439,7 @@ test('standalone entry point sanitizes unknown-command diagnostics and suggests 
   // eslint-disable-next-line no-control-regex -- Reject control characters in validated input; these ranges are intentional.
   assert.doesNotMatch(messages[1], /[\x1b\r]/);
   assert.equal(
-    runZcli(
-      [null],
-      () => {},
-      () => {}
-    ),
+    Reflect.apply(runZcli, undefined, [[null], () => {}, () => {}]),
     2
   );
 });

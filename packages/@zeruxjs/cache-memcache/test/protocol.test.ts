@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
 import { createMemcacheHelper } from '../dist/index.js';
@@ -7,15 +7,18 @@ import { createCacheManagerWithHelper } from '@zeruxjs/cache';
 /** Match a fixed error code without depending on private causes.
  * @param {string} name - Expected public classification.
  * @returns {(error: {code: string}) => boolean} Predicate used by assertions. */
-const code = (name) => (error) => error.code === name;
+const code =
+  (name: string) =>
+  (error: unknown): boolean =>
+    error instanceof Error && 'code' in error && error.code === name;
 /** Own an ephemeral loopback fixture and all accepted sockets until test cleanup.
  * @param {import("node:test").TestContext} t - Test cleanup owner.
  * @param {(socket: import("node:net").Socket) => void} handler - Synthetic connection behavior, never an external delegation.
  * @returns {Promise<{host: string, port: number, connections: () => number}>} Owned local endpoint and connection counter.
  */
-async function server(t, handler) {
+async function server(t: TestContext, handler: (socket: net.Socket) => void) {
   /** Fixture-owned accepted sockets, destroyed by test cleanup. */
-  const sockets = new Set();
+  const sockets = new Set<net.Socket>();
   let connections = 0;
   /** Loopback-only synthetic protocol server; not live broker acceptance. */
   const server = net.createServer((socket) => {
@@ -25,7 +28,7 @@ async function server(t, handler) {
     socket.on('error', () => {});
     handler(socket);
   });
-  await new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     server.once('error', reject);
     server.listen(0, '127.0.0.1', resolve);
   });
@@ -34,11 +37,16 @@ async function server(t, handler) {
     for (const socket of sockets) {
       socket.destroy();
     }
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
   });
+  /** Bound native TCP address checked before exposing a fixture endpoint. */
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
   return {
     host: '127.0.0.1',
-    port: server.address().port,
+    port: address.port,
     connections: () => connections,
   };
 }
@@ -46,16 +54,19 @@ async function server(t, handler) {
  * @param {import("node:test").TestContext} t - Owner of the local server and socket teardown.
  * @returns {Promise<object>} Loopback endpoint plus observable synthetic state; not broker qualification.
  */
-async function fixture(t) {
+async function fixture(t: TestContext) {
   /** Synthetic key/body map used by the byte-level fixture. */
-  const data = new Map();
+  const data = new Map<string, Buffer>();
   /** Observed command headers used for expiry and dispatch assertions. */
-  const commands = [];
+  const commands: string[][] = [];
   /** Ephemeral loopback address whose lifetime belongs to this test. */
   const endpoint = await server(t, (socket) => {
     let buffer = Buffer.alloc(0);
     socket.on('data', (chunk) => {
-      buffer = Buffer.concat([buffer, chunk]);
+      buffer = Buffer.concat([
+        buffer,
+        typeof chunk === 'string' ? Buffer.from(chunk) : chunk,
+      ]);
       /** First complete command header boundary in the buffered fixture request. */
       const end = buffer.indexOf('\r\n');
       if (end < 0) {
@@ -104,7 +115,7 @@ async function fixture(t) {
           socket.write('NOT_FOUND\r\n');
         } else {
           /** Existing fixture counter value. */
-          const n = Number(data.get(key).toString());
+          const n = Number(data.get(key)!.toString());
           /** Requested fixture counter delta. */
           const amount = Number(fields[2]);
           /** Synthetic counter result matching native decrement clamping. */
@@ -185,7 +196,7 @@ test('exact UTF-8/escape budgets, depth and legacy config reject before sockets'
       code('MEMCACHE_PAYLOAD_LIMIT')
     );
     await assert.rejects(
-      helper.touch('k', undefined),
+      Reflect.apply(helper.touch, helper, ['k', undefined]),
       code('MEMCACHE_INVALID_TTL')
     );
     assert.equal(f.connections(), 0);
@@ -196,10 +207,12 @@ test('exact UTF-8/escape budgets, depth and legacy config reject before sockets'
       { allowFlushAll: 'true' },
       { maxDepth: 0 },
     ]) {
-      assert.throws(() => createMemcacheHelper(options));
+      assert.throws(() =>
+        Reflect.apply(createMemcacheHelper, undefined, [options])
+      );
     }
     await helper.set('k', 'é');
-    assert.equal(f.data.get('k').length, 4);
+    assert.equal(f.data.get('k')?.length, 4);
     assert.equal(await helper.get('k'), 'é');
   } finally {
     await helper.close();
@@ -218,7 +231,7 @@ test('exact UTF-8/escape budgets, depth and legacy config reject before sockets'
       code('MEMCACHE_DEPTH_LIMIT')
     );
     await assert.rejects(
-      deep.setMany({ a: 'ok', 'bad key': 'bad' }),
+      async () => deep.setMany({ a: 'ok', 'bad key': 'bad' }),
       code('MEMCACHE_INVALID_KEY')
     );
     assert.equal(f.connections(), before);
@@ -260,21 +273,22 @@ test('conditional writes, TTL boundary, missing counters/clamp and namespace cle
     await helper.set('long', 'v', { ttlSeconds: 2592001 });
     /** Recorded long-TTL command header checked for absolute expiry. */
     const header = f.commands.find((c) => c[1] === 'long');
+    assert.ok(header);
     assert.ok(Number(header[3]) >= before + 2592001);
     assert.equal(f.commands[0][3], '2592000');
     assert.throws(() => a.clear(), /unsupported/);
     assert.throws(
-      () => helper.clearPrefix('a'),
+      () => helper.clearPrefix!('a'),
       code('MEMCACHE_NAMESPACE_CLEAR_UNSUPPORTED')
     );
     await assert.rejects(
-      helper.clear(),
+      async () => helper.clear(),
       code('MEMCACHE_GLOBAL_CLEAR_DISABLED')
     );
     assert.equal(await b.get('key'), 'keep');
     assert.equal(await a.get('key'), 'first');
     await assert.rejects(
-      helper.increment('missing'),
+      async () => helper.increment('missing'),
       code('MEMCACHE_COUNTER_MISSING')
     );
     await helper.set('count', 2);
@@ -350,7 +364,10 @@ test('redacted server/disconnect failures, malformed framing, JSON and reply key
     try {
       await assert.rejects(
         client.request('get k\r\n'),
-        (error) => error.code === expected && !error.message.includes('private')
+        (error: unknown) =>
+          error instanceof Error &&
+          code(expected)(error) &&
+          !error.message.includes('private')
       );
     } finally {
       client.close();
@@ -425,7 +442,13 @@ test('public dynamic cache factory negotiates Memcached capabilities and validat
       policy: { requireCapabilities: ['namespaceClear'] },
       options: { host: f.host, port: f.port },
     }),
-    (error) => error.details.code === 'CACHE_CAPABILITY_REQUIRED'
+    (error: unknown) =>
+      error instanceof Error &&
+      'details' in error &&
+      error.details !== null &&
+      typeof error.details === 'object' &&
+      'code' in error.details &&
+      error.details.code === 'CACHE_CAPABILITY_REQUIRED'
   );
   assert.equal(f.connections(), 0);
   /** Explicitly configured manager owning its helper cleanup. */

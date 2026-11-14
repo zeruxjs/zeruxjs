@@ -26,7 +26,7 @@ test('each renderer/language plan emits only selected public imports/dependencie
   try {
     assert.equal(zeruxAppGenerator.capabilities()[0].capabilities.length, 3);
     for (const renderer of ['zyro', 'react', 'vue']) {
-      for (const language of ['typescript', 'javascript']) {
+      for (const language of ['typescript', 'javascript'] as const) {
         /** New isolated target for this renderer/language combination. */
         const destination = join(root, renderer + '-' + language);
         /** Explicit public-import file plan with only the selected renderer dependencies. */
@@ -80,7 +80,7 @@ test('legacy help/version/bin names, dry-run and unavailable templates fail safe
   /** Owned temporary generation root; never an existing user application. */
   const root = temporary();
   /** Synthetic captured public CLI messages. */
-  const out = [];
+  const out: string[] = [];
   try {
     assert.equal(
       await runCreateZerux(['--version'], { out: (m) => out.push(m) }),
@@ -91,7 +91,10 @@ test('legacy help/version/bin names, dry-run and unavailable templates fail safe
       await runCreateZerux(['--help'], { out: (m) => out.push(m) }),
       0
     );
-    assert.match(out.at(-1), /zyro, react, vue/);
+    /** Help receipt must be present before checking its supported renderer list. */
+    const help = out.at(-1);
+    assert.ok(help);
+    assert.match(help, /zyro, react, vue/);
     assert.equal(
       await runCreateZerux(['new-app', '--yes', '--dry-run'], {
         cwd: root,

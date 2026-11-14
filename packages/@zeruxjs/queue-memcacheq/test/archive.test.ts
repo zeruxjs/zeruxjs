@@ -27,7 +27,7 @@ test('packed basic/worker public exports and example compile and close without c
   const workspace = resolve(packageRoot, '../../..');
   try {
     /** Local npm pack JSON receipt; nothing is published. */
-    const report = JSON.parse(
+    const report: unknown = JSON.parse(
       (
         await exec('npm', ['pack', '--json', '--pack-destination', temp], {
           cwd: packageRoot,
@@ -35,8 +35,16 @@ test('packed basic/worker public exports and example compile and close without c
         })
       ).stdout
     );
-    /** Single local archive metadata and file list. */
-    const packed = Array.isArray(report) ? report[0] : Object.values(report)[0];
+    assert.ok(report && typeof report === 'object');
+    /** npm versions return an array or a filename-keyed object; validate the selected receipt. */
+    const packed: unknown = Object.values(report)[0];
+    assert.ok(
+      packed &&
+        typeof packed === 'object' &&
+        'filename' in packed &&
+        typeof packed.filename === 'string'
+    );
+    assert.ok('files' in packed && Array.isArray(packed.files));
     /** Owned isolated extracted consumer package path. */
     const dest = join(temp, 'node_modules/@zeruxjs/queue-memcacheq');
     await mkdir(dest, { recursive: true });
@@ -59,12 +67,26 @@ test('packed basic/worker public exports and example compile and close without c
     );
     await writeFile(join(temp, 'package.json'), '{"type":"module"}');
     /** Packed manifest used to verify all public exports/types/licenses. */
-    const metadata = JSON.parse(
+    const metadata: unknown = JSON.parse(
       await readFile(join(dest, 'package.json'), 'utf8')
     );
+    assert.ok(
+      metadata &&
+        typeof metadata === 'object' &&
+        'version' in metadata &&
+        'exports' in metadata
+    );
     assert.equal(metadata.version, '0.0.4');
+    assert.ok(metadata.exports && typeof metadata.exports === 'object');
     // Process only finite fixture cases/handles; no live broker acceptance is inferred.
     for (const target of Object.values(metadata.exports)) {
+      assert.ok(
+        target &&
+          typeof target === 'object' &&
+          'types' in target &&
+          typeof target.types === 'string'
+      );
+      assert.ok('default' in target && typeof target.default === 'string');
       await access(join(dest, target.types));
       await access(join(dest, target.default));
     }
@@ -73,14 +95,25 @@ test('packed basic/worker public exports and example compile and close without c
       await access(join(dest, license));
     }
     assert.ok(
-      packed.files.every(
-        (f) => !f.path.startsWith('src/') && !f.path.startsWith('test/')
-      )
+      packed.files.every((f: unknown) => {
+        assert.ok(
+          f &&
+            typeof f === 'object' &&
+            'path' in f &&
+            typeof f.path === 'string'
+        );
+        return !f.path.startsWith('src/') && !f.path.startsWith('test/');
+      })
     );
     /** README public worker example compiled alongside the existing basic imports. */
-    const example = (await readFile(join(packageRoot, 'README.md'), 'utf8'))
+    const exampleMatch = (
+      await readFile(join(packageRoot, 'README.md'), 'utf8')
+    )
       .split('## Opt-in polling worker')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(exampleMatch);
+    /** Extracted public snippet is compiled only in the owned temporary consumer. */
+    const example = exampleMatch[1];
     await writeFile(
       join(temp, 'example.ts'),
       example +

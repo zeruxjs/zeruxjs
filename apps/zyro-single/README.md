@@ -2,7 +2,7 @@
 
 This private browser example mounts one counter from `src/index.ts` into the root in `index.html`. Its checked-in `src/zyro.js` is a historical generated compatibility bundle, preserved byte-for-byte. It is distinct from the current workspace `zyrojs` public API and does not provide that package’s setup scopes, cancellation or deterministic hydration contracts.
 
-Run `npm run build` once to compile the typed entry to `dist/src/index.js` and copy the historical compatibility runtime, then serve this directory with a trusted static HTTP development host and open its `index.html`. No HTTP server command is supplied here: `npm run dev` starts the TypeScript compiler watcher, and `npm run build` emits compiler output. Neither starts a web server. This review does not rebuild or start the application.
+Run `npm run build` once to compile the typed entry to `dist/src/index.js` and copy the historical compatibility runtime, then serve this directory with a trusted static HTTP development host and open its `index.html`. No HTTP server command is supplied here: `npm run dev` starts the TypeScript compiler watcher, and `npm run build` emits compiler output. Neither starts a web server. The browser requires the compiled ESM entry; serving raw TypeScript is unsupported.
 
 The page’s HTML currently references a Google-hosted font stylesheet, with a sans-serif fallback. It is not an offline-qualified application. No credentials, database, telemetry collector or model provider is configured.
 

@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createShortLinkService } from '@zeruxjs/share/server';
+import {
+  createShortLinkService,
+  type ShortLinkRecord,
+  type ShortLinkStore,
+  type ShortLinkOptions,
+} from '@zeruxjs/share/server';
 /** Construct synthetic verified host context, not a production authenticator.
  * @param {string} tenant - Synthetic tenant label, default t1.
  * @param {string} subject - Synthetic owner label, default u1.
@@ -11,11 +16,11 @@ const context = (tenant = 't1', subject = 'u1') => ({ tenant, subject });
  * @param {object} extra - Explicit test overrides for policy and dependency failures.
  * @returns {object} Config, borrowed map/store and owned service requiring close.
  */
-function fixture(extra = {}) {
+function fixture(extra: Partial<ShortLinkOptions> = {}) {
   /** Process-local fixture map implementing reservation/CAS semantics only, never production durability. */
-  const data = new Map();
+  const data = new Map<string, ShortLinkRecord>();
   /** Synthetic store dependency borrowed by each service; map state survives wrapper close. */
-  const store = {
+  const store: ShortLinkStore = {
     capability: 'short-links-cas-v1',
     durable: true,
     async reserve(key, value) {
@@ -37,12 +42,29 @@ function fixture(extra = {}) {
     },
   };
   /** Explicit synthetic origin, destination allowlist, store and host verifier configuration. */
-  const config = {
+  const config: ShortLinkOptions = {
     origin: 'https://sho.rt',
     allowedOrigins: ['https://example.test'],
     store,
-    authorize: async (value) =>
-      value?.tenant && value?.subject ? value : null,
+    authorize: async (value) => {
+      if (
+        !value ||
+        typeof value !== 'object' ||
+        !('tenant' in value) ||
+        typeof value.tenant !== 'string' ||
+        !('subject' in value) ||
+        typeof value.subject !== 'string'
+      ) {
+        return null;
+      }
+      return {
+        tenant: value.tenant,
+        subject: value.subject,
+        ...('manageTenant' in value && value.manageTenant === true
+          ? { manageTenant: true }
+          : {}),
+      };
+    },
     ...extra,
   };
   return { config, store, data, service: createShortLinkService(config) };
@@ -51,7 +73,8 @@ function fixture(extra = {}) {
  * @param {string} slug - Fixture reservation slug.
  * @returns {Request} In-memory Fetch request at the fixed test origin.
  */
-const request = (slug) => new Request('https://sho.rt/s/' + slug);
+const request = (slug: string): Request =>
+  new Request('https://sho.rt/s/' + slug);
 test('create-only races, high entropy, tenant/owner checks, CAS edits and irrevocable tombstones', async () => {
   /** Owned synthetic short-link service fixture; close drains its dependency work. */
   const f = fixture();
@@ -70,12 +93,18 @@ test('create-only races, high entropy, tenant/owner checks, CAS edits and irrevo
       }),
     ]);
     assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
-    assert.equal(
-      results.find((r) => r.status === 'rejected').reason.code,
-      'CONFLICT'
-    );
+    /** Concurrent loser must return the public conflict classification. */
+    const rejected = results.find((r) => r.status === 'rejected');
+    assert.ok(rejected);
+    /** Native Promise rejection is unknown until its public error shape is checked. */
+    const conflict: unknown = rejected.reason;
+    assert.ok(conflict instanceof Error && 'code' in conflict);
+    assert.equal(conflict.code, 'CONFLICT');
     /** One successfully reserved record selected from the concurrent attempts. */
-    const created = results.find((r) => r.status === 'fulfilled').value;
+    const fulfilled = results.find((r) => r.status === 'fulfilled');
+    assert.ok(fulfilled);
+    /** Confirmed reservation used for subsequent authorization and revision checks. */
+    const created = fulfilled.value;
     await assert.rejects(f.service.get(context('t2'), created.slug), {
       code: 'DENIED',
     });
@@ -251,7 +280,9 @@ test('fresh destination policy and consented pseudonymous analytics are isolated
   let allowed = true,
     consent = false;
   /** Consent-gated pseudonymous analytics fixture records; raw destinations must be absent. */
-  const events = [];
+  const events: Array<
+    Parameters<NonNullable<ShortLinkOptions['analytics']>['record']>[0]
+  > = [];
   /** Owned synthetic short-link service fixture; close drains its dependency work. */
   const f = fixture({
     allowDestination: () => allowed,
@@ -305,8 +336,12 @@ test('backend failure redaction, unknown reservation acknowledgement, cancellati
         slug: 'unknown',
         destination: 'https://example.test/a',
       }),
-      (e) =>
+      (e: unknown) =>
+        e instanceof Error &&
+        'code' in e &&
         e.code === 'UNAVAILABLE' &&
+        'outcome' in e &&
+        'uncertainSlug' in e &&
         e.outcome === 'unknown' &&
         e.uncertainSlug === 'unknown' &&
         !e.message.includes('private')
@@ -314,7 +349,8 @@ test('backend failure redaction, unknown reservation acknowledgement, cancellati
   } finally {
     await f.service.close();
   }
-  let finish, signal;
+  let finish: ((value: ShortLinkRecord | null) => void) | undefined;
+  let signal: AbortSignal | undefined;
   /** Owned deadline-limited wrapper with a deliberately held native read. */
   const b = fixture({ timeoutMs: 10, maxPending: 1 });
   // Release held dependency work even if an assertion fails before the explicit close.
@@ -324,11 +360,12 @@ test('backend failure redaction, unknown reservation acknowledgement, cancellati
   });
   b.store.read = async (_key, input) => {
     signal = input;
-    return new Promise((r) => (finish = r));
+    return new Promise<ShortLinkRecord | null>((r) => (finish = r));
   };
   /** Synthetic handler response checked for status, cache policy or cancellation behavior. */
   const response = await b.service.handler(request('blocked'));
   assert.equal(response.status, 503);
+  assert.ok(signal);
   assert(signal.aborted);
   assert.equal(b.service.status().pending, 1);
   assert.equal((await b.service.handler(request('blocked'))).status, 503);
@@ -337,6 +374,7 @@ test('backend failure redaction, unknown reservation acknowledgement, cancellati
   const closing = b.service.close().then(() => (closed = true));
   await new Promise((r) => setImmediate(r));
   assert.equal(closed, false);
+  assert.ok(finish);
   finish(null);
   await closing;
   assert.equal(b.service.status().pending, 0);
@@ -345,10 +383,9 @@ test('server policy rejects false durable claims/namespace conflicts and getters
   /** Owned synthetic short-link service fixture; close drains its dependency work. */
   const f = fixture();
   assert.throws(() =>
-    createShortLinkService({
-      ...f.config,
-      store: { ...f.store, durable: false },
-    })
+    Reflect.apply(createShortLinkService, undefined, [
+      { ...f.config, store: { ...f.store, durable: false } },
+    ])
   );
   assert.throws(() =>
     createShortLinkService({ ...f.config, prefix: '/api/s/' })

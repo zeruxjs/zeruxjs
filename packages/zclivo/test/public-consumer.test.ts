@@ -24,7 +24,7 @@ test('offline installed exports own declarations and support legacy and cancella
      * @param {string[]} args - Fixed trusted npm argument array.
      * @returns {string} Captured UTF-8 process output.
      */
-    const npm = (args) =>
+    const npm = (args: string[]): string =>
       execFileSync('npm', [...args, '--cache', join(root, 'cache')], {
         cwd: root,
         encoding: 'utf8',
@@ -34,7 +34,7 @@ test('offline installed exports own declarations and support legacy and cancella
      * @param {string} directory - Trusted installed package root.
      * @returns {string} Local file archive reference inside the owned fixture.
      */
-    const pack = (directory) => {
+    const pack = (directory: string): string => {
       /** Parsed npm archive receipt used only to locate the generated tarball. */
       const [archive] = Object.values(
         JSON.parse(
@@ -48,10 +48,16 @@ test('offline installed exports own declarations and support legacy and cancella
           ])
         )
       );
+      assert.ok(
+        archive &&
+          typeof archive === 'object' &&
+          'filename' in archive &&
+          typeof archive.filename === 'string'
+      );
       return `file:${join(root, archive.filename)}`;
     };
     /** Explicit package archives installed offline in the synthetic consumer. */
-    const dependencies = {
+    const dependencies: Record<string, string> = {
       zclivo: pack(fileURLToPath(new URL('..', import.meta.url))),
     };
     for (const name of ['@types/node', 'undici-types']) {

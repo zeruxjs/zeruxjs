@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { createConnector } from '@zeruxjs/db-pg';
+import { createConnector, type PgPoolClientLike } from '@zeruxjs/db-pg';
 /** Synthetic private configured connection identity. */
 const context = {
   connection: {
@@ -16,20 +16,53 @@ const select = {
   op: 'select',
   table: 'items',
   where: { field: 'id', operator: 'eq', value: 'PRIVATE' },
-};
+} as const;
 /** Match only stable abstraction codes.
  * @param {string} value - Expected fixed classification.
- * @returns {(error:{details?:{code?:string}})=>boolean} Assertion predicate. */
-const code = (value) => (error) => error.details?.code === value;
+ * @returns {(error: unknown) => boolean} Assertion predicate. */
+const code =
+  (value: string) =>
+  (error: unknown): boolean => {
+    if (!error || typeof error !== 'object' || !('details' in error)) {
+      return false;
+    }
+    /** Native error details stay unknown until the stable code shape is checked. */
+    const details = error.details;
+    return (
+      !!details &&
+      typeof details === 'object' &&
+      'code' in details &&
+      details.code === value
+    );
+  };
 /** Provide independently owned synthetic native clients/settings with explicit failure and end behavior.
- * @param {Record<string,boolean>} flags - Explicit synthetic query/commit/rollback/reset/hang controls.
+ * @param {Partial<Record<'resetFailure' | 'commitFailure' | 'rollbackFailure' | 'hang' | 'queryFailure', boolean>>} flags - Explicit synthetic query/commit/rollback/reset/hang controls.
  * @returns {object} Injected pool, clients and observations; not live PostgreSQL acceptance.
  */
-function poolFixture(flags = {}) {
+function poolFixture(
+  flags: Partial<
+    Record<
+      | 'resetFailure'
+      | 'commitFailure'
+      | 'rollbackFailure'
+      | 'hang'
+      | 'queryFailure',
+      boolean
+    >
+  > = {}
+) {
   /** Ordered synthetic control/setting/query/end/release observations. */
-  const events = [];
+  const events: {
+    id: number;
+    event: string;
+    sql?: string;
+    params?: unknown[];
+    destroy?: boolean;
+    settings?: { statement_timeout: string; lock_timeout: string };
+    inTransaction?: boolean;
+  }[] = [];
   /** Distinct acquired native-shaped clients for pin identity assertions. */
-  const clients = [];
+  const clients: (EventEmitter & PgPoolClientLike)[] = [];
   let next = 0,
     ended = 0;
   /** Borrowed EventEmitter pool fixture or privileged lazy owned pool handle. */
@@ -45,11 +78,11 @@ function poolFixture(flags = {}) {
       const id = ++next;
       /** Per-client native timeout values restored and checked before healthy release. */
       const settings = { statement_timeout: '30000', lock_timeout: '1000' };
-      let rejectQuery,
-        inTransaction = false;
+      let rejectQuery: ((error: Error) => void) | undefined;
+      let inTransaction = false;
       /** One native-shaped fixture client with explicit destructive-end behavior. */
       const client = Object.assign(new EventEmitter(), {
-        async query(sql, params = []) {
+        async query(sql: string, params: unknown[] = []) {
           events.push({ id, event: 'query', sql, params });
           if (sql.startsWith('SELECT current_setting')) {
             return { rows: [{ ...settings }] };
@@ -60,7 +93,11 @@ function poolFixture(flags = {}) {
                 code: '42501',
               });
             }
+            assert.equal(typeof params[0], 'string');
+            assert.ok(typeof params[0] === 'string');
             settings.statement_timeout = params[0];
+            assert.equal(typeof params[1], 'string');
+            assert.ok(typeof params[1] === 'string');
             settings.lock_timeout = params[1];
             return { rows: [{}] };
           }
@@ -85,7 +122,7 @@ function poolFixture(flags = {}) {
             return { rows: [], rowCount: null };
           }
           if (flags.hang) {
-            return new Promise((_, reject) => {
+            return new Promise<never>((_, reject) => {
               rejectQuery = reject;
             });
           }
@@ -104,7 +141,7 @@ function poolFixture(flags = {}) {
           inTransaction = false;
           rejectQuery?.(Error('connection ended'));
         },
-        release(destroy) {
+        release(destroy?: boolean) {
           events.push({
             id,
             event: 'release',
@@ -137,6 +174,7 @@ test('native-compatible leases pin transactions, reset settings and preserve zer
   const connector = await createConnector({ pool: f.pool });
   t.after(() => connector.disconnect());
   try {
+    assert.ok(connector.capabilities);
     assert.equal(connector.capabilities.transactions, 'supported');
     assert.equal(connector.capabilities.cancellation, 'supported');
     await connector.transaction(
@@ -157,6 +195,7 @@ test('native-compatible leases pin transactions, reset settings and preserve zer
     assert.equal(f.events.filter((e) => e.event === 'release').length, 1);
     /** Final synthetic release observation with settings and transaction state. */
     const released = f.events.at(-1);
+    assert.ok(released);
     assert.equal(released.destroy, false);
     assert.equal(released.inTransaction, false);
     assert.deepEqual(released.settings, {
@@ -168,6 +207,7 @@ test('native-compatible leases pin transactions, reset settings and preserve zer
     );
     /** Recorded prepared native update; private values must stay in params. */
     const update = f.events.find((e) => e.sql?.startsWith('UPDATE'));
+    assert.ok(update && typeof update.sql === 'string');
     assert.match(update.sql, /\$1.*\$2/);
     assert.equal(update.sql.includes('PRIVATE'), false);
     assert.equal(
@@ -199,7 +239,7 @@ test('callback failures roll back before release, failed cleanup destroys rather
       f.events.findIndex((e) => e.sql === 'ROLLBACK') <
         f.events.findIndex((e) => e.event === 'release')
     );
-    assert.equal(f.events.at(-1).destroy, false);
+    assert.equal(f.events.at(-1)?.destroy, false);
   } finally {
     await connector.disconnect();
   }
@@ -217,7 +257,7 @@ test('callback failures roll back before release, failed cleanup destroys rather
     try {
       await assert.rejects(connector.transaction((tx) => tx.query(select)));
       assert.equal(f.events.filter((e) => e.event === 'release').length, 1);
-      assert.equal(f.events.at(-1).destroy, true);
+      assert.equal(f.events.at(-1)?.destroy, true);
     } finally {
       await connector.disconnect();
     }
@@ -250,7 +290,7 @@ test('abort/query watchdog ends and settles native work before destroying the le
         abort.abort();
       }
       await assert.rejects(
-        pending,
+        async () => pending,
         code(abortRequest ? 'PG_QUERY_CANCELLED' : 'PG_QUERY_TIMEOUT')
       );
       /** Original native end function or observed end-event position. */
@@ -268,7 +308,7 @@ test('abort/query watchdog ends and settles native work before destroying the le
 test('acquisition deadlines/overload retain bounded waiting and destroy late arrivals', async (t) => {
   /** Independent pool fixture with scripted failures. */
   const f = poolFixture();
-  let resolve;
+  let resolve: (() => Promise<void>) | undefined;
   /** Captured native acquisition before test interception. */
   const original = f.pool.connect;
   f.pool.connect = () =>
@@ -284,17 +324,18 @@ test('acquisition deadlines/overload retain bounded waiting and destroy late arr
   t.after(() => connector.disconnect());
   try {
     await assert.rejects(
-      connector.execute(select, context),
+      async () => connector.execute(select, context),
       code('PG_ACQUIRE_TIMEOUT')
     );
     assert.equal(connector.getPoolStatus().pendingAcquisitions, 1);
     await assert.rejects(
-      connector.execute(select, context),
+      async () => connector.execute(select, context),
       code('PG_POOL_SATURATED')
     );
+    assert.ok(resolve);
     await resolve();
     await new Promise(setImmediate);
-    assert.equal(f.events.at(-1).destroy, true);
+    assert.equal(f.events.at(-1)?.destroy, true);
     assert.equal(connector.getPoolStatus().lateReleases, 1);
     assert.equal(connector.getPoolStatus().pendingAcquisitions, 0);
   } finally {
@@ -308,7 +349,7 @@ test('invalid compiler/config input acquires zero clients and query-only transpo
   const connector = await createConnector({ pool: f.pool });
   t.after(() => connector.disconnect());
   try {
-    await assert.rejects(
+    await assert.rejects(async () =>
       connector.execute({ ...select, table: 'bad;DROP' }, context)
     );
     assert.equal(f.clients.length, 0);
@@ -321,16 +362,17 @@ test('invalid compiler/config input acquires zero clients and query-only transpo
   );
   let ended = 0;
   /** Borrowed legacy query-only wrapper with no pin/cancellation guarantee. */
-  const old = await createConnector({
-    client: {
-      query: async () => ({ rows: [], rowCount: 0 }),
-      end: async () => {
-        ended++;
-      },
+  const legacyClient = {
+    query: async () => ({ rows: [], rowCount: 0 }),
+    end: async () => {
+      ended++;
     },
-  });
+  };
+  /** Borrowed wrapper retains the extra native close method as host ownership. */
+  const old = await createConnector({ client: legacyClient });
   t.after(() => old.disconnect());
   try {
+    assert.ok(old.capabilities);
     assert.equal(old.capabilities.transactions, 'unsupported');
     await assert.rejects(
       old.transaction(() => {}),
@@ -350,7 +392,7 @@ test('shutdown destroys active leases and never closes the caller-owned pool', a
   /** Accepted operation with cancellation observed separately from native settlement. */
   const pending = connector.execute(select, context);
   /** Attached rejection assertion preventing an unhandled native failure. */
-  const rejected = assert.rejects(pending);
+  const rejected = assert.rejects(async () => pending);
   // Wait for accepted native work so shutdown must terminate and drain a real fixture lease.
   while (!f.events.some((e) => e.sql?.startsWith('SELECT *'))) {
     await new Promise(setImmediate);
@@ -379,9 +421,11 @@ test('shared manager negotiates the real pg extension and pins callback operatio
     ],
   });
   try {
+    assert.ok(manager.capabilities && manager.transaction);
     assert.equal(manager.capabilities().transactions, 'supported');
     await manager.transaction(async (tx) => {
       await tx.query(select);
+      assert.ok(tx.update);
       await tx.update({
         table: 'items',
         values: { value: 'new' },
@@ -401,6 +445,12 @@ test('an owned empty pool closes once without making any network connection', as
   t.after(() => connector.disconnect());
   /** Borrowed EventEmitter pool fixture or privileged lazy owned pool handle. */
   const pool = connector.getNativeConnection();
+  assert.ok(
+    pool &&
+      typeof pool === 'object' &&
+      'end' in pool &&
+      typeof pool.end === 'function'
+  );
   /** Original native end function or observed end-event position. */
   const end = pool.end.bind(pool);
   let ends = 0;
@@ -436,7 +486,7 @@ test('reentrant shutdown/error callbacks cannot double-end or double-release cli
   /** Accepted operation with cancellation observed separately from native settlement. */
   const pending = connector.execute(select, context);
   /** Attached rejection assertion preventing an unhandled native failure. */
-  const rejected = assert.rejects(pending);
+  const rejected = assert.rejects(async () => pending);
   // Wait for the query before exercising reentrant error/end callbacks.
   while (!f.events.some((e) => e.sql?.startsWith('SELECT *'))) {
     await new Promise(setImmediate);

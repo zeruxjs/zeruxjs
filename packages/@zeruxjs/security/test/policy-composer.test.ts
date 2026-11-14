@@ -2,11 +2,11 @@ import { createRequire } from 'node:module';
 /** CommonJS bridge retained for the package's existing require-based fixtures. */
 const require = createRequire(import.meta.url);
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
-const { test, mock } = require('node:test');
+const { test, mock }: typeof import('node:test') = require('node:test');
 /** Native strict assertions; failures must remain visible after fixture cleanup. */
-const assert = require('node:assert/strict');
+const assert: typeof import('node:assert/strict') = require('node:assert/strict');
 /** Native crypto module used for real algorithm fixtures and scoped failure injection. */
-const crypto = require('node:crypto');
+const crypto: typeof import('node:crypto') = require('node:crypto');
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
 const {
   createSecurityPolicy,
@@ -14,7 +14,7 @@ const {
   assertSecurityNonce,
   SecurityPolicyConflictError,
   createSecurityHeaders,
-} = require('../dist/index.js');
+}: typeof import('@zeruxjs/security') = require('../dist/index.js');
 
 test('strict default policy, native hashes and response-owned nonces', () => {
   /** Native CSP hash descriptor for exact trusted inline fixture text. */
@@ -76,9 +76,12 @@ test('exact host approvals merge deterministically and do not authorize another 
   }).createResponse();
   assert.deepEqual(first, second);
   options.approvals.images['img-src'].push('https://evil.example');
-  options.modules[0].resources['img-src'].push('https://evil.example');
+  /** Require the original image source list before testing captured-input isolation. */
+  const imageSources = options.modules[0].resources['img-src'];
+  assert.ok(imageSources);
+  imageSources.push('https://evil.example');
   assert.deepEqual(composer.createResponse(), first);
-  options.modules[0].resources['img-src'].pop();
+  imageSources.pop();
   assert.deepEqual(
     createSecurityPolicy({ ...options, modules }).createResponse(),
     first
@@ -125,7 +128,9 @@ test('conflicting isolation and disabled nonces are visible, never negotiated we
           { module: 'popup', isolation: { coop: 'same-origin-allow-popups' } },
         ],
       }),
-    (error) => error.conflicts[0].reason === 'isolation-mismatch'
+    (error: unknown) =>
+      error instanceof SecurityPolicyConflictError &&
+      error.conflicts[0].reason === 'isolation-mismatch'
   );
   assert.throws(
     () =>
@@ -198,7 +203,9 @@ test('structural parsing rejects header injection, unknown directives and malfor
     createSecurityPolicy({ resources: { 'script-src': ["'self'", "'none'"] } })
   );
   assert.throws(() =>
-    createSecurityPolicy({ resources: { 'unrecognized-src': ["'self'"] } })
+    Reflect.apply(createSecurityPolicy, undefined, [
+      { resources: { 'unrecognized-src': ["'self'"] } },
+    ])
   );
   assert.throws(() =>
     createSecurityPolicy({
@@ -209,17 +216,26 @@ test('structural parsing rejects header injection, unknown directives and malfor
     () => createSecurityPolicy({ hsts: { maxAgeSeconds: -1 } }),
     /HSTS/
   );
-  assert.throws(() => createSecurityPolicy({ hsts: [] }), /HSTS/);
+  assert.throws(
+    () => Reflect.apply(createSecurityPolicy, undefined, [{ hsts: [] }]),
+    /HSTS/
+  );
   assert.throws(() =>
-    createSecurityPolicy({
-      modules: [{ module: 'bad', frameAncestors: ["'self'"] }],
-    })
+    Reflect.apply(createSecurityPolicy, undefined, [
+      {
+        modules: [{ module: 'bad', frameAncestors: ["'self'"] }],
+      },
+    ])
   );
   for (const crossOriginEmbedderPolicy of [
     'require-corp\r\nX: yes',
     'disabled',
   ]) {
-    assert.throws(() => createSecurityHeaders({ crossOriginEmbedderPolicy }));
+    assert.throws(() =>
+      Reflect.apply(createSecurityHeaders, undefined, [
+        { crossOriginEmbedderPolicy },
+      ])
+    );
   }
 });
 

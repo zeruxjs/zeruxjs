@@ -5,13 +5,17 @@ test('browser entry treats noncallable native share as unsupported and preserves
   /** Original navigator descriptor restored in finally, including complete absence. */
   const original = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
   /** Synthetic clipboard writes; no operating-system clipboard is accessed. */
-  const copied = [];
+  const copied: string[] = [];
   try {
     Object.defineProperty(globalThis, 'navigator', {
       configurable: true,
       value: {
         share: 'unavailable',
-        clipboard: { writeText: async (text) => copied.push(text) },
+        clipboard: {
+          writeText: async (text: string) => {
+            copied.push(text);
+          },
+        },
       },
     });
     assert.equal(shareCapabilities().native, false);
@@ -21,13 +25,16 @@ test('browser entry treats noncallable native share as unsupported and preserves
     );
     assert.deepEqual(copied, ['https://example.test/a']);
     assert.throws(() =>
-      shareLink('unknown', { url: 'https://example.test/a' })
+      Reflect.apply(shareLink, undefined, [
+        'unknown',
+        { url: 'https://example.test/a' },
+      ])
     );
   } finally {
     if (original) {
       Object.defineProperty(globalThis, 'navigator', original);
     } else {
-      delete globalThis.navigator;
+      assert.equal(Reflect.deleteProperty(globalThis, 'navigator'), true);
     }
   }
 });

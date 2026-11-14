@@ -24,7 +24,7 @@ test('offline installed exports own declarations and support watcher lifecycle c
      * @param {string[]} args - Argument vector without shell interpolation.
      * @returns {string} Captured UTF-8 command output.
      */
-    const npm = (args) =>
+    const npm = (args: string[]): string =>
       execFileSync('npm', [...args, '--cache', join(root, 'cache')], {
         cwd: root,
         encoding: 'utf8',
@@ -34,7 +34,7 @@ test('offline installed exports own declarations and support watcher lifecycle c
      * @param {string} directory - Trusted package directory.
      * @returns {string} File dependency URL for the owned archive.
      */
-    const pack = (directory) => {
+    const pack = (directory: string): string => {
       /** Single package archive receipt returned by npm’s structured output. */
       const [archive] = Object.values(
         JSON.parse(
@@ -48,10 +48,15 @@ test('offline installed exports own declarations and support watcher lifecycle c
           ])
         )
       );
+      assert.ok(
+        archive && typeof archive === 'object' && 'filename' in archive
+      );
+      assert.equal(typeof archive.filename, 'string');
+      assert.ok(typeof archive.filename === 'string');
       return `file:${join(root, archive.filename)}`;
     };
     /** Isolated consumer dependencies pointing only at locally packed archives. */
-    const dependencies = {
+    const dependencies: Record<string, string> = {
       zlook: pack(fileURLToPath(new URL('..', import.meta.url))),
     };
     for (const name of ['@types/node', 'undici-types']) {

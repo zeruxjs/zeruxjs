@@ -4,14 +4,15 @@ import { createRequire } from 'node:module';
 /** Resolve built CommonJS exports from this ESM fixture. */
 const require = createRequire(import.meta.url);
 /** Public connector factory, invoked only with explicit synthetic injection. */
-const { createConnector } = require('../dist/index.js');
+const { createConnector } =
+  require('../dist/index.js') as typeof import('@zeruxjs/db-pg');
 /** Synthetic private connection identity. */
 const context = {
   connection: { slug: 'pg', name: 'postgres', connector: 'pg', options: {} },
 };
 test('PG injected client executes parameterized query with correct result', async (t) => {
   /** Observed prepared SQL/parameters; no native database executes them. */
-  const calls = [];
+  const calls: { sql: string; params?: unknown[] }[] = [];
   /** Owned wrapper around a borrowed query-only transport. */
   const connector = await createConnector({
     client: {

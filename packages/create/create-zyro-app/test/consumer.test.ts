@@ -22,21 +22,24 @@ delete env.NODE_TEST_CONTEXT;
  * @param {string} name - Manifest-selected dependency name.
  * @returns {string} Explicit local installed package root, including hoisted tooling.
  */
-const dependency = (name) =>
-  ({
+const dependency = (name: string): string => {
+  /** Explicit workspace roots; other declared dependencies resolve installed manifests. */
+  const mapping: Record<string, string> = {
     zyrojs: path.join(repo, 'packages/zyrojs'),
     zeruxjs: path.join(repo, 'packages/zeruxjs'),
     '@zeruxjs/security': path.join(repo, 'packages/@zeruxjs/security'),
     typescript: path.dirname(require.resolve('typescript/package.json')),
     parse5: path.join(repo, 'node_modules/parse5'),
-  })[name] ?? path.dirname(require.resolve(name + '/package.json'));
+  };
+  return mapping[name] ?? path.dirname(require.resolve(name + '/package.json'));
+};
 /** Execute trusted fixture commands with finite deadlines and bounded failure diagnostics.
  * @param {string} command - Fixed explicit executable selected by this test.
  * @param {string[]} args - Explicit argument array without shell interpolation.
  * @param {string} cwd - Owned synthetic consumer directory.
  * @returns {string} Captured UTF-8 output or throws the bounded failure.
  */
-function execute(command, args, cwd) {
+function execute(command: string, args: string[], cwd: string): string {
   try {
     return execFileSync(command, args, {
       cwd,
@@ -46,14 +49,40 @@ function execute(command, args, cwd) {
       timeout: 30000,
     });
   } catch (error) {
+    assert.ok(error instanceof Error);
+    /** Native subprocess output remains unknown before bounded string conversion. */
+    const stdout = 'stdout' in error ? error.stdout : '';
+    /** Only this owned synthetic child contributes diagnostics. */
+    const stderr = 'stderr' in error ? error.stderr : error.message;
     throw Error(
       command +
         ' failed: ' +
-        String(error.stdout ?? '').slice(0, 2500) +
+        String(stdout ?? '').slice(0, 2500) +
         '\n' +
-        String(error.stderr ?? error.message).slice(0, 2000)
+        String(stderr ?? error.message).slice(0, 2000)
     );
   }
+}
+/** Require a public response value instead of accepting a missing header.
+ * @param {T | null | undefined} value - Nullable fixture result.
+ * @returns {T} Present value or an assertion failure.
+ * @template T
+ */
+function present<T>(value: T | null | undefined): T {
+  assert.ok(value !== null && value !== undefined);
+  return value;
+}
+/** Find the expected native control in the isolated emulated document.
+ * @param {Document} document - Borrowed JSDOM document, closed by the fixture.
+ * @param {string} selector - Fixed authored test selector.
+ * @returns {T} Required matching element.
+ * @template {Element} T
+ */
+function requiredElement<T extends Element>(
+  document: Document,
+  selector: string
+): T {
+  return present(document.querySelector<T>(selector));
 }
 /** Reserve a temporary loopback socket, observe its port and close it before returning.
  * @returns {Promise<number>} Available fixture port; another process can still race its later use.
@@ -64,8 +93,13 @@ async function port() {
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   /** Ephemeral port observed before releasing the owned probe socket. */
-  const value = server.address().port;
-  await new Promise((r) => server.close(r));
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  /** Observed TCP port, not a reservation after the probe closes. */
+  const value = address.port;
+  await new Promise<void>((resolve, reject) =>
+    server.close((error) => (error ? reject(error) : resolve()))
+  );
   return value;
 }
 /** Start only the isolated generated preview and return its actual process-close cleanup.
@@ -73,7 +107,7 @@ async function port() {
  * @param {string} mode - Validated standalone mode selecting the fixed preview entry.
  * @returns {Promise<() => Promise<void>>} Cleanup of the owned subprocess; no user process is signaled.
  */
-async function start(dir, mode) {
+async function start(dir: string, mode: string): Promise<() => Promise<void>> {
   /** Owned synthetic preview subprocess; caller awaits returned cleanup on every outcome. */
   const child = spawn(
     process.execPath,
@@ -86,7 +120,7 @@ async function start(dir, mode) {
   );
   let log = '';
   /** Startup barrier watching only the owned preview process output and exit. */
-  const ready = new Promise((resolve, reject) => {
+  const ready = new Promise<void>((resolve, reject) => {
     child.stdout.on('data', (b) => {
       log += b;
       if (log.includes('Zyro ready')) {
@@ -109,7 +143,12 @@ async function start(dir, mode) {
       }),
     ]);
   } catch (error) {
-    child.kill('SIGKILL');
+    if (child.exitCode === null && child.signalCode === null) {
+      /** Observe actual owned-child closure before the temporary tree is removed. */
+      const closed = once(child, 'close');
+      child.kill('SIGKILL');
+      await closed;
+    }
     throw error;
   }
   return async () => {
@@ -129,7 +168,7 @@ test(
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zx087-'));
     try {
       for (const mode of ['client', 'static', 'ssr', 'hydrated']) {
-        for (const language of ['javascript', 'typescript']) {
+        for (const language of ['javascript', 'typescript'] as const) {
           await t.test(mode + ' ' + language, async () => {
             /** New isolated directory for one mode/language combination. */
             const destination = path.join(root, mode + '-' + language);
@@ -241,12 +280,12 @@ test(
               const response = await fetch(origin + '/demo/');
               assert.equal(response.status, 200);
               assert.match(
-                response.headers.get('content-security-policy'),
+                present(response.headers.get('content-security-policy')),
                 /style-src[^;]*'self'/
               );
               if (['client', 'hydrated'].includes(mode)) {
                 assert.match(
-                  response.headers.get('content-security-policy'),
+                  present(response.headers.get('content-security-policy')),
                   /script-src[^;]*'self'/
                 );
               }
@@ -271,10 +310,13 @@ test(
               });
               try {
                 /** Borrowed stylesheet link from the emulated public document. */
-                const css = dom.window.document.querySelector(
+                const css = requiredElement<HTMLLinkElement>(
+                  dom.window.document,
                   'link[rel=stylesheet]'
                 );
-                assert.ok(css.getAttribute('href').startsWith('/demo/'));
+                assert.ok(
+                  present(css.getAttribute('href')).startsWith('/demo/')
+                );
                 assert.equal(
                   (await fetch(origin + css.getAttribute('href'))).status,
                   200
@@ -285,20 +327,26 @@ test(
                   assert.ok(script);
                   /** Mounted manifest-selected browser asset URL verified before fixture Fetch. */
                   const src = script.getAttribute('src');
+                  assert.ok(src);
                   assert.ok(src.startsWith('/demo/'));
                   /** Generated client code explicitly evaluated only in the isolated jsdom VM fixture. */
                   const bundle = await (await fetch(origin + src)).text();
                   assert.doesNotMatch(bundle, /createServer|node:fs/);
                   if (mode === 'hydrated') {
-                    dom.window.document.querySelector('input').value =
-                      'Retained edit';
+                    requiredElement<HTMLInputElement>(
+                      dom.window.document,
+                      'input'
+                    ).value = 'Retained edit';
                   }
                   new vm.Script(bundle).runInContext(
                     dom.getInternalVMContext()
                   );
                   if (mode === 'hydrated') {
                     assert.equal(
-                      dom.window.document.querySelector('input').value,
+                      requiredElement<HTMLInputElement>(
+                        dom.window.document,
+                        'input'
+                      ).value,
                       'Retained edit'
                     );
                   }
@@ -307,10 +355,15 @@ test(
                       persisted: true,
                     })
                   );
-                  dom.window.document.querySelector('button').click();
+                  requiredElement<HTMLButtonElement>(
+                    dom.window.document,
+                    'button'
+                  ).click();
                   assert.equal(
-                    dom.window.document.querySelector('[data-count]')
-                      .textContent,
+                    requiredElement<HTMLElement>(
+                      dom.window.document,
+                      '[data-count]'
+                    ).textContent,
                     'Count: 1'
                   );
                   dom.window.dispatchEvent(
@@ -319,13 +372,17 @@ test(
                     })
                   );
                   assert.equal(
-                    dom.window.document.querySelector('#app').childNodes.length,
+                    requiredElement<HTMLElement>(dom.window.document, '#app')
+                      .childNodes.length,
                     0
                   );
                 } else {
                   assert.equal(script, null);
                   assert.ok(
-                    dom.window.document.querySelector('button').disabled
+                    requiredElement<HTMLButtonElement>(
+                      dom.window.document,
+                      'button'
+                    ).disabled
                   );
                 }
               } finally {
@@ -384,7 +441,7 @@ test('dry-run, mode diagnostics, base path, aliases, occupied targets and abort 
   /** Owned temporary consumer/cache root removed in finally. */
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zx087-cli-'));
   /** Captured public CLI output from dry-run/version fixtures. */
-  const output = [];
+  const output: string[] = [];
   try {
     assert.equal(
       await runCreateZyro(['--version'], { out: (m) => output.push(m) }),

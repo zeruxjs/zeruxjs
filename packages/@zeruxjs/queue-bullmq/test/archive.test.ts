@@ -27,7 +27,7 @@ test('real archive contains every public JS/declaration subpath and licenses; au
   const workspace = resolve(packageRoot, '../../..');
   try {
     /** Local npm pack report produced without publishing or remote installation. */
-    const report = JSON.parse(
+    const report: unknown = JSON.parse(
       (
         await exec('npm', ['pack', '--json', '--pack-destination', temp], {
           cwd: packageRoot,
@@ -36,7 +36,16 @@ test('real archive contains every public JS/declaration subpath and licenses; au
       ).stdout
     );
     /** Single archive receipt including its declared files and filename. */
-    const packed = Array.isArray(report) ? report[0] : Object.values(report)[0];
+    assert.ok(report && typeof report === 'object');
+    /** npm supports array and filename-keyed archive receipts. */
+    const packed: unknown = Object.values(report)[0];
+    assert.ok(
+      packed &&
+        typeof packed === 'object' &&
+        'filename' in packed &&
+        typeof packed.filename === 'string'
+    );
+    assert.ok('files' in packed && Array.isArray(packed.files));
     /** Owned extracted package under the isolated consumer node_modules. */
     const dest = join(temp, 'node_modules/@zeruxjs/queue-bullmq');
     await mkdir(dest, { recursive: true });
@@ -48,13 +57,32 @@ test('real archive contains every public JS/declaration subpath and licenses; au
       dest,
     ]);
     /** Packed public manifest used to verify exports and one-way dependencies. */
-    const metadata = JSON.parse(
+    const metadata: unknown = JSON.parse(
       await readFile(join(dest, 'package.json'), 'utf8')
     );
+    assert.ok(
+      metadata &&
+        typeof metadata === 'object' &&
+        'version' in metadata &&
+        'dependencies' in metadata &&
+        'exports' in metadata
+    );
+    assert.ok(
+      metadata.dependencies && typeof metadata.dependencies === 'object'
+    );
+    assert.ok(metadata.exports && typeof metadata.exports === 'object');
     assert.equal(metadata.version, '0.0.4');
-    assert.equal(metadata.dependencies['@zeruxjs/queue'], undefined);
+    assert.equal('@zeruxjs/queue' in metadata.dependencies, false);
     // Exercise only the finite synthetic invalid cases, archive targets or fixed depth bound.
     for (const target of Object.values(metadata.exports)) {
+      assert.ok(
+        target &&
+          typeof target === 'object' &&
+          'types' in target &&
+          typeof target.types === 'string' &&
+          'default' in target &&
+          typeof target.default === 'string'
+      );
       await access(join(dest, target.default));
       await access(join(dest, target.types));
     }
@@ -63,10 +91,15 @@ test('real archive contains every public JS/declaration subpath and licenses; au
       await access(join(dest, license));
     }
     assert.ok(
-      packed.files.every(
-        (file) =>
-          !file.path.startsWith('src/') && !file.path.startsWith('test/')
-      )
+      packed.files.every((file: unknown) => {
+        assert.ok(
+          file &&
+            typeof file === 'object' &&
+            'path' in file &&
+            typeof file.path === 'string'
+        );
+        return !file.path.startsWith('src/') && !file.path.startsWith('test/');
+      })
     );
     await symlink(
       join(workspace, 'node_modules/@zeruxjs/cache-redis'),
@@ -80,9 +113,14 @@ test('real archive contains every public JS/declaration subpath and licenses; au
     );
     await writeFile(join(temp, 'package.json'), '{"type":"module"}');
     /** README public-import example compiled as a standalone isolated consumer. */
-    const example = (await readFile(join(packageRoot, 'README.md'), 'utf8'))
+    const exampleMatch = (
+      await readFile(join(packageRoot, 'README.md'), 'utf8')
+    )
       .split('## Bounded enqueue and shutdown diagnostics')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(exampleMatch);
+    /** Public snippet compiled against the extracted package declarations. */
+    const example = exampleMatch[1];
     await writeFile(join(temp, 'example.ts'), example);
     await exec(
       process.execPath,

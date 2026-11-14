@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createShareController,
+  type ShareData,
   createShareMetadata,
   createCanonicalShareLink,
   shareLinkAttributes,
@@ -14,7 +15,7 @@ test('share metadata escapes HTML and rejects unsafe image URLs', () => {
     image: 'https://example.org/logo.png',
   });
   assert.ok(
-    tags.find((s) => s.includes('og:title')).includes('&lt;title&gt;&quot;')
+    tags.find((s) => s.includes('og:title'))?.includes('&lt;title&gt;&quot;')
   );
   assert.ok(
     createCanonicalShareLink('https://example.org/x?a=1&b=2').includes(
@@ -36,10 +37,12 @@ test('share metadata escapes HTML and rejects unsafe image URLs', () => {
 });
 test('native sharing is preferred', async () => {
   /** Synthetic native-platform call log; no real browser sharing occurs. */
-  const calls = [];
+  const calls: ShareData[] = [];
   /** Borrowed-function sharing controller with no owned listeners or teardown API. */
   const controller = createShareController({
-    share: async (payload) => calls.push(payload),
+    share: async (payload) => {
+      calls.push(payload);
+    },
     writeText: async () => {
       throw Error('should not copy');
     },
@@ -52,13 +55,15 @@ test('native sharing is preferred', async () => {
 });
 test('unsupported native share falls back to copy', async () => {
   /** Synthetic native-platform call log; no real browser sharing occurs. */
-  const calls = [];
+  const calls: string[] = [];
   /** Borrowed-function sharing controller with no owned listeners or teardown API. */
   const controller = createShareController({
     share: async () => {
       throw Object.assign(Error('unsupported'), { name: 'NotSupportedError' });
     },
-    writeText: async (value) => calls.push(value),
+    writeText: async (value) => {
+      calls.push(value);
+    },
   });
   assert.equal(
     await controller.share({ url: 'https://example.org' }),

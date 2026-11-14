@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
-import { createConnector } from '@zeruxjs/db-pg';
+import { createConnector, type PgPoolClientLike } from '@zeruxjs/db-pg';
 /** Explicit isolated live-test endpoint gate; never logged. */
 const url = process.env.ZX_TEST_PG_URL;
 test(
@@ -33,7 +33,7 @@ test(
         options: {},
       },
     };
-    let blocker;
+    let blocker: PgPoolClientLike | undefined;
     try {
       await connector.execute(
         {
@@ -66,8 +66,14 @@ test(
       /** Native precision/rollback result inspected without parser coercion. */
       const rows = (await connector.execute({ op: 'select', table }, context))
         .rows;
-      assert.equal(rows[0].value, 'before');
-      assert.equal(rows[0].amount, '1234567890123456789012.12345678');
+      assert.ok(rows);
+      /** Native row data remains unknown until checked, including in opt-in live tests. */
+      const row = rows[0];
+      assert.ok(
+        row && typeof row === 'object' && 'value' in row && 'amount' in row
+      );
+      assert.equal(row.value, 'before');
+      assert.equal(row.amount, '1234567890123456789012.12345678');
       await assert.rejects(
         connector.transaction(async (tx) => {
           await tx.query({
@@ -89,15 +95,33 @@ test(
             },
             context
           )
-        ).rows.length,
+        ).rows?.length,
         0
       );
       /** Privileged native pool used only to hold an isolated test lock. */
       const pool = connector.getNativeConnection();
-      blocker = await pool.connect();
+      assert.ok(
+        pool &&
+          typeof pool === 'object' &&
+          'connect' in pool &&
+          typeof pool.connect === 'function'
+      );
+      /** Privileged native result is validated before use, not inferred from an untrusted object. */
+      const client: unknown = await pool.connect();
+      assert.ok(
+        client &&
+          typeof client === 'object' &&
+          'query' in client &&
+          typeof client.query === 'function' &&
+          'release' in client &&
+          typeof client.release === 'function' &&
+          'end' in client &&
+          typeof client.end === 'function'
+      );
+      blocker = client as PgPoolClientLike;
       await blocker.query('BEGIN');
       await blocker.query(`UPDATE "${table}" SET value='locked' WHERE id=1`);
-      await assert.rejects(
+      await assert.rejects(async () =>
         connector.execute(
           {
             op: 'update',
@@ -113,7 +137,7 @@ test(
       /** Explicit abort trigger removed in finally. */
       const timer = setTimeout(() => abort.abort(), 10);
       try {
-        await assert.rejects(
+        await assert.rejects(async () =>
           connector.execute(
             {
               op: 'update',

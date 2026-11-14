@@ -9,6 +9,8 @@ import { once } from 'node:events';
 import { pathToFileURL } from 'node:url';
 import {
   minimalProjectGenerator,
+  type ProjectOptions,
+  type GeneratorQuestion,
   createProjectGenerator,
   writeProjectPlan,
   writeProjectPlanAsync,
@@ -23,13 +25,14 @@ const temp = () => fs.mkdtempSync(join(tmpdir(), 'zx085-'));
  * @param {string} root - Directory allocated by temp.
  * @returns {void} Completes fixture cleanup or throws its filesystem failure.
  */
-const remove = (root) => fs.rmSync(root, { recursive: true, force: true });
+const remove = (root: string): void =>
+  fs.rmSync(root, { recursive: true, force: true });
 test('pure bounded plans/dry-run are deterministic, pin public versions and do not create or install', async () => {
   /** Owned isolated fixture parent removed in finally. */
   const root = temp();
   try {
     /** Explicit supported minimal project choices; no dependency is installed. */
-    const options = {
+    const options: Omit<ProjectOptions, 'destination'> = {
       name: 'Demo',
       language: 'javascript',
       port: 4321,
@@ -96,20 +99,21 @@ test('reserved names, incompatible capabilities, invalid ports and unsafe templa
       { language: 'ruby' },
     ]) {
       assert.throws(() =>
-        minimalProjectGenerator.plan({
-          destination: join(root, 'valid'),
-          ...extra,
-        })
+        Reflect.apply(minimalProjectGenerator.plan, minimalProjectGenerator, [
+          { destination: join(root, 'valid'), ...extra },
+        ])
       );
     }
-    for (const output of [
+    /** Each malformed path map still contains only strings; path validity is independently checked at runtime. */
+    const outputs: Array<Record<string, string>> = [
       { '../escape': 'x' },
       { '/absolute': 'x' },
       { 'nested\\escape': 'x' },
       { Foo: 'x', foo: 'y' },
       { file: 'x', 'file/child': 'y' },
       { 'node_modules/x': 'x' },
-    ]) {
+    ];
+    for (const output of outputs) {
       /** Explicit custom template engine used only to prove invalid output rejection. */
       const engine = createProjectGenerator([
         {
@@ -238,7 +242,7 @@ test('template dependency failure and abort during async staging leave no partia
     syncBuiltinESMExports();
     await assert.rejects(
       writeProjectPlanAsync(plan, { signal: controller.signal }),
-      (e) => e.name === 'AbortError'
+      (e: unknown) => e instanceof Error && e.name === 'AbortError'
     );
     assert.deepEqual(fs.readdirSync(root), []);
   } finally {
@@ -251,12 +255,12 @@ test('interactive answers equal noninteractive flags and help describes actual s
   /** Owned isolated fixture parent removed in finally. */
   const root = temp();
   /** Captured public CLI plan/help text; never contains private environment values. */
-  const messages = [];
+  const messages: string[] = [];
   /** Explicit prompt questions recorded to verify capability-based choices. */
-  const questions = [];
+  const questions: GeneratorQuestion[] = [];
   try {
     /** Trusted fixed prompt answers for deterministic interactive/noninteractive equivalence. */
-    const answers = {
+    const answers: Record<string, string> = {
       template: 'zerux-minimal',
       name: 'named',
       destination: 'interactive',
@@ -276,6 +280,7 @@ test('interactive answers equal noninteractive flags and help describes actual s
         prompt: () => ({
           async ask(q) {
             questions.push(q);
+            assert.ok(Object.hasOwn(answers, q.name));
             return answers[q.name];
           },
           close() {
@@ -287,7 +292,7 @@ test('interactive answers equal noninteractive flags and help describes actual s
     assert.equal(code, 0);
     assert.equal(disposed, 1);
     assert.ok(
-      questions.find((q) => q.name === 'mode').choices.includes('minimal')
+      questions.find((q) => q.name === 'mode')?.choices?.includes('minimal')
     );
     assert.equal(
       await runGeneratorCli(
@@ -319,8 +324,11 @@ test('interactive answers equal noninteractive flags and help describes actual s
       }),
       0
     );
-    assert.match(messages.at(-1), /Supported modes: minimal/);
-    assert.match(messages.at(-1), /Supported renderers: none/);
+    /** Help is required to list the implemented combinations; absence is a fixture failure. */
+    const help = messages.at(-1);
+    assert.ok(help);
+    assert.match(help, /Supported modes: minimal/);
+    assert.match(help, /Supported renderers: none/);
     assert.equal(
       await runGeneratorCli(['create', 'valid', '--interactive', '--yes'], {
         cwd: root,
@@ -443,10 +451,16 @@ test('disposed terminal prompts cannot reopen and malformed CLI/plan input does 
       /closed/
     );
     assert.equal(
-      await runGeneratorCli(null, { out: () => {}, err: () => {} }),
+      await Reflect.apply(runGeneratorCli, undefined, [
+        null,
+        { out: () => {}, err: () => {} },
+      ]),
       2
     );
-    await assert.rejects(writeProjectPlanAsync({}), /Validated/);
+    await assert.rejects(
+      Reflect.apply(writeProjectPlanAsync, undefined, [{}]),
+      /Validated/
+    );
   } finally {
     input.destroy();
     output.destroy();

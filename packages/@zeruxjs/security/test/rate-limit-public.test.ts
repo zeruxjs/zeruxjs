@@ -2,9 +2,9 @@ import { createRequire } from 'node:module';
 /** CommonJS bridge retained for the package's existing require-based fixtures. */
 const require = createRequire(import.meta.url);
 /** Native test registration API; callbacks own their synthetic resource lifetimes. */
-const test = require('node:test');
+const test: typeof import('node:test') = require('node:test');
 /** Native strict assertions; failures must remain visible after fixture cleanup. */
-const assert = require('node:assert/strict');
+const assert: typeof import('node:assert/strict') = require('node:assert/strict');
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
 const {
   mkdtempSync,
@@ -14,16 +14,18 @@ const {
   writeFileSync,
   rmSync,
   symlinkSync,
-} = require('node:fs');
+}: typeof import('node:fs') = require('node:fs');
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
-const { execFileSync } = require('node:child_process');
+const {
+  execFileSync,
+}: typeof import('node:child_process') = require('node:child_process');
 /** Native temporary-directory discovery; no operator application paths are inspected. */
-const os = require('node:os');
+const os: typeof import('node:os') = require('node:os');
 /** Native path helpers for fixture-owned directories, never caller-selected shell interpolation. */
-const path = require('node:path');
+const path: typeof import('node:path') = require('node:path');
 test('packed security/Redis declarations compile the application-scoped admission example', () => {
   /** Real package root used only to read/pack public fixture inputs. */
-  const pkg = path.resolve(__dirname, '..');
+  const pkg = path.resolve(import.meta.dirname, '..');
   /** Owned temporary installed-consumer root, removed in finally. */
   const root = path.resolve(pkg, '../../..');
   /** Owned temporary archive/consumer directory removed recursively in finally. */
@@ -36,7 +38,7 @@ test('packed security/Redis declarations compile the application-scoped admissio
       /** Exact local package directory for shell-free npm archive preparation. */
       const cwd = path.join(root, 'packages', '@zeruxjs', name);
       /** Package archive metadata from an explicit no-script local fixture pack. */
-      const packed = JSON.parse(
+      const packed: unknown = JSON.parse(
         execFileSync(
           'npm',
           [
@@ -52,7 +54,15 @@ test('packed security/Redis declarations compile the application-scoped admissio
         )
       );
       /** Selected npm archive record supporting both current array/object JSON output shapes. */
-      const info = Array.isArray(packed) ? packed[0] : Object.values(packed)[0];
+      assert.ok(packed && typeof packed === 'object');
+      /** Receipt must contain a filename before the owned archive can be extracted. */
+      const info: unknown = Object.values(packed)[0];
+      assert.ok(
+        info &&
+          typeof info === 'object' &&
+          'filename' in info &&
+          typeof info.filename === 'string'
+      );
       /** Owned temporary installed package directory; source paths are deliberately absent. */
       const installed = path.join(scope, name);
       mkdirSync(installed);
@@ -64,7 +74,8 @@ test('packed security/Redis declarations compile the application-scoped admissio
         '--strip-components=1',
       ]);
       assert.equal(
-        JSON.parse(readFileSync(path.join(installed, 'package.json'))).name,
+        JSON.parse(readFileSync(path.join(installed, 'package.json'), 'utf8'))
+          .name,
         `@zeruxjs/${name}`
       );
     }
@@ -88,9 +99,12 @@ test('packed security/Redis declarations compile the application-scoped admissio
     }
     writeFileSync(path.join(dir, 'package.json'), '{"type":"module"}');
     /** Exact authored public README example compiled in the isolated temporary installed consumer. */
-    const source = readFileSync(path.join(pkg, 'README.md'), 'utf8')
+    const sourceMatch = readFileSync(path.join(pkg, 'README.md'), 'utf8')
       .split('## Atomic endpoint rate limits')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(sourceMatch);
+    /** Public authored example is compiled but never connects to Redis. */
+    const source = sourceMatch[1];
     writeFileSync(path.join(dir, 'example.ts'), source);
     execFileSync(
       process.execPath,

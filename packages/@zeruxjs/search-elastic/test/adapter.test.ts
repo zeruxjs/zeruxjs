@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import type * as estypes from '@elastic/elasticsearch/lib/api/types';
 import { createHash } from 'node:crypto';
 import {
   createElasticSearchAdapter,
+  type ElasticClient,
+  type ElasticRequestOptions,
   createElasticSearchFactory,
   ElasticBulkError,
   ElasticConflictError,
@@ -12,7 +15,8 @@ import { registerSearchService } from '@zeruxjs/search/adapters';
  * @param {string} value - Literal fixture tenant.
  * @returns {string} Hexadecimal SHA-256 namespace.
  */
-const hash = (value) => createHash('sha256').update(value).digest('hex');
+const hash = (value: string): string =>
+  createHash('sha256').update(value).digest('hex');
 /** Create an explicit fixture tenant scope with cooperative signal and finite deadline.
  * @param {string} tenant - Verified fixture tenant; defaults to shop-a where declared.
  * @returns {object} Independent bounded call scope.
@@ -26,15 +30,47 @@ const call = (tenant = 'shop-a') => ({
  * @param {object} extra - Explicit synthetic method overrides.
  * @returns {object} Client, request ledger and compatible wrapper configuration.
  */
-function fixture(extra = {}) {
+/** Native methods whose scripted wire results may deliberately be malformed. */
+type FixtureOverrides = Partial<{
+  [K in 'info' | 'search' | 'bulk' | 'index' | 'get']: (
+    ...args: Parameters<ElasticClient[K]>
+  ) => Promise<unknown>;
+}>;
+/** Captured wire inputs stay unknown until each assertion checks their structure. */
+interface NativeCall {
+  /** Fixed fixture method label. */
+  kind: string;
+  /** Native request data; never trusted as tenant authorization. */
+  params?: unknown;
+  /** Observed per-call limits and cancellation. */
+  control?: ElasticRequestOptions;
+}
+/** Construct a borrowed SDK-shaped fixture with independently untrusted JSON responses.
+ * @param {FixtureOverrides} extra - Explicit scripted failures or malformed native replies.
+ * @returns {object} Client, wire ledger and compatible adapter configuration.
+ */
+function fixture(extra: FixtureOverrides = {}) {
   /** Synthetic native-call ledger; fixed assertion data only, never a real engine log. */
-  const requests = [];
+  const requests: NativeCall[] = [];
   /** Injected synthetic client; its lifetime remains with the fixture, not the adapter. */
-  const client = {
-    info: async () => ({ version: { number: '9.5.1' } }),
-    search: async (params, control) => {
+  const client: ElasticClient = {
+    info: async (params, control) =>
+      wire<estypes.InfoResponse>(
+        extra.info
+          ? await extra.info(params, control)
+          : { version: { number: '9.5.1' } }
+      ),
+    search: async <T>(
+      params: estypes.SearchRequest,
+      control: ElasticRequestOptions
+    ) => {
+      if (extra.search) {
+        return wire<estypes.SearchResponse<T>>(
+          await extra.search(params, control)
+        );
+      }
       requests.push({ kind: 'search', params, control });
-      return {
+      return wire<estypes.SearchResponse<T>>({
         hits: {
           hits: [
             {
@@ -52,49 +88,66 @@ function fixture(extra = {}) {
         },
         timed_out: false,
         _shards: { failed: 0 },
-      };
+      });
     },
     bulk: async (params, control) => {
+      if (extra.bulk) {
+        return wire<estypes.BulkResponse>(await extra.bulk(params, control));
+      }
       requests.push({ kind: 'bulk', params, control });
-      return {
+      return wire<estypes.BulkResponse>({
         errors: false,
-        items: params.operations
-          .filter((p) => p.index || p.delete)
+        items: array(params.operations)
+          .filter((p) => record(p).index || record(p).delete)
           .map((p) =>
-            p.delete ? { delete: { status: 200 } } : { index: { status: 201 } }
+            record(p).delete
+              ? { delete: { status: 200 } }
+              : { index: { status: 201 } }
           ),
-      };
+      });
     },
     index: async (params, control) => {
+      if (extra.index) {
+        return wire<estypes.IndexResponse>(await extra.index(params, control));
+      }
       requests.push({ kind: 'index', params, control });
-      return {};
+      return wire<estypes.IndexResponse>({});
     },
-    get: async () => ({
-      _source: { _zxTenant: hash('shop-a'), id: '1', text: 'safe' },
-      _seq_no: 1,
-      _primary_term: 2,
-    }),
+    get: async <T>(
+      params: estypes.GetRequest,
+      control: ElasticRequestOptions
+    ) =>
+      extra.get
+        ? wire<estypes.GetResponse<T>>(await extra.get(params, control))
+        : wire<estypes.GetResponse<T>>({
+            _source: { _zxTenant: hash('shop-a'), id: '1', text: 'safe' },
+            _seq_no: 1,
+            _primary_term: 2,
+          }),
     indices: {
-      getMapping: async () => ({
-        'shop-v1': {
-          mappings: {
-            dynamic: 'strict',
-            properties: {
-              _zxTenant: { type: 'keyword' },
-              id: { type: 'keyword' },
-              text: { type: 'text' },
-              category: { type: 'keyword' },
-              price: { type: 'double' },
+      getMapping: async () =>
+        wire<estypes.IndicesGetMappingResponse>({
+          'shop-v1': {
+            mappings: {
+              dynamic: 'strict',
+              properties: {
+                _zxTenant: { type: 'keyword' },
+                id: { type: 'keyword' },
+                text: { type: 'text' },
+                category: { type: 'keyword' },
+                price: { type: 'double' },
+              },
             },
           },
-        },
-      }),
+        }),
       create: async (params) => {
         requests.push({ kind: 'create', params });
+        return wire<estypes.IndicesCreateResponse>(undefined);
       },
     },
-    close: async () => requests.push({ kind: 'close' }),
-    ...extra,
+    close: async () => {
+      requests.push({ kind: 'close' });
+    },
   };
   return {
     client,
@@ -102,7 +155,7 @@ function fixture(extra = {}) {
     options: {
       client,
       index: 'shop-v1',
-      fields: { category: 'keyword', price: 'double' },
+      fields: { category: 'keyword', price: 'double' } as const,
     },
   };
 }
@@ -130,38 +183,46 @@ test('structured translation pins tenant independently; writes/deletes namespace
     assert.equal(page.hits[0].document._zxTenant, undefined);
     /** Recorded synthetic native request used to assert literal translation and zero retries. */
     const request = f.requests[0];
-    assert.equal(
-      request.params.query.bool.filter[0].term._zxTenant,
-      hash('shop-a')
-    );
-    assert.deepEqual(request.params.query.bool.filter[1], {
+    assert.ok(request);
+    assert.ok(request.control);
+    /** Actual native search parameters, narrowed before interpreting their query fields. */
+    const parameters = record(request.params);
+    /** Structured Boolean query assembled by the adapter, never raw caller DSL. */
+    const booleanQuery = record(record(parameters.query).bool);
+    /** Tenant predicate must remain outside literal user query text. */
+    const filters = array(booleanQuery.filter);
+    /** Literal full-text clause is separate from authorization predicates. */
+    const match = record(record(array(booleanQuery.must)[0]).match);
+    assert.equal(record(record(filters[0]).term)._zxTenant, hash('shop-a'));
+    assert.deepEqual(filters[1], {
       terms: { category: ['book'] },
     });
-    assert.equal(
-      request.params.query.bool.must[0].match.text.query,
-      'x OR *:*'
-    );
-    assert.deepEqual(request.params.sort, [{ price: 'desc' }, { id: 'asc' }]);
+    assert.equal(record(match.text).query, 'x OR *:*');
+    assert.deepEqual(parameters.sort, [{ price: 'desc' }, { id: 'asc' }]);
     assert.equal(request.control.maxRetries, 0);
     await adapter.index([{ id: '1', text: 'safe', price: 2 }], call());
     await adapter.delete(['1'], call('shop-b'));
+    /** Native index action/body pair whose IDs and tenant field must agree. */
+    const indexed = array(record(f.requests[1]?.params).operations);
+    /** Native deletion action must address the other authenticated tenant namespace. */
+    const deleted = array(record(f.requests[2]?.params).operations);
     assert.notEqual(
-      f.requests[1].params.operations[0].index._id,
-      f.requests[2].params.operations[0].delete._id
+      record(record(indexed[0]).index)._id,
+      record(record(deleted[0]).delete)._id
     );
-    assert.equal(f.requests[1].params.operations[1]._zxTenant, hash('shop-a'));
+    assert.equal(record(indexed[1])._zxTenant, hash('shop-a'));
     await adapter.ensureIndex(call());
     /** Recorded explicit strict provisioning payload, never sent to a real engine. */
-    const mappings = f.requests.at(-1).params.mappings;
+    const mappings = record(record(f.requests.at(-1)?.params).mappings);
     assert.equal(mappings.dynamic, 'strict');
-    assert.equal(mappings.properties._zxTenant.type, 'keyword');
+    assert.equal(record(record(mappings.properties)._zxTenant).type, 'keyword');
     assert.equal((await adapter.getVersion('1', call())).version.seqNo, 1);
     await adapter.replaceIfVersion(
       { id: '1', text: 'replacement' },
       { seqNo: 1, primaryTerm: 2 },
       call()
     );
-    assert.equal(f.requests.at(-1).params.if_primary_term, 2);
+    assert.equal(record(f.requests.at(-1)?.params).if_primary_term, 2);
   } finally {
     await adapter.close();
   }
@@ -201,7 +262,7 @@ test('direct adapter rejects unsafe runtime shapes, reserved tenant fields, DSL,
       },
       { text: '', offset: 10000 },
     ]) {
-      await assert.rejects(adapter.search(q, call()));
+      await assert.rejects(Reflect.apply(adapter.search, adapter, [q, call()]));
     }
     await assert.rejects(
       adapter.index([{ id: '1', text: 'x', _zxTenant: 'forged' }], call())
@@ -325,19 +386,24 @@ test('tenant mismatch fails closed, unsupported versions reject, backend errors/
     );
     await assert.rejects(
       bad.search({ text: 'x' }, call()),
-      (e) => e.code === 'UNAVAILABLE' && !e.message.includes('secret')
+      (e: unknown) =>
+        e instanceof Error &&
+        'code' in e &&
+        e.code === 'UNAVAILABLE' &&
+        !e.message.includes('secret')
     );
   } finally {
     await bad.close();
   }
 });
 test('cancellation retains native slot and close waits for actual borrowed settlement', async (t) => {
-  let finish, signal;
+  let finish: ((value: unknown) => void) | undefined;
+  let signal: AbortSignal | undefined;
   /** Independent injected-client fixture; no live engine is contacted. */
   const f = fixture({
     search: async (_, request) => {
       signal = request.signal;
-      return new Promise((r) => {
+      return new Promise<unknown>((r) => {
         finish = r;
       });
     },
@@ -366,6 +432,7 @@ test('cancellation retains native slot and close waits for actual borrowed settl
   });
   await new Promise((r) => setImmediate(r));
   ctrl.abort();
+  assert.ok(signal);
   assert(signal.aborted);
   await assert.rejects(adapter.health(call()), { code: 'LIMIT' });
   let closed = false;
@@ -375,6 +442,7 @@ test('cancellation retains native slot and close waits for actual borrowed settl
   });
   await new Promise((r) => setImmediate(r));
   assert.equal(closed, false);
+  assert.ok(finish);
   finish({
     hits: { hits: [], total: { value: 0, relation: 'eq' } },
     timed_out: false,
@@ -453,3 +521,30 @@ test('factory schema snapshots reject accessors without executing them', () => {
   );
   assert.equal(read, false);
 });
+
+/** Reproduce the SDK generic JSON decode boundary; this does not validate its contents.
+ * @template T
+ * @param {unknown} value - Scripted native wire reply, including deliberate malformed cases.
+ * @returns {T} SDK-declared type whose actual contents the adapter must independently validate.
+ */
+function wire<T>(value: unknown): T {
+  return value as T;
+}
+/** Require a captured native object before inspecting request fields.
+ * @param {unknown} value - Captured wire object.
+ * @returns {Record<string, unknown>} Checked record, with all values still unknown.
+ */
+function record(value: unknown): Record<string, unknown> {
+  assert.ok(
+    value !== null && typeof value === 'object' && !Array.isArray(value)
+  );
+  return value as Record<string, unknown>;
+}
+/** Require a captured native array before inspecting its elements.
+ * @param {unknown} value - Captured wire array.
+ * @returns {unknown[]} Checked array; elements remain untrusted until narrowed.
+ */
+function array(value: unknown): unknown[] {
+  assert.ok(Array.isArray(value));
+  return value;
+}

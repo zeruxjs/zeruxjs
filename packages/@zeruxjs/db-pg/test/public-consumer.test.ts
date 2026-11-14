@@ -22,7 +22,7 @@ test('packed public pg transaction declarations and README example compile', () 
   const dir = mkdtempSync(path.join(os.tmpdir(), 'pg-public-'));
   try {
     /** npm metadata obtained without lifecycle scripts. */
-    const packed = JSON.parse(
+    const packed: unknown = JSON.parse(
       execFileSync(
         'npm',
         [
@@ -38,7 +38,15 @@ test('packed public pg transaction declarations and README example compile', () 
       )
     );
     /** Archive descriptor supporting npm array/object output. */
-    const info = Array.isArray(packed) ? packed[0] : Object.values(packed)[0];
+    assert.ok(packed && typeof packed === 'object');
+    /** Native npm receipt is independently narrowed before file access. */
+    const info: unknown = Object.values(packed)[0];
+    assert.ok(
+      info &&
+        typeof info === 'object' &&
+        'filename' in info &&
+        typeof info.filename === 'string'
+    );
     /** Temporary scoped dependency directory. */
     const scope = path.join(dir, 'node_modules', '@zeruxjs');
     /** Extracted public adapter used instead of workspace source. */
@@ -73,9 +81,12 @@ test('packed public pg transaction declarations and README example compile', () 
     }
     writeFileSync(path.join(dir, 'package.json'), '{"type":"module"}');
     /** Authored borrowed-pool transaction example compiled without contacting PostgreSQL. */
-    const example = readFileSync(path.join(pkg, 'README.md'), 'utf8')
+    const exampleMatch = readFileSync(path.join(pkg, 'README.md'), 'utf8')
       .split('## Pinned transactions')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(exampleMatch);
+    /** Verified public-import snippet remains inert until the host invokes it. */
+    const example = exampleMatch[1];
     writeFileSync(path.join(dir, 'example.ts'), example);
     execFileSync(
       process.execPath,
@@ -100,7 +111,8 @@ test('packed public pg transaction declarations and README example compile', () 
       encoding: 'utf8',
     });
     assert.equal(
-      JSON.parse(readFileSync(path.join(installed, 'package.json'))).name,
+      JSON.parse(readFileSync(path.join(installed, 'package.json'), 'utf8'))
+        .name,
       '@zeruxjs/db-pg'
     );
   } finally {

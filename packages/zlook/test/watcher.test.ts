@@ -1,3 +1,4 @@
+import type { WatcherEvent } from 'zlook';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
@@ -8,7 +9,8 @@ import { startWatcher, activeWatcherCount, diff } from '../dist/index.js';
  * @param {number} ms - Delay in milliseconds.
  * @returns {Promise<void>} Timer completion.
  */
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number): Promise<void> =>
+  new Promise((r) => setTimeout(r, ms));
 test('diff classifies changes', () => {
   /** Previous metadata fixture containing one updated and one removed file. */
   const before = new Map([
@@ -29,9 +31,9 @@ test('watchers share resources and dispose', async () => {
   /** Owned temporary source directory used by the watcher fixture. */
   const dir = await mkdtemp(path.join(os.tmpdir(), 'zlook-'));
   /** Events delivered to the first legacy subscriber. */
-  const first = [];
+  const first: WatcherEvent[] = [];
   /** Events delivered to the second legacy subscriber. */
-  const second = [];
+  const second: WatcherEvent[] = [];
   /** Identical polling/debounce settings used to prove shared resource ownership. */
   const opts = { pollIntervalMs: 100, debounceMs: 20 };
   /** First independent subscriber; its close operation must not stop the second subscriber. */

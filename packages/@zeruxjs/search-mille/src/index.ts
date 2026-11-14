@@ -39,7 +39,13 @@ export interface MilleSearchOptions {
   /** Trusted server transport, e.g. for host CA policy; borrowed, never globally closed. */
   fetch?: typeof fetch;
   /** Borrowed official-client HTTP surface; must bound responses and honor extraRequestInit.signal. */
-  client?: Pick<Meilisearch, 'httpRequest'>;
+  client?: {
+    /** Only the four borrowed official request methods actually used by this adapter are required. */
+    httpRequest: Pick<
+      Meilisearch['httpRequest'],
+      'get' | 'post' | 'put' | 'patch'
+    >;
+  };
   /** Default maximum request/wait duration, 5000 ms; at most 60000 ms. */
   timeoutMs?: number;
   /** Actual native/wait concurrency cap, 32 by default; at most 128. */
@@ -252,8 +258,8 @@ function policy(input: MilleSearchOptions) {
   if (input.client) {
     if (
       !input.client.httpRequest ||
-      ['get', 'post', 'put', 'patch'].some(
-        (k) => typeof (input.client!.httpRequest as any)[k] !== 'function'
+      (['get', 'post', 'put', 'patch'] as const).some(
+        (k) => typeof input.client!.httpRequest[k] !== 'function'
       ) ||
       input.endpoint !== undefined ||
       input.allowedEndpoints !== undefined ||

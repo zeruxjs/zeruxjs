@@ -1,3 +1,4 @@
+import type { WatcherEvent, WatchHandle } from 'zlook';
 import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -17,7 +18,18 @@ import {
   scan,
   activeWatcherCount,
   watcherDiagnostics,
+  ScanError,
 } from 'zlook';
+/** Require a scanner-owned failure before inspecting its redacted code.
+ * @param {Error[]} errors - Captured failures in delivery order.
+ * @returns {ScanError} Most recently reported scanner failure.
+ */
+function latestScanError(errors: Error[]): ScanError {
+  /** Candidate failure must actually exist and use the public scanner contract. */
+  const error = errors.at(-1);
+  assert.ok(error instanceof ScanError);
+  return error;
+}
 /** Allocate an isolated filesystem tree for a bounded watcher test.
  * @returns {Promise<string>} Owned temporary directory path.
  */
@@ -29,9 +41,9 @@ test('burst writes reconcile final state; rename is delete/new and nested ignore
   /** Owned temporary fixture root, removed after watcher and scan cleanup. */
   const root = await fixture();
   /** Events retained by the filtered subscriber for deterministic assertions. */
-  const events = [];
+  const events: WatcherEvent[] = [];
   /** Events retained by the unfiltered subscriber sharing the same scan owner. */
-  const all = [];
+  const all: WatcherEvent[] = [];
   await mkdir(join(root, 'nested'));
   await mkdir(join(root, 'dist'));
   await mkdir(join(root, 'node_modules'));
@@ -76,7 +88,7 @@ test('scan limits fail without replacing baseline; dropped events differ from co
   /** Owned temporary fixture root, removed after watcher and scan cleanup. */
   const root = await fixture();
   /** Private fixture failures collected for error-isolation and redaction assertions. */
-  const errors = [];
+  const errors: Error[] = [];
   /** Owned watcher subscription; close and await settlement before removing its tree. */
   const handle = watchDirectory(root, () => {}, {
     ...options,
@@ -93,10 +105,20 @@ test('scan limits fail without replacing baseline; dropped events differ from co
     await Promise.all(flushes);
     assert.equal(handle.diagnostics().dropped, 1);
     assert.ok(handle.diagnostics().coalesced >= 19);
-    assert.ok(errors.some((error) => error.code === 'PENDING_EVENT_LIMIT'));
+    assert.ok(
+      errors.some(
+        (error) =>
+          error instanceof ScanError && error.code === 'PENDING_EVENT_LIMIT'
+      )
+    );
     await writeFile(join(root, 'c'), 'c');
     await handle.flush();
-    assert.ok(errors.some((error) => error.code === 'SCAN_ENTRY_LIMIT'));
+    assert.ok(
+      errors.some(
+        (error) =>
+          error instanceof ScanError && error.code === 'SCAN_ENTRY_LIMIT'
+      )
+    );
     await rm(join(root, 'c'));
     await writeFile(join(root, 'a'), 'a changed');
     assert.deepEqual(await handle.flush(), [{ file: 'a', type: 'update' }]);
@@ -181,7 +203,7 @@ test('close and abort during startup release work with no late native handle', a
       },
       { signal: direct.signal }
     ),
-    (error) => error.name === 'AbortError'
+    (error: unknown) => error instanceof Error && error.name === 'AbortError'
   );
   await rm(root, { recursive: true, force: true });
   assert.deepEqual(watcherDiagnostics(), []);
@@ -191,7 +213,7 @@ test('missing root and persistent permission failures report without synthetic d
   /** Owned temporary fixture root, removed after watcher and scan cleanup. */
   const root = await fixture();
   /** Private fixture failures collected for error-isolation and redaction assertions. */
-  const errors = [];
+  const errors: Error[] = [];
   /** Owned watcher subscription; close and await settlement before removing its tree. */
   const handle = watchDirectory(root, () => {}, {
     ...options,
@@ -203,8 +225,8 @@ test('missing root and persistent permission failures report without synthetic d
     await handle.flush();
     await rename(root, root + '-moved');
     assert.deepEqual(await handle.flush(), []);
-    assert.equal(errors.at(-1).code, 'ENOENT');
-    assert.ok(!errors.at(-1).message.includes(root));
+    assert.equal(latestScanError(errors).code, 'ENOENT');
+    assert.ok(!latestScanError(errors).message.includes(root));
     await rename(root + '-moved', root);
     assert.deepEqual(await handle.flush(), []);
     if (process.getuid?.() === 0) {
@@ -216,7 +238,7 @@ test('missing root and persistent permission failures report without synthetic d
     await chmod(root, 0);
     await handle.flush();
     await handle.flush();
-    assert.equal(errors.at(-1).code, 'EACCES');
+    assert.equal(latestScanError(errors).code, 'EACCES');
     assert.ok(handle.diagnostics().scanErrors >= 3);
   } finally {
     await chmod(root, 0o700);
@@ -231,7 +253,7 @@ test('native backend failure falls back to polling with a redacted error and clo
   /** Owned temporary fixture root, removed after watcher and scan cleanup. */
   const root = await fixture();
   /** Private fixture failures collected for error-isolation and redaction assertions. */
-  const errors = [];
+  const errors: Error[] = [];
   /** Initial shared-owner count restored after the fixture releases its subscriptions. */
   const base = activeWatcherCount();
   /** Injected native-watch failure with a deliberately private cause message. */
@@ -243,7 +265,7 @@ test('native backend failure falls back to polling with a redacted error and clo
     throw failure;
   });
   /** Events retained by the filtered subscriber for deterministic assertions. */
-  const events = [];
+  const events: WatcherEvent[] = [];
   /** Owned watcher subscription; close and await settlement before removing its tree. */
   const handle = watchDirectory(root, (event) => events.push(event), {
     pollIntervalMs: 100,
@@ -253,7 +275,7 @@ test('native backend failure falls back to polling with a redacted error and clo
     await handle.ready;
     replacement.mock.restore();
     await writeFile(join(root, 'fallback'), 'x');
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       /** Start time bounding polling wait independently of the watcher’s own timers. */
       const started = Date.now();
       /** Owned polling assertion timer, cleared on success or timeout. */
@@ -292,15 +314,19 @@ test('invalid options and throwing/async ignores are contained per subscriber', 
     { pollingOnly: 'yes' },
     { signal: {} },
   ]) {
-    assert.throws(() => watchDirectory(root, () => {}, invalid));
+    assert.throws(() =>
+      Reflect.apply(watchDirectory, undefined, [root, () => {}, invalid])
+    );
   }
   assert.equal(activeWatcherCount(), base);
   /** Private fixture failures collected for error-isolation and redaction assertions. */
-  const errors = [];
+  const errors: Error[] = [];
   /** Visible event result after subscriber-specific filtering. */
-  const visible = [];
-  /** First independent subscriber; its close operation must not stop the second subscriber. */
-  const a = watchDirectory(
+  const visible: WatcherEvent[] = [];
+  /** Subscribe with a deliberately invalid JavaScript ignore callback.
+   * @returns {WatchHandle} Owned subscription; the public API must contain the invalid callback.
+   */
+  const a: WatchHandle = Reflect.apply(watchDirectory, undefined, [
     root,
     () => {
       throw Error('should be filtered');
@@ -308,9 +334,9 @@ test('invalid options and throwing/async ignores are contained per subscriber', 
     {
       ...options,
       ignored: () => Promise.reject(new Error('invalid async ignore')),
-      onError: (error) => errors.push(error),
-    }
-  );
+      onError: (error: Error) => errors.push(error),
+    },
+  ]);
   /** Second independent subscriber sharing compatible root/settings resources. */
   const b = watchDirectory(root, (event) => visible.push(event), options);
   try {
@@ -368,11 +394,17 @@ test('process-local scan admission bounds concurrency/queue and queued cancellat
     const pending = controllers.map((controller) =>
       scan(root, () => false, { signal: controller.signal })
     );
-    controllers.at(-1).abort();
+    /** Last queued caller is explicitly cancelled before its scan is admitted. */
+    const lastController = controllers.at(-1);
+    assert.ok(lastController);
+    lastController.abort();
     /** Settled results distinguishing caller cancellation from successful scans. */
     const cancelled = await Promise.allSettled(pending);
-    assert.equal(cancelled.at(-1).status, 'rejected');
-    assert.equal(cancelled.at(-1).reason.name, 'AbortError');
+    /** Cancellation must be a rejection, not an absent or successful scan. */
+    const lastResult = cancelled.at(-1);
+    assert.ok(lastResult && lastResult.status === 'rejected');
+    assert.ok(lastResult.reason instanceof Error);
+    assert.equal(lastResult.reason.name, 'AbortError');
     assert.equal((await scan(root, () => false)).size, 2);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -385,22 +417,27 @@ test('native bursts coalesce without drops and backend error releases its handle
   /** Owned temporary fixture root, removed after watcher and scan cleanup. */
   const root = await fixture();
   /** Events retained by the filtered subscriber for deterministic assertions. */
-  const events = [];
+  const events: WatcherEvent[] = [];
   /** Private fixture failures collected for error-isolation and redaction assertions. */
-  const errors = [];
+  const errors: Error[] = [];
   /** Event-emitting native watcher double with observable close ownership. */
-  const native = new EventEmitter();
-  let closes = 0,
-    notify;
-  native.close = () => {
-    closes++;
-    queueMicrotask(() => native.emit('close'));
-  };
-  /** Restorable native-watch mock; always restored during fixture cleanup. */
-  const replacement = mock.method(fs, 'watch', (_root, _options, callback) => {
-    notify = callback;
-    return native;
+  const native = Object.assign(new EventEmitter(), {
+    close(): void {
+      closes++;
+      queueMicrotask(() => native.emit('close'));
+    },
   });
+  let closes = 0;
+  let notify: (() => void) | undefined;
+  /** Restorable native-watch mock; always restored during fixture cleanup. */
+  const replacement = mock.method(
+    fs,
+    'watch',
+    (_root: fs.PathLike, _options: fs.WatchOptions, callback: () => void) => {
+      notify = callback;
+      return native;
+    }
+  );
   /** Owned watcher subscription; close and await settlement before removing its tree. */
   const handle = watchDirectory(root, (event) => events.push(event), {
     debounceMs: 10,
@@ -411,8 +448,9 @@ test('native bursts coalesce without drops and backend error releases its handle
     await handle.ready;
     replacement.mock.restore();
     await writeFile(join(root, 'burst'), 'changed');
+    assert.ok(notify);
     for (let index = 0; index < 20; index++) {
-      notify('change', 'burst');
+      notify();
     }
     await new Promise((resolve) => setTimeout(resolve, 30));
     await handle.flush();
@@ -423,7 +461,7 @@ test('native bursts coalesce without drops and backend error releases its handle
       'error',
       Object.assign(new Error('private native path'), { code: 'EIO' })
     );
-    assert.equal(errors.at(-1).code, 'EIO');
+    assert.equal(latestScanError(errors).code, 'EIO');
     handle.close();
     handle.close();
     await handle.closed;

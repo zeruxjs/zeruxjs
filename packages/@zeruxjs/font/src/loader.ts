@@ -17,6 +17,18 @@ export function injectFontStyles(
   doc.head.appendChild(style);
   return () => style.remove();
 }
+/** Borrowed font-loading surface actually observed by the loader; native Documents are compatible. */
+export interface FontLoadDocument {
+  /** Optional native/injected load owner; no DOM mutation or face metadata is performed here. */
+  readonly fonts?: {
+    /** Begin a host-owned load observation.
+     * @param {string} font - Validated CSS font shorthand produced by this package.
+     * @param {string} [text] - Optional bounded sample text.
+     * @returns {Promise<readonly unknown[]>} Matched faces; only the result count is observed.
+     */
+    load(font: string, text?: string): Promise<readonly unknown[]>;
+  };
+}
 /** Per-observation browser loading policy; cancellation does not terminate native font downloads. */
 export interface LoadFontOptions {
   /** Optional load probe text, at most 4096 UTF-16 code units. */
@@ -24,7 +36,7 @@ export interface LoadFontOptions {
   /** Positive safe-integer observation deadline, default 10000 ms and ceiling 120000 ms. */
   timeoutMs?: number;
   /** Borrowed target document; absent native FontFaceSet returns false. */
-  document?: Document;
+  document?: FontLoadDocument;
   /** Caller-owned cooperative observation cancellation, not native font-download cancellation. */
   signal?: AbortSignal;
 }
@@ -68,7 +80,7 @@ export async function loadFont(
           if (options.signal?.aborted) {
             throw new Error('Font loading cancelled');
           }
-          return doc.fonts.load(
+          return doc.fonts!.load(
             `16px ${JSON.stringify(family)}`,
             options.sample
           );
@@ -102,14 +114,14 @@ export async function loadFont(
 }
 /** Own bounded per-mount font-load observations and their cancellation listeners/timers. CSS/host font faces remain borrowed.
  * @param {object} options - Optional borrowed document and observation concurrency ceiling.
- * @param {Document} [options.document] - Borrowed host document; otherwise loadFont probes the global DOM.
+ * @param {FontLoadDocument} [options.document] - Borrowed host document; otherwise loadFont probes the global DOM.
  * @param {number} [options.maxPending] - Observation cap, default 8 and ceiling 64.
  * @returns {object} Load/dispose facade; disposal stops observation without guaranteeing native network cancellation.
  */
 export function createFontLoadScope(
   options: {
     /** Borrowed target document; absent native FontFaceSet returns false. */
-    document?: Document;
+    document?: FontLoadDocument;
     /** Observation concurrency cap, default 8 and ceiling 64. */
     maxPending?: number;
   } = {}

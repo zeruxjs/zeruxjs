@@ -21,9 +21,9 @@ const require = createRequire(import.meta.url);
  * @param {string} source - Emitted browser JavaScript inspected as syntax, never executed here.
  * @returns {string} Printed JavaScript with comments removed and executable tokens retained.
  */
-function runtimeSource(source) {
+function runtimeSource(source: string): string {
   /** Installed test/compiler dependency; the browser package does not import this parser. */
-  const parser = require('typescript');
+  const parser = require('typescript') as typeof import('typescript');
   return parser
     .createPrinter({ removeComments: true })
     .printFile(
@@ -84,9 +84,12 @@ test('packed build example uses installed exports; browser imports/declarations 
     /** Authored README inspected as inert text, not evaluated as a module. */
     const readme = await readFile(join(packageRoot, 'README.md'), 'utf8');
     /** Public build example compiled through the packed export map. */
-    const example = readme
+    const exampleMatch = readme
       .split('## Build-time font assets')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(exampleMatch, 'Authored public TypeScript example is required');
+    /** Matched public-import example is compiled from inert README text. */
+    const example = exampleMatch[1];
     await writeFile(join(root, 'example.ts'), example);
     await exec(
       process.execPath,
@@ -120,9 +123,15 @@ test('packed build example uses installed exports; browser imports/declarations 
     );
     await exec(process.execPath, ['run.mjs'], { cwd: root });
     /** Public Zuixs integration example compiled against packed contracts. */
-    const integration = readme
+    const integrationMatch = readme
       .split('## Opt-in Zuixs font tokens')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(
+      integrationMatch,
+      'Authored public TypeScript example is required'
+    );
+    /** Matched public-import example is compiled from inert README text. */
+    const integration = integrationMatch[1];
     await writeFile(join(root, 'integration.ts'), integration);
     await exec(
       process.execPath,

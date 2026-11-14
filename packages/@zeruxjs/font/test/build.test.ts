@@ -12,10 +12,22 @@ import {
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
-import { buildFontAssets, createFontToolsTool } from '../dist/build.js';
-import { defineFont, svgIconMarkup, fontIcon } from '../dist/index.js';
+import {
+  buildFontAssets,
+  createFontToolsTool,
+  type FontBuildOptions,
+  type BuildFont,
+  type FontLicense,
+  type FontToolsTool,
+} from '../dist/build.js';
+import {
+  defineFont,
+  svgIconMarkup,
+  fontIcon,
+  type SvgIcon,
+} from '../dist/index.js';
 /** Explicit synthetic header-fixture permission/provenance, not permission to redistribute a real font. */
-const license = {
+const license: FontLicense = {
   id: 'LicenseRef-Fixture',
   source: 'local:authored-fixture',
   attribution: 'Synthetic test bytes, not a redistributable font',
@@ -40,18 +52,20 @@ const font = {
   source: { path: 'fixture.woff2' },
   license,
   preload: true,
-};
+} satisfies BuildFont;
 /** Own a synthetic project/font header and remove the temporary tree after build assertions.
  * @param {Function} fn - Borrowed async assertions over owned root and explicit build configuration.
  * @returns {Promise<void>} Synthetic test completion with cleanup; no real font/provider qualification.
  */
-async function fixture(fn) {
+async function fixture(
+  fn: (root: string, config: FontBuildOptions) => Promise<void>
+): Promise<void> {
   /** Owned temporary project root; fixture finally removes only this synthetic tree. */
   const root = await mkdtemp(join(tmpdir(), 'zx-font-'));
   try {
     await writeFile(join(root, 'fixture.woff2'), fontBytes());
     /** Explicit local output and non-root public mount for this synthetic build. */
-    const config = {
+    const config: FontBuildOptions = {
       projectRoot: root,
       outputDir: 'public/fonts',
       publicBase: '/app/fonts/',
@@ -132,7 +146,9 @@ test('duplicate keys/equivalent families, invalid CSS/axes, rights and preload b
       ],
       [{ ...font, license: { ...license, redistributionAllowed: false } }],
     ]) {
-      await assert.rejects(buildFontAssets({ ...config, fonts }));
+      await assert.rejects(
+        Reflect.apply(buildFontAssets, undefined, [{ ...config, fonts }])
+      );
     }
     await assert.rejects(
       buildFontAssets({ ...config, preload: { maxCount: 0, maxBytes: 1000 } }),
@@ -186,7 +202,8 @@ test('remote failure, bounded redirects and deadline cancel readers while preser
     ];
     await assert.rejects(
       buildFontAssets({ ...config, fonts, remote }),
-      (error) => !error.message.includes('SECRET')
+      (error: unknown) =>
+        error instanceof Error && !error.message.includes('SECRET')
     );
     assert.equal(calls, 1);
     assert.equal(cancelled, 1);
@@ -201,7 +218,9 @@ test('remote failure, bounded redirects and deadline cancel readers while preser
           },
         },
       }),
-      (error) => error.message === 'Build-time font acquisition failed'
+      (error: unknown) =>
+        error instanceof Error &&
+        error.message === 'Build-time font acquisition failed'
     );
     /** Injected nonsettling body whose cooperative cancellation is observed after deadline. */
     const slow = {
@@ -283,7 +302,7 @@ test('source/output traversal and symlinks fail; output quota failure retains la
 test('structured SVG icons are inert; font glyphs require emitted-font coverage', () =>
   fixture(async (root, config) => {
     /** Structured inert SVG fixture with no raw XML or executable attributes. */
-    const geometry = {
+    const geometry: SvgIcon = {
       viewBox: [0, 0, 24, 24],
       paths: [{ d: 'M0 0 L24 24 Z' }],
     };
@@ -331,14 +350,14 @@ test('explicit FontTools selection checks axes and subset glyphs; a missing tool
   fixture(async (root, config) => {
     let inspections = 0;
     /** Explicit injected FontTools-shaped fixture; never proof that native FontTools is installed. */
-    const tool = {
+    const tool: FontToolsTool = {
       name: 'fonttools',
       inspect: async () => ({
         toolVersion: '4.60.0-fixture',
         axes: [{ tag: 'wght', min: 100, default: 400, max: 900 }],
         codePoints: ++inspections === 1 ? [65, 66] : [65],
       }),
-      subset: async (bytes) => {
+      subset: async (bytes: Uint8Array) => {
         /** Copied subset bytes or emitted manifest observed in the bounded tool fixture. */
         const result = new Uint8Array(bytes);
         result[63] = 7;
@@ -364,7 +383,9 @@ test('explicit FontTools selection checks axes and subset glyphs; a missing tool
       ],
     });
     assert.notEqual(result.fonts[0].sha256, result.fonts[0].sourceSha256);
+    assert.ok(result.fonts[0].subset);
     assert.deepEqual(result.fonts[0].subset.codePoints, [65]);
+    assert.ok(result.fonts[0].tool);
     assert.equal(result.fonts[0].tool.version, '4.60.0-fixture');
     inspections = 0;
     await assert.rejects(
@@ -417,11 +438,12 @@ test('output lease rejects overlapping builds and cancelled acquisition drains b
       join(root, 'public/fonts/manifest.json'),
       'utf8'
     );
-    let release, started;
+    let release: (() => void) | undefined;
+    let started: (() => void) | undefined;
     /** Barrier proving the first build owns the lease before the competing build starts. */
-    const ready = new Promise((r) => (started = r));
+    const ready = new Promise<void>((r) => (started = r));
     /** Fixture-controlled acquisition settlement, released before teardown drains the build. */
-    const waiting = new Promise((r) => (release = r));
+    const waiting = new Promise<void>((r) => (release = r));
     /** Owned cancellation controller for the held synthetic acquisition. */
     const controller = new AbortController();
     let cancelled = 0;
@@ -429,6 +451,7 @@ test('output lease rejects overlapping builds and cancelled acquisition drains b
     const remote = {
       allowedOrigins: ['https://approved.test'],
       fetch: async () => {
+        assert.ok(started);
         started();
         await waiting;
         return new Response(
@@ -453,6 +476,7 @@ test('output lease rejects overlapping builds and cancelled acquisition drains b
       await ready;
       await assert.rejects(buildFontAssets(config), /locked/);
       controller.abort();
+      assert.ok(release);
       release();
       await assert.rejects(work, /acquisition failed/);
       assert.equal(cancelled, 1);
@@ -467,6 +491,7 @@ test('output lease rejects overlapping builds and cancelled acquisition drains b
     } finally {
       // Release and settle the held transport before outer cleanup can remove its leased directory.
       controller.abort();
+      assert.ok(release);
       release();
       await work.catch(() => {});
     }

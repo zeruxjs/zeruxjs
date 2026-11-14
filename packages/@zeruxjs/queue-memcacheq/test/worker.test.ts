@@ -1,15 +1,19 @@
-import test from 'node:test';
+import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
-import { createMemcacheQ } from '@zeruxjs/queue-memcacheq';
-import { createMemcacheQWorker } from '@zeruxjs/queue-memcacheq/worker';
-import { selectQueueBackend } from '@zeruxjs/queue/neutral';
+import { createMemcacheQ, MemcacheQError } from '@zeruxjs/queue-memcacheq';
+import {
+  createMemcacheQWorker,
+  type MemcacheQWorkerOptions,
+  type MemcacheQWorkerErrorNotice,
+} from '@zeruxjs/queue-memcacheq/worker';
+import { selectQueueBackend, QueueBackendError } from '@zeruxjs/queue/neutral';
 import { memcacheQBackend } from '@zeruxjs/queue/backends';
 /** Poll a finite synthetic condition with a hard200-iteration limit; not a live-provider success claim.
- * @param {unknown} check - Explicit synthetic fixture callback/settings/value; no private live state.
- * @returns {Promise<unknown>} Synthetic fixture result or bounded assertion failure.
+ * @param {() => unknown} check - Explicit synthetic fixture callback/settings/value; no private live state.
+ * @returns {Promise<void>} Resolves when the condition succeeds within the polling bound.
  */
-async function until(check) {
+async function until(check: () => unknown): Promise<void> {
   // Process only finite fixture cases/handles; no live broker acceptance is inferred.
   for (let i = 0; i < 200; i++) {
     if (check()) {
@@ -20,16 +24,16 @@ async function until(check) {
   throw Error('fixture condition not reached');
 }
 /** Own a temporary loopback FIFO text fixture and its sockets; teardown destroys handles before closing the server.
- * @param {unknown} t - Explicit synthetic fixture callback/settings/value; no private live state.
+ * @param {TestContext} t - Explicit synthetic fixture callback/settings/value; no private live state.
  * @returns {Promise<unknown>} Synthetic fixture result or bounded assertion failure.
  */
-async function fixture(t) {
+async function fixture(t: TestContext) {
   /** Synthetic in-memory FIFO buffers; no real broker persistence is claimed. */
-  const queues = new Map();
+  const queues = new Map<string, Buffer[]>();
   /** Finite local fixture command log with no operator payloads. */
-  const commands = [];
+  const commands: { op: string; key: string; at: number }[] = [];
   /** Owned ephemeral fixture sockets destroyed during teardown. */
-  const sockets = new Set();
+  const sockets = new Set<net.Socket>();
   let hold = false;
   /** Owned ephemeral loopback framing fixture, not a real MemcacheQ server. */
   const server = net.createServer((socket) => {
@@ -38,7 +42,7 @@ async function fixture(t) {
     socket.on('error', () => {});
     let data = Buffer.alloc(0),
       done = false;
-    socket.on('data', (chunk) => {
+    socket.on('data', (chunk: Buffer) => {
       if (done) {
         return;
       }
@@ -83,39 +87,48 @@ async function fixture(t) {
       }
     });
   });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(async () => {
     // Process only finite fixture cases/handles; no live broker acceptance is inferred.
     for (const socket of sockets) {
       socket.destroy();
     }
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
   });
+  /** Bound TCP address; this fixture never listens on a pipe. */
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
   return {
     connection: {
       host: '127.0.0.1',
-      port: server.address().port,
+      port: address.port,
       serverMaxBytes: 8192,
     },
     queues,
     commands,
     sockets,
     /** Toggle fixture reads held open to exercise cancellation and unknown outcomes.
-     * @param {unknown} value - Explicit synthetic fixture callback/settings/value; no private live state.
+     * @param {boolean} value - Explicit synthetic fixture callback/settings/value; no private live state.
      * @returns {void} Synthetic fixture result or bounded assertion failure.
      */
-    set hold(value) {
+    set hold(value: boolean) {
       hold = value;
     },
   };
 }
 /** Build deterministic tiny fixture budgets without contacting a real broker.
- * @param {unknown} f - Explicit synthetic fixture callback/settings/value; no private live state.
- * @param {unknown} handler - Explicit synthetic fixture callback/settings/value; no private live state.
- * @param {unknown} extra - Explicit synthetic fixture callback/settings/value; no private live state.
- * @returns {unknown} Synthetic fixture result or bounded assertion failure.
+ * @param {Awaited<ReturnType<typeof fixture>>} f - Explicit synthetic fixture callback/settings/value; no private live state.
+ * @param {MemcacheQWorkerOptions['queues'][number]['handler']} handler - Explicit synthetic fixture callback/settings/value; no private live state.
+ * @param {Partial<MemcacheQWorkerOptions>} extra - Explicit synthetic fixture callback/settings/value; no private live state.
+ * @returns {MemcacheQWorkerOptions} Explicit worker configuration for synthetic protocol tests.
  */
-function settings(f, handler, extra = {}) {
+function settings(
+  f: Awaited<ReturnType<typeof fixture>>,
+  handler: MemcacheQWorkerOptions['queues'][number]['handler'],
+  extra: Partial<MemcacheQWorkerOptions> = {}
+): MemcacheQWorkerOptions {
   return {
     connection: f.connection,
     queues: [{ name: 'jobs', handler }],
@@ -129,9 +142,9 @@ function settings(f, handler, extra = {}) {
 }
 /** Build inert synthetic V1 message bytes for a destructive FIFO test.
  * @param {string} name - Explicit synthetic fixture callback/settings/value; no private live state.
- * @returns {unknown} Synthetic fixture result or bounded assertion failure.
+ * @returns {Buffer} Inert serialized envelope bytes.
  */
-function record(name = 'send') {
+function record(name = 'send'): Buffer {
   return Buffer.from(
     JSON.stringify({ version: 1, name, data: { recordId: 'one' } })
   );
@@ -143,7 +156,15 @@ test('V1 producer/consumer preserves shape, legacy reads are explicit, unsafe/un
   const queue = createMemcacheQ(f.connection);
   try {
     await queue.add('jobs', 'send', { recordId: 'one' });
-    assert.equal(JSON.parse(f.queues.get('zerux:jobs')[0]).version, 1);
+    /** Producer bytes must be present before independently decoding the envelope. */
+    const encoded = f.queues.get('zerux:jobs')?.[0];
+    assert.ok(encoded);
+    /** Decoded transport JSON is untrusted until its shape is checked. */
+    const envelope: unknown = JSON.parse(encoded.toString('utf8'));
+    assert.ok(
+      envelope && typeof envelope === 'object' && 'version' in envelope
+    );
+    assert.equal(envelope.version, 1);
     assert.deepEqual(await queue.take('jobs'), {
       name: 'send',
       data: { recordId: 'one' },
@@ -157,11 +178,13 @@ test('V1 producer/consumer preserves shape, legacy reads are explicit, unsafe/un
     aborted.abort();
     await assert.rejects(
       queue.take('jobs', { signal: aborted.signal }),
-      (e) => e.code === 'MEMCACHEQ_CANCELLED'
+      (e: unknown) =>
+        e instanceof MemcacheQError && e.code === 'MEMCACHEQ_CANCELLED'
     );
     await assert.rejects(
       queue.take('jobs', { deadline: 0 }),
-      (e) => e.code === 'MEMCACHEQ_DEADLINE'
+      (e: unknown) =>
+        e instanceof MemcacheQError && e.code === 'MEMCACHEQ_DEADLINE'
     );
     // Process only finite fixture cases/handles; no live broker acceptance is inferred.
     for (const opt of [
@@ -171,7 +194,7 @@ test('V1 producer/consumer preserves shape, legacy reads are explicit, unsafe/un
       { retry: true },
     ]) {
       await assert.rejects(
-        queue.add('jobs', 'send', {}, opt),
+        Reflect.apply(queue.add, queue, ['jobs', 'send', {}, opt]),
         /INVALID_OPTIONS/
       );
     }
@@ -193,7 +216,9 @@ test('V1 producer/consumer preserves shape, legacy reads are explicit, unsafe/un
     ]);
     await assert.rejects(
       queue.take('jobs'),
-      (e) => e.code === 'MEMCACHEQ_INVALID_POPPED_MESSAGE'
+      (e: unknown) =>
+        e instanceof MemcacheQError &&
+        e.code === 'MEMCACHEQ_INVALID_POPPED_MESSAGE'
     );
     /** Owned V1-only client; closes and drains even when malformed-envelope assertions fail. */
     const strict = createMemcacheQ({ ...f.connection, acceptLegacy: false });
@@ -206,7 +231,8 @@ test('V1 producer/consumer preserves shape, legacy reads are explicit, unsafe/un
         f.queues.set('zerux:jobs', [Buffer.from(JSON.stringify(envelope))]);
         await assert.rejects(
           strict.take('jobs'),
-          (e) =>
+          (e: unknown) =>
+            e instanceof MemcacheQError &&
             e.code === 'MEMCACHEQ_INVALID_POPPED_MESSAGE' &&
             !e.message.includes('old')
         );
@@ -261,23 +287,25 @@ test('bounded concurrency holds actual slots through timeout, never reinserts fa
     Array.from({ length: 5 }, () => record())
   );
   /** Held handler settlement callbacks; release them even after an assertion failure. */
-  const finish = [];
+  const finish: (() => void)[] = [];
   /** Observed synthetic handler signals, not private application state. */
-  const signals = [];
+  const signals: AbortSignal[] = [];
   /** Fixed redacted error metadata captured only for fixture assertions. */
-  const notices = [];
+  const notices: MemcacheQWorkerErrorNotice[] = [];
   /** Owned polling worker; close is bounded and closed observes actual work. */
   const worker = createMemcacheQWorker(
     settings(
       f,
       (job) => {
         signals.push(job.signal);
-        return new Promise((resolve) => finish.push(resolve));
+        return new Promise<void>((resolve) => finish.push(resolve));
       },
       {
         concurrency: 2,
         processingMs: 5,
-        onError: (notice) => notices.push(notice),
+        onError: (notice) => {
+          notices.push(notice);
+        },
       }
     )
   );
@@ -337,12 +365,15 @@ test('close during socket read cancels native handles; graceful handler drain re
   assert.equal(worker.status().pollFailures, 0);
   f.hold = false;
   f.queues.set('zerux:jobs', [record()]);
-  let finish, signal;
+  let finish: (() => void) | undefined;
+  let signal: AbortSignal | undefined;
   /** Owned graceful-drain worker; release its synthetic handler before awaiting actual closure. */
   const handler = createMemcacheQWorker(
     settings(f, (job) => {
       signal = job.signal;
-      return new Promise((resolve) => (finish = resolve));
+      return new Promise<void>((resolve) => {
+        finish = resolve;
+      });
     })
   );
   // Always release held synthetic work before observing the actual settlement barrier.
@@ -354,7 +385,9 @@ test('close during socket read cancels native handles; graceful handler drain re
   await until(() => finish);
   /** Bounded close receipt observed separately from actual handler/socket settlement. */
   const closing = handler.close();
+  assert.ok(signal);
   assert.equal(signal.aborted, false);
+  assert.ok(finish);
   finish();
   await closing;
   await handler.closed;
@@ -370,7 +403,7 @@ test('malformed popped records, handler errors and callback exceptions remain re
     record(),
   ]);
   /** Fixed redacted error metadata captured only for fixture assertions. */
-  const notices = [];
+  const notices: MemcacheQWorkerErrorNotice[] = [];
   let calls = 0;
   /** Owned polling worker; close is bounded and closed observes actual work. */
   const worker = createMemcacheQWorker(
@@ -401,7 +434,7 @@ test('malformed popped records, handler errors and callback exceptions remain re
   assert.ok(worker.status().hookFailures >= 1);
   assert.doesNotMatch(JSON.stringify(notices), /SECRET|recordId/);
   assert.equal(f.commands.filter((c) => c.op === 'set').length, 0);
-  assert.equal(f.queues.get('zerux:jobs').length, 0);
+  assert.equal(f.queues.get('zerux:jobs')?.length, 0);
 });
 test('cancellation and configuration/capability denial are inert before polling; invalid jitter input stops safely', async (t) => {
   /** Owned synthetic protocol fixture with its teardown registered on the test. */
@@ -422,13 +455,20 @@ test('cancellation and configuration/capability denial are inert before polling;
   await worker.closed;
   assert.equal(f.commands.length, 0);
   assert.throws(
-    () => createMemcacheQWorker(settings(f, async () => {}, { delay: 100 })),
+    () =>
+      createMemcacheQWorker(
+        Reflect.apply(settings, undefined, [f, async () => {}, { delay: 100 }])
+      ),
     /INVALID_OPTIONS/
   );
   assert.throws(
     () =>
       createMemcacheQWorker(
-        settings(f, async () => {}, { connection: { host: 'localhost' } })
+        Reflect.apply(settings, undefined, [
+          f,
+          async () => {},
+          { connection: { host: 'localhost' } },
+        ])
       ),
     /INVALID_OPTIONS/
   );
@@ -439,7 +479,8 @@ test('cancellation and configuration/capability denial are inert before polling;
         f.connection,
         { requireCapabilities: ['acknowledgement'] }
       ),
-    (e) => e.code === 'UNSUPPORTED_CAPABILITY'
+    (e: unknown) =>
+      e instanceof QueueBackendError && e.code === 'UNSUPPORTED_CAPABILITY'
   );
   /** Worker with an intentionally invalid jitter source; it must fail and clean resources safely. */
   const invalid = createMemcacheQWorker(
@@ -459,10 +500,14 @@ test('backend disconnection reports an unknown destructive outcome and remains c
   const f = await fixture(t);
   f.hold = true;
   /** Fixed redacted error metadata captured only for fixture assertions. */
-  const notices = [];
+  const notices: MemcacheQWorkerErrorNotice[] = [];
   /** Owned polling worker; close is bounded and closed observes actual work. */
   const worker = createMemcacheQWorker(
-    settings(f, async () => {}, { onError: (notice) => notices.push(notice) })
+    settings(f, async () => {}, {
+      onError: (notice) => {
+        notices.push(notice);
+      },
+    })
   );
   // Always release held synthetic work before observing the actual settlement barrier.
   t.after(async () => {
@@ -484,8 +529,8 @@ test('backend disconnection reports an unknown destructive outcome and remains c
 test('idle jitter is bounded and asynchronous error hooks are isolated with one pending notification', async (t) => {
   /** Owned synthetic protocol fixture with its teardown registered on the test. */
   const f = await fixture(t);
-  let random = 0,
-    finish;
+  let random = 0;
+  let finish: (() => void) | undefined;
   /** Owned polling worker; close is bounded and closed observes actual work. */
   const worker = createMemcacheQWorker(
     settings(f, async () => {}, { random: () => random })
@@ -507,7 +552,10 @@ test('idle jitter is bounded and asynchronous error hooks are isolated with one 
   const hook = createMemcacheQWorker(
     settings(f, async () => {}, {
       drainMs: 5,
-      onError: () => new Promise((resolve) => (finish = resolve)),
+      onError: () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
     })
   );
   // Always release held synthetic work before observing the actual settlement barrier.
@@ -520,6 +568,7 @@ test('idle jitter is bounded and asynchronous error hooks are isolated with one 
   await hook.close();
   assert.equal(hook.status().state, 'incomplete');
   assert.equal(hook.status().pendingErrorHooks, 1);
+  assert.ok(finish);
   finish();
   await hook.closed;
   assert.equal(hook.status().pendingTimers, 0);

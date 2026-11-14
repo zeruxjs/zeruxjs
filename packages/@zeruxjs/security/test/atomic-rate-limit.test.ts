@@ -1,10 +1,16 @@
+import type {
+  AtomicRateLimitStore,
+  AtomicRateLimitDecision,
+  EndpointRateLimitPolicy,
+  RateLimitMetric,
+} from '@zeruxjs/security';
 import { createRequire } from 'node:module';
 /** CommonJS bridge retained for the package's existing require-based fixtures. */
 const require = createRequire(import.meta.url);
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
-const { test } = require('node:test');
+const { test } = require('node:test') as typeof import('node:test');
 /** Native strict assertions; failures must remain visible after fixture cleanup. */
-const assert = require('node:assert/strict');
+const assert: typeof import('node:assert/strict') = require('node:assert/strict');
 /** Public native/library fixture APIs; tests retain explicit ownership of every acquired resource. */
 const {
   createRateLimiter,
@@ -12,11 +18,11 @@ const {
   createDistributedRateLimiter,
   resolveRateLimitIp,
   rateLimitHttpResponse,
-} = require('../dist/index.js');
+} = require('../dist/index.js') as typeof import('@zeruxjs/security');
 /** Explicit synthetic key material; fixture values are not production credentials. */
 const secret = Buffer.alloc(32, 7);
 /** Captured fixed synthetic endpoint quota/outage policies. */
-const policies = {
+const policies: Record<string, EndpointRateLimitPolicy> = {
   login: { max: 3, windowMs: 1000, failure: 'closed' },
   search: { max: 2, windowMs: 1000, failure: 'open' },
 };
@@ -28,7 +34,10 @@ const identity = { tenant: 'tenant-a', subject: 'sensitive@example.test' };
  * @param {object} extra - Optional fixture-only policy overrides.
  * @returns {object} Owned process-scoped limiter with close; no durable fallback.
  */
-const local = (store, extra = {}) =>
+const local = (
+  store: AtomicRateLimitStore,
+  extra: Partial<Parameters<typeof createDistributedRateLimiter>[0]> = {}
+) =>
   createDistributedRateLimiter({
     store,
     secret,
@@ -41,9 +50,9 @@ test('fixed-window boundary, burst, tenant/endpoint separation and redacted HMAC
   /** Owned process-local reference store under a synthetic trusted clock. */
   const base = createMemoryRateLimitStore({ now: () => now, maxKeys: 10 });
   /** Synthetic opaque-key ledger used to prove raw identity redaction. */
-  const keys = [];
+  const keys: string[] = [];
   /** Injected synthetic atomic/replay store; persistence/atomicity claims extend only to this fixture. */
-  const store = {
+  const store: AtomicRateLimitStore = {
     ...base,
     claim(input, options) {
       keys.push(input.key);
@@ -62,6 +71,7 @@ test('fixed-window boundary, burst, tenant/endpoint separation and redacted HMAC
     assert.equal(results[3].retryAfterSeconds, 1);
     /** Synthetic Fetch admission response checked without starting a listener. */
     const response = rateLimitHttpResponse(results[3]);
+    assert.ok(response);
     assert.equal(response.status, 429);
     assert.equal(response.headers.get('retry-after'), '1');
     assert.deepEqual(await response.json(), {
@@ -83,6 +93,7 @@ test('fixed-window boundary, burst, tenant/endpoint separation and redacted HMAC
     assert.notEqual(keys.at(-1), keys[0]);
   } finally {
     await limiter.close();
+    assert.ok(base.close);
     base.close();
   }
 });
@@ -112,15 +123,16 @@ test('memory capacity never evicts live counters, expires keys and requires expl
     true
   );
   await limiter.close();
+  assert.ok(store.close);
   store.close();
   await assert.rejects(limiter.check('login', identity));
 });
 test('store outage is explicit open/closed, hooks never receive identities and exceptions isolate', async () => {
   let calls = 0;
   /** Redacted fixed-label hook ledger; identities and raw backend causes must stay excluded. */
-  const metrics = [];
+  const metrics: RateLimitMetric[] = [];
   /** Injected synthetic atomic/replay store; persistence/atomicity claims extend only to this fixture. */
-  const store = {
+  const store: AtomicRateLimitStore = {
     capability: 'atomic-fixed-window-v1',
     scope: 'distributed',
     async claim() {
@@ -150,6 +162,7 @@ test('store outage is explicit open/closed, hooks never receive identities and e
   assert.equal(limiter.getDiagnostics().hookErrors, 2);
   /** Synthetic Fetch admission response checked without starting a listener. */
   const response = rateLimitHttpResponse(closed);
+  assert.ok(response);
   assert.equal(response.status, 503);
   assert.equal(response.headers.get('retry-after'), '1');
   assert.deepEqual(await response.json(), {
@@ -177,20 +190,21 @@ test('forged forwarding is ignored unless direct peer is explicitly trusted', ()
   );
 });
 test('pending bounds/deadline retain uncooperative jobs and close owns cleanup', async (t) => {
-  let settle,
-    ready,
-    closed = 0;
+  let settle: ((decision: AtomicRateLimitDecision) => void) | undefined;
+  let ready: (() => void) | undefined;
+  let closed = 0;
   /** Owned fixture readiness promise; settle held work before attempting final drain. */
-  const started = new Promise((r) => {
+  const started = new Promise<void>((r) => {
     ready = r;
   });
   /** Injected synthetic atomic/replay store; persistence/atomicity claims extend only to this fixture. */
-  const store = {
+  const store: AtomicRateLimitStore = {
     capability: 'atomic-fixed-window-v1',
     scope: 'distributed',
     claim() {
+      assert.ok(ready);
       ready();
-      return new Promise((r) => {
+      return new Promise<AtomicRateLimitDecision>((r) => {
         settle = r;
       });
     },
@@ -232,6 +246,7 @@ test('pending bounds/deadline retain uncooperative jobs and close owns cleanup',
   });
   await new Promise((r) => setImmediate(r));
   assert.equal(done, false);
+  assert.ok(settle);
   settle({
     allowed: true,
     remaining: 2,
@@ -255,12 +270,13 @@ test('invalid subjects/weights and malformed store results fail safely; legacy l
   );
   await assert.rejects(limiter.check('login', identity, { weight: 0 }));
   await limiter.close();
+  assert.ok(store.close);
   store.close();
   /** Independent process-local compatibility limiter; reset clears only this fixture state. */
   const legacy = createRateLimiter({ windowMs: 1000, max: 1, now: () => 1000 });
   assert.equal(legacy.check('a').allowed, true);
   assert.equal(legacy.check('a').allowed, false);
-  assert.throws(() => legacy.check(123));
+  assert.throws(() => Reflect.apply(legacy.check, legacy, [123]));
   /** Synthetic malformed/failing dependency wrapper whose failure must remain explicit. */
   const bad = local({
     capability: 'atomic-fixed-window-v1',
@@ -279,7 +295,7 @@ test('invalid subjects/weights and malformed store results fail safely; legacy l
 
 test('public decisions strip custom store fields and caller cancellation never fails open', async () => {
   /** Injected synthetic atomic/replay store; persistence/atomicity claims extend only to this fixture. */
-  const store = {
+  const store: AtomicRateLimitStore = {
     capability: 'atomic-fixed-window-v1',
     scope: 'distributed',
     claim: async () => ({

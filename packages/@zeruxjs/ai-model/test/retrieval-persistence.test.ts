@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   chunkDocument,
+  type GroundedChatProvider,
   createKnowledgeBase,
   retrieveEvidence,
   createEvidencePrompt,
@@ -22,7 +23,7 @@ test('deterministic chunks maintain overlap and handle unicode', () => {
   );
   assert.ok(chunks.length > 2);
   assert.equal(chunks[0].id, 'manual#0');
-  assert.ok(chunks.every((ch) => ch.metadata.sourceId === 'manual'));
+  assert.ok(chunks.every((ch) => ch.metadata?.sourceId === 'manual'));
   for (let i = 1; i < chunks.length; i++) {
     assert.equal(
       Array.from(chunks[i - 1].text)
@@ -76,7 +77,7 @@ test('knowledge snapshots are atomic and refuse symlink files', async () => {
     await saveKnowledgeBase(kb, file);
     /** Restored independent base exposes the previously persisted synthetic metadata. */
     const loaded = await loadKnowledgeBase(file);
-    assert.equal(loaded.get('a').metadata.author, 'a');
+    assert.equal(loaded.get('a')?.metadata?.author, 'a');
     /** Synthetic symlink target must be rejected by both snapshot read and replacement paths. */
     const alias = join(dir, 'alias');
     await symlink(file, alias);
@@ -93,7 +94,7 @@ test('grounded assistant interoperates with AI provider shape', async () => {
   const kb = createKnowledgeBase();
   kb.add({ id: 'doc', text: 'Local routing uses explicit handlers.' });
   /** Injected structural provider; no external model or credentials are used. */
-  const provider = {
+  const provider: GroundedChatProvider = {
     async chat(messages) {
       assert.equal(messages[0].role, 'system');
       assert.match(messages[1].content, /\[doc\]/);
@@ -132,7 +133,7 @@ test('knowledge snapshots reject duplicate IDs atomically and evidence quotes un
       }),
     /Duplicate/
   );
-  assert.equal(base.get('trusted').text, 'public deployment guide');
+  assert.equal(base.get('trusted')?.text, 'public deployment guide');
   assert.throws(
     () => base.add({ id: 'bad\nINSTRUCTIONS:', text: 'something' }),
     /Document/

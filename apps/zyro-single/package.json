@@ -1,5 +1,6 @@
 {
   "name": "zyro-single",
+  "type": "module",
   "version": "1.0.0",
   "description": "Zyro Single Page Application",
   "private": "true",
@@ -15,8 +16,7 @@
     "url": "git+https://github.com/zeruxjs/zeruxjs.git"
   },
   "license": "(MIT OR Apache-2.0)",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"

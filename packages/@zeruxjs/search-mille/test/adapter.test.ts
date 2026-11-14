@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import type { RequestOptions } from 'meilisearch';
 import { createHash } from 'node:crypto';
 import {
   createMilleSearchAdapter,
@@ -10,7 +11,8 @@ import { registerSearchService } from '@zeruxjs/search/adapters';
  * @param {string} v - Literal synthetic tenant/identity encoding.
  * @returns {string} Hexadecimal SHA-256 digest.
  */
-const hash = (v) => createHash('sha256').update(v).digest('hex');
+const hash = (v: string): string =>
+  createHash('sha256').update(v).digest('hex');
 /** Create a verified fixture tenant call with an independent cooperative signal/deadline.
  * @param {string} tenant - Synthetic verified tenant; defaults to a where declared.
  * @returns {object} Independent finite call scope.
@@ -26,9 +28,24 @@ const key = new Uint8Array(32).fill(7);
  * @param {object} overrides - Explicit synthetic HTTP-method replacements.
  * @returns {object} Borrowed client, settings, call ledger and state controls.
  */
-function fixture(overrides = {}) {
+/** Fixed SDK request verbs used by the adapter; no arbitrary operation dispatch. */
+type Method = 'get' | 'post' | 'put' | 'patch';
+/** Synthetic wire results remain unknown until the adapter validates them. */
+type Dispatch = (method: Method, input: RequestOptions) => Promise<unknown>;
+/** Explicit callback overrides used for controlled failures/cancellation only. */
+type Overrides = Partial<
+  Record<
+    Method,
+    (input: RequestOptions, dispatch: Dispatch) => Promise<unknown>
+  >
+>;
+/** Create independent native settings/task/query fixtures without a network owner.
+ * @param {Overrides} overrides - Explicit scripted request outcomes and failures.
+ * @returns {object} Borrowed client, ledger and mutable fixture state.
+ */
+function fixture(overrides: Overrides = {}) {
   /** Bounded synthetic native request ledger; no real engine or private records are logged. */
-  const requests = [];
+  const requests: Array<RequestOptions & { method: Method }> = [];
   let state = 'enqueued',
     uid = 10;
   /** Explicit compatible native settings fixture; mutations intentionally exercise validation failure. */
@@ -52,7 +69,7 @@ function fixture(overrides = {}) {
    * @param {object} input - Explicit synthetic SDK call.
    * @returns {Promise<object>} Declared synthetic index/task/query outcome.
    */
-  const dispatch = async (method, input) => {
+  const dispatch: Dispatch = async (method, input) => {
     requests.push({ method, ...input });
     /** Synthetic SDK request path used only to select declared fixture responses. */
     const path = input.path;
@@ -100,19 +117,29 @@ function fixture(overrides = {}) {
   };
   /** Borrowed injected HTTP surface; its close must never be invoked by the adapter. */
   const client = {
-    httpRequest: Object.fromEntries(
-      ['get', 'post', 'put', 'patch'].map((method) => [
-        method,
-        async (input) =>
-          overrides[method]
-            ? overrides[method](input, dispatch)
-            : dispatch(method, input),
-      ])
-    ),
+    httpRequest: {
+      get: <T = unknown>(input: RequestOptions) => invoke<T>('get', input),
+      post: <T = unknown>(input: RequestOptions) => invoke<T>('post', input),
+      put: <T = unknown>(input: RequestOptions) => invoke<T>('put', input),
+      patch: <T = unknown>(input: RequestOptions) => invoke<T>('patch', input),
+    },
     close() {
       throw Error('Borrowed client must not close');
     },
   };
+  /** Reproduce the SDK generic JSON boundary; the adapter must independently validate this unknown result.
+   * @template T
+   * @param {Method} method - Fixed declared SDK verb.
+   * @param {RequestOptions} input - Official request options captured without a real network request.
+   * @returns {Promise<T>} Synthetic decoded response, deliberately not trusted by the adapter.
+   */
+  async function invoke<T>(method: Method, input: RequestOptions): Promise<T> {
+    /** Optional explicit scripted failure/response for this verb. */
+    const override = overrides[method];
+    return (await (override
+      ? override(input, dispatch)
+      : dispatch(method, input))) as T;
+  }
   return {
     requests,
     settings,
@@ -120,13 +147,13 @@ function fixture(overrides = {}) {
     options: {
       client,
       index: 'catalog',
-      fields: { category: 'string', price: 'number' },
+      fields: { category: 'string', price: 'number' } as const,
       filterable: ['category', 'price'],
       sortable: ['id', 'price'],
       taskKey: key,
       taskScope: 'fixture',
     },
-    state(value) {
+    state(value: string) {
       state = value;
     },
   };
@@ -201,12 +228,16 @@ test('literal structured filters are ANDed outside tenant scope; IDs and respons
     );
     /** Recorded synthetic native request used for exact filter/sort assertions. */
     const request = f.requests.find((r) => r.path.endsWith('/search'));
-    assert.equal(request.body.filter[0], `_zxTenant = "${hash('a')}"`);
+    assert.ok(request);
     assert.equal(
-      request.body.filter[1],
+      array(record(request.body).filter)[0],
+      `_zxTenant = "${hash('a')}"`
+    );
+    assert.equal(
+      array(record(request.body).filter)[1],
       `category = ${JSON.stringify(hostile)}`
     );
-    assert.deepEqual(request.body.sort, ['price:asc', 'id:asc']);
+    assert.deepEqual(record(request.body).sort, ['price:asc', 'id:asc']);
     assert.equal(page.coverage, 'partial');
     assert.equal(page.hits[0].document._zxTenant, undefined);
     await assert.rejects(a.search({ text: 'x' }, call('other')), {
@@ -218,7 +249,9 @@ test('literal structured filters are ANDed outside tenant scope; IDs and respons
     const index = f.requests.find((r) => r.path.endsWith('/documents'));
     /** Recorded synthetic delete request; engine IDs must remain tenant-bound. */
     const del = f.requests.find((r) => r.path.endsWith('/delete-batch'));
-    assert.notEqual(index.body[0]._zxId, del.body[0]);
+    assert.ok(index);
+    assert.ok(del);
+    assert.notEqual(record(array(index.body)[0])._zxId, array(del.body)[0]);
     await a.search(
       {
         text: '',
@@ -234,7 +267,7 @@ test('literal structured filters are ANDed outside tenant scope; IDs and respons
       call()
     );
     assert.equal(
-      f.requests.at(-1).body.filter[1],
+      array(record(f.requests.at(-1)?.body).filter)[1],
       '_zxTenant = "impossible-non-hash-tenant"'
     );
   } finally {
@@ -263,7 +296,7 @@ test('direct unsafe input, attributes, native DSL, oversized batches and mismatc
       },
       { text: 'x', offset: 10000 },
     ]) {
-      await assert.rejects(a.search(query, call()));
+      await assert.rejects(Reflect.apply(a.search, a, [query, call()]));
     }
     await assert.rejects(
       a.index([{ id: '1', text: 'x', _zxTenant: 'forged' }], call())
@@ -300,11 +333,9 @@ test('direct unsafe input, attributes, native DSL, oversized batches and mismatc
     code: 'INVALID',
   });
   assert.throws(() =>
-    createMilleSearchFactory({
-      index: 'catalog',
-      taskKey: 'unsafe',
-      taskScope: 'fixture',
-    })
+    Reflect.apply(createMilleSearchFactory, undefined, [
+      { index: 'catalog', taskKey: 'unsafe', taskScope: 'fixture' },
+    ])
   );
 });
 test('create/settings remain explicit tasks; unavailable engines and failed status are never replayed', async () => {
@@ -317,7 +348,8 @@ test('create/settings remain explicit tasks; unavailable engines and failed stat
     assert.equal((await a.configureIndex(call())).state, 'accepted');
     /** Accepted privileged setup task; callers must inspect its terminal state. */
     const setup = f.requests.find((r) => r.method === 'patch');
-    assert.deepEqual(setup.body.filterableAttributes, [
+    assert.ok(setup);
+    assert.deepEqual(record(setup.body).filterableAttributes, [
       '_zxTenant',
       'category',
       'price',
@@ -338,8 +370,11 @@ test('create/settings remain explicit tasks; unavailable engines and failed stat
   try {
     await assert.rejects(
       b.index([{ id: '1', text: 'x' }], call()),
-      (e) =>
+      (e: unknown) =>
+        e instanceof Error &&
+        'code' in e &&
         e.code === 'UNAVAILABLE' &&
+        'outcome' in e &&
         e.outcome === 'unknown' &&
         !e.message.includes('private')
     );
@@ -359,15 +394,16 @@ test('create/settings remain explicit tasks; unavailable engines and failed stat
   );
 });
 test('cancelled native work retains capacity and close drains without closing borrowed SDK', async (t) => {
-  let finish, signal;
+  let finish: ((value: unknown) => void) | undefined;
+  let signal: AbortSignal | null | undefined;
   /** Independent synthetic injected-client fixture without network access. */
   const f = fixture({
     post: async (input, dispatch) => {
       if (!input.path.endsWith('/search')) {
         return dispatch('post', input);
       }
-      signal = input.extraRequestInit.signal;
-      return new Promise((r) => (finish = r));
+      signal = input.extraRequestInit?.signal;
+      return new Promise<unknown>((r) => (finish = r));
     },
   });
   /** Owned adapter wrapper; close must drain work and zero only its copied key. */
@@ -384,6 +420,7 @@ test('cancelled native work retains capacity and close drains without closing bo
   });
   await new Promise((r) => setImmediate(r));
   ctrl.abort();
+  assert.ok(signal);
   assert(signal.aborted);
   await assert.rejects(a.health(call()), { code: 'LIMIT' });
   let closed = false;
@@ -391,6 +428,7 @@ test('cancelled native work retains capacity and close drains without closing bo
   const closing = a.close().then(() => (closed = true));
   await new Promise((r) => setImmediate(r));
   assert.equal(closed, false);
+  assert.ok(finish);
   finish({ hits: [], estimatedTotalHits: 0 });
   await assert.rejects(work, { code: 'CANCELLED' });
   await closing;
@@ -462,3 +500,22 @@ test('stable references survive wrapper replacement but reject a different engin
     await c.close();
   }
 });
+
+/** Narrow captured synthetic SDK body data before asserting its structured fields.
+ * @param {unknown} value - Outbound body from the actual adapter.
+ * @returns {Record<string, unknown>} Checked object; malformed or absent bodies fail the fixture.
+ */
+function record(value: unknown): Record<string, unknown> {
+  assert.ok(
+    value !== null && typeof value === 'object' && !Array.isArray(value)
+  );
+  return value as Record<string, unknown>;
+}
+/** Require a captured wire array rather than assuming a native response shape.
+ * @param {unknown} value - Captured outbound array candidate.
+ * @returns {unknown[]} Checked array whose elements still require their own validation.
+ */
+function array(value: unknown): unknown[] {
+  assert.ok(Array.isArray(value));
+  return value;
+}

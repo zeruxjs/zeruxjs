@@ -1,3 +1,4 @@
+import type { WatcherEvent } from 'zlook';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, rm, writeFile, symlink } from 'node:fs/promises';
@@ -10,7 +11,7 @@ test('initial files are not emitted as new; manual flush observes later changes'
   const dir = await mkdtemp(path.join(os.tmpdir(), 'z-watch-base-'));
   await writeFile(path.join(dir, 'before.txt'), 'existing');
   /** Events retained by the filtered subscriber for deterministic assertions. */
-  const events = [];
+  const events: WatcherEvent[] = [];
   /** Owned watcher subscription; close and await settlement before removing its tree. */
   const handle = watchDirectory(dir, (e) => events.push(e), {
     pollIntervalMs: 60000,
@@ -18,7 +19,7 @@ test('initial files are not emitted as new; manual flush observes later changes'
   try {
     await handle.ready;
     assert.deepEqual(await handle.flush(), []);
-    assert.deepEqual(events, []);
+    assert.equal(events.length, 0);
     await writeFile(path.join(dir, 'after.txt'), 'new');
     /** Explicit reconciliation result after writing a new file. */
     const changes = await handle.flush();
@@ -37,9 +38,9 @@ test('independent subscribers ignore their own paths and parent folders', async 
   await mkdir(path.join(dir, 'private'));
   await mkdir(path.join(dir, 'public'));
   /** Visible event result after subscriber-specific filtering. */
-  const visible = [];
+  const visible: WatcherEvent[] = [];
   /** All retained events from the subscriber without a custom ignore policy. */
-  const everything = [];
+  const everything: WatcherEvent[] = [];
   /** First independent subscriber; its close operation must not stop the second subscriber. */
   const a = watchDirectory(dir, (e) => visible.push(e), {
     ignored: (p) => p === 'private',
@@ -84,9 +85,9 @@ test('symlink traversal is excluded; errors in callbacks are isolated', async ()
   const outside = await mkdtemp(path.join(os.tmpdir(), 'z-watch-outside-'));
   await writeFile(path.join(outside, 'outside.txt'), 'private');
   /** Successful subscriber events despite another callback throwing. */
-  const received = [];
+  const received: WatcherEvent[] = [];
   /** Private fixture failures collected for error-isolation and redaction assertions. */
-  const errors = [];
+  const errors: string[] = [];
   /** First independent subscriber; its close operation must not stop the second subscriber. */
   const a = watchDirectory(
     dir,
