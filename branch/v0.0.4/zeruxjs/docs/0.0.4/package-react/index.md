@@ -152,7 +152,6 @@ Manifest reference for `@zeruxjs/react@0.0.4`.
       "types": "./dist/hydration.d.mts",
       "import": "./dist/hydration.mjs"
     },
-    "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "engines": {},

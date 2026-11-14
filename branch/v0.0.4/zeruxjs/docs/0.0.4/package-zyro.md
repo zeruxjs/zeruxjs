@@ -187,7 +187,6 @@ Manifest reference for `@zeruxjs/zyro@0.0.4`.
       "import": "./dist/renderer.js",
       "require": "./dist/renderer.js"
     },
-    "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "engines": {},

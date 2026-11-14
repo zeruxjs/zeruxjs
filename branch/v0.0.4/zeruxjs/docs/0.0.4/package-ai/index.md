@@ -200,7 +200,6 @@ Manifest reference for `@zeruxjs/ai@0.0.4`.
       "import": "./dist/tools.js",
       "require": "./dist/tools.js"
     },
-    "./*": "./*",
     "./structured": {
       "types": "./dist/structured.d.ts",
       "import": "./dist/structured.js",

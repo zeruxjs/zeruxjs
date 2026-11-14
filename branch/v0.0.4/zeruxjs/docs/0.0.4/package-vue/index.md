@@ -177,7 +177,6 @@ Manifest reference for `@zeruxjs/vue@0.0.4`.
       "import": "./dist/server.js",
       "require": "./dist/server.js"
     },
-    "./dist/*": "./dist/*",
     "./package.json": "./package.json",
     "./rendering": {
       "types": "./dist/rendering.d.ts",

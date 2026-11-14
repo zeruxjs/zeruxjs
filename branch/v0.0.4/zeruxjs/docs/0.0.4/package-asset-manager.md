@@ -130,7 +130,6 @@ Manifest reference for `@zeruxjs/asset-manager@0.0.4`.
       "types": "./dist/brand.d.ts",
       "default": "./dist/brand.js"
     },
-    "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "engines": {},

@@ -103,6 +103,7 @@ Manifest reference for `@zeruxjs/queue-rabbitmq@0.0.4`.
     "node": ">=20"
   },
   "dependencies": {
+    "@types/amqplib": "^0.10.7",
     "amqplib": "^0.10.9"
   },
   "peerDependencies": {},

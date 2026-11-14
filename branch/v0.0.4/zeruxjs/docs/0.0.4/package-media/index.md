@@ -156,7 +156,6 @@ Manifest reference for `@zeruxjs/media@0.0.4`.
       "types": "./dist/transcode.d.ts",
       "default": "./dist/transcode.js"
     },
-    "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "engines": {},

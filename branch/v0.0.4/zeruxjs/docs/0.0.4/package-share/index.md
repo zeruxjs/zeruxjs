@@ -137,7 +137,6 @@ Manifest reference for `@zeruxjs/share@0.0.4`.
   "exports": {
     ".": "./dist/index.js",
     "./server": "./dist/server.js",
-    "./*": "./*",
     "./sqlite": "./dist/sqlite-store.js"
   },
   "engines": {},

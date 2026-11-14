@@ -425,12 +425,12 @@ Manifest reference for `@zeruxjs/email@0.0.4`.
   },
   "engines": {},
   "dependencies": {
-    "html-to-text": "^9.0.0",
+    "html-to-text": "^10.0.1",
     "imapflow": "^1.0.0",
     "juice": "^11.0.0",
-    "mailparser": "^3.14.2",
+    "mailparser": "^3.14.3",
     "node-pop3": "^0.15.1",
-    "nodemailer": "^10.4.0",
+    "nodemailer": "^10.5.0",
     "sanitize-html": "^2.13.0"
   },
   "peerDependencies": {

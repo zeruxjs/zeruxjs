@@ -153,7 +153,6 @@ Manifest reference for `@zeruxjs/ai-model@0.0.4`.
       "import": "./dist/corpus.js",
       "require": "./dist/corpus.js"
     },
-    "./*": "./*",
     "./evidence": {
       "types": "./dist/evidence.d.ts",
       "import": "./dist/evidence.js",
