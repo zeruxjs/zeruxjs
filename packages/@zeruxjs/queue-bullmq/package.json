@@ -63,7 +63,7 @@
   "dependencies": {
     "@zeruxjs/cache-redis": "0.0.4",
     "bullmq": "^5.61.0",
-    "ioredis": "^5.4.0"
+    "ioredis": "^6.0.0"
   },
   "license": "(MIT OR Apache-2.0)",
   "files": [
