@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import fileIO from './file-io.cjs';
+import fileIO from './file-io.ts';
 test('tool reads are bounded and no-follow; log reset replaces a link without changing its target', async () => {
   /** Local value for root. */
   const root = fs.mkdtempSync(path.join(tmpdir(), 'zerux-file-io-'));

@@ -33,3 +33,7 @@ apps/zeruxjs-app/public/counter-client.js
 
 # Versioned local AI evaluation corpus: preserve exact bytes used by fixture hashes.
 packages/@zeruxjs/ai/evaluation/cases.json
+
+# Historical generated compatibility bundle; preserve bytes and review packages/zyrojs instead.
+apps/zeruxjs-app/public/src/zyro.js
+apps/zyro-single/src/zyro.js

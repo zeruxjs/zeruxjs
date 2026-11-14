@@ -1,4 +1,5 @@
-import fileIO from '../../../scripts/file-io.cjs';
+import fileIO from '../../../scripts/file-io.ts';
+/** Shared safe regular-file reader; preview does not duplicate symlink-sensitive file opening. */
 const { readRegularFile } = fileIO;
 import http from 'node:http';
 import { site, sitePath } from '../src/site.config.ts';
@@ -7,6 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { build, output, root } from './build.ts';
 
+/** Only the explicit dev flag enables build/watch behavior when this CLI is executed. */
 const development = process.argv.includes('--dev');
 if (development) {
   await build({ production: false });
@@ -14,6 +16,7 @@ if (development) {
   let active = false;
   let pending = false;
   /** Rebuild once per edit burst; a failed candidate leaves the prior export available.
+   *
    * @returns {Promise<void>} Completion. Reads watched docs/assets; owns local build scheduling only.
    */
   async function rebuild() {
@@ -41,10 +44,14 @@ if (development) {
     });
   }
 }
+/** Explicit validated local listener port; an occupied port is never resolved by stopping another app. */
 const port = Number(process.env.PORT || 3011);
+/** Loopback default; exposing preview remotely remains an explicit host choice. */
 const host = process.env.HOST || '127.0.0.1';
-if (!Number.isInteger(port) || port < 0 || port > 65535)
+if (!Number.isInteger(port) || port < 0 || port > 65535) {
   throw new Error('Invalid PORT');
+}
+/** Fixed local response MIME map; no content-supplied MIME handlers execute. */
 const types = {
   '.webmanifest': 'application/manifest+json',
   '.png': 'image/png',
@@ -58,7 +65,10 @@ const types = {
   '.json': 'application/json; charset=utf-8',
 };
 
-/** Preview the app-local export. @param {import('node:http').IncomingMessage} request Incoming request. @param {import('node:http').ServerResponse} response Outgoing response. @returns {Promise<void>} Completion. Reads dist; HOST and PORT select the listener only. */
+/** Preview the app-local export.
+ * @param {import('node:http').IncomingMessage} request Incoming request.
+ * @param {import('node:http').ServerResponse} response Outgoing response.
+ * @returns {Promise<void>} Completion. Reads dist; HOST and PORT select the listener only. */
 async function handle(request, response) {
   response.setHeader('X-Content-Type-Options', 'nosniff');
   if (!['GET', 'HEAD'].includes(request.method)) {
@@ -88,6 +98,7 @@ async function handle(request, response) {
     return;
   }
   try {
+    /** Filesystem metadata distinguishes directory redirects from exact file responses. */
     const stat = await fs.stat(filename);
     if (stat.isDirectory()) {
       if (!pathname.endsWith('/')) {
@@ -97,6 +108,7 @@ async function handle(request, response) {
       }
       filename = path.join(filename, 'index.html');
     }
+    /** Read complete regular-file bytes before publishing length and successful status. */
     const data = await readRegularFile(filename);
     response.writeHead(200, {
       'Content-Type':
@@ -105,10 +117,12 @@ async function handle(request, response) {
     });
     response.end(request.method === 'HEAD' ? undefined : data);
   } catch (error) {
+    /** Known absence maps to 404; other failures remain honest 500 responses. */
     const missing = error.code === 'ENOENT' || error.code === 'ENOTDIR';
     response.writeHead(missing ? 404 : 500, {
       'Content-Type': 'text/html; charset=utf-8',
     });
+    /** Missing-page body is explicit static output with a simple build instruction fallback. */
     const page = missing
       ? await fs
           .readFile(path.join(output, site.basePath.slice(1), '404.html'))
@@ -120,7 +134,9 @@ async function handle(request, response) {
 http
   .createServer((request, response) => {
     handle(request, response).catch(() => {
-      if (!response.headersSent) response.writeHead(500);
+      if (!response.headersSent) {
+        response.writeHead(500);
+      }
       response.end();
     });
   })

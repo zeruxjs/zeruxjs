@@ -19,7 +19,7 @@ npm run build
 npm run preview
 ```
 
-The combined static output is `../.site-build/`. Site mounts and root-owned files are declared in `../sites.config.mjs`. GitHub Actions commits owned output to `master-site` while preserving other paths, then deploys the branch's complete static tree to GitHub Pages. See `../SITE_DEPLOYMENT.md` for hosting and extension instructions.
+The combined static output is `../.site-build/`. Site mounts and root-owned files are declared in `../sites.config.ts`. GitHub Actions commits owned output to `master-site` while preserving other paths, then deploys the branch's complete static tree to GitHub Pages. See `../SITE_DEPLOYMENT.md` for hosting and extension instructions.
 
 ## Production assets and navigation
 

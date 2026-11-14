@@ -56,7 +56,18 @@
     "packages/zuixs",
     "packages/zforge",
     "packages/zhost",
-    "packages/ztrial"
+    "packages/ztrial",
+    "apps/zyro-single",
+    "apps/zerux-docs",
+    "apps/zeruxjs-app",
+    "sample-packages/sample-child",
+    "sample-packages/sample-module",
+    "sample-packages/sample-multi-section-module",
+    "sample-packages/sample-os",
+    "sample-packages/sample-parent",
+    "apps/cms",
+    "apps/zyro"
   ],
-  "deferred": []
+  "deferred": [],
+  "repositoryCompleted": ["scripts"]
 }

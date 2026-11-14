@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { sites } from '../sites.config.mjs';
+import { sites } from '../sites.config.ts';
 import {
   repositoryRoot,
   copyStatic,

@@ -1,4 +1,4 @@
-import fileIO from './file-io.cjs';
+import fileIO from './file-io.ts';
 /** Local value for destructured values. */
 const { readRegularFileSync } = fileIO;
 import fs from 'node:fs';

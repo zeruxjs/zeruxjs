@@ -7,7 +7,11 @@ import { createPackageConfig } from '@zeruxjs/lint/presets';
 // with `npm run lint:prepare`; lint never starts an application or service.
 // Migration is explicit: security rules remain global; readability errors
 // become mandatory only after a scope has been reviewed in notes/sprint.md.
-const { completed, deferred = [] } = JSON.parse(
+const {
+  completed,
+  deferred = [],
+  repositoryCompleted = [],
+} = JSON.parse(
   readFileSync(new URL('./quality-scopes.json', import.meta.url), 'utf8')
 );
 
@@ -37,13 +41,16 @@ export default [
       '**/public/workspace-counter.js',
       'apps/zeruxjs-app/public/workspace-client.js',
       'apps/zeruxjs-app/public/counter-client.js',
+      // Historical generated bundle; authored counters now use client/counter.ts and the installed runtime.
+      'apps/zeruxjs-app/public/src/zyro.js',
+      'apps/zyro-single/src/zyro.js',
     ],
   },
-  ...(completed.length
+  ...([...completed, ...repositoryCompleted].length
     ? [
         {
           name: 'repository/reviewed-readability',
-          files: completed.map(
+          files: [...completed, ...repositoryCompleted].map(
             (scope) => `${scope}/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}`
           ),
           ignores: deferred.map((scope) => `${scope}/**`),
@@ -107,12 +114,13 @@ export default [
     files: [
       'packages/**/src/**/*.{js,mjs,jsx,ts,mts,tsx}',
       'apps/**/client/**/*.{js,mjs,jsx,ts,mts,tsx}',
+      'apps/**/src/browser/**/*.{js,mjs,ts,tsx}',
       'apps/**/public/**/*.{js,mjs}',
       '**/*.client.{js,mjs,jsx,ts,mts,tsx}',
-      'apps/zyro-single/src/**/*.js',
+      'apps/zyro-single/src/**/*.{js,ts}',
       'packages/zforge/assets/**/*.js',
       'sample-packages/*/src/client.js',
-      'pages/app.js',
+      'pages/app.ts',
       'scripts/site-theme.ts',
       'packages/**/test/*browser.test.ts',
       'packages/**/test/*-dom.test.ts',

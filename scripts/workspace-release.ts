@@ -116,7 +116,10 @@ function defaultRun(step, cwd) {
   /** Local value for invocation. */
   const invocation =
     step.bin === 'node'
-      ? { command: process.execPath, args: ['--experimental-strip-types', ...step.args] }
+      ? {
+          command: process.execPath,
+          args: ['--experimental-strip-types', ...step.args],
+        }
       : npmCommand(step.args);
   /** Local value for result. */
   const result = spawnSync(invocation.command, invocation.args, {

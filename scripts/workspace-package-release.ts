@@ -307,10 +307,14 @@ export function inspectPublishablePackage({
 /** Perform the npm pack dry run operation.
  * @param {unknown} dir - Input value for dir.
  * @param {unknown} root1 - Input value for root1.
- * @param {unknown} root1.timeout - Input value for timeout.
+ * @param {number} root1.timeout - Maximum packaging duration in milliseconds.
+ * @param {string} [root1.cache] - Optional host-owned npm cache, isolated by fixtures.
  * @returns {unknown} Result produced by npm pack dry run.
  */
-export function npmPackDryRun(dir, { timeout = 30_000 } = {}) {
+export function npmPackDryRun(
+  dir: string,
+  { timeout = 30_000, cache }: { timeout?: number; cache?: string } = {}
+) {
   /** Local value for npm. */
   const npm = npmCommand([
     'pack',
@@ -331,6 +335,7 @@ export function npmPackDryRun(dir, { timeout = 30_000 } = {}) {
       npm_config_fund: 'false',
       npm_config_ignore_scripts: 'true',
       npm_config_offline: 'true',
+      ...(cache ? { npm_config_cache: cache } : {}),
     },
   });
   if (result.error || result.status !== 0) {
@@ -342,11 +347,12 @@ export function npmPackDryRun(dir, { timeout = 30_000 } = {}) {
   const parsed = JSON.parse(result.stdout);
   // npm versions may return an array or an object keyed by workspace name.
   /** Local value for data. */
-  const data = Array.isArray(parsed)
-    ? parsed
-    : parsed && typeof parsed === 'object'
-      ? Object.values(parsed)
-      : [];
+  let data = [];
+  if (Array.isArray(parsed)) {
+    data = parsed;
+  } else if (parsed && typeof parsed === 'object') {
+    data = Object.values(parsed);
+  }
   if (data.length !== 1 || !Array.isArray(data[0]?.files)) {
     throw new Error('npm pack returned an invalid file inventory');
   }

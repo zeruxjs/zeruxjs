@@ -4,7 +4,7 @@
   "description": "Configure database, cache and application services, understand startup order, and distinguish runtime settings from static site metadata.",
   "section": "Fundamentals",
   "order": 75,
-  "sources": ["packages/zeruxjs/src/bootstrap/config.ts", "packages/zeruxjs/src/index.ts", "apps/zerux-docs/zerux.config.js", "apps/zerux-docs/src/site.config.ts"],
+  "sources": ["packages/zeruxjs/src/bootstrap/config.ts", "packages/zeruxjs/src/index.ts", "apps/zerux-docs/zerux.config.ts", "apps/zerux-docs/src/site.config.ts"],
   "related": ["configuration", "configuration-reference", "styling", "deployment"]
 }
 ---
@@ -115,7 +115,7 @@ Read credentials through `process.env` and keep them out of public asset directo
 
 ## The documentation application's config
 
-The repository's `apps/zerux-docs/zerux.config.js` is a real configuration input. Its `documentation` object contains `basePath`, `origin`, `latest`, versions, section order and repository metadata. `src/site.config.ts` imports this object, and the static builder, Markdown exporter, links and preview use those values.
+The repository's `apps/zerux-docs/zerux.config.ts` is a real configuration input. Its `documentation` object contains `basePath`, `origin`, `latest`, versions, section order and repository metadata. `src/site.config.ts` imports this object, and the static builder, Markdown exporter, links and preview use those values.
 
 The static exporter imports this object directly and consumes only `documentation`: it does **not** call runtime service initialization. Adding `db`, `cache` or other service settings here would not start those services during docs builds or on GitHub Pages. The docs site currently requires no database or cache connection. A future server-backed docs application must use the real runtime startup path and keep its backend separate from the static Pages output.
 

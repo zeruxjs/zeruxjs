@@ -17,7 +17,9 @@ export const mount = ({ root, api }) => {
    * @returns {Promise<void>} Resolves after the result is rendered.
    */
   async function parentCall(handler) {
-    if (!resultEl) return;
+    if (!resultEl) {
+      return;
+    }
     resultEl.style.display = 'block';
     resultEl.textContent = 'Loading...';
 

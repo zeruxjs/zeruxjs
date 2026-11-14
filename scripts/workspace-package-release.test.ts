@@ -6,6 +6,7 @@ import path from 'node:path';
 import {
   inspectPublishablePackage,
   inspectPublishableWorkspaces,
+  npmPackDryRun,
 } from './workspace-package-release.ts';
 /**
  * Run the fixture callback.
@@ -171,7 +172,11 @@ test('archive preview is read-only, with explicit files allowlist preventing sou
   fs.mkdirSync(path.join(dir, 'src'));
   fs.writeFileSync(path.join(dir, 'src', 'secret.ts'), 'SENSITIVE');
   /** Local value for result. */
-  const result = inspectPublishableWorkspaces(root, { built: true });
+  const result = inspectPublishableWorkspaces(root, {
+    built: true,
+    npmPack: (directory) =>
+      npmPackDryRun(directory, { cache: path.join(root, 'npm-cache') }),
+  });
   assert.equal(result.ok, true);
   assert.equal(result.packages[0].files, expected.length);
   assert.equal(fs.readdirSync(dir).includes('example-1.0.0.tgz'), false);

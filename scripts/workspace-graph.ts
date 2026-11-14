@@ -129,7 +129,11 @@ export function discoverWorkspaces(
  */
 export function planWorkspaces(
   entries: ReturnType<typeof discoverWorkspaces>,
-  { scopes = [], includeDependents = false, requireBuild = true }: {
+  {
+    scopes = [],
+    includeDependents = false,
+    requireBuild = true,
+  }: {
     scopes?: string[];
     includeDependents?: boolean;
     requireBuild?: boolean;
@@ -335,6 +339,8 @@ export function planWorkspaces(
  */
 /** Perform the execute workspace plan operation.
  * @param {unknown} plan - Input value for plan.
+ * @param {string[]} plan.ordered - Dependency-respecting workspace names.
+ * @param {Map<string, string[]>} plan.dependencies - Required dependencies for each planned workspace.
  * @param {unknown} root1 - Input value for root1.
  * @param {unknown} root1.concurrency - Input value for concurrency.
  * @param {unknown} root1.run - Input value for run.
@@ -343,10 +349,17 @@ export function planWorkspaces(
  */
 export async function executeWorkspacePlan(
   plan: { ordered: string[]; dependencies: Map<string, string[]> },
-  { concurrency = DEFAULT_BUILD_CONCURRENCY, run, onEvent = () => {} }: {
+  {
+    concurrency = DEFAULT_BUILD_CONCURRENCY,
+    run,
+    onEvent = () => {},
+  }: {
     concurrency?: number;
     run?: (name: string, signal: AbortSignal) => Promise<void>;
-    onEvent?: (event: { type: 'start' | 'done' | 'failed'; name: string }) => void;
+    onEvent?: (event: {
+      type: 'start' | 'done' | 'failed';
+      name: string;
+    }) => void;
   } = {}
 ): Promise<Array<{ name: string; ok: true }>> {
   if (
@@ -366,10 +379,12 @@ export async function executeWorkspacePlan(
     /** Workspaces whose build promises have settled successfully. */
     finished = new Set<string>(),
     /** In-flight build promises keyed by workspace name. */
-    running = new Map<string, Promise<
-      | { name: string; ok: true }
-      | { name: string; ok: false; error: unknown }
-    >>(),
+    running = new Map<
+      string,
+      Promise<
+        { name: string; ok: true } | { name: string; ok: false; error: unknown }
+      >
+    >(),
     /** Only successful settlements are returned; failures are thrown after the owned jobs drain. */
     results: Array<{ name: string; ok: true }> = [];
   /** Shared cancellation signal used to stop remaining work after the first failure. */
@@ -382,11 +397,15 @@ export async function executeWorkspacePlan(
           break;
         }
         // A malformed or partial plan must not silently launch work out of dependency order.
+        /** Required graph entry checked before a workspace may start. */
         const dependencies = plan.dependencies.get(name);
         if (!dependencies) {
           throw new Error(`Missing workspace dependencies for ${name}`);
         }
-        if (!pending.has(name) || !dependencies.every((dep) => finished.has(dep))) {
+        if (
+          !pending.has(name) ||
+          !dependencies.every((dep) => finished.has(dep))
+        ) {
           continue;
         }
         pending.delete(name);

@@ -1,7 +1,16 @@
 import { escapeHtmlText } from '@zeruxjs/security/encoding';
 
+/** Render a dynamic slug example with destination-specific HTML text encoding.
+ * @param {object} root0 - Borrowed framework route context projection.
+ * @param {object} root0.params - Untrusted decoded route parameters, never template source.
+ * @param {object} root0.services - Explicit trusted composable registration.
+ * @param {object} root0.state - Middleware-owned public request ID.
+ * @returns {string} Authored HTML with escaped title, slug and request ID.
+ */
 export default ({ params, services, state }: any) => {
+  /** Borrowed explicitly registered formatter; request strings never choose a package import. */
   const formatSlug = services.composables.formatSlug;
+  /** Escape formatted user path text before either title or heading interpolation. */
   const title = escapeHtmlText(
     typeof formatSlug === 'function' ? formatSlug(params.slug) : params.slug
   );

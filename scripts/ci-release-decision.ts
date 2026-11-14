@@ -89,7 +89,9 @@ if (
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   if (process.argv.slice(2).some((arg) => arg !== '--json')) {
-    console.error('Usage: node --experimental-strip-types scripts/ci-release-decision.ts [--json]');
+    console.error(
+      'Usage: node --experimental-strip-types scripts/ci-release-decision.ts [--json]'
+    );
     process.exit(2);
   }
   /** Local value for result. */

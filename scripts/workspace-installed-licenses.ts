@@ -1,4 +1,4 @@
-import fileIO from './file-io.cjs';
+import fileIO from './file-io.ts';
 /** Local value for destructured values. */
 const { readRegularFileSync } = fileIO;
 /** Post-install third-party license metadata inspection, not legal clearance. */
@@ -30,11 +30,13 @@ const licenseNames = /^(?:LICEN[CS]E|COPYING|NOTICE)(?:[-._].*)?$/i;
   const legacy = manifest.licenses
     ?.map((item) => (typeof item === 'string' ? item : item?.type))
     .filter((item) => typeof item === 'string');
-  return legacy?.length === 1
-    ? legacy[0]
-    : legacy?.length
-      ? `(${legacy.join(' OR ')})`
-      : null;
+  if (legacy?.length === 1) {
+    return legacy[0];
+  }
+  if (legacy?.length) {
+    return `(${legacy.join(' OR ')})`;
+  }
+  return null;
 }
 /** Perform the inspect installed licenses operation.
  * @param {unknown} root - Input value for root.
@@ -175,16 +177,18 @@ export function inspectInstalledLicenses(root, lock) {
       }
     }
     if (!license || license === 'UNLICENSED' || !licenseFiles.length) {
+      let reason = 'Missing distributable license/notice file';
+      if (!license) {
+        reason = 'Missing installed license metadata';
+      } else if (license === 'UNLICENSED') {
+        reason = 'Unlicensed package';
+      }
       missing.push({
         package: name,
         version: manifest.version ?? null,
         license,
         files: licenseFiles,
-        reason: !license
-          ? 'Missing installed license metadata'
-          : license === 'UNLICENSED'
-            ? 'Unlicensed package'
-            : 'Missing distributable license/notice file',
+        reason,
       });
     }
     checked.push({

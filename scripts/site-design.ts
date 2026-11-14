@@ -41,7 +41,7 @@ const dark = {
  * @param {unknown} palette - Input value for palette.
  * @returns {unknown} Result produced by tokens.
  */
-const tokens = (palette) =>
+const tokens = (palette: Readonly<Record<string, string>>): string[] =>
   Object.entries(palette).map(([key, value]) => `ui-[--${key}:${value}]`);
 /** Local value for theme recipes. */
 export const themeRecipes = [

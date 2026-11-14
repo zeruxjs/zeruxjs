@@ -239,3 +239,9 @@ future Node SQLite API is supported.
 Authored browser code lives in `client/workspace.ts`, outside the framework’s
 server source roots. The explicit asset build bundles it into the validated public
 client asset; no authored browser module is imported during Node startup.
+
+## Authored and generated code
+
+`lib/workspace` owns the private server services, `client` owns disposable browser enhancements, and the plugin registers them under one framework generation. Operator scripts own their input, watcher, file and process lifetimes. Schema initialization and browser qualification are explicit commands, not import side effects. The asset builder compiles candidates first and then promotes each output with an individual rename; those renames are not one transaction across four files.
+
+The historical `public/src/zyro.js` bundle is preserved as generated compatibility output. Current counter code uses `client/counter.ts` and the installed library, built into `public/counter-client.js`. Review authored sources rather than editing generated bundles; the historical bundle does not define the current library’s contracts.

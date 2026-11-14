@@ -301,11 +301,13 @@ for (const suite of plan) {
   );
 }
 /** Local value for status. */
-const status = options.dryRun
-  ? 'planned'
-  : build?.status === 'failed'
-    ? 'failed'
-    : overallStatus(rows, options.required);
+let status = 'planned';
+if (!options.dryRun) {
+  status =
+    build?.status === 'failed'
+      ? 'failed'
+      : overallStatus(rows, options.required);
+}
 /** Local value for fixture hash. */
 const fixtureHash = createHash('sha256')
   .update(readFileSync(resolve(root, 'integration-lab/compose.yml')))

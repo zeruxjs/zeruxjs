@@ -7,15 +7,14 @@ import {
   normalizeDbDemoInput,
 } from '../../../lib/db-demo.js';
 
-/**
- * Title: Demo submission list endpoint
- * Description: Returns the latest database-backed demo submissions after ensuring the table exists.
- * Global Variables: none
- * @returns Demo submission payload.
+/** Read the explicitly enabled legacy teaching table, initializing it on the configured provider.
+ * @returns {Promise<object>} Actual bounded rows/connection metadata; this is separate from private workspace authorization.
  */
 export const GET = async () => {
+  /** Borrowed explicitly enabled legacy connection; disabled use rejects before native access. */
   const db = getDbDemoConnection();
   await ensureDbDemoTable();
+  /** Actual bounded select result, never invented connectivity success. */
   const result = await listDbDemoSubmissions(20);
 
   return {
@@ -31,14 +30,13 @@ export const GET = async () => {
   };
 };
 
-/**
- * Title: Demo submission create endpoint
- * Description: Validates JSON input, ensures the table exists, stores a submission, and returns the latest rows.
- * Global Variables: none
- * @param context Zerux request context.
- * @returns Insert result with refreshed rows.
+/** Normalize a legacy teaching submission, persist it and return the refreshed bounded list.
+ * @param {object} context - Borrowed framework request projection.
+ * @param {unknown} context.body - Parsed request body, normalized before structured database insertion.
+ * @returns {Promise<object>} Existing ok/error teaching payload; UI visibility is not authentication or authorization.
  */
 export const POST = async ({ body }: { body: unknown }) => {
+  /** Borrowed explicitly enabled legacy connection; disabled use rejects before native access. */
   const db = getDbDemoConnection();
   let submission: { name: string; email: string; message: string };
   try {
@@ -52,11 +50,13 @@ export const POST = async ({ body }: { body: unknown }) => {
 
   await ensureDbDemoTable();
 
+  /** Actual insert receipt; refreshed list retrieval is a separate operation, not a transaction. */
   const insertResult = await db.insert({
     table: getDbDemoTableName(),
     values: submission,
   });
 
+  /** Latest bounded rows after insertion; a later read failure does not undo the committed write. */
   const listResult = await listDbDemoSubmissions(20);
 
   return {
@@ -72,4 +72,5 @@ export const POST = async ({ body }: { body: unknown }) => {
   };
 };
 
+/** Explicit teaching-route middleware chain; private workspace policies remain a separate boundary. */
 export const middleware = ['request-context', 'trace-runtime'];

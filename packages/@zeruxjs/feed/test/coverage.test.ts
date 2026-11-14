@@ -1,15 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SaxesParser } from 'saxes';
+import { SaxesParser, type SaxesTagNS } from 'saxes';
 import {
   createRssFeed,
+  type FeedOptions,
+  type FeedItem,
+  type FeedAttachment,
+  type FeedCategory,
   createAtomFeed,
   createJsonFeed,
   createFeedResponse,
 } from '@zeruxjs/feed';
 import { createFeedFetchHandler } from '@zeruxjs/feed/fetch';
 /** Fixed authored strict publication covering format-specific mappings; private/remote resources are never accessed. */
-const data = {
+const data: FeedOptions & {
+  items: Array<
+    FeedItem & { attachments: FeedAttachment[]; categories: FeedCategory[] }
+  >;
+} = {
   strict: true,
   title: 'A & <B>',
   description: 'News',
@@ -72,11 +80,11 @@ const data = {
  * @param {string} xml - Finite representation emitted by the public generator.
  * @returns {object} Captured element/text facts; well-formed parsing is not full feed-schema or reader qualification.
  */
-function parse(xml) {
+function parse(xml: string): { tags: SaxesTagNS[]; texts: string[] } {
   /** Captured namespace-aware XML element records, not DOM nodes or executed HTML. */
-  const tags = [];
+  const tags: SaxesTagNS[] = [];
   /** Decoded XML text values; embedded HTML remains untrusted data. */
-  const texts = [];
+  const texts: string[] = [];
   /** Owned synchronous Saxes parser closed immediately after the finite XML string. */
   const parser = new SaxesParser({ xmlns: true });
   parser.on('opentag', (tag) => tags.push(tag));
@@ -200,7 +208,10 @@ test('duplicate IDs, strict missing facts, invalid dates/URLs/MIME, accessors an
   });
   assert.throws(() => createJsonFeed(f));
   assert.equal(getter, false);
-  assert.throws(() => createFeedResponse('bogus', data), /format/);
+  assert.throws(
+    () => Reflect.apply(createFeedResponse, undefined, ['bogus', data]),
+    /format/
+  );
 });
 test('negotiation quality/specificity, representation ETags, weak 304/HEAD and last-modified maximum', async (t) => {
   /** Private clone or owned Fetch handler; only actual factory calls acquire close ownership. */
@@ -215,7 +226,10 @@ test('negotiation quality/specificity, representation ETags, weak 304/HEAD and l
      * @param {Record<string, string>} headers - Explicit synthetic conditional/credential headers, empty by default.
      * @returns {Promise<Response>} Local selected, not-modified or unavailable response without network I/O.
      */
-    const get = (accept, headers = {}) =>
+    const get = (
+      accept: string,
+      headers: Record<string, string> = {}
+    ): Promise<Response> =>
       feed(
         new Request('https://example.test/feed', {
           headers: { accept, ...headers },
@@ -223,7 +237,7 @@ test('negotiation quality/specificity, representation ETags, weak 304/HEAD and l
       );
     /** Initial local representation used to test known-content date/weak-validator behavior. */
     const first = await get('application/atom+xml');
-    assert.match(first.headers.get('last-modified'), /03 Jan 2025/);
+    assert.match(requiredHeader(first.headers, 'last-modified'), /03 Jan 2025/);
     assert.equal(
       (
         await get('application/atom+xml', {
@@ -250,7 +264,7 @@ test('negotiation quality/specificity, representation ETags, weak 304/HEAD and l
     assert.notEqual(rss.headers.get('etag'), json.headers.get('etag'));
     /** Explicit RSS exclusion plus wildcard preference; specificity must prevent q=0 fallback. */
     const specific = await get('application/rss+xml;q=0, */*;q=1');
-    assert.match(specific.headers.get('content-type'), /atom\+xml/);
+    assert.match(requiredHeader(specific.headers, 'content-type'), /atom\+xml/);
     assert.equal((await get('text/html')).status, 406);
     assert.equal((await get('application/rss+xml;q=1.5')).status, 406);
     /** Credential-bearing synthetic request gets defensive no-store, without authenticating a reader. */
@@ -290,14 +304,15 @@ test('supplier outage/cancellation retains native slot and close drains; no raw 
   } finally {
     await outage.close();
   }
-  let finish, signal;
+  let finish: ((value: FeedOptions) => void) | undefined;
+  let signal: AbortSignal | undefined;
   /** Owned handler with one actual pending synthetic producer; timeout alone cannot release capacity. */
   const blocked = createFeedFetchHandler({
     maxPending: 1,
     timeoutMs: 10,
     feed: async (ctx) => {
       signal = ctx.signal;
-      return new Promise((r) => (finish = r));
+      return new Promise<FeedOptions>((r) => (finish = r));
     },
   });
   // Drain actual producer ownership even if an assertion fails; cancellation is cooperative.
@@ -308,6 +323,7 @@ test('supplier outage/cancellation retains native slot and close drains; no raw 
   /** Body-free unavailable observation; private source cause must not enter the public response. */
   const response = await blocked(new Request('https://example.test/feed'));
   assert.equal(response.status, 503);
+  assert.ok(signal);
   assert(signal.aborted);
   assert.equal(blocked.status().pending, 1);
   assert.equal(
@@ -319,6 +335,7 @@ test('supplier outage/cancellation retains native slot and close drains; no raw 
   const closing = blocked.close().then(() => (closed = true));
   await new Promise((r) => setImmediate(r));
   assert.equal(closed, false);
+  assert.ok(finish);
   finish(data);
   await closing;
   assert.equal(blocked.status().pending, 0);
@@ -348,6 +365,19 @@ test('XML attribute whitespace survives namespace-aware parsing without becoming
   const category = atom.tags.find(
     (t) => t.local === 'category' && t.attributes.term.value.includes('second')
   );
+  assert.ok(category);
   assert.equal(category.attributes.term.value, 'line\nsecond\tpart');
   assert.equal(category.attributes.label.value, 'label\rending');
 });
+
+/** Assert that a response actually supplies a required representation header.
+ * @param {Headers} headers - Native headers returned by the synthetic handler.
+ * @param {string} name - Required header name for this behavior assertion.
+ * @returns {string} Present header value; absent metadata fails the test.
+ */
+function requiredHeader(headers: Headers, name: string): string {
+  /** Native value remains nullable until the fixture assertion establishes presence. */
+  const value = headers.get(name);
+  assert.ok(value !== null);
+  return value;
+}

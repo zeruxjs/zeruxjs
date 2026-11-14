@@ -43,49 +43,95 @@ import {
 export { workspaceUnavailable } from './view.js';
 
 export interface WorkspaceOptions extends IdentityOptions {
+  /** Trusted private state directory outside public assets; symlink ancestors reject. */
   directory: string;
+  /** Explicit operator initialization permission; ordinary request/startup paths leave this false. */
   migrate?: boolean;
 }
+/** Describe one native labelled progressive form field; all values stay inert.
+ * @param {string} name - Fixed authored form field name.
+ * @param {string} label - Real authored accessible label, never invented from arbitrary content.
+ * @param {string} value - Escaped initial scalar value.
+ * @param {string} type - Fixed authored native input type.
+ * @returns {ReturnType<typeof h>} Native labelled field description without DOM side effects.
+ */
 const field = (name: string, label: string, value = '', type = 'text') =>
   h('label', null, label, h('input', { name, type, value, required: true }));
+/** Describe an inert hidden form value; it remains untrusted when submitted.
+ * @param {string} name - Fixed authored field name.
+ * @param {string} value - Scalar CSRF/revision/record reference.
+ * @returns {ReturnType<typeof h>} Hidden input description, not authorization evidence by itself.
+ */
 const hidden = (name: string, value: string) =>
   h('input', { type: 'hidden', name, value });
+/** Describe a native submit control that also works without JavaScript.
+ * @param {string} text - Real authored control label.
+ * @returns {ReturnType<typeof h>} Native submit button description.
+ */
 const submit = (text: string) => h('button', { type: 'submit' }, text);
+/** Describe a link under the renderer’s URL/text encoding policy.
+ * @param {string} href - Fixed or explicitly policy-validated destination.
+ * @param {string} text - Inert accessible link text.
+ * @returns {ReturnType<typeof h>} Link description; no request is made during rendering.
+ */
 const link = (href: string, text: string) => h('a', { href }, text);
 
 /** All resources are generation owned. Importing this module creates no files or listeners. */
+/** Acquire one explicit local integration generation, rolling back owned resources on startup failure.
+ * @param {WorkspaceOptions} options - Private verified host config; never serialize its key or password record.
+ * @returns {Promise<object>} Fetch handler, route/lifecycle installers and an actual-settlement close handle.
+ */
 export async function createWorkspace(options: WorkspaceOptions) {
   validateIdentityOptions(options);
+  /** Fixed host tenant/site namespace used by every local store; hashing is not authorization or anonymization. */
   const dataScope = createHash('sha256')
     .update(JSON.stringify([options.tenant, options.site]))
     .digest('hex');
   if (
     !/^[A-Za-z0-9_-]{1,64}$/.test(options.tenant) ||
     !/^[A-Za-z0-9_-]{1,64}$/.test(options.site)
-  )
+  ) {
     throw new Error('WORKSPACE_SCOPE_INVALID');
+  }
+  /** Resolved private state root; every ancestor is checked before any connector is opened. */
   const directory = resolve(options.directory);
   for (let cursor = directory; ; cursor = resolve(cursor, '..')) {
+    /** Ancestor metadata rejects symlinks and non-directory path components. */
     const stat = await lstat(cursor).catch((error: NodeJS.ErrnoException) => {
-      if (error.code === 'ENOENT') return null;
+      if (error.code === 'ENOENT') {
+        return null;
+      }
       throw error;
     });
-    if (stat && (!stat.isDirectory() || stat.isSymbolicLink()))
+    if (stat && (!stat.isDirectory() || stat.isSymbolicLink())) {
       throw new Error('WORKSPACE_DIRECTORY_UNSAFE');
-    if (cursor === resolve(cursor, '..')) break;
+    }
+    if (cursor === resolve(cursor, '..')) {
+      break;
+    }
   }
-  if (options.migrate) await mkdir(directory, { recursive: true, mode: 0o700 });
-  if ((await lstat(directory)).mode & 0o077)
+  if (options.migrate) {
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+  }
+  if ((await lstat(directory)).mode & 0o077) {
     throw new Error('WORKSPACE_DIRECTORY_MUST_BE_PRIVATE');
+  }
+  /** Fixed private database file under the validated application directory. */
   const filename = resolve(directory, 'workspace.sqlite');
+  /** Existing database metadata; ordinary startup requires explicit prior initialization. */
   const file = await lstat(filename).catch((error: NodeJS.ErrnoException) => {
-    if (error.code === 'ENOENT') return null;
+    if (error.code === 'ENOENT') {
+      return null;
+    }
     throw error;
   });
-  if (file && (!file.isFile() || file.isSymbolicLink()))
+  if (file && (!file.isFile() || file.isSymbolicLink())) {
     throw new Error('WORKSPACE_DATABASE_UNSAFE');
-  if (!options.migrate && !file)
+  }
+  if (!options.migrate && !file) {
     throw new Error('WORKSPACE_INITIALIZATION_REQUIRED');
+  }
+  /** Owned persistent synchronous SQLite connector, released after every dependent service. */
   const db = await createConnector({
     filename,
     driver: 'node',
@@ -100,6 +146,7 @@ export async function createWorkspace(options: WorkspaceOptions) {
   let telemetry:
     | Awaited<ReturnType<typeof createWorkspaceAnalytics>>
     | undefined;
+  /** Bounded application-owned form parser rejects duplicates/files and caps active body reads. */
   const input = createHttpInputAdapter({
     maxBytes: 20_000,
     maxFields: 8,
@@ -109,34 +156,49 @@ export async function createWorkspace(options: WorkspaceOptions) {
     bodyTimeoutMs: 3000,
     maxConcurrentReads: 8,
   });
+  /** Optional bounded process-local public-note cache; private notes never enter it. */
   const cache = createMemoryCacheHelper({ maxEntries: 8 });
+  /** At most sixteen path/value-free compression observations for the local diagnostics UI. */
   const measurements: Array<{
     encoding: string;
     outputBytes: number;
     durationMs: number;
     outcome: string;
   }> = [];
+  /** Single response-layer encoder owner; helpers never compress already encoded bodies twice. */
   const compression = createCompressionOwner({
     encodings: ['br', 'gzip'],
     maxConcurrent: 2,
     onMeasure: (measurement) => {
       measurements.push({ ...measurement });
-      if (measurements.length > 16) measurements.shift();
+      if (measurements.length > 16) {
+        measurements.shift();
+      }
     },
   });
   let closed = false,
     closing: Promise<void> | undefined;
+  /** Actual handler/stream promises retained until settlement, including after cooperative cancellation. */
   const pending = new Set<Promise<unknown>>();
+  /** Fixed-phase counters only; no headers, request bodies, raw paths or user traits are retained. */
   const lifecycleCounts: Record<string, number> = {};
+  /** Generation-owned observer registrations removed before draining dependent services. */
   const lifecycleDisposers: Array<() => void> = [];
+  /** Fence new work, remove observers and drain handlers before closing dependency owners in order.
+   * @returns {Promise<void>} Shared idempotent shutdown promise; failures aggregate after cleanup attempts.
+   */
   const close = () =>
     (closing ??= (async () => {
       closed = true;
-      for (const dispose of lifecycleDisposers.splice(0)) dispose();
+      for (const dispose of lifecycleDisposers.splice(0)) {
+        dispose();
+      }
       gateway?.close();
       input.close();
+      /** Begin encoder shutdown before waiting for actual handler settlement. */
       const compressionClosed = compression.close();
       await Promise.allSettled([...pending]);
+      /** Attempt every dependent cleanup before reporting aggregate failure. */
       const failures: unknown[] = [];
       try {
         await compressionClosed;
@@ -158,27 +220,35 @@ export async function createWorkspace(options: WorkspaceOptions) {
           failures.push(error);
         }
       }
-      if (failures.length)
+      if (failures.length) {
         throw new AggregateError(failures, 'Workspace cleanup failed');
+      }
     })());
   try {
     await chmod(filename, 0o600);
     identity = createWorkspaceIdentity(db, options, options.migrate === true);
+    /** Successfully acquired identity owner, captured for request callbacks without optional checks. */
     const auth = identity;
+    /** Database-backed note operations permanently bound to the verified tenant/site namespace. */
     const notebook = createNotebook(db, dataScope, options.migrate === true);
+    /** Consent-required local analytics owner; no visitor tracking begins merely by importing this module. */
     const analytics = (telemetry = await createWorkspaceAnalytics(
       db,
       options.tenant,
       options.site
     ));
+    /** Private local object root; existing symlink destinations are rejected. */
     const storageRoot = resolve(directory, 'storage');
     await mkdir(storageRoot, { mode: 0o700 }).catch(
       (error: NodeJS.ErrnoException) => {
-        if (error.code !== 'EEXIST') throw error;
+        if (error.code !== 'EEXIST') {
+          throw error;
+        }
       }
     );
-    if ((await lstat(storageRoot)).isSymbolicLink())
+    if ((await lstat(storageRoot)).isSymbolicLink()) {
       throw new Error('WORKSPACE_STORAGE_UNSAFE');
+    }
     files = createFileManager({
       defaultStorage: 'local',
       stores: [
@@ -192,7 +262,9 @@ export async function createWorkspace(options: WorkspaceOptions) {
         },
       ],
     });
+    /** Successfully acquired named files manager; request data cannot choose another provider. */
     const storage = files;
+    /** Request-local asset catalogs with explicit tenant/subject checks and durable optimistic snapshot CAS. */
     const assets = createWorkspaceAssets(
       db,
       storage,
@@ -210,6 +282,7 @@ export async function createWorkspace(options: WorkspaceOptions) {
       }),
       allowedOrigins: [options.origin],
       allowDestination: (value) => {
+        /** Request/destination URL still subject to exact origin/path policy; forwarded headers do not select it. */
         const url = new URL(value);
         return url.pathname === '/workspace/public' && !url.search;
       },
@@ -220,7 +293,9 @@ export async function createWorkspace(options: WorkspaceOptions) {
       defaultTtlMs: 86400000,
       maxTtlMs: 604800000,
     });
+    /** Owned durable short-link service; only the fixed local public-board destination is permitted. */
     const links = shortLinks;
+    /** Explicit inert email composition templates; this app creates no SMTP delivery transport. */
     const templates = createTemplateRegistry([
       {
         id: 'notebook-update',
@@ -230,9 +305,11 @@ export async function createWorkspace(options: WorkspaceOptions) {
         layout: 'none',
       },
     ]);
+    /** Fixed experiment namespace from verified host identity, not client-supplied targeting. */
     const experimentTenant = createHash('sha256')
       .update(options.tenant)
       .digest('hex');
+    /** Pinned version/salt and three named allocations; no automatic rebucketing or statistical claims. */
     const experimentCatalog = createExperimentCatalog([
       {
         id: 'workspace-layout',
@@ -255,8 +332,9 @@ export async function createWorkspace(options: WorkspaceOptions) {
         if (
           !(context instanceof Request) ||
           !(await auth.authenticate(context))
-        )
+        ) {
           return null;
+        }
         return {
           tenant: experimentTenant,
           subject: createHash('sha256').update(options.username).digest('hex'),
@@ -265,20 +343,28 @@ export async function createWorkspace(options: WorkspaceOptions) {
         };
       },
     });
+    /** Owned deterministic evaluator; server authentication precedes any assignment projection. */
     const evaluator = experiments;
+    /** Exact application tenant/site public-data identity; no private-record cache fallback exists. */
     const cacheKey = JSON.stringify([
       options.tenant,
       options.site,
       'published',
     ]);
+    /** Read only public notes, treating optional cache failures as misses rather than authority.
+     * @returns {Promise<ReturnType<typeof notebook.list>>} Bounded public snapshot with a fifteen-second local cache lifetime.
+     */
     const published = async () => {
       try {
+        /** Optional completed public-note snapshot; authoritative reads survive cache decode/read failures. */
         const cached = await cache.get(cacheKey);
-        if (typeof cached === 'string')
+        if (typeof cached === 'string') {
           return JSON.parse(cached) as ReturnType<typeof notebook.list>;
+        }
       } catch {
         /* Optional cache cannot make authoritative local storage unavailable. */
       }
+      /** Bounded persisted note snapshot; public callers use only explicitly published records. */
       const notes = notebook.list(true);
       try {
         await cache.set(cacheKey, JSON.stringify(notes), { ttlSeconds: 15 });
@@ -287,6 +373,10 @@ export async function createWorkspace(options: WorkspaceOptions) {
       }
       return notes;
     };
+    /** Project native request proofs under the fixed host origin without trusting forwarded identity.
+     * @param {import('node:http').IncomingMessage} request - Borrowed native request, authorized by the gateway.
+     * @returns {Request} Minimal cookie/origin proof projection, never a caller-selected public origin.
+     */
     const protocolRequest = (request: import('node:http').IncomingMessage) =>
       new Request(options.origin + (request.url ?? '/'), {
         headers: {
@@ -310,11 +400,15 @@ export async function createWorkspace(options: WorkspaceOptions) {
       requestTimeoutMs: 5000,
       allowedOrigins: [options.origin],
       authorizeEndpoint: async (request) => {
-        if (closed || request.headers.host !== new URL(options.origin).host)
+        if (closed || request.headers.host !== new URL(options.origin).host) {
           return false;
+        }
+        /** Protocol request projection copies cookie/origin only under the fixed host origin. */
         const req = protocolRequest(request),
           session = await auth.authenticate(req);
-        if (!session) return false;
+        if (!session) {
+          return false;
+        }
         return (
           request.method === 'GET' ||
           request.method === 'HEAD' ||
@@ -326,15 +420,23 @@ export async function createWorkspace(options: WorkspaceOptions) {
         );
       },
     });
+    /** Owned authenticated gateway; declaring endpoint labels never substitutes for real transport adapters. */
     const protocols = gateway;
+    /** Read a bounded metadata-only notebook summary after gateway authentication.
+     * @param {unknown} params - Only an empty object or omitted/null arguments are supported.
+     * @returns {object} At most twenty titles/revisions plus explicit total/truncation and fixed scope.
+     */
     const summary = (params: unknown) => {
       if (
-        params != null &&
+        params !== null &&
+        typeof params !== 'undefined' &&
         (typeof params !== 'object' ||
           Array.isArray(params) ||
           Object.keys(params).length)
-      )
+      ) {
         throw new Error('Expected an empty argument object');
+      }
+      /** Bounded authenticated notebook snapshot, projected to titles/revisions without bodies. */
       const records = notebook.list();
       return {
         notes: records
@@ -359,8 +461,9 @@ export async function createWorkspace(options: WorkspaceOptions) {
       async function* (messages, context) {
         let count = 0;
         for await (const message of messages) {
-          if (context.signal?.aborted || ++count > 4)
+          if (context.signal?.aborted || ++count > 4) {
             throw new Error('Stream budget exceeded');
+          }
           yield summary(message);
         }
       }
@@ -386,6 +489,7 @@ export async function createWorkspace(options: WorkspaceOptions) {
       text: 'Authenticated read-only notebook summary. No model provider, shell, URL fetch or code execution.',
       mimeType: 'text/plain',
     });
+    /** Explicit allowed Fetch routes; mutations require their own method/origin/session/CSRF checks. */
     const paths = [
       '/workspace',
       '/workspace/login',
@@ -419,12 +523,18 @@ export async function createWorkspace(options: WorkspaceOptions) {
       '/workspace/performance',
       '/workspace/diagnostics',
     ];
+    /** Parse only explicitly named bounded URL-encoded fields; reject duplicates and files.
+     * @param {Request} request - Borrowed request consumed once by the application-owned input adapter.
+     * @param {string[]} fields - Fixed action-specific schema keys; unknown keys reject.
+     * @returns {Promise<Record<string, string>>} Validated strings, still requiring action authorization and CSRF verification.
+     */
     async function parse(request: Request, fields: string[]) {
       if (
         request.headers.get('content-type')?.split(';')[0]?.trim() !==
         'application/x-www-form-urlencoded'
-      )
+      ) {
         throw new WorkspaceError(415, 'FORM_CONTENT_TYPE_REQUIRED');
+      }
       return (await input.parseFormRequest(
         strictObject(
           Object.fromEntries(fields.map((name) => [name, string()]))
@@ -432,12 +542,22 @@ export async function createWorkspace(options: WorkspaceOptions) {
         request
       )) as Record<string, string>;
     }
+    /** Issue a challenge bound to the fresh authenticated or explicit anonymous session context.
+     * @param {Request} request - Borrowed request supplying the current nonce cookie.
+     * @param {WorkspaceSession | null} session - Fresh verified session or explicit login scope.
+     * @returns {Promise<{ token: string; cookie?: string }>} Challenge and optional fixed-policy nonce cookie.
+     */
     async function formContext(
       request: Request,
       session: WorkspaceSession | null
     ) {
       return auth.callbacks.csrf.issue(request, session);
     }
+    /** Redirect after a completed form action without caching private state.
+     * @param {string} location - Fixed authored local route or encoded allowlisted outcome.
+     * @param {string} cookie - Optional server-generated session/nonce cookie.
+     * @returns {Response} Private no-store 303 response, never an automatic mutation retry.
+     */
     const redirect = (location: string, cookie?: string) =>
       new Response(null, {
         status: 303,
@@ -447,18 +567,31 @@ export async function createWorkspace(options: WorkspaceOptions) {
           ...(cookie ? { 'set-cookie': cookie } : {}),
         },
       });
+    /** Route one request through exact origin/method/session/CSRF boundaries before service access.
+     * @param {Request} request - Borrowed Fetch request, including its cooperative cancellation signal.
+     * @returns {Promise<Response>} Actual local result; mutations are never replayed after uncertain outcomes.
+     */
     const run = async (request: Request): Promise<Response> => {
-      if (closed) throw new WorkspaceError(503, 'WORKSPACE_CLOSED');
+      if (closed) {
+        throw new WorkspaceError(503, 'WORKSPACE_CLOSED');
+      }
+      /** Request/destination URL still subject to exact origin/path policy; forwarded headers do not select it. */
       const url = new URL(request.url);
-      if (url.origin !== options.origin)
+      if (url.origin !== options.origin) {
         throw new WorkspaceError(403, 'ORIGIN_DENIED');
-      if (url.pathname.startsWith('/workspace/s/'))
+      }
+      if (url.pathname.startsWith('/workspace/s/')) {
         return links.handler(request);
-      if (!paths.includes(url.pathname))
+      }
+      if (!paths.includes(url.pathname)) {
         throw new WorkspaceError(404, 'NOT_FOUND');
-      if (!['GET', 'HEAD', 'POST'].includes(request.method))
+      }
+      if (!['GET', 'HEAD', 'POST'].includes(request.method)) {
         throw new WorkspaceError(405, 'METHOD_DENIED');
+      }
+      /** Fresh durable session proof; browser identity or role fields never select the principal. */
       const session = await auth.authenticate(request);
+      /** Anonymous eligibility is an explicit fixed route allowlist, independent of UI navigation. */
       const privatePath = ![
         '/workspace',
         '/workspace/login',
@@ -468,35 +601,50 @@ export async function createWorkspace(options: WorkspaceOptions) {
         '/workspace/feed.xml',
         '/workspace/sitemap.xml',
       ].includes(url.pathname);
-      if (privatePath && !session) return redirect('/workspace/login');
+      if (privatePath && !session) {
+        return redirect('/workspace/login');
+      }
       if (request.method === 'POST') {
-        if (request.headers.get('origin') !== options.origin)
+        if (request.headers.get('origin') !== options.origin) {
           throw new WorkspaceError(403, 'ORIGIN_DENIED');
+        }
         if (url.pathname === '/workspace/login') {
-          if (!(await auth.callbacks.admit(request, 'login')))
+          if (!(await auth.callbacks.admit(request, 'login'))) {
             throw new WorkspaceError(429, 'LOGIN_LIMIT');
+          }
+          /** Bounded schema-validated form values still require the matching action’s CSRF/authorization checks. */
           const body = await parse(request, ['csrf', 'username', 'password']);
-          if (!(await auth.callbacks.csrf.verify(request, null, body.csrf!)))
+          if (!(await auth.callbacks.csrf.verify(request, null, body.csrf!))) {
             throw new WorkspaceError(403, 'CSRF_DENIED');
+          }
+          /** Actual authorized operation outcome; no success is fabricated for unavailable services. */
           const result = await auth.callbacks.login(
             { username: body.username!, password: body.password! },
             request
           );
-          if (!result) throw new WorkspaceError(403, 'LOGIN_DENIED');
+          if (!result) {
+            throw new WorkspaceError(403, 'LOGIN_DENIED');
+          }
           return redirect('/workspace/notes', result.cookie);
         }
-        if (!session || !(await auth.callbacks.authorize('write', session)))
+        if (!session || !(await auth.callbacks.authorize('write', session))) {
           throw new WorkspaceError(403, 'WRITE_DENIED');
+        }
         if (url.pathname === '/workspace/logout') {
+          /** Bounded schema-validated form values still require the matching action’s CSRF/authorization checks. */
           const body = await parse(request, ['csrf']);
-          if (!(await auth.callbacks.csrf.verify(request, session, body.csrf!)))
+          if (
+            !(await auth.callbacks.csrf.verify(request, session, body.csrf!))
+          ) {
             throw new WorkspaceError(403, 'CSRF_DENIED');
+          }
           return redirect(
             '/workspace',
             (await auth.callbacks.logout(session, request)).cookie
           );
         }
         if (url.pathname === '/workspace/save') {
+          /** Bounded schema-validated form values still require the matching action’s CSRF/authorization checks. */
           const body = await parse(request, [
             'csrf',
             'id',
@@ -505,8 +653,12 @@ export async function createWorkspace(options: WorkspaceOptions) {
             'revision',
             'published',
           ]);
-          if (!(await auth.callbacks.csrf.verify(request, session, body.csrf!)))
+          if (
+            !(await auth.callbacks.csrf.verify(request, session, body.csrf!))
+          ) {
             throw new WorkspaceError(403, 'CSRF_DENIED');
+          }
+          /** Committed note revision; cache invalidation and metadata-only events run only after persistence. */
           const note = notebook.save(
             body as unknown as Parameters<typeof notebook.save>[0]
           );
@@ -518,21 +670,27 @@ export async function createWorkspace(options: WorkspaceOptions) {
           return redirect('/workspace/notes');
         }
         if (url.pathname === '/workspace/analytics/record') {
+          /** Bounded schema-validated form values still require the matching action’s CSRF/authorization checks. */
           const body = await parse(request, [
             'csrf',
             'section',
             'duration',
             'consent',
           ]);
-          if (!(await auth.callbacks.csrf.verify(request, session, body.csrf!)))
+          if (
+            !(await auth.callbacks.csrf.verify(request, session, body.csrf!))
+          ) {
             throw new WorkspaceError(403, 'CSRF_DENIED');
+          }
           if (
             !['notebook', 'files', 'protocols'].includes(body.section!) ||
             !/^\d{1,5}$/.test(body.duration!) ||
             Number(body.duration) > 60000 ||
             !['granted', 'denied'].includes(body.consent!)
-          )
+          ) {
             throw new WorkspaceError(400, 'SAMPLE_INVALID');
+          }
+          /** Actual operation receipt; its outcome is shown without inferring global atomicity or delivery guarantees. */
           const receipt = await analytics.record(
             body.section!,
             body.duration!,
@@ -541,11 +699,17 @@ export async function createWorkspace(options: WorkspaceOptions) {
           return redirect('/workspace/reports?outcome=' + receipt.outcome);
         }
         if (url.pathname === '/workspace/tags/dispatch') {
+          /** Bounded schema-validated form values still require the matching action’s CSRF/authorization checks. */
           const body = await parse(request, ['csrf', 'consent']);
-          if (!(await auth.callbacks.csrf.verify(request, session, body.csrf!)))
+          if (
+            !(await auth.callbacks.csrf.verify(request, session, body.csrf!))
+          ) {
             throw new WorkspaceError(403, 'CSRF_DENIED');
-          if (!['granted', 'denied'].includes(body.consent!))
+          }
+          if (!['granted', 'denied'].includes(body.consent!)) {
             throw new WorkspaceError(400, 'CONSENT_INVALID');
+          }
+          /** Actual authorized operation outcome; no success is fabricated for unavailable services. */
           const result = await analytics.tagSample(
             body.consent as 'granted' | 'denied'
           );
@@ -568,14 +732,18 @@ export async function createWorkspace(options: WorkspaceOptions) {
           );
         }
         if (url.pathname === '/workspace/assets/upload') {
+          /** Bounded schema-validated form values still require the matching action’s CSRF/authorization checks. */
           const body = await parse(request, [
             'csrf',
             'name',
             'content',
             'revision',
           ]);
-          if (!(await auth.callbacks.csrf.verify(request, session, body.csrf!)))
+          if (
+            !(await auth.callbacks.csrf.verify(request, session, body.csrf!))
+          ) {
             throw new WorkspaceError(403, 'CSRF_DENIED');
+          }
           await assets.upload(
             body.name!,
             body.content!,
@@ -585,9 +753,14 @@ export async function createWorkspace(options: WorkspaceOptions) {
           return redirect('/workspace/assets');
         }
         if (url.pathname === '/workspace/share/create') {
+          /** Bounded schema-validated form values still require the matching action’s CSRF/authorization checks. */
           const body = await parse(request, ['csrf']);
-          if (!(await auth.callbacks.csrf.verify(request, session, body.csrf!)))
+          if (
+            !(await auth.callbacks.csrf.verify(request, session, body.csrf!))
+          ) {
             throw new WorkspaceError(403, 'CSRF_DENIED');
+          }
+          /** Actual operation receipt; its outcome is shown without inferring global atomicity or delivery guarantees. */
           const receipt = await links.create(request, {
             destination: options.origin + '/workspace/public',
             status: 302,
@@ -609,11 +782,17 @@ export async function createWorkspace(options: WorkspaceOptions) {
           );
         }
         if (url.pathname === '/workspace/email/preview') {
+          /** Bounded schema-validated form values still require the matching action’s CSRF/authorization checks. */
           const body = await parse(request, ['csrf', 'title', 'body']);
-          if (!(await auth.callbacks.csrf.verify(request, session, body.csrf!)))
+          if (
+            !(await auth.callbacks.csrf.verify(request, session, body.csrf!))
+          ) {
             throw new WorkspaceError(403, 'CSRF_DENIED');
-          if (body.title!.length > 160 || body.body!.length > 8192)
+          }
+          if (body.title!.length > 160 || body.body!.length > 8192) {
             throw new WorkspaceError(400, 'TEMPLATE_INPUT_LIMIT');
+          }
+          /** Escaped inert email composition result; rendered source is text, never active mail HTML. */
           const preview = templates.render('notebook-update', {
             title: body.title,
             body: body.body,
@@ -637,12 +816,17 @@ export async function createWorkspace(options: WorkspaceOptions) {
           );
         }
         if (url.pathname === '/workspace/experiments/evaluate') {
+          /** Bounded schema-validated form values still require the matching action’s CSRF/authorization checks. */
           const body = await parse(request, ['csrf', 'consent']);
-          if (!(await auth.callbacks.csrf.verify(request, session, body.csrf!)))
+          if (
+            !(await auth.callbacks.csrf.verify(request, session, body.csrf!))
+          ) {
             throw new WorkspaceError(403, 'CSRF_DENIED');
-          if (!['granted', 'denied'].includes(body.consent!))
+          }
+          if (!['granted', 'denied'].includes(body.consent!)) {
             throw new WorkspaceError(400, 'CONSENT_INVALID');
-          if (body.consent === 'denied')
+          }
+          if (body.consent === 'denied') {
             return html(
               'Experiment not evaluated',
               h(
@@ -651,6 +835,8 @@ export async function createWorkspace(options: WorkspaceOptions) {
                 'You declined. No assignment or analytics record was created.'
               )
             );
+          }
+          /** Actual authorized operation outcome; no success is fabricated for unavailable services. */
           const result = await evaluator.evaluate('workspace-layout', request, {
             signal: request.signal,
           });
@@ -669,14 +855,19 @@ export async function createWorkspace(options: WorkspaceOptions) {
           );
         }
         if (url.pathname === '/workspace/files/create') {
+          /** Bounded schema-validated form values still require the matching action’s CSRF/authorization checks. */
           const body = await parse(request, ['csrf', 'filename', 'content']);
-          if (!(await auth.callbacks.csrf.verify(request, session, body.csrf!)))
+          if (
+            !(await auth.callbacks.csrf.verify(request, session, body.csrf!))
+          ) {
             throw new WorkspaceError(403, 'CSRF_DENIED');
+          }
           if (
             !/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.txt$/.test(body.filename!) ||
             body.content!.length > 8192
-          )
+          ) {
             throw new WorkspaceError(400, 'INVALID_TEXT_FILE');
+          }
           await storage.put(
             {
               bucket: 'workspace',
@@ -707,10 +898,13 @@ export async function createWorkspace(options: WorkspaceOptions) {
           '/workspace/experiments/evaluate',
           '/workspace/tags/dispatch',
         ].includes(url.pathname)
-      )
+      ) {
         throw new WorkspaceError(405, 'METHOD_DENIED');
+      }
       if (url.pathname === '/workspace/login') {
+        /** Current session-bound form challenge; nonce cookies never replace origin/session checks. */
         const csrf = await formContext(request, null);
+        /** Private HTML response; optional CSRF nonce cookies are attached only to this request’s result. */
         const response = html(
           'Sign in',
           h(
@@ -722,10 +916,12 @@ export async function createWorkspace(options: WorkspaceOptions) {
             submit('Sign in')
           )
         );
-        if (csrf.cookie) response.headers.set('set-cookie', csrf.cookie);
+        if (csrf.cookie) {
+          response.headers.set('set-cookie', csrf.cookie);
+        }
         return response;
       }
-      if (url.pathname === '/workspace')
+      if (url.pathname === '/workspace') {
         return html(
           'Local tools, working together',
           h(
@@ -812,9 +1008,17 @@ export async function createWorkspace(options: WorkspaceOptions) {
             link('/workspace/login', 'Sign in to local tools')
           )
         );
+      }
       if (url.pathname === '/workspace/notes') {
+        /** Current session-bound form challenge; nonce cookies never replace origin/session checks. */
         const csrf = await formContext(request, session);
+        /** Bounded persisted note snapshot; public callers use only explicitly published records. */
         const notes = notebook.list();
+        /** Native progressive form carries the exact observed revision; stored note text stays inert. */
+        /** Render a native optimistic-revision editor; hidden values remain untrusted on submission.
+         * @param {ReturnType<typeof notebook.list>[number]} note - Optional current persisted note; omission creates a private-by-default form.
+         * @returns {ReturnType<typeof h>} Escaped progressive form without requiring browser JavaScript.
+         */
         const editor = (note?: ReturnType<typeof notebook.list>[number]) =>
           h(
             'form',
@@ -854,6 +1058,7 @@ export async function createWorkspace(options: WorkspaceOptions) {
             ),
             submit(note ? `Save revision ${note.revision + 1}` : 'Create note')
           );
+        /** Private HTML response; optional CSRF nonce cookies are attached only to this request’s result. */
         const response = html(
           'Notebook',
           h(
@@ -874,15 +1079,19 @@ export async function createWorkspace(options: WorkspaceOptions) {
             )
           )
         );
-        if (csrf.cookie) response.headers.set('set-cookie', csrf.cookie);
+        if (csrf.cookie) {
+          response.headers.set('set-cookie', csrf.cookie);
+        }
         return response;
       }
       if (url.pathname === '/workspace/files') {
+        /** Current session-bound form challenge; nonce cookies never replace origin/session checks. */
         const csrf = await formContext(request, session),
           listing = await storage.list('workspace', {
             prefix: dataScope + '/',
             limit: 100,
           });
+        /** Private HTML response; optional CSRF nonce cookies are attached only to this request’s result. */
         const response = html(
           'Private local objects',
           h(
@@ -930,17 +1139,22 @@ export async function createWorkspace(options: WorkspaceOptions) {
               : null
           )
         );
-        if (csrf.cookie) response.headers.set('set-cookie', csrf.cookie);
+        if (csrf.cookie) {
+          response.headers.set('set-cookie', csrf.cookie);
+        }
         return response;
       }
       if (url.pathname === '/workspace/files/download') {
+        /** Candidate object key must match the fixed tenant prefix before any storage read. */
         const key = url.searchParams.get('key');
         if (
           !key ||
           !key.startsWith(dataScope + '/') ||
           url.searchParams.getAll('key').length !== 1
-        )
+        ) {
           throw new WorkspaceError(403, 'OBJECT_DENIED');
+        }
+        /** Bounded actual binary/fixture bytes, never a path or command from caller input. */
         const bytes = await storage.get({ bucket: 'workspace', key }, 65536);
         return new Response(new Uint8Array(bytes), {
           headers: {
@@ -950,7 +1164,7 @@ export async function createWorkspace(options: WorkspaceOptions) {
           },
         });
       }
-      if (url.pathname === '/workspace/lab')
+      if (url.pathname === '/workspace/lab') {
         return html(
           'Browser library lab',
           h(
@@ -974,11 +1188,14 @@ export async function createWorkspace(options: WorkspaceOptions) {
             h('div', { 'data-browser-lab': '', class: 'grid gap-4' })
           )
         );
+      }
       if (
         url.pathname === '/workspace/reports' ||
         url.pathname === '/workspace/report-data'
       ) {
+        /** Actual persisted local aggregation with explicit truncation metadata. */
         const aggregate = await analytics.aggregate();
+        /** Public PII-free report projection; the native table remains available without browser enhancement. */
         const chart = {
           id: 'workspace-events',
           title: 'Consented local samples',
@@ -992,12 +1209,16 @@ export async function createWorkspace(options: WorkspaceOptions) {
           coverage:
             'Persisted explicitly consented sample events for this fixed tenant/site. No automatic visitor tracking.',
         };
-        if (url.pathname === '/workspace/report-data')
+        if (url.pathname === '/workspace/report-data') {
           return new Response(JSON.stringify(chart), {
             headers: { ...headers, 'content-type': 'application/json' },
           });
+        }
+        /** Current session-bound form challenge; nonce cookies never replace origin/session checks. */
         const csrf = await formContext(request, session);
+        /** Only the authored outcome allowlist may appear as submission feedback. */
         const outcome = url.searchParams.get('outcome');
+        /** Private HTML response; optional CSRF nonce cookies are attached only to this request’s result. */
         const response = html(
           'Local analytics & reports',
           h(
@@ -1087,10 +1308,12 @@ export async function createWorkspace(options: WorkspaceOptions) {
             h('div', { 'data-report-view': '' })
           )
         );
-        if (csrf.cookie) response.headers.set('set-cookie', csrf.cookie);
+        if (csrf.cookie) {
+          response.headers.set('set-cookie', csrf.cookie);
+        }
         return response;
       }
-      if (url.pathname === '/workspace/diagnostics')
+      if (url.pathname === '/workspace/diagnostics') {
         return html(
           'Generation-owned diagnostics',
           h(
@@ -1112,7 +1335,8 @@ export async function createWorkspace(options: WorkspaceOptions) {
             )
           )
         );
-      if (url.pathname === '/workspace/performance')
+      }
+      if (url.pathname === '/workspace/performance') {
         return html(
           'Response performance lab',
           h(
@@ -1133,8 +1357,11 @@ export async function createWorkspace(options: WorkspaceOptions) {
             h('pre', null, JSON.stringify(cache.stats(), null, 2))
           )
         );
+      }
       if (url.pathname === '/workspace/tags') {
+        /** Current session-bound form challenge; nonce cookies never replace origin/session checks. */
         const csrf = await formContext(request, session);
+        /** Private HTML response; optional CSRF nonce cookies are attached only to this request’s result. */
         const response = html(
           'Consent-controlled tag collection',
           h(
@@ -1165,12 +1392,16 @@ export async function createWorkspace(options: WorkspaceOptions) {
             )
           )
         );
-        if (csrf.cookie) response.headers.set('set-cookie', csrf.cookie);
+        if (csrf.cookie) {
+          response.headers.set('set-cookie', csrf.cookie);
+        }
         return response;
       }
       if (url.pathname === '/workspace/assets') {
+        /** Bounded current catalog projection includes recorded orphan counts, not automatic repair. */
         const snapshot = assets.list(),
           csrf = await formContext(request, session);
+        /** Private HTML response; optional CSRF nonce cookies are attached only to this request’s result. */
         const response = html(
           'Versioned asset catalog',
           h(
@@ -1224,17 +1455,21 @@ export async function createWorkspace(options: WorkspaceOptions) {
             )
           )
         );
-        if (csrf.cookie) response.headers.set('set-cookie', csrf.cookie);
+        if (csrf.cookie) {
+          response.headers.set('set-cookie', csrf.cookie);
+        }
         return response;
       }
       if (url.pathname === '/workspace/assets/download') {
+        /** Exact immutable asset reference validated for grammar and duplicate parameters before retrieval. */
         const version = url.searchParams.get('version');
         if (
           !version ||
           !/^[a-f0-9]{48}$/.test(version) ||
           url.searchParams.getAll('version').length !== 1
-        )
+        ) {
           throw new WorkspaceError(400, 'VERSION_INVALID');
+        }
         return new Response(
           new Uint8Array(await assets.download(version, request.signal)),
           {
@@ -1251,78 +1486,90 @@ export async function createWorkspace(options: WorkspaceOptions) {
         url.pathname === '/workspace/email' ||
         url.pathname === '/workspace/experiments'
       ) {
+        /** Current session-bound form challenge; nonce cookies never replace origin/session checks. */
         const csrf = await formContext(request, session);
-        const contents = url.pathname.endsWith('/share')
-          ? h(
+        /** Trusted authored page tree; form values remain scalar children and never become executable markup. */
+        let contents: ReturnType<typeof h>;
+        if (url.pathname.endsWith('/share')) {
+          contents = h(
+            'div',
+            null,
+            h(
+              'p',
+              null,
+              'Create a tenant-owned durable short link to the public board. Destinations are fixed to this site’s public board, never arbitrary URLs. Links use 302 and expire in one day.'
+            ),
+            h(
+              'form',
+              { method: 'post', action: '/workspace/share/create' },
+              hidden('csrf', csrf.token),
+              submit('Create short link')
+            )
+          );
+        } else {
+          if (url.pathname.endsWith('/email')) {
+            contents = h(
               'div',
               null,
               h(
                 'p',
                 null,
-                'Create a tenant-owned durable short link to the public board. Destinations are fixed to this site’s public board, never arbitrary URLs. Links use 302 and expire in one day.'
+                'Compose an escaped email template locally. Sending, marketing, tracking and inbound mail require an explicitly configured transport and policy; none is enabled here.'
               ),
               h(
                 'form',
-                { method: 'post', action: '/workspace/share/create' },
+                { method: 'post', action: '/workspace/email/preview' },
                 hidden('csrf', csrf.token),
-                submit('Create short link')
-              )
-            )
-          : url.pathname.endsWith('/email')
-            ? h(
-                'div',
-                null,
+                field('title', 'Subject title'),
                 h(
-                  'p',
+                  'label',
                   null,
-                  'Compose an escaped email template locally. Sending, marketing, tracking and inbound mail require an explicitly configured transport and policy; none is enabled here.'
+                  'Message',
+                  h('textarea', { name: 'body', maxlength: 8192 })
                 ),
-                h(
-                  'form',
-                  { method: 'post', action: '/workspace/email/preview' },
-                  hidden('csrf', csrf.token),
-                  field('title', 'Subject title'),
-                  h(
-                    'label',
-                    null,
-                    'Message',
-                    h('textarea', { name: 'body', maxlength: 8192 })
-                  ),
-                  submit('Preview template')
-                )
+                submit('Preview template')
               )
-            : h(
-                'div',
+            );
+          } else {
+            contents = h(
+              'div',
+              null,
+              h(
+                'p',
                 null,
+                'Evaluate a fixed three-variant local experiment using the verified operator identity. No client role/subject string is accepted. Assignment is separate from statistical analysis.'
+              ),
+              h(
+                'form',
+                { method: 'post', action: '/workspace/experiments/evaluate' },
+                hidden('csrf', csrf.token),
                 h(
-                  'p',
+                  'label',
                   null,
-                  'Evaluate a fixed three-variant local experiment using the verified operator identity. No client role/subject string is accepted. Assignment is separate from statistical analysis.'
-                ),
-                h(
-                  'form',
-                  { method: 'post', action: '/workspace/experiments/evaluate' },
-                  hidden('csrf', csrf.token),
+                  'Consent for assignment',
                   h(
-                    'label',
-                    null,
-                    'Consent for assignment',
-                    h(
-                      'select',
-                      { name: 'consent' },
-                      h('option', { value: 'denied' }, 'Decline'),
-                      h('option', { value: 'granted' }, 'Evaluate locally')
-                    )
-                  ),
-                  submit('Evaluate')
-                )
-              );
+                    'select',
+                    { name: 'consent' },
+                    h('option', { value: 'denied' }, 'Decline'),
+                    h('option', { value: 'granted' }, 'Evaluate locally')
+                  )
+                ),
+                submit('Evaluate')
+              )
+            );
+          }
+        }
+        /** Private HTML response; optional CSRF nonce cookies are attached only to this request’s result. */
         const response = html('Local application tools', contents);
-        if (csrf.cookie) response.headers.set('set-cookie', csrf.cookie);
+        if (csrf.cookie) {
+          response.headers.set('set-cookie', csrf.cookie);
+        }
         return response;
       }
       if (url.pathname === '/workspace/protocols') {
+        /** Current session-bound form challenge; nonce cookies never replace origin/session checks. */
         const csrf = await formContext(request, session);
+        /** Private HTML response; optional CSRF nonce cookies are attached only to this request’s result. */
         const response = html(
           'Protocol lab',
           h(
@@ -1380,21 +1627,27 @@ export async function createWorkspace(options: WorkspaceOptions) {
             )
           )
         );
-        if (csrf.cookie) response.headers.set('set-cookie', csrf.cookie);
+        if (csrf.cookie) {
+          response.headers.set('set-cookie', csrf.cookie);
+        }
         return response;
       }
+      /** Bounded persisted note snapshot; public callers use only explicitly published records. */
       const notes = await published();
       if (
         url.pathname === '/workspace/search' ||
         url.pathname === '/workspace/public'
       ) {
+        /** Bounded literal search text with a single allowed query parameter; no regex or engine DSL is accepted. */
         const q = url.searchParams.get('q') ?? '';
         if (
           q.length > 256 ||
           url.searchParams.getAll('q').length > 1 ||
           [...url.searchParams.keys()].some((key) => key !== 'q')
-        )
+        ) {
           throw new WorkspaceError(400, 'QUERY_INVALID');
+        }
+        /** Ephemeral local index includes only this scope’s explicitly published notes. */
         const index = createSearchIndex<{
           id: string;
           title: string;
@@ -1412,6 +1665,7 @@ export async function createWorkspace(options: WorkspaceOptions) {
             text: note.body,
           }))
         );
+        /** Bounded local search matches, or public notes when the query is empty. */
         const results = q.trim()
           ? index
               .search(q, { limit: 20, prefix: true })
@@ -1447,7 +1701,7 @@ export async function createWorkspace(options: WorkspaceOptions) {
           )
         );
       }
-      if (url.pathname.endsWith('sitemap.xml'))
+      if (url.pathname.endsWith('sitemap.xml')) {
         return new Response(
           createSitemap(
             notes.length
@@ -1463,7 +1717,10 @@ export async function createWorkspace(options: WorkspaceOptions) {
           ),
           { headers: { ...headers, 'content-type': 'application/xml' } }
         );
+      }
+      /** Explicit feed representation derived from the already allowlisted endpoint. */
       const format = url.pathname.endsWith('.json') ? 'json' : 'rss';
+      /** Deterministic bounded public feed generated only from persisted public facts/timestamps. */
       const feed = createFeedResponse(
         format,
         {
@@ -1483,8 +1740,10 @@ export async function createWorkspace(options: WorkspaceOptions) {
         },
         0
       );
+      /** Strong identity of the actual feed representation, stable across unchanged generation. */
       const etag =
         '"' + createHash('sha256').update(feed.body).digest('hex') + '"';
+      /** Weak-compatible If-None-Match comparison is representation-specific and does not authorize private data. */
       const notModified = request.headers
         .get('if-none-match')
         ?.split(',')
@@ -1497,11 +1756,17 @@ export async function createWorkspace(options: WorkspaceOptions) {
         headers: { ...feed.headers, ...headers, etag },
       });
     };
+    /** Apply generation admission, safe error projection and actual-settlement accounting.
+     * @param {Request} request - Borrowed request; HEAD preserves headers/status while removing its body.
+     * @returns {Promise<Response>} Safe response or explicit unavailable result, without exposing private causes.
+     */
     const handle = (request: Request) => {
-      if (closed || pending.size >= 16)
+      if (closed || pending.size >= 16) {
         return Promise.resolve(
           new Response('Workspace unavailable', { status: 503, headers })
         );
+      }
+      /** Actual request/stream settlement retained in the generation’s pending inventory. */
       const job = run(request)
         .then((response) =>
           request.method === 'HEAD'
@@ -1512,12 +1777,17 @@ export async function createWorkspace(options: WorkspaceOptions) {
             : response
         )
         .catch((error) => {
-          const status =
-            error instanceof WorkspaceError
-              ? error.status
-              : error instanceof HttpValidationError
-                ? 400
-                : 503;
+          /** Fixed safe HTTP status selected from recognized errors; private causes are never returned. */
+          let status: number;
+          if (error instanceof WorkspaceError) {
+            status = error.status;
+          } else {
+            if (error instanceof HttpValidationError) {
+              status = 400;
+            } else {
+              status = 503;
+            }
+          }
           return html(
             status === 409 ? 'Edit conflict' : 'Request could not complete',
             h(
@@ -1537,8 +1807,14 @@ export async function createWorkspace(options: WorkspaceOptions) {
     return {
       handle,
       close,
+      /** Observe fixed lifecycle phases without retaining request data.
+       * @param {ServerLifecycleHooks | undefined} bus - Borrowed host bus; each registration is owned by this generation.
+       * @returns {void} Installs counters when active; close removes exact handles before service drain.
+       */
       observeLifecycle(bus: ServerLifecycleHooks | undefined) {
-        if (!bus || closed) return;
+        if (!bus || closed) {
+          return;
+        }
         for (const phase of [
           'request:before',
           'route:resolved',
@@ -1547,6 +1823,7 @@ export async function createWorkspace(options: WorkspaceOptions) {
           'request:after',
           'generation:activate',
         ] as const) {
+          /** Exact lifecycle registration handle; generation cleanup removes every retained registration. */
           const token = bus.register(phase, () => {
             lifecycleCounts[phase] = Math.min(
               (lifecycleCounts[phase] ?? 0) + 1,
@@ -1558,14 +1835,19 @@ export async function createWorkspace(options: WorkspaceOptions) {
           });
         }
       },
+      /** Register explicit HTTP/protocol adapters under the host generation.
+       * @param {ZeruxPluginApi} api - Borrowed authorized registration contract; no remote plugin code is loaded.
+       * @returns {void} Installs reviewed routes; the plugin separately owns this application’s close handle.
+       */
       install(api: ZeruxPluginApi) {
         registerFetchRoutes(
           api,
           [...paths, '/workspace/s/:slug'].map((path) => ({
             path,
             handler: (request, context) => {
-              if (context.req.headers.host !== new URL(options.origin).host)
+              if (context.req.headers.host !== new URL(options.origin).host) {
                 return new Response('Access denied', { status: 403, headers });
+              }
               return handle(
                 new Request(
                   options.origin +
@@ -1588,6 +1870,10 @@ export async function createWorkspace(options: WorkspaceOptions) {
           pattern: '/workspace/measure-response',
           method: 'ALL',
           meta: { streamBody: true },
+          /** Forward one authenticated synthetic response through the single hosting compression owner.
+           * @param {object} context - Borrowed native framework response/request context.
+           * @returns {Promise<void>} Actual response finish/close settlement, retained through teardown.
+           */
           async handler(context) {
             if (closed || pending.size >= 16) {
               context.res.writeHead(503);
@@ -1603,11 +1889,13 @@ export async function createWorkspace(options: WorkspaceOptions) {
               context.res.end('Access denied');
               return;
             }
+            /** Bounded actual binary/fixture bytes, never a path or command from caller input. */
             const bytes = Buffer.from(
               JSON.stringify({
                 fixture: 'Zerux local compression measurement. '.repeat(1800),
               })
             );
+            /** Owned synthetic readable source; zhost alone owns response compression policy. */
             const source = Object.assign(Readable.from([bytes]), {
               statusCode: 200,
               headers: {
@@ -1616,7 +1904,11 @@ export async function createWorkspace(options: WorkspaceOptions) {
                 'content-length': String(bytes.length),
               },
             });
+            /** Actual request/stream settlement retained in the generation’s pending inventory. */
             const job = new Promise<void>((resolve, reject) => {
+              /** Settle response accounting once and detach both native terminal listeners.
+               * @returns {void} Resolves only this owned response promise.
+               */
               const done = () => {
                 context.res.off('finish', done);
                 context.res.off('close', done);
@@ -1654,11 +1946,15 @@ export async function createWorkspace(options: WorkspaceOptions) {
           '/workspace.Notebook/Summary',
           '/workspace.Notebook/SummaryStream',
           '/trpc/workspace.summary',
-        ])
+        ]) {
           api.addRoute({
             pattern,
             method: 'ALL',
             meta: { streamBody: true },
+            /** Delegate an explicitly registered protocol route to the authenticated gateway.
+             * @param {object} context - Borrowed native request/response context.
+             * @returns {Promise<void>} Actual gateway settlement; finite SSE timers clear on finish/close.
+             */
             async handler(context) {
               if (closed) {
                 context.res.statusCode = 503;
@@ -1666,8 +1962,12 @@ export async function createWorkspace(options: WorkspaceOptions) {
                 return;
               }
               if (pattern === '/events') {
+                /** Finite SSE connection lifetime; finish/close cleanup clears its exact timer. */
                 const timer = setTimeout(() => context.res.end(), 5000);
                 timer.unref();
+                /** Release this exact SSE lifetime timer and terminal listener pair.
+                 * @returns {void} Idempotent native timer/listener cleanup.
+                 */
                 const cleanup = () => {
                   clearTimeout(timer);
                   context.res.off('finish', cleanup);
@@ -1676,6 +1976,7 @@ export async function createWorkspace(options: WorkspaceOptions) {
                 context.res.once('finish', cleanup);
                 context.res.once('close', cleanup);
               }
+              /** Actual request/stream settlement retained in the generation’s pending inventory. */
               const job = protocols.handle(context.req, context.res);
               pending.add(job);
               try {
@@ -1685,6 +1986,7 @@ export async function createWorkspace(options: WorkspaceOptions) {
               }
             },
           });
+        }
       },
     };
   } catch (error) {

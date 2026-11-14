@@ -55,7 +55,7 @@
     "de:dev": "SESSION=$(node -p \"require('./package.json').name.replace(/[@/]/g,'-')\") && tmux kill-session -t \"$SESSION\" 2>/dev/null || true",
     "check:workspace": "tsc -p tsconfig.workspace.json",
     "test:workspace": "node --experimental-strip-types --test test/workspace.test.ts test/workspace-tools.test.ts",
-    "workspace:init": "node --env-file-if-exists=.env.local scripts/workspace-init.mjs",
+    "workspace:init": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/workspace-init-cli.ts",
     "build:assets": "node --experimental-strip-types scripts/workspace-assets.ts",
     "prebuild": "npm run build:assets",
     "predev": "npm run build:assets",

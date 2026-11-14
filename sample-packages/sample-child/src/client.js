@@ -17,7 +17,9 @@ export const mount = ({ root, api }) => {
    * @returns {Promise<void>} Resolves after the result is rendered.
    */
   async function childCall(handler) {
-    if (!resultEl) return;
+    if (!resultEl) {
+      return;
+    }
     resultEl.style.display = 'block';
     resultEl.textContent = 'Loading...';
 
@@ -37,7 +39,9 @@ export const mount = ({ root, api }) => {
    * @returns {Promise<void>} Resolves after the parent result is rendered.
    */
   async function childCallParentScope(handler) {
-    if (!resultEl) return;
+    if (!resultEl) {
+      return;
+    }
     resultEl.style.display = 'block';
     resultEl.textContent = 'Loading...';
 

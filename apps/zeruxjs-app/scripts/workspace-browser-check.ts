@@ -12,18 +12,58 @@ import { build } from 'esbuild';
 import { hashPassword } from '@zeruxjs/auth';
 import { createApplicationLifecycle, runWorkers } from 'zeruxjs';
 import config from '../zerux.config.ts';
+/** Browser event envelope owned by this fixed CDP fixture, not an application HTTP schema. */
+type BrowserEvent = { sessionId?: string; id?: undefined } & (
+  | {
+      method: 'Runtime.exceptionThrown';
+      params: { exceptionDetails: { text: string } };
+    }
+  | {
+      method: 'Log.entryAdded';
+      params: { entry: { source: string; text: string } };
+    }
+  | {
+      method: 'Fetch.requestPaused';
+      params: { requestId: string; request: { url: string } };
+    }
+);
+/** Pending command metadata is retained only until its response/deadline/child exit. */
+interface PendingBrowserCommand {
+  /** Settle the exact command from its owned process response. */
+  resolve: (value: unknown) => void;
+  /** Reject without exposing application credentials. */
+  reject: (reason: unknown) => void;
+  /** Owned response deadline cleared on every terminal command outcome. */
+  timer: ReturnType<typeof setTimeout>;
+}
+/** Actual CDP evaluation response; return values remain caller-asserted fixture data. */
+interface BrowserEvaluation {
+  /** Browser exception details fail the authored inspection. */
+  exceptionDetails?: { text: string };
+  /** Runtime return value requested explicitly through returnByValue. */
+  result: { value: unknown };
+}
+/** Actual source app root; the configured operator runtime is never started by this fixture. */
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 await mkdir(join(root, '.zerux'), { recursive: true });
+/** Owned private fixture/build scratch tree, separate from the running application output. */
 const compiled = await mkdtemp(join(root, '.zerux/workspace-chrome-'));
+/** Copied production fixture; browser requests never use the operator’s live data directory. */
 const fixtureRoot = join(compiled, 'fixture');
+/** Synthetic private SQLite/object state beneath the copied fixture only. */
 const directory = join(fixtureRoot, '.workspace');
+/** Owned disposable installed-Chrome profile; no browser is downloaded. */
 const profile = await mkdtemp(join(tmpdir(), 'zerux-browser-profile-'));
-let app, browser, server, workers;
+let app: Awaited<ReturnType<typeof createApplicationLifecycle>> | undefined;
+let browser: ReturnType<typeof spawn> | undefined;
+let server: ReturnType<typeof createServer> | undefined;
+let workers: Awaited<ReturnType<typeof runWorkers>> | undefined;
 try {
   await cp(join(root, '.zerux/build'), fixtureRoot, { recursive: true });
   await cp(join(root, 'workers'), join(fixtureRoot, 'workers'), {
     recursive: true,
   });
+  /** Temporary isolated service bundle used only by this synthetic fixture. */
   const outfile = join(compiled, 'app.mjs');
   await build({
     entryPoints: [join(root, 'lib/workspace/application.ts')],
@@ -34,11 +74,19 @@ try {
     format: 'esm',
     logLevel: 'silent',
   });
+  /** Actual public integration owner loaded from the isolated bundle, not a fake browser success stub. */
   const { createWorkspace } = await import(pathToFileURL(outfile).href);
-  const requestSummary = [];
+  /** Synthetic fixture-only request observations used to prove the exercised local endpoint. */
+  const requestSummary: Array<{
+    method: string | undefined;
+    pathname: string;
+    status: number;
+    origin: string | null;
+  }> = [];
   server = createServer(async (req, res) => {
     try {
-      const pathname = new URL(req.url, 'http://localhost').pathname;
+      /** Request path in the owned loopback fixture, never production telemetry. */
+      const pathname = new URL(req.url ?? '/', 'http://localhost').pathname;
       res.once('finish', () =>
         requestSummary.push({
           method: req.method,
@@ -47,17 +95,25 @@ try {
           origin: req.headers.origin ?? null,
         })
       );
-      await app.handle(req, res);
+      await app!.handle(req, res);
     } catch {
-      if (!res.headersSent) res.writeHead(500);
+      if (!res.headersSent) {
+        res.writeHead(500);
+      }
       res.end('Synthetic fixture failed');
     }
   });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
-  const origin = `http://localhost:${server.address().port}`;
+  /** Actual native listener address must be a TCP endpoint before selecting the fixture origin. */
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  /** Actual ephemeral loopback listener origin used for all synthetic session/CSRF policy. */
+  const origin = `http://localhost:${address.port}`;
+  /** Synthetic one-run password record and independent random key; not a default app credential. */
   const passwordHash = hashPassword('synthetic-browser-only-password'),
     key = randomBytes(32);
+  /** Explicit synthetic schema-initialization generation, closed before the actual fixture runtime starts. */
   const initial = await createWorkspace({
     directory,
     origin,
@@ -80,6 +136,7 @@ try {
     ENABLE_MYSQL_DEMO: 'false',
   });
   // The fixture always excludes the operator's optional external database.
+  /** Force the optional operator database out of the copied fixture configuration. */
   const { db: _ignoredDatabase, ...localConfig } = config;
   app = await createApplicationLifecycle({
     rootDir: fixtureRoot,
@@ -105,18 +162,38 @@ try {
   );
   let id = 0,
     buffer = Buffer.alloc(0);
-  const pending = new Map(),
-    listeners = new Set();
-  browser.stderr.on('data', () => {});
-  const send = (method, params = {}, sessionId) =>
-    new Promise((resolve, reject) => {
+  /** CDP requests retain exact correlation IDs/timers until response or child exit. */
+  const pending = new Map<number, PendingBrowserCommand>(),
+    listeners = new Set<(message: BrowserEvent) => void>();
+  browser.stderr!.on('data', () => {});
+  /** Explicit pipe 3 is the owned CDP request writer, never a caller-selected file descriptor. */
+  const cdpInput = browser.stdio[3] as import('node:stream').Writable;
+  /** Explicit pipe 4 is the owned CDP event/response reader. */
+  const cdpOutput = browser.stdio[4] as import('node:stream').Readable;
+  /** Send one authored CDP command to the owned browser with a finite response deadline.
+   * @param {string} method - Trusted fixed CDP method, not a caller-selected command endpoint.
+   * @param {object} params - Trusted fixture parameters; never external/model content.
+   * @param {string} sessionId - Optional exact owned target session.
+   * @returns {Promise<object>} Actual browser command result, timeout or process failure.
+   */
+  const send = <TResult = Record<string, unknown>>(
+    method: string,
+    params: Record<string, unknown> = {},
+    sessionId?: string
+  ): Promise<TResult> =>
+    new Promise<TResult>((resolve, reject) => {
+      /** Monotonic fixture CDP request ID with its own finite deadline. */
       const next = ++id,
         timer = setTimeout(() => {
           pending.delete(next);
           reject(Error('Chrome deadline: ' + method));
         }, 15000);
-      pending.set(next, { resolve, reject, timer });
-      browser.stdio[3].write(
+      pending.set(next, {
+        resolve: (value) => resolve(value as TResult),
+        reject,
+        timer,
+      });
+      cdpInput.write(
         JSON.stringify({
           id: next,
           method,
@@ -125,21 +202,35 @@ try {
         }) + '\0'
       );
     });
-  browser.stdio[4].on('data', (chunk) => {
+  cdpOutput.on('data', (chunk: Buffer) => {
     buffer = Buffer.concat([buffer, chunk]);
     let end;
     while ((end = buffer.indexOf(0)) !== -1) {
-      const message = JSON.parse(buffer.subarray(0, end));
+      /** One complete NUL-framed browser response/event; no application payload is evaluated on the server. */
+      const message = JSON.parse(buffer.subarray(0, end).toString('utf8')) as {
+        id?: number;
+        result?: unknown;
+        error?: unknown;
+      };
       buffer = buffer.subarray(end + 1);
       if (message.id) {
+        /** Exact pending request record, removed and timer-cleared before settlement. */
         const item = pending.get(message.id);
-        if (!item) continue;
+        if (!item) {
+          continue;
+        }
         clearTimeout(item.timer);
         pending.delete(message.id);
-        message.error
-          ? item.reject(Error(JSON.stringify(message.error)))
-          : item.resolve(message.result);
-      } else for (const listener of listeners) listener(message);
+        if (message.error) {
+          item.reject(Error(JSON.stringify(message.error)));
+        } else {
+          item.resolve(message.result);
+        }
+      } else {
+        for (const listener of listeners) {
+          listener(message as unknown as BrowserEvent);
+        }
+      }
     }
   });
   browser.once('exit', () => {
@@ -149,36 +240,66 @@ try {
     }
     pending.clear();
   });
-  const version = await send('Browser.getVersion');
-  const { targetId } = await send('Target.createTarget', {
+  /** Actual exercised Chrome product identity; this fixture cannot certify other browsers/codecs. */
+  const version = await send<{ product: string }>('Browser.getVersion');
+  /** Owned blank target created exclusively for this fixture. */
+  const { targetId } = await send<{ targetId: string }>('Target.createTarget', {
     url: 'about:blank',
   });
-  const { sessionId } = await send('Target.attachToTarget', {
-    targetId,
-    flatten: true,
-  });
-  const call = (method, params) => send(method, params, sessionId);
-  const evaluate = async (expression) => {
-    const result = await call('Runtime.evaluate', {
+  /** Exact flattened CDP session for the owned target. */
+  const { sessionId } = await send<{ sessionId: string }>(
+    'Target.attachToTarget',
+    {
+      targetId,
+      flatten: true,
+    }
+  );
+  /** Pin authored commands to this fixture’s exact owned target.
+   * @param {string} method - Fixed trusted CDP method.
+   * @param {object} params - Authored command data.
+   * @returns {Promise<object>} Actual session-scoped browser outcome.
+   */
+  const call = <TResult = Record<string, unknown>>(
+    method: string,
+    params: Record<string, unknown> = {}
+  ) => send<TResult>(method, params, sessionId);
+  /** Inspect only fixed authored fixture expressions inside the isolated browser target.
+   * @param {string} expression - Trusted test code, never text from an HTTP/user/model payload.
+   * @returns {Promise<unknown>} Actual browser value; exceptions fail the fixture.
+   */
+  const evaluate = async <TResult = unknown>(
+    expression: string
+  ): Promise<TResult> => {
+    /** Actual CDP evaluation outcome; exceptions fail the check rather than inventing a pass. */
+    const result = await call<BrowserEvaluation>('Runtime.evaluate', {
       expression,
       returnByValue: true,
       awaitPromise: true,
     });
-    if (result.exceptionDetails) throw Error(result.exceptionDetails.text);
-    return result.result.value;
+    if (result.exceptionDetails) {
+      throw Error(result.exceptionDetails.text);
+    }
+    return result.result.value as TResult;
   };
-  const errors = [];
+  /** Browser/security errors retained only for this finite synthetic run. */
+  const errors: string[] = [];
   listeners.add((message) => {
-    if (message.sessionId !== sessionId) return;
-    if (message.method === 'Runtime.exceptionThrown')
+    if (message.sessionId !== sessionId) {
+      return;
+    }
+    if (message.method === 'Runtime.exceptionThrown') {
       errors.push(message.params.exceptionDetails.text);
+    }
     if (
       message.method === 'Log.entryAdded' &&
       message.params.entry.source === 'security'
-    )
+    ) {
       errors.push(message.params.entry.text);
+    }
     if (message.method === 'Fetch.requestPaused') {
+      /** Paused browser request is checked before continuation; external destinations are denied. */
       const { requestId, request } = message.params;
+      /** Only the exact synthetic loopback origin and its owned blob URLs may continue. */
       const allowed =
         request.url.startsWith(origin + '/') ||
         request.url.startsWith('blob:' + origin + '/');
@@ -192,10 +313,17 @@ try {
   await call('Runtime.enable');
   await call('Log.enable');
   await call('Fetch.enable', { patterns: [{ urlPattern: '*' }] });
-  const waitFor = async (expression) => {
+  /** Poll a trusted fixture condition until its finite deadline.
+   * @param {string} expression - Fixed authored browser condition.
+   * @returns {Promise<void>} Actual observed condition or explicit failure; no fabricated browser pass.
+   */
+  const waitFor = async (expression: string) => {
+    /** Finite polling deadline; arbitrary browser code is never promised forced cancellation. */
     const until = Date.now() + 10000;
     while (Date.now() < until) {
-      if (await evaluate(expression)) return;
+      if (await evaluate(expression)) {
+        return;
+      }
       await new Promise((resolve) => setTimeout(resolve, 40));
     }
     throw Error(
@@ -210,12 +338,19 @@ try {
         })
     );
   };
-  const navigate = async (path) => {
+  /** Navigate only the synthetic loopback app and wait for its actual ready state.
+   * @param {string} path - Fixed authored local route.
+   * @returns {Promise<void>} Actual expected route readiness, never a redirect/authorization bypass.
+   */
+  const navigate = async (path: string) => {
     await call('Page.navigate', { url: origin + path });
     await waitFor(
       `location.pathname === ${JSON.stringify(path)} && document.readyState === 'complete'`
     );
   };
+  /** Dispatch real native key-down/up messages to the currently focused fixture control.
+   * @returns {Promise<void>} Actual browser command settlement; not a forced click or fake DOM event.
+   */
   const enter = async () => {
     await call('Input.dispatchKeyEvent', {
       type: 'keyDown',
@@ -319,7 +454,9 @@ try {
     "location.search.includes('outcome=persisted') && document.querySelector('[data-report-chart]')"
   );
   assert.match(
-    await evaluate("document.querySelector('[data-report-view]').textContent"),
+    await evaluate<string>(
+      "document.querySelector('[data-report-view]').textContent"
+    ),
     /workspace.sample/
   );
   await navigate('/workspace/protocols');
@@ -362,7 +499,9 @@ try {
     '1'
   );
   assert.match(
-    await evaluate("document.querySelector('[data-browser-lab]').textContent"),
+    await evaluate<string>(
+      "document.querySelector('[data-browser-lab]').textContent"
+    ),
     /React: 1; Vue: 1/
   );
   await evaluate(
@@ -473,6 +612,7 @@ try {
       new Promise((resolve) => setTimeout(resolve, 1000)),
     ]);
     if (browser.exitCode === null && browser.signalCode === null) {
+      /** Observe actual owned child exit before removing its profile and fixture files. */
       const ended = once(browser, 'exit').catch(() => {});
       browser.kill('SIGKILL');
       await ended;
@@ -483,7 +623,7 @@ try {
   config.lifecycleHooks?.dispose();
   if (server) {
     server.closeAllConnections();
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => server!.close(resolve));
   }
   await Promise.all([
     rm(compiled, { recursive: true, force: true }),

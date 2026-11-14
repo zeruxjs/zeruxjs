@@ -3,6 +3,7 @@ import test from 'node:test';
 import { gunzipSync } from 'node:zlib';
 import {
   createI18n,
+  type Catalog,
   createCatalogLoader,
   createLocaleController,
   defineCatalog,
@@ -30,19 +31,25 @@ import {
  * @returns {object} Plain synthetic catalog data.
  */
 const catalog = (
-  locale = 'fr',
-  messages = { Hello: 'Bonjour' },
-  domain = 'shop'
-) => ({ locale, domain, messages });
+  locale: string = 'fr',
+  messages: Catalog['messages'] = { Hello: 'Bonjour' },
+  domain: string = 'shop'
+): Catalog => ({ locale, domain, messages });
 /** Own explicit producer settlement controls for deterministic cancellation tests.
  * @returns {object} Promise and test-owned resolve/reject functions; no native work starts.
  */
-const deferred = () => {
-  let resolve, reject;
-  /** Synthetic producer promise settled explicitly by this fixture. */
-  const promise = new Promise((a, b) => {
-    resolve = a;
-    reject = b;
+const deferred = (): {
+  promise: Promise<Catalog>;
+  resolve: (value: Catalog | PromiseLike<Catalog>) => void;
+  reject: (reason?: unknown) => void;
+} => {
+  // Native Promise runs this executor synchronously, establishing both controls before return.
+  let resolve!: (value: Catalog | PromiseLike<Catalog>) => void;
+  let reject!: (reason?: unknown) => void;
+  /** Producer result remains pending until the fixture explicitly settles it. */
+  const promise = new Promise<Catalog>((accept, decline) => {
+    resolve = accept;
+    reject = decline;
   });
   return { promise, resolve, reject };
 };
@@ -156,7 +163,10 @@ test('translation placeholders cannot be removed, added or change numeric type; 
   assert.throws(() => sprintf('%d', 'secret'), /requires number/);
   assert.throws(() => t.formatNumber(NaN), /finite/);
   assert.throws(() => t.formatDateTime(new Date(NaN)), /invalid date/);
-  assert.throws(() => t.formatRelativeTime(1, 'invalid'), RangeError);
+  assert.throws(
+    () => Reflect.apply(t.formatRelativeTime, t, [1, 'invalid']),
+    RangeError
+  );
 });
 
 test('fallbacks remain locale ordered and domain isolated; native plurals and RTL use selected locale', () => {
@@ -227,8 +237,8 @@ test('request locales are isolated across concurrent asynchronous handlers and d
 test('single-flight loading, per-waiter cancellation, source invalidation and close ownership', async (t) => {
   /** Explicit unresolved producer barrier; fixture settles it before awaiting loader close. */
   const pending = deferred();
-  let calls = 0,
-    signal;
+  let calls = 0;
+  let signal: AbortSignal | undefined;
   /** Owned allowlisted loader; await close after aborting or settling its synthetic work. */
   const loader = createCatalogLoader({
     'fr/shop': async (context) => {
@@ -251,6 +261,7 @@ test('single-flight loading, per-waiter cancellation, source invalidation and cl
   await tick();
   abort.abort();
   await assert.rejects(a, /cancelled/);
+  assert.ok(signal);
   assert.equal(signal.aborted, false);
   pending.resolve(catalog());
   assert.equal((await b).locale, 'fr');
@@ -457,7 +468,7 @@ test('same-locale selection replacement keeps shared work alive; invalid signals
     await loader.close();
   });
   await assert.rejects(
-    loader.load('fr/shop', { signal: 'invalid' }),
+    Reflect.apply(loader.load, loader, ['fr/shop', { signal: 'invalid' }]),
     /invalid cancellation/
   );
   assert.equal(loader.getStatus().pending, 0);

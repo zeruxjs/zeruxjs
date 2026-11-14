@@ -18,14 +18,16 @@ export function installThemeControl() {
     const saved =
       localStorage.getItem('zerux-theme') ||
       localStorage.getItem('zerux-docs-theme');
-    if (modes.includes(saved)) {
+    if (saved !== null && modes.includes(saved)) {
       theme = saved;
     }
   } catch {
     /* Optional browser storage. */
   }
   /** Local value for buttons. */
-  const buttons = [...document.querySelectorAll('.theme-toggle')];
+  const buttons = [
+    ...document.querySelectorAll<HTMLButtonElement>('.theme-toggle'),
+  ];
   /**
    * Synchronize document and labels.
    * @returns {unknown} Result produced by render.
@@ -38,11 +40,12 @@ export function installThemeControl() {
     }
     for (const button of buttons) {
       button.hidden = false;
-      button.textContent = {
-        system: '◐ System',
-        light: '☀ Light',
-        dark: '☾ Dark',
-      }[theme];
+      button.textContent =
+        {
+          system: '◐ System',
+          light: '☀ Light',
+          dark: '☾ Dark',
+        }[theme] ?? '◐ System';
       button.setAttribute(
         'aria-label',
         `Color theme: ${theme}. Switch to ${modes[(modes.indexOf(theme) + 1) % 3]}.`
@@ -63,7 +66,10 @@ export function installThemeControl() {
   }
   window.addEventListener('storage', (event) => {
     if (event.key === null || event.key === 'zerux-theme') {
-      theme = modes.includes(event.newValue) ? event.newValue : 'system';
+      theme =
+        event.newValue !== null && modes.includes(event.newValue)
+          ? event.newValue
+          : 'system';
       render();
     }
   });

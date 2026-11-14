@@ -3,6 +3,7 @@ import { mount, unmount } from 'zyrojs/dom';
 
 /** The static example uses the installed runtime and owns one disposable root. */
 const App = defineComponent(() => {
+  /** Setup-local counter state; repeated renders reuse this signal until root teardown. */
   const count = signal(0);
   return () =>
     h(
@@ -52,13 +53,19 @@ const App = defineComponent(() => {
       )
     );
 });
+/** Dedicated static-example root; do not share it with another renderer. */
 const host = document.getElementById('app');
 if (host) {
+  /** Mount one fresh owned counter after initial load or persisted page restoration.
+   * @returns {Node | undefined} First mounted native node; pagehide releases the exact container through unmount.
+   */
   const install = () => mount(h(App, null), host);
   host.replaceChildren();
   install();
   window.addEventListener('pagehide', () => unmount(host));
   window.addEventListener('pageshow', (event) => {
-    if (event.persisted) install();
+    if (event.persisted) {
+      install();
+    }
   });
 }

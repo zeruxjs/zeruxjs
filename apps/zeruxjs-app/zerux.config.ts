@@ -1,6 +1,7 @@
 import type { ZeruxConfig } from 'zeruxjs';
 import { createServerLifecycleHooks } from '@zeruxjs/hooks/lifecycle';
 
+/** Explicit app configuration; optional MySQL activates only by host opt-in and never replaces local workspace SQLite. */
 const zeruxConfig: ZeruxConfig = {
   type: 'fix',
   structure: {

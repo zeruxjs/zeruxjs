@@ -1,3 +1,4 @@
+/** Fixed route cards use authored values only; no stored HTML or secrets enter this static template. */
 const sections = [
   {
     href: '/workspace',
@@ -51,6 +52,7 @@ const sections = [
   },
 ];
 
+/** Authored explanatory feature labels, not measured service counts or health guarantees. */
 const stats = [
   { label: 'pages', value: 'nested app routes' },
   { label: 'middleware', value: 'request context + headers' },
@@ -58,6 +60,9 @@ const stats = [
   { label: 'plugins', value: 'runtime route injection' },
 ];
 
+/** Render the static local example index without starting services.
+ * @returns {string} Authored HTML containing only fixed route metadata.
+ */
 export default () => `<!DOCTYPE html>
 <html lang="en">
   <head>

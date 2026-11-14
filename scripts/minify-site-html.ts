@@ -6,7 +6,7 @@
  * @param {unknown} html - Input value for html.
  * @returns {unknown} Result produced by minify site html.
  */
-export function minifySiteHtml(html) {
+export function minifySiteHtml(html: string): string {
   /** Local value for tokens. */
   const tokens =
     html.match(

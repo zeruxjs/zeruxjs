@@ -5,7 +5,9 @@ import { inspectPackageReleaseSecurity } from './workspace-security-audit.ts';
 /** Local value for root. */
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 if (process.argv.length > 2) {
-  console.error('Usage: node --experimental-strip-types scripts/security-audit.ts');
+  console.error(
+    'Usage: node --experimental-strip-types scripts/security-audit.ts'
+  );
   process.exit(2);
 }
 /** Local value for report. */

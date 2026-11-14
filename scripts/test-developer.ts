@@ -33,11 +33,15 @@ for (const name of packages) {
     .sort()
     .map((file) => `packages/${name}/test/${file}`);
   /** Local value for tests. */
-  const tests = spawnSync(process.execPath, ['--experimental-strip-types', '--test', ...files], {
-    cwd: root,
-    stdio: 'inherit',
-    timeout: 180_000,
-  });
+  const tests = spawnSync(
+    process.execPath,
+    ['--experimental-strip-types', '--test', ...files],
+    {
+      cwd: root,
+      stdio: 'inherit',
+      timeout: 180_000,
+    }
+  );
   if (tests.error || tests.status !== 0) {
     console.error(
       `[developer] Test ${name} failed: ${tests.error?.message ?? tests.status}`

@@ -29,11 +29,15 @@ const packages = [
  */
 function run(args: string[], timeout: number): void {
   /** Local value for result. */
-  const result = spawnSync(process.execPath, ['--experimental-strip-types', ...args], {
-    cwd: root,
-    stdio: 'inherit',
-    timeout,
-  });
+  const result = spawnSync(
+    process.execPath,
+    ['--experimental-strip-types', ...args],
+    {
+      cwd: root,
+      stdio: 'inherit',
+      timeout,
+    }
+  );
   if (result.error || result.status !== 0) {
     console.error(
       `[ecosystem] ${args.join(' ')} failed: ${result.error?.message ?? result.status}`

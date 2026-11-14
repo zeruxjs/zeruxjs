@@ -4,7 +4,7 @@
   "description": "Generate application styles from utilities, theme tokens and reusable component recipes.",
   "section": "Frontend",
   "order": 135,
-  "sources": ["packages/zuixs/README.md", "packages/zuixs/src/types.ts", "packages/zuixs/src/recipes.ts", "pages/zuix.config.mjs"],
+  "sources": ["packages/zuixs/README.md", "packages/zuixs/src/types.ts", "packages/zuixs/src/recipes.ts", "pages/zuix.config.ts"],
   "related": ["frontend", "deployment"]
 }
 ---

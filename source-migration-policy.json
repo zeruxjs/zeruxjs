@@ -1,0 +1,59 @@
+{
+  "description": "Exact retained JavaScript runtime contracts. This does not waive TypeScript strict checks for migrated sources or tests.",
+  "retained": [
+    {
+      "kind": "configuration",
+      "reason": "These executable formatter/linter configurations are loaded by their existing JavaScript entry contracts; converting them requires adding or qualifying a TypeScript configuration loader.",
+      "paths": [
+        "eslint.config.mjs",
+        "stylelint.config.mjs",
+        "prettier.config.mjs",
+        "scripts/package-lint.config.mjs",
+        "packages/@zeruxjs/lint/stylelint.config.mjs",
+        "packages/@zeruxjs/lint/prettier.config.mjs"
+      ]
+    },
+    {
+      "kind": "browser-runtime",
+      "reason": "Zforge sends these files directly as JavaScript bytes; its module asset loader does not transpile browser TypeScript. Their configuration and server modules have been migrated independently.",
+      "paths": [
+        "packages/zforge/assets/app.js",
+        "sample-packages/sample-os/assets/client.js",
+        "sample-packages/sample-module/assets/client.js",
+        "sample-packages/sample-parent/src/client.js",
+        "sample-packages/sample-child/src/client.js"
+      ]
+    },
+    {
+      "kind": "generator-template",
+      "reason": "These are deliberate JavaScript output templates for supported JavaScript projects. They must remain executable without a TypeScript loader in generated consumers.",
+      "paths": [
+        "packages/create/create-zyro-app/assets/build.mjs",
+        "packages/create/create-zyro-app/assets/server.mjs",
+        "packages/create/create-zyro-app/assets/http.mjs",
+        "packages/create/create-zyro-app/assets/config.mjs",
+        "packages/create/create-zyro-app/assets/serve.mjs",
+        "packages/create/create-zenix-app/assets/register.mjs",
+        "packages/create/create-zenix-app/assets/settings.mjs",
+        "packages/create/create-zenix-app/assets/host-policy.mjs",
+        "packages/create/create-zenix-app/assets/migrate.mjs"
+      ]
+    },
+    {
+      "kind": "generated",
+      "reason": "Generated browser output or a historical compatibility bundle. Review its authored TypeScript owner; do not rename or hand-edit emitted JavaScript.",
+      "paths": [
+        "apps/zyro-single/src/zyro.js",
+        "apps/zeruxjs-app/public/counter-client.js",
+        "apps/zeruxjs-app/public/workspace-client.js",
+        "apps/zeruxjs-app/public/src/index.js",
+        "apps/zeruxjs-app/public/src/zyro.js"
+      ]
+    },
+    {
+      "kind": "vendor",
+      "reason": "Reviewed vendored CommonJS parser adapter consumed by the existing private Stylelint dependency contract; preserve its licensing and runtime format.",
+      "paths": ["vendor/scss-media-parser/index.cjs"]
+    }
+  ]
+}

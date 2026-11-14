@@ -65,10 +65,11 @@ function run(
     maxBuffer: 16 * 1024 * 1024,
     timeout: 600000,
   });
-  if (result.error || result.status !== 0)
+  if (result.error || result.status !== 0) {
     throw Error(
       `${command} ${callArgs[0]} failed${result.error ? `: ${result.error.message}` : ''}`
     );
+  }
   return result.stdout?.trim();
 }
 /**
@@ -127,18 +128,22 @@ async function metadata(name, version) {
     !/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/.test(name) ||
     typeof version !== 'string' ||
     !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)
-  )
+  ) {
     throw Error('Invalid public registry package identity');
+  }
   /** Local value for response. */
   const response = await fetch(
     `${registry}${encodeURIComponent(name)}/${encodeURIComponent(version)}`,
     { cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(30000) }
   );
-  if (response.status === 404) return null;
-  if (!response.ok)
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
     throw Error(
       `Registry lookup failed for ${name}@${version}: HTTP ${response.status}`
     );
+  }
   /** Local value for manifest. */
   const manifest = await response.json();
   // npm's temporary staged holding package is not a published application release.
@@ -188,12 +193,15 @@ try {
       encoding: 'utf8',
     });
     /** Local value for base. */
-    const base =
-      /^[a-f0-9]{40}$/.test(event.before ?? '') && !/^0+$/.test(event.before)
-        ? event.before
-        : parent.status === 0
-          ? parent.stdout.trim()
-          : null;
+    let base = null;
+    if (
+      /^[a-f0-9]{40}$/.test(event.before ?? '') &&
+      !/^0+$/.test(event.before)
+    ) {
+      base = event.before;
+    } else if (parent.status === 0) {
+      base = parent.stdout.trim();
+    }
     if (base) {
       run('git', ['cat-file', '-e', `${base}^{commit}`]);
       for (const entry of entries.values()) {
@@ -208,30 +216,33 @@ try {
           ['show', `${base}:${directory}/package.json`],
           { cwd: root, encoding: 'utf8' }
         );
-        if (result.status === 0)
+        if (result.status === 0) {
           previous.set(directory, JSON.parse(result.stdout));
-        else if (
+        } else if (
           result.error ||
           !/does not exist in|exists on disk, but not in/.test(
             result.stderr ?? ''
           )
-        )
+        ) {
           throw Error(`Cannot read previous manifest: ${directory}`);
+        }
         /** Local value for changed. */
         const changed = spawnSync(
           'git',
           ['diff', '--quiet', base, commit, '--', directory],
           { cwd: root, encoding: 'utf8' }
         );
-        if (changed.error || ![0, 1].includes(changed.status))
+        if (changed.error || ![0, 1].includes(changed.status)) {
           throw Error(`Cannot compare Git changes: ${directory}`);
+        }
         changedSinceBase.set(directory, changed.status === 1);
       }
     }
     /** Local value for candidates. */
     const candidates = selectPublishCandidates(root, entries, previous, true);
-    for (const item of candidates)
+    for (const item of candidates) {
       validateProvenanceRepository(entries.get(item.name).pkg, repository);
+    }
     /** Local value for packages. */
     const packages = [],
       skipped = [],
@@ -257,6 +268,12 @@ try {
         const contractDifferences = available
           ? comparePublishedContract(entries.get(item.name).pkg, available)
           : [];
+        let reason = 'new-or-bumped-version';
+        if (available) {
+          reason = 'already-published';
+        } else if (old?.name === item.name && old.version === item.version) {
+          reason = 'retry-unpublished-version';
+        }
         comparisons.push({
           name: item.name,
           localVersion: item.version,
@@ -265,18 +282,15 @@ try {
           previousGitVersion: old?.version ?? null,
           changedSinceGitBase: changedSinceBase.get(item.directory) ?? null,
           contractDifferences,
-          reason: available
-            ? 'already-published'
-            : old?.name === item.name && old.version === item.version
-              ? 'retry-unpublished-version'
-              : 'new-or-bumped-version',
+          reason,
         });
         if (available) {
           skipped.push(`${item.name}@${item.version}`);
-          if (contractDifferences.length)
+          if (contractDifferences.length) {
             issues.push(
               `${item.name}@${item.version}: published contract differs in ${contractDifferences.join(', ')}; bump the version instead of overwriting npm`
             );
+          }
         } else if (
           latest &&
           compareReleaseVersions(latest.version, item.version) >= 0
@@ -284,13 +298,15 @@ try {
           issues.push(
             `${item.name}: refusing to move latest backwards; bump above ${latest.version} if you own it, otherwise choose another name`
           );
-        } else packages.push(item);
+        } else {
+          packages.push(item);
+        }
       }
     }
     /** Local value for selected. */
     const selected = new Set(packages.map((item) => item.name));
     // Missing required local dependency releases must be included or already exist on npm.
-    for (const item of packages)
+    for (const item of packages) {
       for (const dependency of item.dependencies) {
         if (
           !selected.has(dependency) &&
@@ -301,6 +317,7 @@ try {
           );
         }
       }
+    }
     /** Local value for plan. */
     const plan = {
       schemaVersion: 1,
@@ -316,11 +333,12 @@ try {
       })),
     };
     save(plan);
-    if (process.env.GITHUB_OUTPUT)
+    if (process.env.GITHUB_OUTPUT) {
       fs.appendFileSync(
         process.env.GITHUB_OUTPUT,
         `has_releases=${packages.length > 0 && issues.length === 0}\n`
       );
+    }
     console.log(
       JSON.stringify(
         {
@@ -335,8 +353,9 @@ try {
         2
       )
     );
-    if (issues.length)
+    if (issues.length) {
       throw Error('Release plan blocked: ' + issues.join('; '));
+    }
     if (!packages.length && candidates.length) {
       /** Local value for summary. */
       const summary = summarizePublication(plan);
@@ -344,8 +363,9 @@ try {
         path.join(output, 'publication-summary.md'),
         summary.markdown
       );
-      if (process.env.GITHUB_STEP_SUMMARY)
+      if (process.env.GITHUB_STEP_SUMMARY) {
         fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.markdown);
+      }
       console.log(
         `[publish] COMPLETE: ${summary.confirmed}/${summary.total} selected package versions already verified on npm.`
       );
@@ -357,8 +377,9 @@ try {
       plan.schemaVersion !== 1 ||
       plan.commit !== commit ||
       plan.issues?.length
-    )
+    ) {
       throw Error('Release plan is blocked or does not match this commit');
+    }
     if (args[0] === '--publish') {
       publishingPlan = plan;
       plan.publicationResults = plan.packages.map(({ name, version }) => ({
@@ -369,10 +390,11 @@ try {
       save(plan);
     }
     for (const item of plan.packages) {
-      if (publishingPlan)
+      if (publishingPlan) {
         activePublication = plan.publicationResults.find(
           (result) => result.name === item.name
         );
+      }
       /** Local value for entry. */
       const entry = entries.get(item.name);
       if (
@@ -382,8 +404,9 @@ try {
         path.relative(root, entry.dir).split(path.sep).join('/') !==
           item.directory ||
         item.directory.split('/').some((part) => part.startsWith('sample'))
-      )
+      ) {
         throw Error('Release plan no longer matches public package manifests');
+      }
       validateProvenanceRepository(entry.pkg, repository);
       if (args[0] === '--pack') {
         /** Local value for position. */
@@ -395,18 +418,20 @@ try {
         );
         /** Local value for missing. */
         const missing = checkEntryTargets(entry.dir, entry.pkg);
-        if (missing.length)
+        if (missing.length) {
           throw Error(
             `${item.name}: missing entrypoints: ${missing.join(', ')}`
           );
+        }
         /** Local value for report. */
         const report = JSON.parse(
           npm(['pack', '--json', '--pack-destination', output], entry.dir)
         );
         /** Local value for packed. */
         const packed = Array.isArray(report) ? report : Object.values(report);
-        if (packed.length !== 1 || !/^[\w.-]+\.tgz$/.test(packed[0].filename))
+        if (packed.length !== 1 || !/^[\w.-]+\.tgz$/.test(packed[0].filename)) {
           throw Error('Unexpected npm archive report');
+        }
         item.archive = packed[0].filename;
         item.integrity = integrity(path.join(output, item.archive));
         save(plan);
@@ -417,15 +442,17 @@ try {
         if (
           process.env.GITHUB_ACTIONS !== 'true' ||
           process.env.GITHUB_REF !== 'refs/heads/master'
-        )
+        ) {
           throw Error(
             'Registry writes are restricted to GitHub Actions on master'
           );
+        }
         if (
           !/^[\w.-]+\.tgz$/.test(item.archive ?? '') ||
           integrity(path.join(output, item.archive)) !== item.integrity
-        )
+        ) {
           throw Error('Release archive missing or changed');
+        }
         /** Local value for position. */
         const position = plan.packages.indexOf(item) + 1;
         console.log(
@@ -434,14 +461,17 @@ try {
         let current = await metadata(item.name, item.version);
         /** Local value for latest. */
         const latest = current ? null : await metadata(item.name, 'latest');
-        if (!current && latest?.version === item.version) current = latest;
+        if (!current && latest?.version === item.version) {
+          current = latest;
+        }
         if (current) {
           /** Local value for differences. */
           const differences = comparePublishedContract(entry.pkg, current);
-          if (differences.length)
+          if (differences.length) {
             throw Error(
               `${item.name}@${item.version}: published contract changed in ${differences.join(', ')}; a new version is required`
             );
+          }
           activePublication.status = 'already-published';
           save(plan);
           console.log(
@@ -449,8 +479,12 @@ try {
           );
           continue;
         }
-        if (latest && compareReleaseVersions(latest.version, item.version) >= 0)
+        if (
+          latest &&
+          compareReleaseVersions(latest.version, item.version) >= 0
+        ) {
           throw Error(`${item.name}: refusing a stale release`);
+        }
         /** Local value for upload. */
         const upload = await uploadArchive(
           [
@@ -469,10 +503,11 @@ try {
         );
         /** Local value for reserved. */
         const reserved = isReservedVersionConflict(upload.tail, item.version);
-        if (upload.signal || (upload.status !== 0 && !reserved))
+        if (upload.signal || (upload.status !== 0 && !reserved)) {
           throw Error(
             `${item.name}: npm publish failed${upload.signal ? ` (${upload.signal})` : ''}`
           );
+        }
         activePublication.status = 'processing';
         save(plan);
         console.log(
@@ -495,10 +530,11 @@ try {
                 entries.get(name).pkg,
                 manifest
               );
-              if (differences.length)
+              if (differences.length) {
                 throw Error(
                   `${name}@${version}: published contract differs in ${differences.join(', ')}`
                 );
+              }
             }
             return manifest;
           },
@@ -519,14 +555,17 @@ try {
             ),
         }
       );
-      if (pending.length)
+      if (pending.length) {
         throw Error(
           `npm accepted these uploads but they are not public after 15 minutes: ${pending.map((item) => `${item.name}@${item.version}`).join(', ')}. Check npm processing status before retrying; this alone does not imply a staged release.`
         );
+      }
     }
   }
 } catch (error) {
-  if (activePublication) activePublication.status = 'failed';
+  if (activePublication) {
+    activePublication.status = 'failed';
+  }
   console.error(`[publish] ${error.message}`);
   process.exitCode = 1;
 } finally {
@@ -538,11 +577,14 @@ try {
       path.join(output, 'publication-summary.md'),
       summary.markdown
     );
-    if (process.env.GITHUB_STEP_SUMMARY)
+    if (process.env.GITHUB_STEP_SUMMARY) {
       fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.markdown);
+    }
     console.log(
       `[publish] ${summary.complete ? 'COMPLETE' : 'INCOMPLETE'}: ${summary.confirmed}/${summary.total} selected package versions verified on npm (${summary.published} newly published; ${summary.alreadyPublished} already available).`
     );
-    if (!summary.complete) process.exitCode = 1;
+    if (!summary.complete) {
+      process.exitCode = 1;
+    }
   }
 }

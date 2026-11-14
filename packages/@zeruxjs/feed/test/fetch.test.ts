@@ -30,7 +30,7 @@ test('negotiate RSS/Atom/JSON Feed with cache separation', async (t) => {
     })
   );
   assert.equal(json.headers.get('vary'), 'Accept');
-  assert.match(json.headers.get('content-type'), /feed\+json/);
+  assert.match(requiredHeader(json.headers, 'content-type'), /feed\+json/);
   assert.equal((await json.json()).items.length, 1);
   /** Local negotiated Atom response with representation-specific media/validator identity. */
   const atom = await handler(
@@ -38,10 +38,10 @@ test('negotiate RSS/Atom/JSON Feed with cache separation', async (t) => {
       headers: { accept: 'application/atom+xml' },
     })
   );
-  assert.match(atom.headers.get('content-type'), /atom\+xml/);
+  assert.match(requiredHeader(atom.headers, 'content-type'), /atom\+xml/);
   /** Local default RSS response; negotiation defaults must remain explicit. */
   const rss = await handler(new Request('https://example.com/feed'));
-  assert.match(rss.headers.get('content-type'), /rss\+xml/);
+  assert.match(requiredHeader(rss.headers, 'content-type'), /rss\+xml/);
   assert.notEqual(rss.headers.get('etag'), atom.headers.get('etag'));
 });
 test('feed returns 304, HEAD, 405, limits, and dynamic changed content', async (t) => {
@@ -53,7 +53,7 @@ test('feed returns 304, HEAD, 405, limits, and dynamic changed content', async (
   /** Initial serialized response establishing the exact representation ETag. */
   const first = await handler(new Request('https://example.com/feed'));
   /** Opaque representation validator, never a generation timestamp or authorization token. */
-  const etag = first.headers.get('etag');
+  const etag = requiredHeader(first.headers, 'etag');
   assert.equal(
     (
       await handler(
@@ -128,5 +128,17 @@ test('Accept negotiation rejects unsupported and zero-quality media and supports
       },
     })
   );
-  assert.match(atom.headers.get('content-type'), /atom\+xml/);
+  assert.match(requiredHeader(atom.headers, 'content-type'), /atom\+xml/);
 });
+
+/** Assert that a response actually supplies a required representation header.
+ * @param {Headers} headers - Native headers returned by the synthetic handler.
+ * @param {string} name - Required header name for this behavior assertion.
+ * @returns {string} Present header value; absent metadata fails the test.
+ */
+function requiredHeader(headers: Headers, name: string): string {
+  /** Native value remains nullable until the fixture assertion establishes presence. */
+  const value = headers.get(name);
+  assert.ok(value !== null);
+  return value;
+}

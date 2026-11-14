@@ -3,7 +3,7 @@ import { themeBootstrap } from './site-theme.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { createZuix, extractClasses } from 'zuixs';
+import { createZuix, extractClasses, type ZuixConfig } from 'zuixs';
 import { buildTypescript } from '@zeruxjs/typescript';
 
 /** Digest static bytes for cache-busting URLs. @param {string|Buffer} bytes Content. @returns {string} Short digest. No globals. */
@@ -11,7 +11,7 @@ import { buildTypescript } from '@zeruxjs/typescript';
  * @param {unknown} bytes - Input value for bytes.
  * @returns {unknown} Result produced by asset version.
  */
-export function assetVersion(bytes) {
+export function assetVersion(bytes: string | Buffer): string {
   return createHash('sha256').update(bytes).digest('hex').slice(0, 12);
 }
 
@@ -33,6 +33,33 @@ export function assetVersion(bytes) {
  * @param {unknown} root0.search - Input value for search.
  * @returns {unknown} Result produced by optimize static assets.
  */
+/** Explicit build-only inputs. No provider or browser runtime is selected by importing this type. */
+export interface StaticAssetOptions {
+  /** Owned output candidate directory. */
+  directory: string;
+  /** Complete HTML files whose existing script URLs are updated. */
+  htmlFiles: string[];
+  /** Candidate-relative stylesheet path. */
+  css: string;
+  /** Trusted JS/TS entries compiled to browser JavaScript. */
+  entries: string[];
+  /** Root used to resolve source entries. */
+  sourceRoot: string;
+  /** Public deployment prefix. */
+  basePath: string;
+  /** Validated trusted build configuration. */
+  zuix: ZuixConfig;
+  /** Minify production output; no source maps in this mode. */
+  production?: boolean;
+  /** Inline small self-contained styles when explicitly requested. */
+  inlineCss?: boolean;
+  /** Optional public search index whose compiled module is stamped into HTML. */
+  search?: { file: string; module: string };
+}
+/** Compile trusted browser entries and stamp representation-specific URLs into candidate HTML.
+ * @param {StaticAssetOptions} options - Explicit owned staging paths and trusted build configuration.
+ * @returns {Promise<object>} Asset manifest after all compiler tasks have settled and scratch is removed.
+ */
 export async function optimizeStaticAssets({
   directory,
   htmlFiles,
@@ -44,10 +71,15 @@ export async function optimizeStaticAssets({
   production = true,
   inlineCss = false,
   search,
-}) {
+}: StaticAssetOptions) {
   /** Local value for documents. */
   const documents = await Promise.all(
-    htmlFiles.map(async (file) => [file, await fs.readFile(file, 'utf8')])
+    htmlFiles.map(
+      async (file): Promise<[string, string]> => [
+        file,
+        await fs.readFile(file, 'utf8'),
+      ]
+    )
   );
   /** Local value for classes. */
   const classes = new Set(
@@ -69,7 +101,12 @@ export async function optimizeStaticAssets({
   /** Local value for temporary. */
   const temporary = await fs.mkdtemp(path.join(directory, '.asset-build-'));
   /** Local value for records. */
-  const records = [];
+  const records: Array<{
+    url: string;
+    version: string;
+    bytes: number;
+    sourceBytes: number;
+  }> = [];
   try {
     /** Local value for inputs. */
     const inputs = [
@@ -99,7 +136,7 @@ export async function optimizeStaticAssets({
     }
     for (const entry of inputs) {
       /** Local value for name. */
-      const name = path.basename(entry),
+      const name = path.basename(entry).replace(/\.tsx?$/, '.js'),
         target = path.join(directory, path.dirname(css), name);
       /** Local value for bytes. */
       const bytes = await fs.readFile(path.join(temporary, name));
@@ -210,9 +247,9 @@ export async function optimizeStaticAssets({
  * @param {unknown} directory - Input value for directory.
  * @returns {unknown} Result produced by html files.
  */
-export async function htmlFiles(directory) {
+export async function htmlFiles(directory: string): Promise<string[]> {
   /** Local value for files. */
-  const files = [];
+  const files: string[] = [];
   for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
     if (entry.isDirectory()) {
       files.push(...(await htmlFiles(path.join(directory, entry.name))));

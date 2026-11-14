@@ -352,22 +352,40 @@ export const explainers = {
   ],
 };
 
-/** Validate authored course references and question identities before exporting. @param {object[]} pages Versioned docs. @param {string[]} versions Published versions. @returns {void} Throws on stale course metadata. No I/O/globals. */
-export function validateAcademy(pages, versions) {
+/** Validate authored course references and question identities before exporting.
+ * @param {object[]} pages Versioned docs.
+ * @param {string[]} versions Published versions.
+ * @returns {void} Throws on stale course metadata. No I/O/globals. */
+export function validateAcademy(
+  pages: ReadonlyArray<{ version: string; slug: string }>,
+  versions: readonly string[]
+): void {
+  /** Course identity set rejects duplicate lesson slugs before any output is exported. */
   const slugs = new Set();
   for (const lesson of lessons) {
-    if (slugs.has(lesson.slug)) throw new Error('Duplicate lesson');
+    if (slugs.has(lesson.slug)) {
+      throw new Error('Duplicate lesson');
+    }
     slugs.add(lesson.slug);
-    if (!lesson.questions.length || !lesson.objectives.length)
+    if (!lesson.questions.length || !lesson.objectives.length) {
       throw new Error('Incomplete lesson');
+    }
+    /** Per-lesson question IDs; local browser progress depends on these stable identities. */
     const ids = new Set();
     for (const q of lesson.questions) {
-      if (ids.has(q.id) || !Number.isInteger(q.answer) || !q.options[q.answer])
+      if (
+        ids.has(q.id) ||
+        !Number.isInteger(q.answer) ||
+        !q.options[q.answer]
+      ) {
         throw new Error('Invalid quiz');
+      }
       ids.add(q.id);
     }
-    for (const version of versions)
-      if (!pages.some((p) => p.version === version && p.slug === lesson.slug))
+    for (const version of versions) {
+      if (!pages.some((p) => p.version === version && p.slug === lesson.slug)) {
         throw new Error(`Missing lesson ${version}/${lesson.slug}`);
+      }
+    }
   }
 }

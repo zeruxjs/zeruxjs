@@ -3,7 +3,15 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { buildTypescript } from '@zeruxjs/typescript';
 
-/** Emit a docs-scoped, opt-in PWA worker after production asset hashing. @param {string} directory Owned output root. @param {object} site Public mount configuration. @param {object[]} pages Validated route metadata. @param {object} assets Asset report. @returns {Promise<void>} Writes only static app artifacts. No environment/credential reads. */
+/** Emit candidate-local offline assets; browser installation still requires explicit visitor opt-in.
+ * @param {string} directory - Owned candidate output directory.
+ * @param {object} site - Validated public mount configuration.
+ * @param {object[]} pages - Validated public routes, excluding private services.
+ * @param {object} assets - Completed generated asset identities.
+ * @param {object} root0 - Explicit worker compilation policy.
+ * @param {boolean} root0.production - Minify the worker without production source maps.
+ * @returns {Promise<void>} Writes candidate artifacts and cleans its own compiler scratch directory.
+ */
 export async function emitOffline(
   directory,
   site,
@@ -11,26 +19,36 @@ export async function emitOffline(
   assets,
   { production = true } = {}
 ) {
+  /** Convert validated mounted routes to worker-local paths; no external endpoints are discovered. */
+  /** Convert an already validated mounted asset/page URL into a worker-local path.
+   * @param {string} url - Known generated URL under the configured mount.
+   * @returns {string} Relative worker route; not a general URL authorization helper.
+   */
   const relative = (url) => url.slice(site.basePath.length + 1);
+  /** Static index content identity, computed after asset generation. */
   const searchHash = createHash('sha256')
     .update(await fs.readFile(path.join(directory, 'assets/search.json')))
     .digest('hex')
     .slice(0, 12);
+  /** Explicit generated asset allowlist with representation-specific content identities. */
   const resourceUrls = assets.assets.map(
     (item) => `${relative(item.url)}?v=${item.version}`
   );
   resourceUrls.push(`assets/search.json?v=${searchHash}`);
+  /** Worker/cache identity includes public content and the completed asset manifest. */
   const version = createHash('sha256')
     .update(
       JSON.stringify({ pages: pages.map((p) => [p.url, p.body]), assets })
     )
     .digest('hex')
     .slice(0, 16);
+  /** Exact eligible public page paths; query-bearing/private/API URLs are not generated here. */
   const routes = [
     '',
     ...pages.map((page) => relative(page.url)),
     'offline.html',
   ];
+  /** Authored worker program with fixed policy; interpolated values are JSON-encoded public build data. */
   const worker = `/* Generated docs-only offline reader. Installed only after explicit visitor consent. */
 const ROOT = new URL('./', self.location.href);
 const PREFIX = 'zerux-docs:' + ROOT.pathname + ':';
@@ -100,9 +118,11 @@ self.addEventListener('fetch', event => {
   })());
 });
 `;
+  /** Candidate-local worker output, never an active browser registration. */
   const workerFile = path.join(directory, 'sw.js');
   await fs.writeFile(workerFile, worker);
   if (production) {
+    /** Owned compiler scratch directory removed whether bundling succeeds or fails. */
     const temporary = await fs.mkdtemp(path.join(directory, '.worker-build-'));
     try {
       await buildTypescript({

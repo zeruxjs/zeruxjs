@@ -1,4 +1,4 @@
-import fileIO from './file-io.cjs';
+import fileIO from './file-io.ts';
 /** Local value for destructured values. */
 const { readRegularFile } = fileIO;
 import http from 'node:http';
@@ -6,7 +6,7 @@ import fs from 'node:fs/promises';
 import { watch } from 'node:fs';
 import path from 'node:path';
 import { buildSites, repositoryRoot, output } from './build-sites.ts';
-import { sites } from '../sites.config.mjs';
+import { sites } from '../sites.config.ts';
 
 /** Local value for development. */
 const development = process.argv.includes('--dev');
@@ -170,15 +170,17 @@ async function handle(req, res) {
     /** Local value for missing. */
     const missing = ['ENOENT', 'ENOTDIR'].includes(error.code);
     res.writeHead(missing ? 404 : 500, { 'Content-Type': types['.html'] });
-    res.end(
-      req.method === 'HEAD'
-        ? undefined
-        : missing
-          ? await fs
-              .readFile(path.join(output, '404.html'))
-              .catch(() => 'Build the sites first.')
-          : 'Preview failed'
-    );
+    if (req.method === 'HEAD') {
+      res.end();
+    } else if (missing) {
+      res.end(
+        await fs
+          .readFile(path.join(output, '404.html'))
+          .catch(() => 'Build the sites first.')
+      );
+    } else {
+      res.end('Preview failed');
+    }
   }
 }
 http

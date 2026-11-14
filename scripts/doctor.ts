@@ -62,12 +62,17 @@ export function inspectDeveloperWorkspace(root: string) {
  */
 export function doctorMain(
   argv: string[] = [],
-  root: string = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
+  root: string = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '..'
+  ),
   log: (message: string) => void = console.log,
   errorLog: (message: string) => void = console.error
 ) {
   if (argv.some((v) => !['--json', '--strict'].includes(v))) {
-    errorLog('Usage: node --experimental-strip-types scripts/doctor.ts [--json] [--strict]');
+    errorLog(
+      'Usage: node --experimental-strip-types scripts/doctor.ts [--json] [--strict]'
+    );
     return 2;
   }
   try {

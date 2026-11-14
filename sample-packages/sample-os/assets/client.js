@@ -28,7 +28,9 @@ const to_num = (v) => {
  * @returns {Promise<{destroy: () => void}|undefined>} Dashboard lifecycle handle.
  */
 export const mount = async ({ root, api }) => {
-  if (!root) return;
+  if (!root) {
+    return;
+  }
 
   let destroyed = false;
 
@@ -44,7 +46,9 @@ export const mount = async ({ root, api }) => {
       /** Sample package value or fixture named s. */
       const s = res?.system;
 
-      if (!s || destroyed) return;
+      if (!s || destroyed) {
+        return;
+      }
 
       // OS
       qs(root, '[data-os]').textContent = `${s.os.name} • ${s.os.kernel}`;

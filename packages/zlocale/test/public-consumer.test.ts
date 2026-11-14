@@ -39,7 +39,7 @@ test('installed archive exports/browser graph/declarations/example work; absent 
           '--pack-destination',
           root,
           '--cache',
-          '/tmp/zerux-zlocale-npm-cache',
+          path.join(root, 'npm-cache'),
         ],
         { cwd: packageRoot, encoding: 'utf8' }
       )
@@ -65,9 +65,12 @@ test('installed archive exports/browser graph/declarations/example work; absent 
     /** Authored package README providing the public browser-safe example. */
     const readme = await readFile(path.join(packageRoot, 'README.md'), 'utf8');
     /** Exact public-import example compiled/bundled against installed archive exports. */
-    const example = readme
+    const exampleMatch = readme
       .split('## Incremental catalogs and build extraction')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(exampleMatch, 'Authored public TypeScript example is required');
+    /** Exact matched source; missing code cannot silently pass this consumer fixture. */
+    const example = exampleMatch[1];
     await writeFile(path.join(root, 'example.ts'), example);
     /** Public browser-library tooling preset with no ambient Node runtime types. */
     const preset = createTypeScriptPreset('browser-library');

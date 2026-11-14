@@ -44,20 +44,14 @@ const suites = Object.freeze([
     kind: 'offline',
     description:
       'Real SQLite Auth to Analytics/Tags/Reports/Email suppression pipeline',
-    command: [
-      '--test',
-      'tests/integration/section83-package-pipeline.test.ts',
-    ],
+    command: ['--test', 'tests/integration/section83-package-pipeline.test.ts'],
     timeout: 120000,
   },
   {
     id: 'content',
     kind: 'offline',
     description: 'Local content/file/asset/search/document workflow',
-    command: [
-      '--test',
-      'tests/integration/section80-content-workflow.test.ts',
-    ],
+    command: ['--test', 'tests/integration/section80-content-workflow.test.ts'],
     timeout: 120000,
   },
   {
@@ -284,18 +278,21 @@ export function parseLabArgs(argv) {
  */
 export function suitesFor(options) {
   /** Local value for accepted. */
-  const accepted = options.selected.length
-    ? options.selected
-    : new Set(
-        options.mode === 'offline'
-          ? ['source', 'auth', 'sqlite', 'pipeline', 'content']
-          : options.mode === 'live'
-            ? suites.filter((s) => s.kind === 'live').map((s) => s.id)
-            : suites.map((s) => s.id)
-      );
-  return suites.filter(
-    (s) => accepted.includes?.(s.id) || accepted.has?.(s.id)
-  );
+  let selected = options.selected;
+  if (!selected.length) {
+    if (options.mode === 'offline') {
+      selected = ['source', 'auth', 'sqlite', 'pipeline', 'content'];
+    } else if (options.mode === 'live') {
+      selected = suites
+        .filter((suite) => suite.kind === 'live')
+        .map((suite) => suite.id);
+    } else {
+      selected = suites.map((suite) => suite.id);
+    }
+  }
+  /** Membership preserves the selected suite order while avoiding mixed array/set calls. */
+  const accepted = new Set(selected);
+  return suites.filter((s) => accepted.has(s.id));
 }
 /** Perform the suite readiness operation.
  * @param {unknown} suite - Input value for suite.

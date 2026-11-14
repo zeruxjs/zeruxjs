@@ -38,7 +38,11 @@ test('Pages builds every explicit docs prebuild scope before rendering sites', (
     );
   }
   assert.ok(
-    workflow.indexOf('run: node --experimental-strip-types scripts/build-workspaces.ts') <
-      workflow.indexOf('run: node --experimental-strip-types scripts/build-sites.ts')
+    workflow.indexOf(
+      'run: node --experimental-strip-types scripts/build-workspaces.ts'
+    ) <
+      workflow.indexOf(
+        'run: node --experimental-strip-types scripts/build-sites.ts'
+      )
   );
 });

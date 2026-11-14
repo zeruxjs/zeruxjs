@@ -25,7 +25,7 @@ const temporary = () =>
  * @param {string} text - Synthetic UTF-8 contents; never evaluated by this helper.
  * @returns {void} Completes after the write; filesystem errors propagate.
  */
-const write = (root, file, text) => {
+const write = (root: string, file: string, text: string): void => {
   fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
   fs.writeFileSync(path.join(root, file), text);
 };
@@ -33,7 +33,7 @@ const write = (root, file, text) => {
  * @param {import('typescript').Diagnostic[]} diagnostics - Raw fixture compiler diagnostics.
  * @returns {string} Human-readable compiler output for assertion messages.
  */
-const format = (diagnostics) =>
+const format = (diagnostics: readonly ts.Diagnostic[]): string =>
   ts.formatDiagnostics(diagnostics, {
     getCurrentDirectory: () => process.cwd(),
     getCanonicalFileName: (f) => f,
@@ -53,7 +53,7 @@ test(
        * @param {string} [cwd=root] - Owned fixture working directory.
        * @returns {string} Captured UTF-8 stdout; nonzero exit or timeout throws.
        */
-      const npm = (args, cwd = root) =>
+      const npm = (args: string[], cwd = root): string =>
         execFileSync('npm', [...args, '--cache', path.join(root, 'cache')], {
           cwd,
           encoding: 'utf8',
@@ -61,17 +61,15 @@ test(
           timeout: 60000,
         });
       /** Archive metadata for the already-built tooling package; no prepack hook runs. */
-      const packed = Object.values(
-        JSON.parse(
-          npm([
-            'pack',
-            path.resolve(import.meta.dirname, '..'),
-            '--ignore-scripts',
-            '--json',
-            '--pack-destination',
-            root,
-          ])
-        )
+      const packed = packFiles(
+        npm([
+          'pack',
+          path.resolve(import.meta.dirname, '..'),
+          '--ignore-scripts',
+          '--json',
+          '--pack-destination',
+          root,
+        ])
       );
       write(
         root,
@@ -87,7 +85,7 @@ test(
       /** Fixture-side resolver used to locate already installed dependency manifests. */
       const localRequire = createRequire(import.meta.url);
       /** Explicit local archive dependencies for the offline installed consumer. */
-      const dependencies = {
+      const dependencies: Record<string, string> = {
         '@zeruxjs/typescript': `file:${path.join(root, packed[0].filename)}`,
       };
       // name selects an installed dependency to archive, never an external download.
@@ -102,17 +100,15 @@ test(
         /** Resolved installed dependency manifest used to locate its packaging root. */
         const manifest = localRequire.resolve(name + '/package.json');
         /** Archive metadata for an installed dependency packed into the owned fixture. */
-        const archive = Object.values(
-          JSON.parse(
-            npm([
-              'pack',
-              path.dirname(manifest),
-              '--ignore-scripts',
-              '--json',
-              '--pack-destination',
-              root,
-            ])
-          )
+        const archive = packFiles(
+          npm([
+            'pack',
+            path.dirname(manifest),
+            '--ignore-scripts',
+            '--json',
+            '--pack-destination',
+            root,
+          ])
         );
         dependencies[name] = `file:${path.join(root, archive[0].filename)}`;
       }
@@ -161,7 +157,7 @@ test(
         'node-server',
         'browser-library',
         'mixed-exports',
-      ]) {
+      ] as const) {
         /** Owned preset-specific consumer directory with its own manifest and source. */
         const directory = path.join(root, preset);
         // Each preset must compile a genuinely different environment contract.
@@ -195,8 +191,9 @@ test(
         );
         assert.ok(fs.existsSync(path.join(directory, 'dist/index.d.ts')));
         assert.deepEqual(
-          JSON.parse(fs.readFileSync(path.join(directory, 'package.json')))
-            .exports,
+          JSON.parse(
+            fs.readFileSync(path.join(directory, 'package.json'), 'utf8')
+          ).exports,
           exports
         );
       }
@@ -315,9 +312,22 @@ export { buildTypescript, createTsConfig, load };\n`
 );
 
 test('preset validation and hook registration have no partial mutation', () => {
-  assert.throws(() => createTypeScriptPreset('unknown'), /Unknown/);
-  assert.throws(() => transformTypescript(42), /source/);
-  assert.throws(() => transformTypescript('', { format: 'unknown' }), /format/);
+  assert.throws(
+    () => Reflect.apply(createTypeScriptPreset, undefined, ['unknown']),
+    /Unknown/
+  );
+  assert.throws(
+    () => Reflect.apply(transformTypescript, undefined, [42]),
+    /source/
+  );
+  assert.throws(
+    () =>
+      Reflect.apply(transformTypescript, undefined, [
+        '',
+        { format: 'unknown' },
+      ]),
+    /format/
+  );
   /** Caller-owned preset copy mutated to prove that subsequent results are independent. */
   const preset = createTypeScriptPreset('browser-library');
   preset.compilerOptions.types.push('node');
@@ -342,7 +352,11 @@ test('preset validation and hook registration have no partial mutation', () => {
   /** Owned synthetic fixture root, removed in the enclosing finally block. */
   const root = temporary();
   try {
-    assert.throws(() => createTsConfig(root, { preset: 'invalid' }), /Unknown/);
+    assert.throws(
+      () =>
+        Reflect.apply(createTsConfig, undefined, [root, { preset: 'invalid' }]),
+      /Unknown/
+    );
     assert.throws(
       () => createTsConfig(root, { compilerOptions: { module: 'invalid' } }),
       /module/
@@ -394,7 +408,10 @@ test('typecheck cancellation, configuration and dependency failures', () => {
         checkDependencies: true,
       }).diagnostics.some((d) => d.code === 95002)
     );
-    assert.throws(() => checkTypes({ files: 'src/index.ts' }), /array/);
+    assert.throws(
+      () => Reflect.apply(checkTypes, undefined, [{ files: 'src/index.ts' }]),
+      /array/
+    );
     assert.equal(
       checkTypes({
         files: [],
@@ -471,8 +488,10 @@ test('browser bundle, raw dependency failures and cancellation cleanup', async (
         outdir: 'bad',
         bundle: true,
       }),
-      (error) =>
-        error.errors?.some((d) => /missing-zerux-test-dependency/.test(d.text))
+      (error: unknown) =>
+        buildMessages(error).some((text) =>
+          /missing-zerux-test-dependency/.test(text)
+        )
     );
     write(root, 'src/index.ts', "import fs from 'node:fs'; export { fs };");
     await assert.rejects(
@@ -483,7 +502,7 @@ test('browser bundle, raw dependency failures and cancellation cleanup', async (
         bundle: true,
         platform: 'browser',
       }),
-      (error) => error.errors?.length > 0
+      (error: unknown) => buildMessages(error).length > 0
     );
     await assert.rejects(
       buildTypescript({ cwd: root, entryPoints: [], outdir: 'bad' }),
@@ -501,3 +520,47 @@ test('browser bundle, raw dependency failures and cancellation cleanup', async (
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+/** Validate npm's JSON archive metadata before using its filenames.
+ * @param {string} text - Captured output from the owned offline packaging command.
+ * @returns {{filename: string}[]} Archive records; malformed output fails the fixture.
+ */
+function packFiles(text: string): Array<{ filename: string }> {
+  /** npm may return an array or a workspace-keyed object. */
+  const value: unknown = JSON.parse(text);
+  if (!value || typeof value !== 'object') {
+    throw new Error('Invalid npm archive metadata');
+  }
+  return Object.values(value).map((entry: unknown) => {
+    if (
+      !entry ||
+      typeof entry !== 'object' ||
+      !('filename' in entry) ||
+      typeof entry.filename !== 'string'
+    ) {
+      throw new Error('Missing archive filename');
+    }
+    return { filename: entry.filename };
+  });
+}
+/** Read only textual compiler errors from an unknown rejected build value.
+ * @param {unknown} error - Actual promise rejection from the fixture compiler.
+ * @returns {string[]} Valid diagnostic messages; unrelated failures cannot satisfy assertions.
+ */
+function buildMessages(error: unknown): string[] {
+  if (
+    !(error instanceof Error) ||
+    !('errors' in error) ||
+    !Array.isArray(error.errors)
+  ) {
+    return [];
+  }
+  return error.errors.flatMap((entry: unknown) =>
+    entry &&
+    typeof entry === 'object' &&
+    'text' in entry &&
+    typeof entry.text === 'string'
+      ? [entry.text]
+      : []
+  );
+}

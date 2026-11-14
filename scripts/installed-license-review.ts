@@ -7,7 +7,9 @@ import { inspectInstalledLicenses } from './workspace-installed-licenses.ts';
 /** Local value for args. */
 const args = process.argv.slice(2);
 if (args.length > 1 || args.some((arg) => arg !== '--strict')) {
-  console.error('Usage: node --experimental-strip-types scripts/installed-license-review.ts [--strict]');
+  console.error(
+    'Usage: node --experimental-strip-types scripts/installed-license-review.ts [--strict]'
+  );
   process.exit(2);
 }
 /** Local value for root. */

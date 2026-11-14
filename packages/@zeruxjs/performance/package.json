@@ -14,7 +14,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc && tsc -p tsconfig.browser.json && node scripts/prepare-browser.cjs",
+    "build": "tsc && tsc -p tsconfig.browser.json && node --experimental-strip-types scripts/prepare-browser.ts",
     "dev": "tsc --watch",
     "test": "node --experimental-strip-types --test test/*.test.ts",
     "prepack": "npm run build"

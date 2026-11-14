@@ -2,6 +2,7 @@ import { createSecurityHeaders } from '@zeruxjs/security';
 import { randomBytes } from 'node:crypto';
 import { h, type VNodeChild } from 'zyrojs/component';
 import { renderToString } from 'zyrojs/dom';
+/** Private no-store baseline with fixed security policy; response HTML adds its own style nonce. */
 export const headers = {
   ...createSecurityHeaders({
     referrerPolicy: 'same-origin',
@@ -13,6 +14,7 @@ export const headers = {
   'content-security-policy':
     "default-src 'none'; style-src 'self'; img-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
 };
+/** Fixed public route/label inventory; stored notes cannot add scripts or executable links. */
 const nav = [
   ['/workspace', 'Workspace'],
   ['/workspace/notes', 'Notebook'],
@@ -30,6 +32,13 @@ const nav = [
   ['/workspace/diagnostics', 'Diagnostics'],
   ['/playground', 'Runtime lab'],
 ] as const;
+/** Serialize the authored HTML shell through public ZyroJS escaped node construction.
+ * @param {string} title - Inert display title, not raw markup.
+ * @param {VNodeChild} content - Trusted authored node description; stored data must remain scalar text.
+ * @param {string} nonce - Response-owned style nonce, not an authorization token.
+ * @param {number} status - Deliberate status; error headings receive native focus management.
+ * @returns {string} Complete noindex HTML; fixed external module URLs are authored here.
+ */
 function document(
   title: string,
   content: VNodeChild,
@@ -109,7 +118,14 @@ function document(
     )
   );
 }
+/** Create one private no-store HTML response with a fresh scoped style nonce.
+ * @param {string} title - Inert page title.
+ * @param {VNodeChild} content - Trusted authored tree with stored text passed as scalar children.
+ * @param {number} status - Explicit HTTP status, default 200.
+ * @returns {Response} HTML response with fixed self-only script and explicit owned blob-media policy.
+ */
 export function html(title: string, content: VNodeChild, status = 200) {
+  /** Fresh per-response style nonce, separate from CSRF and authorization proofs. */
   const nonce = randomBytes(18).toString('base64');
   return new Response(document(title, content, nonce, status), {
     status,
@@ -120,6 +136,9 @@ export function html(title: string, content: VNodeChild, status = 200) {
     },
   });
 }
+/** Explain disabled/unconfigured state without opening any database or external provider.
+ * @returns {Response} Private noindex 503 page with explicit operator setup guidance.
+ */
 export function workspaceUnavailable() {
   return html(
     'Workspace setup required',

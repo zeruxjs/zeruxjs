@@ -46,11 +46,15 @@ try {
     { json = false }: { json?: boolean } = {}
   ): string => {
     /** Local value for result. */
-    const result = spawnSync(process.execPath, ['--experimental-strip-types', ...commandArgs], {
-      cwd: dest,
-      encoding: 'utf8',
-      timeout: 120_000,
-    });
+    const result = spawnSync(
+      process.execPath,
+      ['--experimental-strip-types', ...commandArgs],
+      {
+        cwd: dest,
+        encoding: 'utf8',
+        timeout: 120_000,
+      }
+    );
     if (result.error || result.status !== 0) {
       // Node's test reporter writes failures to stdout; an empty stderr must not hide them.
       /** Local value for details. */

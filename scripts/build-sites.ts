@@ -4,9 +4,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { sites } from '../sites.config.mjs';
+import { sites } from '../sites.config.ts';
 import { optimizeStaticAssets } from './static-site-assets.ts';
-import zuix from '../pages/zuix.config.mjs';
+import zuix from '../pages/zuix.config.ts';
 import { discoverWorkspaces } from './workspace-graph.ts';
 
 /** Local value for repository root. */
@@ -317,10 +317,7 @@ export async function buildSites({ production = true } = {}) {
     /** Local value for root source. */
     const rootSource = path.join(repositoryRoot, sites.root.source);
     await fs.mkdir(path.join(staging, 'site-assets'));
-    await copyStatic(
-      path.join(rootSource, 'app.js'),
-      path.join(staging, 'site-assets/app.js')
-    );
+    // The browser entry is compiled below; TypeScript source is never copied to public output.
     await copyStatic(
       path.join(rootSource, 'favicon.svg'),
       path.join(staging, 'site-assets/favicon.svg')
@@ -472,7 +469,7 @@ export async function buildSites({ production = true } = {}) {
         path.join(staging, file)
       ),
       css: 'site-assets/style.css',
-      entries: ['app.js'],
+      entries: ['app.ts'],
       sourceRoot: rootSource,
       basePath: '',
       zuix,

@@ -6,7 +6,9 @@ import { planPublicReleasesFromRoot } from './workspace-release-plan.ts';
 /** Local value for args. */
 const args = process.argv.slice(2);
 if (args.length > 1 || (args.length === 1 && args[0] !== '--json')) {
-  console.error('Usage: node --experimental-strip-types scripts/package-release-plan.ts [--json]');
+  console.error(
+    'Usage: node --experimental-strip-types scripts/package-release-plan.ts [--json]'
+  );
   process.exit(2);
 }
 /** Local value for root. */

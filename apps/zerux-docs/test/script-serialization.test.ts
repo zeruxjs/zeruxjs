@@ -4,8 +4,11 @@ import { JSDOM } from 'jsdom';
 import { document } from '../src/lib/template.ts';
 import { site, sitePath } from '../src/site.config.ts';
 
-/** Render synthetic metadata without evaluation. @param {string} description Inert metadata. @returns {string} HTML. */
+/** Render synthetic metadata without evaluation.
+ * @param {string} description Inert metadata.
+ * @returns {string} HTML. */
 function render(description) {
+  /** Synthetic version-local metadata used only to exercise inert template serialization. */
   const pages = site.versions.map((version) => ({
     slug: 'introduction',
     url: `/docs/${version.id}/introduction/`,
@@ -25,8 +28,10 @@ for (const description of [
   '</script><script>globalThis.probe=1</script>&>\u2028\u2029',
 ]) {
   test(`metadata remains inert: ${description === 'Public metadata' ? 'normal' : 'script termination'}`, () => {
+    /** Owned DOM-emulation window; it loads no external resources and always closes in finally. */
     const dom = new JSDOM(render(description));
     try {
+      /** Actual parsed script elements; hostile metadata must not create a fifth executable element. */
       const scripts = [...dom.window.document.querySelectorAll('script')];
       assert.equal(scripts.length, 4);
       assert.equal(scripts[0].type, 'application/ld+json');

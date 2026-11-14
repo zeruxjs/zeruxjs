@@ -43,7 +43,7 @@ The combined build is written to `.site-build/` at the repository root. Each app
 `.github/workflows/github-pages-deploy.yml` runs for every push to `master` or `version/*` and supports manual runs from those branches:
 
 1. Install locked dependencies with package lifecycle scripts disabled. Build Zuixs and the TypeScript, performance, search and security workspace tooling in parallel. The exporter does not build the full framework runtime or native database adapters.
-2. Build all apps declared in `sites.config.mjs` concurrently, with live START/READY logs.
+2. Build all apps declared in `sites.config.ts` concurrently, with live START/READY logs.
 3. Generate the shared homepage and validate cross-site links, assets and anchors.
 4. Create/update `master-site` through a temporary worktree and a **normal push**, preserving its history.
 5. Upload the complete static branch tree, including other preserved site folders.
@@ -57,7 +57,7 @@ Existing `CNAME` and other unowned files on the output branch are preserved. In 
 
 ## Add another site
 
-Add a disjoint entry to `sites.config.mjs`:
+Add a disjoint entry to `sites.config.ts`:
 
 ```js
 {

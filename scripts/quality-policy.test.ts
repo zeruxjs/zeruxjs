@@ -178,3 +178,24 @@ test('exported constants attach documentation to their export declaration', asyn
     invalid.messages.some((message) => message.ruleId === 'jsdoc/require-jsdoc')
   );
 });
+
+test('reviewed repository scopes retain the same strict readability rules as package scopes', async () => {
+  /** Root config must explicitly enable repository scopes; package names alone cannot cover tooling. */
+  const scopes: { repositoryCompleted?: string[] } = JSON.parse(
+    await readFile(new URL('quality-scopes.json', root), 'utf8')
+  );
+  /** Actual lint engine; this test never executes any environment CLI command. */
+  const eslint = new ESLint();
+  assert.equal(
+    new Set(scopes.repositoryCompleted).size,
+    scopes.repositoryCompleted?.length
+  );
+  for (const scope of scopes.repositoryCompleted ?? []) {
+    /** Effective configuration for a representative source inside the reviewed root. */
+    const configured = await eslint.calculateConfigForFile(
+      `${scope}/quality-fixture.ts`
+    );
+    assert.equal(configured.rules.curly[0], 2);
+    assert.equal(configured.rules['jsdoc/require-jsdoc'][0], 2);
+  }
+});

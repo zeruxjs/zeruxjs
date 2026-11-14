@@ -1,5 +1,9 @@
 import { defineThreadWorker, defineWorker, type ZeruxPluginApi } from 'zeruxjs';
 
+/** Register trusted runtime examples through the actual generation-owned plugin API.
+ * @param {ZeruxPluginApi} api - Borrowed route/middleware/composable/worker registration owner.
+ * @returns {void} Declares owned workers; the framework starts/stops them at lifecycle boundaries.
+ */
 export default (api: ZeruxPluginApi) => {
   api.addThreadWorker(
     'math-thread',
@@ -14,7 +18,9 @@ export default (api: ZeruxPluginApi) => {
         ticks: 0,
       });
 
+      /** Worker-owned heartbeat timer; the returned worker cleanup clears it on generation shutdown. */
       const timer = setInterval(() => {
+        /** Current worker-local state, never a remote identity or cross-process durable record. */
         const current = state.get('sample-heartbeat') as
           | { startedAt: string; ticks: number }
           | undefined;
@@ -56,7 +62,12 @@ export default (api: ZeruxPluginApi) => {
     pattern: '/plugin/runtime',
     method: 'GET',
     middleware: ['request-context', 'plugin-tag'],
+    /** Render the fixed plugin inventory example from host-owned projections.
+     * @param {object} context - Borrowed framework context; arbitrary stored content must not enter this raw authored template.
+     * @returns {string} Teaching HTML from known runtime fields, not a private administration surface.
+     */
     handler(context: any) {
+      /** Explicit trusted composable projection; never serialize private service handles into this teaching HTML. */
       const summary = context.services.composables.pluginSummary
         ? context.services.composables.pluginSummary(context.runtime)
         : {};
@@ -98,10 +109,16 @@ export default (api: ZeruxPluginApi) => {
     pattern: '/plugin/workers',
     method: 'GET',
     middleware: ['request-context', 'plugin-tag'],
+    /** Invoke only the fixed authored calculation on the registered worker pool.
+     * @param {object} context - Borrowed current framework generation context.
+     * @returns {Promise<object>} Actual worker metadata/heartbeat/calculation output, never a simulated process.
+     */
     async handler(context: any) {
+      /** Actual framework-registered worker-thread handle, not a command chosen from request input. */
       const mathThread = context.runtime
         .asPluginApi()
         .getThreadWorker('math-thread');
+      /** Actual fixed calculation result, or null when the optional worker handle is absent. */
       const mathResult = mathThread
         ? await mathThread.run({ value: 12 })
         : null;
