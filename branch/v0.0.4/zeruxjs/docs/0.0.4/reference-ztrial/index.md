@@ -380,7 +380,7 @@ Assertions include `toBe`, circular-safe `toEqual`, `.not`, `toContain`, `toMatc
 
 ## CLI
 
-Build first, then run `.test.js`, `.spec.js`, `.test.mjs`, or `.spec.mjs` files:
+Build first, then run `.test.js`, `.spec.js`, `.test.ts`, or `.spec.mjs` files:
 
 ```sh
 npm run build
@@ -394,7 +394,7 @@ Example JSON configuration:
 ```json
 {
   "root": ".",
-  "files": ["tests/**/*.test.mjs"],
+  "files": ["tests/**/*.test.ts"],
   "timeoutMs": 5000,
   "retries": 1,
   "bail": false,
@@ -413,7 +413,7 @@ Timeouts prevent the runner from waiting forever but cannot forcibly cancel an a
 
 ```sh
 npm run build
-node --test test/*.test.mjs
+node --experimental-strip-types --test test/*.test.ts
 ```
 
 ## Test-runner safeguards
@@ -428,7 +428,7 @@ node --test test/*.test.mjs
   remain visible as test failures. Timeouts bound reporting but cannot forcibly
   cancel arbitrary JavaScript async operations.
 
-Verify with `npm run build && node --test test/*.test.mjs`. No browser/runtime
+Verify with `npm run build && node --experimental-strip-types --test test/*.test.ts`. No browser/runtime
 certification is inferred from source-only tests.
 
 ## Scoped HTTP/provider fakes

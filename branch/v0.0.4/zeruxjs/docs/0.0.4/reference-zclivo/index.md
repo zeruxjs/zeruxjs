@@ -176,7 +176,7 @@ The binary supports explicit `--interactive` or equivalent `--name`, `--destinat
 `--dry-run` flags. Help/docs use the registered capabilities. CI-style noninteractive
 commands never install dependencies or start generated code. New directories are
 private; whole-directory crash atomicity and hostile same-account filesystem races
-are not claimed. See the package README and `examples/generator.mjs` for ownership,
+are not claimed. See the package README and `examples/generator.ts` for ownership,
 runtime floors, public APIs and checks.
 
 ## Resource handles and display boundaries
@@ -296,7 +296,7 @@ Plugins are **trusted executable code**, not sandboxed extensions. Entry paths a
 
 ```sh
 npm run build
-node --test test/*.test.mjs
+node --experimental-strip-types --test test/*.test.ts
 ```
 
 ## Safe app starter
@@ -548,7 +548,7 @@ Synchronous writing cannot observe OS signals while JavaScript is busy; use the 
 writer for owned cancellation and await settlement. No force overwrite/cleanup of an
 unowned directory is offered.
 
-[Public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zclivo/examples/generator.mjs) shows planning/writing and shared
+[Public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zclivo/examples/generator.ts) shows planning/writing and shared
 command registration. Regression checks include native write/promotion failure,
 concurrent target appearance, dangling links/parent links, capability denial,
 interactive/flag equivalence, deterministic files and real SIGINT during a controlled

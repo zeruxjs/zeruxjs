@@ -19,11 +19,11 @@ post-commit action callback. Close the coordinator before its borrowed cache;
 cooperative cancellation cannot force a handler or backend to finish.
 
 See the framework README's “Opt-in route data cache” section and
-`packages/zeruxjs/examples/route-data-cache.mjs` for exact bounds and public imports.
+`packages/zeruxjs/examples/route-data-cache.ts` for exact bounds and public imports.
 
 
 ## Implementation sources
 
 - [packages/zeruxjs/src/route-data-cache.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/src/route-data-cache.ts)
-- [packages/zeruxjs/examples/route-data-cache.mjs](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/examples/route-data-cache.mjs)
+- [packages/zeruxjs/examples/route-data-cache.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/examples/route-data-cache.ts)
 - [packages/zeruxjs/README.md](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/README.md)

@@ -35,7 +35,7 @@ import {version, status, capabilities} from '@zenixjs/core';
 import {createCms, cmsRolePermissions} from '@zenixjs/core/cms';
 ```
 
-The package's `examples/cms.mjs` shows private dependency injection and a minimal
+The package's `examples/cms.ts` shows private dependency injection and a minimal
 draft/publication flow. Host session proof, Origin/CSRF policy, media providers and
 private rendering remain explicit. Native SQLite fixtures check file-backed reopen,
 rollback, revision conflicts and denied sites; no browser/admin/provider qualification
@@ -108,7 +108,7 @@ try {
 ```
 
 Callbacks and session variables above are host-owned, not bundled defaults. See the
-[public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zenixjs/core/examples/cms.mjs) for explicit schema/draft/publication calls.
+[public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zenixjs/core/examples/cms.ts) for explicit schema/draft/publication calls.
 No HTTP endpoint or `zerux.config` option is mounted automatically.
 
 | Capability      | Implemented behavior                                                                                                                                |
@@ -218,7 +218,7 @@ underlying database/provider failure evidence.
 ## Verification and limits
 
 Run `npm run build --workspace=@zenixjs/core` and
-`node --test packages/@zenixjs/core/test/cms.test.mjs` from the repository root.
+`node --experimental-strip-types --test packages/@zenixjs/core/test/cms.test.ts` from the repository root.
 Focused fixtures use real native Node SQLite files and verify durable close/reopen in a separate process,
 revision races, publication/restore history, tenant/site denial, malformed schemas,
 media denial, head-write rollback, migration rollback/version rejection and plugin
@@ -239,8 +239,8 @@ MIT OR Apache-2.0.
 | `src/types.ts`      | Package-owned domain contracts, field constraints and host callbacks; role data never authenticates a caller.        |
 | `src/validation.ts` | Own-data checks and bounded schema/content/media syntax; files policy and authorization stay with their owners.      |
 | `src/cms.ts`        | SQLite migration identity, scoped reads, optimistic revision commits, fresh host authorization and instance cleanup. |
-| `examples/cms.mjs`  | Inert public-import helpers; setup/save/publish remain separate commits.                                             |
-| `test/cms.test.mjs` | Synthetic temporary SQLite files; tests close resources before removing owned paths.                                 |
+| `examples/cms.ts`  | Inert public-import helpers; setup/save/publish remain separate commits.                                             |
+| `test/cms.test.ts` | Synthetic temporary SQLite files; tests close resources before removing owned paths.                                 |
 
 Function/method contracts include typed parameters, return values and relevant
 failure behavior. Constants and loop bindings document provenance/ownership.

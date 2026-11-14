@@ -109,7 +109,7 @@ Read credentials through `process.env` and keep them out of public asset directo
 
 ## The documentation application's config
 
-The repository's `apps/zerux-docs/zerux.config.js` is a real configuration input. Its `documentation` object contains `basePath`, `origin`, `latest`, versions, section order and repository metadata. `src/site.config.mjs` imports this object, and the static builder, Markdown exporter, links and preview use those values.
+The repository's `apps/zerux-docs/zerux.config.js` is a real configuration input. Its `documentation` object contains `basePath`, `origin`, `latest`, versions, section order and repository metadata. `src/site.config.ts` imports this object, and the static builder, Markdown exporter, links and preview use those values.
 
 The static exporter imports this object directly and consumes only `documentation`: it does **not** call runtime service initialization. Adding `db`, `cache` or other service settings here would not start those services during docs builds or on GitHub Pages. The docs site currently requires no database or cache connection. A future server-backed docs application must use the real runtime startup path and keep its backend separate from the static Pages output.
 
@@ -140,4 +140,4 @@ Keep a single active config file and check nested service objects as well as the
 - [packages/zeruxjs/src/bootstrap/config.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/src/bootstrap/config.ts)
 - [packages/zeruxjs/src/index.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/src/index.ts)
 - [apps/zerux-docs/zerux.config.js](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/apps/zerux-docs/zerux.config.js)
-- [apps/zerux-docs/src/site.config.mjs](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/apps/zerux-docs/src/site.config.mjs)
+- [apps/zerux-docs/src/site.config.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/apps/zerux-docs/src/site.config.ts)

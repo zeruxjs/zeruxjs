@@ -472,6 +472,12 @@ resource.dispose(); // release resource permanently
 
 See `src/network` for Fetch JSON-RPC, MCP, Connect/tRPC, SSE readers, discovery feeds, bounded streaming and in-memory QueryCache. A cancelled stale request rejects with `AbortError` if its loader later resolves without honoring the signal. This is intentional: consumers must handle rejected promises. There is no implicit network retry for mutating calls. Cache entries are per instance; avoid sharing sensitive keys across tenants.
 
+### Cache and transport ownership
+
+`QueryCache` is process-local and retains successful values only with a positive TTL. The default TTL `0` disables completed-value storage while still coalescing concurrent same-key loads. Values are borrowed, not cloned. `invalidate(key)` and `clear()` fence pending cache commits without cancelling the loader; `invalidateTag(tag)` removes completed entries only. Pending loads have no tag index. A joining caller's abort cancels its wait; the initiating caller's abort also suppresses that load's cache commit. Include application/tenant identity in private keys and do not share a cache across authorization scopes implicitly.
+
+Protocol clients and caches start no requests on construction. Resources require `refresh()` and event channels require `start()`; retain their handles and call `dispose()`/branch/v0.0.4/`stop()` on owner teardown. A stopped event channel's `start()` promise observes actual stream settlement. Signals cannot forcibly stop a loader or injected transport that ignores cancellation. The unary MCP helper accepts JSON responses; use the separate SSE reader for event streams. `connectJsonStream` bounds individual frames and response message count, but does not apply `ProtocolClientOptions.timeoutMs` or promise pull-based upload backpressure: supply an explicit deadline signal and a bounded, cooperative input iterable. These helpers do not implement a server-side destination allowlist or all protocol/vendor features.
+
 ## Local qualification
 
 ```sh
@@ -480,9 +486,9 @@ npm run test:zyrojs  # builds ZyroJS + bridge, runs tests, npm-pack consumer imp
 npm run verify:source # source and lock metadata validation, NOT npm ci
 ```
 
-Focused package checks: `npm run build`, then `node --test test/reactivity.test.mjs test/dom.test.mjs test/components.test.mjs test/components-public.test.mjs test/hydration.test.mjs`. The public check packs/installs the built package offline and checks its browser declarations without source aliases or Node ambient types. It owns/removes its temporary files and npm cache.
+Focused package checks: `npm run build`, then `node --experimental-strip-types --test test/reactivity.test.ts test/dom.test.ts test/components.test.ts test/components-public.test.ts test/hydration.test.ts`. The public check packs/installs the built package offline and checks its browser declarations without source aliases or Node ambient types. It owns/removes its temporary files and npm cache.
 
-Optional browser checks: `ZX_TEST_BROWSER=1 node --test test/components-browser.test.mjs test/hydration-browser.test.mjs` require a separately installed Playwright and functioning Chromium. They own ephemeral loopback asset servers/browsers and check keyed fragment reorder, insertion/removal, hydration, nested updates, focus/selection and detached listener cleanup, closing resources in `finally`. They never download a browser or start a user application; without opt-in they explicitly skip.
+Optional browser checks: `ZX_TEST_BROWSER=1 node --experimental-strip-types --test test/components-browser.test.ts test/hydration-browser.test.ts` require a separately installed Playwright and functioning Chromium. They own ephemeral loopback asset servers/browsers and check keyed fragment reorder, insertion/removal, hydration, nested updates, focus/selection and detached listener cleanup, closing resources in `finally`. They never download a browser or start a user application; without opt-in they explicitly skip.
 
 The integration suite uses a deterministic DOM fixture in Node and an offline tarball consumer. Real-browser Chromium/WebKit/Firefox and cross-OS behavior require separate validation; React/Vue hydration is not provided by this package. Do not interpret a passed DOM fixture as browser certification or a passed local tarball check as a clean registry-backed workspace install.
 

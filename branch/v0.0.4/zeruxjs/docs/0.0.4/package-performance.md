@@ -150,7 +150,7 @@ transformation. Conditional evaluation stays with the origin; HEAD/304 do not
 consume source bodies. Native streaming retains backpressure and disconnect
 cleanup. Build-time minification remains in TypeScript tooling.
 
-See the package README and `examples/response.mjs` for exact limits, lifecycle and
+See the package README and `examples/response.ts` for exact limits, lifecycle and
 HTTP semantics. Local identity/gzip/Brotli measurements are workload observations,
 not evidence of general latency gains or production/CDN/browser qualification.
 
@@ -353,7 +353,7 @@ Verification builds both performance and analytics and uses observer/lifecycle/F
 It borrows a hosting owner: no zlib implementation, codec pool, request-time
 minifier or dependency on zhost is imported. Explicitly pass
 `createCompressionOwner` from `zhost/compression`, as in
-[the public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/performance/examples/response.mjs). Importing either entry starts
+[the public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/performance/examples/response.ts). Importing either entry starts
 no server or remote connection. The host closes the compression owner after
 stopping admission. Do not apply this adapter after headers commit, or combine it
 with another compression middleware on the same response.

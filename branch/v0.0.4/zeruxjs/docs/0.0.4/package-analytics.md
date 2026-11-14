@@ -594,7 +594,7 @@ The registry creates no timer, network connection or durable storage handle. Kee
 
 The public [analysis example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/examples/analysis.ts) owns `close()` in `finally`; the [durable example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/analytics/examples/durable.ts) returns a coordinator that the host must close during shutdown. Database/store and HTTP route lifetimes remain with the host. The email tracking facade has no close handle; timed-out callbacks can remain unresolved and keep consuming its finite pending budget. Production hosts must provide bounded cooperative callbacks and own their shared stores.
 
-Offline regression checks exercise injected failures and synthetic SQLite state. The dedicated `live-databases.test.mjs` is a separate opt-in acceptance path requiring disposable PostgreSQL/MySQL/MongoDB installations; an offline pass does not qualify those engines or live multi-process recovery.
+Offline regression checks exercise injected failures and synthetic SQLite state. The dedicated `live-databases.test.ts` is a separate opt-in acceptance path requiring disposable PostgreSQL/MySQL/MongoDB installations; an offline pass does not qualify those engines or live multi-process recovery.
 
 
 ## Implementation sources

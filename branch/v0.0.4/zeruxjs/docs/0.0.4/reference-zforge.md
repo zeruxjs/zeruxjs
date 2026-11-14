@@ -96,7 +96,7 @@ handler settlement. Legacy shared UI/HTTP/WS module registration remains separat
 TracingAdapter. Per-app count/byte/TTL caps and generation fencing bound retention.
 Headers are MIME/length only, bodies default to omitted, and normalized error codes
 exclude causes/stacks. Host authorization remains required when mounting its escaped
-request table. The package README and `examples/modules.mjs` describe the public
+request table. The package README and `examples/modules.ts` describe the public
 integration; importing either entry starts no server. Node ephemeral HTTP fixtures
 are not browser, remote TLS or full MCP/gRPC qualification.
 
@@ -113,13 +113,13 @@ credential/deadline. They do not write assignments or emit analytics. The separa
 stateless evaluator preserves consent/tenant/environment gates; durable `preserve`
 history is deliberately unsupported. Audit metadata excludes private traits and
 raw callback output. Dispose/reload drains the generation and closes the evaluator.
-The package's `examples/experiments.mjs` demonstrates public imports and explicit
+The package's `examples/experiments.ts` demonstrates public imports and explicit
 policies. Host authentication/audit durability and browser UI remain integrations
 that require their own acceptance checks.
 
 ## Clean source builds
 
-The repository build planner compiles zforge's independent strict core first, then its hosting/framework owners, then the normal full strict package build. This explicit manifest metadata resolves declaration cycles for optional integrations; it does not create runtime services. Use `node scripts/build-workspaces.mjs --scope zforge` in a checkout. The intermediate `build:core` does not certify the full archive. Published consumers still select the actual optional peers and own host authorization and teardown.
+The repository build planner compiles zforge's independent strict core first, then its hosting/framework owners, then the normal full strict package build. This explicit manifest metadata resolves declaration cycles for optional integrations; it does not create runtime services. Use `node --experimental-strip-types scripts/build-workspaces.ts --scope zforge` in a checkout. The intermediate `build:core` does not certify the full archive. Published consumers still select the actual optional peers and own host authorization and teardown.
 
 
 ## Public entry points
@@ -225,7 +225,7 @@ export default defineDevtoolsModule({
 
 ## Request boundaries
 
-The HTTP devtools server enforces a 1 MiB streamed request-body limit via `src/request.ts`, with cleanup on completion, failure, or aborted requests. Local development hostname checks reject crafted authorities. Focused tests: `node --test test/request.test.mjs` after building. Devtools should be restricted to trusted networks; configure firewall and proxy access appropriately.
+The HTTP devtools server enforces a 1 MiB streamed request-body limit via `src/request.ts`, with cleanup on completion, failure, or aborted requests. Local development hostname checks reject crafted authorities. Focused tests: `node --experimental-strip-types --test test/request.test.ts` after building. Devtools should be restricted to trusted networks; configure firewall and proxy access appropriately.
 
 ### Security and live reload diagnostics
 
@@ -262,7 +262,7 @@ inline style attributes. The shared document renderer uses the same nonce as its
 response header. Reuse it only within that response, including streamed chunks.
 Zhost's automatic injector skips enforced-CSP and explicitly flushed responses.
 See [security policy ownership](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/security/README.md#structural-application-policy).
-Run `node --test test/framing-policy.test.mjs test/state-injection.test.mjs` after
+Run `node --experimental-strip-types --test test/framing-policy.test.ts test/state-injection.test.ts` after
 building; these are Node checks, not browser framing/isolation verification.
 
 ## Scoped transport modules and request diagnostics
@@ -270,7 +270,7 @@ building; these are Node checks, not browser framing/isolation verification.
 `zforge/modules` is an explicit opt-in host, separate from the legacy shared UI,
 HTTP/WS registries and file module loader. Inject the actual `zhost/protocols`
 exports; type-only optional peers avoid a runtime dependency cycle. Merely
-importing these entries starts no listener. See [public example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zforge/examples/modules.mjs).
+importing these entries starts no listener. See [public example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zforge/examples/modules.ts).
 
 | Declaration | Actual implementation                | Limits                                                             |
 | ----------- | ------------------------------------ | ------------------------------------------------------------------ |
@@ -317,7 +317,7 @@ optional section/table escapes output; mount/read it only behind host authorizat
 It does not install an auth layer in the legacy shared server. Existing private
 atomic state and script-safe client injection remain separate owners.
 
-Focused Node checks: `node --test test/*.test.mjs` after `npm run build`.
+Focused Node checks: `node --experimental-strip-types --test test/*.test.ts` after `npm run build`.
 Ephemeral real HTTP/SSE/MCP fixtures cover denial, bounded replay, startup rollback,
 reload disconnect and real framework span export. These do not qualify browser UI,
 remote TLS/proxy deployments or native gRPC.
@@ -327,7 +327,7 @@ remote TLS/proxy deployments or native gRPC.
 `zforge/experiments` supplies `createExperimentInspectionModule`, an opt-in consumer
 of the injected public `ztrial/experiments` evaluator. Register its returned module
 with `createDevtoolsModuleHost`; no global module or UI is silently replaced. See
-[public example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zforge/examples/experiments.mjs). The optional ztrial peer is type-only
+[public example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zforge/examples/experiments.ts). The optional ztrial peer is type-only
 until the host injects its factory. Production mode rejects before acquiring resources.
 
 The MCP tools are `experiment.inspect`, `experiment.preview` and `experiment.test`.
@@ -372,7 +372,7 @@ no browser dashboard or statistical significance claim is added.
 
 ## Building from workspace source
 
-Use `node scripts/build-workspaces.mjs --scope zforge` from the repository root for a clean checkout. The manifest's repository-only `workspaceBuild` metadata selects `build:core` first, then builds the declared zhost/ZeruxJS owners and runs the normal full `build`. Both TypeScript configurations inherit strict checking. The core entry does not import the optional modules/diagnostics/experiments entries; the final pass must compile those entries successfully before the workspace build succeeds.
+Use `node --experimental-strip-types scripts/build-workspaces.ts --scope zforge` from the repository root for a clean checkout. The manifest's repository-only `workspaceBuild` metadata selects `build:core` first, then builds the declared zhost/ZeruxJS owners and runs the normal full `build`. Both TypeScript configurations inherit strict checking. The core entry does not import the optional modules/diagnostics/experiments entries; the final pass must compile those entries successfully before the workspace build succeeds.
 
 This resolves the source dependency cycle without duplicating transport/tracing types or adding eager runtime dependencies. `build:core` alone is an intermediate developer step, not a complete package/archive build. `npm run build` and prepack remain the full compiler check once prerequisite declarations exist. Invalid bootstrap metadata and either compilation-stage failure reject the build; the planner does not run applications or listeners. Optional peers remain host-selected for consumers of the compiled package.
 

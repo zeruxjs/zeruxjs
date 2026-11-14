@@ -68,4 +68,4 @@ Private and sample workspaces are excluded. A published name does not imply a co
 
 ## Implementation sources
 
-- [apps/zerux-docs/src/site.config.mjs](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/apps/zerux-docs/src/site.config.mjs)
+- [apps/zerux-docs/src/site.config.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/apps/zerux-docs/src/site.config.ts)

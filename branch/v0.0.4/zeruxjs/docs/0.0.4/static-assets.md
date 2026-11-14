@@ -47,4 +47,4 @@ Test nested paths, directory redirects, absent assets, HEAD and the configured s
 
 - [packages/zeruxjs/src/bootstrap/runtime.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/src/bootstrap/runtime.ts)
 - [packages/zeruxjs/src/commands/project-builder.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/src/commands/project-builder.ts)
-- [apps/zerux-docs/scripts/build.mjs](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/apps/zerux-docs/scripts/build.mjs)
+- [apps/zerux-docs/scripts/build.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/apps/zerux-docs/scripts/build.ts)

@@ -382,7 +382,7 @@ hydration, serialized state delivery and bundle ownership remain host-owned.
 Build this package and required dependencies locally, then run:
 
 ```sh
-node --test test/advanced.test.mjs test/integration.test.mjs test/ssr-lifecycle.test.mjs test/renderer-server.test.mjs test/renderer-dom.test.mjs test/renderer-public.test.mjs test/renderer-framework.test.mjs
+node --experimental-strip-types --test test/advanced.test.ts test/integration.test.ts test/ssr-lifecycle.test.ts test/renderer-server.test.ts test/renderer-dom.test.ts test/renderer-public.test.ts test/renderer-framework.test.ts
 ```
 
 Native SSR and React DOM checks use React/React DOM 19.3.1. jsdom 30.1.3 is a

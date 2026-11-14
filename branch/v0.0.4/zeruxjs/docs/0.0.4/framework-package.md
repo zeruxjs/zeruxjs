@@ -85,7 +85,7 @@ compliance guarantee is implied.
 Private expiring JSONL exports use approved projections and bounded streams, with
 per-chunk authorization/expiry checks and no public URLs. Host routes still own
 CSRF/authentication, private attachment headers and disconnect cleanup. The public
-`examples/privacy.mjs` demonstrates explicit injection. Synthetic fixtures verify
+`examples/privacy.ts` demonstrates explicit injection. Synthetic fixtures verify
 checkpoint recovery and partial completion; no real user-data deletion was run.
 
 ## Local integration hosts
@@ -1667,7 +1667,7 @@ See [search adapter contracts and example](https://github.com/zeruxjs/zeruxjs/bl
 
 `zeruxjs/route-data-cache` exports `createRouteDataCache` and
 `routeDataCacheKey`; imports allocate no cache or listeners. See
-[the executable public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/examples/route-data-cache.mjs).
+[the executable public-import example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/examples/route-data-cache.ts).
 A host owns one coordinator per application generation and borrows a scoped
 `CacheManager`. Close the coordinator before the manager. This entry is server-only;
 it does not automatically cache routes, responses, headers or cookies.
@@ -1727,7 +1727,7 @@ under an explicit public policy; choose a conservative HTTP max-age separately.
 
 `zeruxjs/privacy` is an opt-in Node-only headless coordinator for host-authorized
 subject exports/erasure. Importing it starts no jobs, routes, service discovery or
-provider calls. [Public example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/examples/privacy.mjs) injects private stores and
+provider calls. [Public example](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zeruxjs/examples/privacy.ts) injects private stores and
 participants. Register it as an explicitly declared custom service, return `close`
 as its disposer, and declare service dependencies so it drains before those stores.
 No new root config key, automatic HTTP API or global manager is introduced.
@@ -1829,7 +1829,7 @@ on disconnect. Signals cannot force-stop arbitrary adapters or roll back committ
 writes; slots and `close()` wait for actual settlement. `close()` aborts owned scopes
 and drains them, but never closes borrowed job/export stores or participant services.
 
-Synthetic checks: `node --test test/privacy.test.mjs` after building. They exercise
+Synthetic checks: `node --experimental-strip-types --test test/privacy.test.ts` after building. They exercise
 preview-only behavior, holds/tenant separation, approval/revocation, lost checkpoints,
 uncertain recovery, private export/expiry, secret rejection and cleanup. No real user
 data was deleted. Production durable stores/receipts, account proof, legal policies,

@@ -249,7 +249,7 @@ manager separately bounds caller observation while retaining native ownership.
 ## Checks and live prerequisites
 
 Build common search, then this package, and run
-`node --test packages/@zeruxjs/search-mille/test/*.test.mjs`.
+`node --experimental-strip-types --test packages/@zeruxjs/search-mille/test/*.test.ts`.
 Fixtures cover accepted/completed/failed tasks, token tampering, tenant/query
 isolation, invalid settings/attributes, unavailable backends, cancellation/drain,
 and the actual official SDK with injected Fetch byte/error/cleanup checks.

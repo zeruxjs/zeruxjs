@@ -30,7 +30,7 @@ and cancellation are supplied by zclivo. No install, server start, port takeover
 unreviewed template loading occurs. Use another port on conflict; never stop an
 unrelated app to make this sample run.
 
-The package README and public `examples/generate.mjs` document exact flags, runtime
+The package README and public `examples/generate.ts` document exact flags, runtime
 versions and renderer prerequisites. Qualification covers all six language/renderer
 combinations with offline local-link installs, actual builds/typechecks and owned
 production HTTP fixtures. It is not clean-registry, live-browser, hydration or
@@ -122,7 +122,7 @@ project prints help. Explicit `--interactive` requires a terminal in the binary;
 forms work. Shared flags cover name/destination, language (`--js`/branch/v0.0.4/`--ts` aliases),
 port, template, renderer, mode, dry-run, interactive and yes. Conflicting spellings,
 unknown flags or repeated values reject. The public example is
-[examples/generate.mjs](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zerux-app/examples/generate.mjs).
+[examples/generate.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/create/create-zerux-app/examples/generate.ts).
 
 This checkout implements new source contracts without a version bump or publication.
 Before using a registry artifact, inspect its exports/help: a published 0.0.4 may
@@ -215,7 +215,7 @@ public imports are fixed reviewed code, not discovered packages or client string
 
 ```sh
 npm run build --workspace=create-zerux-js
-node --test packages/create/create-zerux-app/test/*.test.mjs
+node --experimental-strip-types --test packages/create/create-zerux-app/test/*.test.ts
 ```
 
 All six renderer/language consumers were generated in temporary directories. Each
