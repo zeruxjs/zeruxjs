@@ -72,4 +72,4 @@ For this repository, run `npm run dev` or `npm run build` from `pages/`. Tooling
 - [packages/zuixs/README.md](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zuixs/README.md)
 - [packages/zuixs/src/types.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zuixs/src/types.ts)
 - [packages/zuixs/src/recipes.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/zuixs/src/recipes.ts)
-- [pages/zuix.config.mjs](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/pages/zuix.config.mjs)
+- [pages/zuix.config.ts](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/pages/zuix.config.ts)

@@ -14,27 +14,27 @@
     },
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/docs.js",
-      "version": "e519f9bd0dd8",
-      "bytes": 11344,
-      "sourceBytes": 12957
+      "version": "ab934274632f",
+      "bytes": 11506,
+      "sourceBytes": 18082
     },
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/search.js",
-      "version": "8ea2c8485ce0",
-      "bytes": 20413,
-      "sourceBytes": 2699
+      "version": "28551e1ece59",
+      "bytes": 20799,
+      "sourceBytes": 5770
     },
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/learning.js",
-      "version": "1bdfbaf21afb",
-      "bytes": 14797,
-      "sourceBytes": 12028
+      "version": "5e0cab17eb04",
+      "bytes": 14927,
+      "sourceBytes": 17858
     },
     {
       "url": "/branch/v0.0.4/zeruxjs/assets/offline.js",
-      "version": "568708c29348",
-      "bytes": 2941,
-      "sourceBytes": 5060
+      "version": "2711d1cb7dd5",
+      "bytes": 2994,
+      "sourceBytes": 7111
     }
   ]
 }

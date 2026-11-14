@@ -239,8 +239,8 @@ MIT OR Apache-2.0.
 | `src/types.ts`      | Package-owned domain contracts, field constraints and host callbacks; role data never authenticates a caller.        |
 | `src/validation.ts` | Own-data checks and bounded schema/content/media syntax; files policy and authorization stay with their owners.      |
 | `src/cms.ts`        | SQLite migration identity, scoped reads, optimistic revision commits, fresh host authorization and instance cleanup. |
-| `examples/cms.ts`  | Inert public-import helpers; setup/save/publish remain separate commits.                                             |
-| `test/cms.test.ts` | Synthetic temporary SQLite files; tests close resources before removing owned paths.                                 |
+| `examples/cms.ts`   | Inert public-import helpers; setup/save/publish remain separate commits.                                             |
+| `test/cms.test.ts`  | Synthetic temporary SQLite files; tests close resources before removing owned paths.                                 |
 
 Function/method contracts include typed parameters, return values and relevant
 failure behavior. Constants and loop bindings document provenance/ownership.
