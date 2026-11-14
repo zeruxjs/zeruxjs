@@ -104,22 +104,24 @@ test('signed session and tenant scope control a real SQLite analytics-to-report 
       },
     });
     assert.equal(await analytics.initialize(), true);
-    for (let i = 0; i < 7; i++)
-      {assert.ok(
+    for (let i = 0; i < 7; i++) {
+      assert.ok(
         await analytics.track({
           name: 'view',
           site: 'site-a',
           source: 'server',
         })
-      );}
-    for (let i = 0; i < 3; i++)
-      {assert.ok(
+      );
+    }
+    for (let i = 0; i < 3; i++) {
+      assert.ok(
         await analytics.track({
           name: 'view',
           site: 'site-b',
           source: 'server',
         })
-      );}
+      );
+    }
     /** Test fixture or local value named stores. */
     const stores = {
       'site-a': createDatabaseDocumentStore(

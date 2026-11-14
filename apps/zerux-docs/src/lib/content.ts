@@ -16,9 +16,23 @@ export const repositoryRoot = path.resolve(root, '../..');
  */
 export async function discoverPackages(
   directory: string = path.join(repositoryRoot, 'packages')
-): Promise<Array<{ name: string; version: string; description?: string; source: string; [key: string]: unknown }>> {
+): Promise<
+  Array<{
+    name: string;
+    version: string;
+    description?: string;
+    source: string;
+    [key: string]: unknown;
+  }>
+> {
   /** Public manifest inventory built from JSON only; package modules are never imported. */
-  const records: Array<{ name: string; version: string; description?: string; source: string; [key: string]: unknown }> = [];
+  const records: Array<{
+    name: string;
+    version: string;
+    description?: string;
+    source: string;
+    [key: string]: unknown;
+  }> = [];
   for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
     if (
       !entry.isDirectory() ||

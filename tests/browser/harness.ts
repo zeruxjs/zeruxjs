@@ -101,13 +101,14 @@ export async function runChromium(
   const match = stdout.match(
     /<output id="browser-result"[^>]*>([\s\S]*?)<\/output>/
   );
-  if (!match)
-    {throw new Error(
+  if (!match) {
+    throw new Error(
       'Browser did not produce a result: ' +
         stdout.slice(-700) +
         ' ' +
         stderr.slice(-300)
-    );}
+    );
+  }
   /** Test fixture or local value named result. */
   const result = JSON.parse(
     match[1].replaceAll('&quot;', '"').replaceAll('&amp;', '&')
