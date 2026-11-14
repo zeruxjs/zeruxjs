@@ -2,11 +2,15 @@
 
 Build applications with the ZeruxJS runtime and ecosystem.
 
-## Choose your next step
+## Start learning
 
-- [Build your first application](/zeruxjs/docs/0.0.3/tutorial/) — Create a small notes API, validate requests, and compile it for production.
-- [How ZeruxJS works](/zeruxjs/docs/0.0.3/mental-model/) — Understand the compiler, request runtime, generation lifecycle and package boundaries.
-- [Application configuration handbook](/zeruxjs/docs/0.0.3/configuration-handbook/) — Choose the correct runtime setup, inspect every option and verify a complete typed application.
-- [TypeScript application development](/zeruxjs/docs/0.0.3/typescript/) — Use strict typed configuration, request contexts and inferred package option types without confusing compilation with validation.
-- [Querying databases](/zeruxjs/docs/0.0.3/database-queries/) — Configure named connections and use the JSON operation facade safely.
-- [Package directory](/zeruxjs/docs/0.0.3/packages/) — 48 public packages. Choose a task-focused guide or inspect the source contract.
+[Eight-lesson course](/zeruxjs/docs/0.0.4/learn/) · [Find a solution](/zeruxjs/docs/0.0.4/solutions/) · [Glossary](/zeruxjs/docs/0.0.4/glossary/)
+
+## Browse documentation
+
+- [Get Started](/zeruxjs/docs/0.0.4/introduction/) — Install, understand the runtime and build your first application.
+- [Structure](/zeruxjs/docs/0.0.4/structure/) — Every structure mode, directory and public/private boundary.
+- [Guide](/zeruxjs/docs/0.0.4/guide/) — Connect rendering, data, services and application lifecycles.
+- [API](/zeruxjs/docs/0.0.4/api/) — Public contracts and authored guides for every package.
+- [Deploy](/zeruxjs/docs/0.0.4/deployment/) — Build, export and operate with explicit runtime requirements.
+- [Examples](/zeruxjs/docs/0.0.4/examples/) — Small public-import recipes with prerequisites and expected results.
