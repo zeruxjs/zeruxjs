@@ -761,6 +761,12 @@ Verifier tokens are capped at 16 KiB; verification pending work defaults to 32 (
 
 Fixed `JwtVerificationError.code` values are `JWT_REJECTED`, `JWT_UNAVAILABLE`, `JWT_OVERLOAD`, `JWT_CLOSED`. Messages never include claims/keys/URLs. Original JOSE/network/replay causes remain private server diagnostics and must not be serialized to clients. Issuance never grants authorization automatically. See [JOSE verification options](https://github.com/panva/jose/blob/main/docs/jwt/verify/interfaces/JWTVerifyOptions.md) for the maintained primitive; this wrapper intentionally narrows its supported profiles.
 
+The composed response exposes a readonly string header map, including the required
+CSP field and configured isolation/framing headers. Its synchronous implementation
+validates top-level host settings, then applies each sorted module declaration and
+merges independently approved resource sets. Original host grants remain separate
+from effective output: one module cannot grant permissions to a later module.
+
 
 ## Implementation sources
 

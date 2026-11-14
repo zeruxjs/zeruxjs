@@ -316,6 +316,8 @@ Optional browser loading: `createFontLoadScope({document?,maxPending?})` owns lo
 
 A failed configured font leaves the declared fallback stack available; failed icon fonts cannot guarantee an equivalent fallback glyph, so use explicit text/SVG alternatives where meaning matters. `swap` favors visible fallback text but may shift layout; `optional` can retain fallback, while block/fallback have other timing tradeoffs. Match fallback metrics and test actual scripts/weights; no zero-layout-shift guarantee is made. See [CSS Fonts display controls](https://www.w3.org/TR/css-fonts-4/#font-display-desc). These checks use injected FontFaceSet behavior and real Zuixs compilation, not live font rendering, visual layout measurements or browser/network cancellation certification.
 
+Font loading borrows only the `FontLoadDocument` surface (`fonts.load`); ordinary browser `Document` objects remain compatible. Injected load owners return matched-face arrays whose elements stay unknown because the helper observes only the count. Style injection separately requires a real DOM document. Disposing a loading scope ends observation and releases its timers/listeners; it does not cancel the browser’s native download.
+
 
 ## Implementation sources
 

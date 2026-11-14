@@ -262,6 +262,8 @@ waits for processing, verifies search/tenant/delete behavior and awaits index
 deletion in cleanup. Without those settings it reports a skip. Live failure
 injection, crash recovery and all engine-version qualification remain outstanding.
 
+The borrowed `client.httpRequest` contract requires only the official `get`, `post`, `put` and `patch` method signatures used by this adapter. A normal official SDK client remains compatible. Results at that generic JSON boundary are independently validated by the adapter; method typings do not establish tenant authorization or trusted response contents.
+
 
 ## Implementation sources
 
