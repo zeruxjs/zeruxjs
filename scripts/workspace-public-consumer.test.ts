@@ -168,11 +168,13 @@ test('consumer lock keeps reviewed external resolutions and replaces workspace l
 });
 
 test('isolated consumer retains reviewed npm override semantics', () => {
+  /** Minimal workspace package whose published archive is being resolved. */
   const pkg = {
     name: 'pkg-a',
     version: '0.0.4',
     dependencies: { dependency: '^1.0.0' },
   };
+  /** Committed lock graph containing the workspace and its transitive overrides. */
   const source = {
     lockfileVersion: 3,
     packages: {
@@ -185,7 +187,8 @@ test('isolated consumer retains reviewed npm override semantics', () => {
       },
       'node_modules/dependency': {
         version: '1.0.0',
-        resolved: 'https://registry.npmjs.org/dependency/-/dependency-1.0.0.tgz',
+        resolved:
+          'https://registry.npmjs.org/dependency/-/dependency-1.0.0.tgz',
         integrity: 'sha512-ZXh0ZXJuYWw=',
         dependencies: { minimatch: '^10.2.2' },
       },
@@ -196,6 +199,7 @@ test('isolated consumer retains reviewed npm override semantics', () => {
       },
     },
   };
+  /** Archive metadata supplied to the isolated consumer builder. */
   const archives = [
     {
       pkg,
@@ -204,7 +208,9 @@ test('isolated consumer retains reviewed npm override semantics', () => {
       integrity: 'sha512-eHl6eA==',
     },
   ];
+  /** Temporary source root used to resolve and constrain local override paths. */
   const sourceRoot = path.resolve(os.tmpdir(), 'zerux-reviewed-source');
+  /** Root manifest containing the override policy copied into the consumer. */
   const rootManifest = {
     devDependencies: {
       'postcss-media-query-parser': 'file:vendor/safe-parser.tgz',
@@ -215,7 +221,9 @@ test('isolated consumer retains reviewed npm override semantics', () => {
       'postcss-media-query-parser': '$postcss-media-query-parser',
     },
   };
+  /** Snapshot proving the input root manifest is not mutated. */
   const original = JSON.stringify(rootManifest);
+  /** Generated consumer manifest and lock used for override assertions. */
   const { manifest, lock } = createConsumerLock(source, archives, {
     sourceRoot,
     rootManifest,
@@ -234,54 +242,87 @@ test('isolated consumer retains reviewed npm override semantics', () => {
     undefined
   );
   assert.throws(
-    () => createConsumerLock(source, archives, {
-      sourceRoot,
-      rootManifest: {
-        overrides: { missing: '$nonexistent' },
-      },
-    }),
+    () =>
+      createConsumerLock(source, archives, {
+        sourceRoot,
+        rootManifest: {
+          overrides: { missing: '$nonexistent' },
+        },
+      }),
     /missing root dependency/
   );
   assert.throws(
-    () => createConsumerLock(source, archives, {
-      sourceRoot,
-      rootManifest: {
-        devDependencies: { escape: 'file:../outside.tgz' },
-        overrides: { escape: '$escape' },
-      },
-    }),
+    () =>
+      createConsumerLock(source, archives, {
+        sourceRoot,
+        rootManifest: {
+          devDependencies: { escape: 'file:../outside.tgz' },
+          overrides: { escape: '$escape' },
+        },
+      }),
     /escapes sourceRoot/
   );
 });
 
 test('creator CLI checks distinguish help from exact published version', () => {
   assert.doesNotThrow(() =>
-    assertCreatorCliOutput('create-zenix-js', '--help',
-      'Usage: create-zenix-js create <name>\n--database sqlite', '0.0.4'));
+    assertCreatorCliOutput(
+      'create-zenix-js',
+      '--help',
+      'Usage: create-zenix-js create <name>\n--database sqlite',
+      '0.0.4'
+    )
+  );
   assert.doesNotThrow(() =>
-    assertCreatorCliOutput('create-zyro-app', '--help',
-      '--base-path /site; run create to generate', '0.0.4'));
+    assertCreatorCliOutput(
+      'create-zyro-app',
+      '--help',
+      '--base-path /site; run create to generate',
+      '0.0.4'
+    )
+  );
   assert.doesNotThrow(() =>
-    assertCreatorCliOutput('create-zerux-js', '--version', '0.0.4\n', '0.0.4'));
-  assert.throws(() =>
-    assertCreatorCliOutput('create-zenix-js', '--version', '0.0.3\n', '0.0.4'),
-    /expected 0\.0\.4/);
-  assert.throws(() =>
-    assertCreatorCliOutput('create-zenix-js', '--version', 'v0.0.4', '0.0.4'),
-    /expected 0\.0\.4/);
-  assert.throws(() =>
-    assertCreatorCliOutput('create-zenix-js', '--help', '  ', '0.0.4'),
-    /produced no output/);
-  assert.throws(() =>
-    assertCreatorCliOutput('create-zenix-js', '--help', 'unexpected', '0.0.4'),
-    /usage guidance/);
+    assertCreatorCliOutput('create-zerux-js', '--version', '0.0.4\n', '0.0.4')
+  );
+  assert.throws(
+    () =>
+      assertCreatorCliOutput(
+        'create-zenix-js',
+        '--version',
+        '0.0.3\n',
+        '0.0.4'
+      ),
+    /expected 0\.0\.4/
+  );
+  assert.throws(
+    () =>
+      assertCreatorCliOutput('create-zenix-js', '--version', 'v0.0.4', '0.0.4'),
+    /expected 0\.0\.4/
+  );
+  assert.throws(
+    () => assertCreatorCliOutput('create-zenix-js', '--help', '  ', '0.0.4'),
+    /produced no output/
+  );
+  assert.throws(
+    () =>
+      assertCreatorCliOutput(
+        'create-zenix-js',
+        '--help',
+        'unexpected',
+        '0.0.4'
+      ),
+    /usage guidance/
+  );
 });
 
 test('RabbitMQ published worker types have an installable dependency tree', () => {
+  /** Repository root used to load the committed lock and package manifest. */
   const sourceRoot = path.resolve(import.meta.dirname, '..');
+  /** Committed dependency graph used to prove the published type dependency. */
   const sourceLock = JSON.parse(
     fs.readFileSync(path.join(sourceRoot, 'package-lock.json'), 'utf8')
   );
+  /** RabbitMQ package manifest under the consumer dependency check. */
   const pkg = JSON.parse(
     fs.readFileSync(
       path.join(sourceRoot, 'packages/@zeruxjs/queue-rabbitmq/package.json'),
@@ -292,12 +333,19 @@ test('RabbitMQ published worker types have an installable dependency tree', () =
   // .d.ts. Consumers cannot resolve that type from devDependencies alone.
   assert.equal(typeof pkg.dependencies['@types/amqplib'], 'string');
   assert.equal(pkg.devDependencies?.['@types/amqplib'], undefined);
-  const { lock } = createConsumerLock(sourceLock, [{
-    pkg,
-    relativeDir: 'packages/@zeruxjs/queue-rabbitmq',
-    tarball: path.join(sourceRoot, 'rabbitmq-test-package.tgz'),
-    integrity: 'sha512-cmFiYml0bXAtdGVzdA==',
-  }], { sourceRoot });
+  /** Isolated lock proving the type dependency is reachable after packing. */
+  const { lock } = createConsumerLock(
+    sourceLock,
+    [
+      {
+        pkg,
+        relativeDir: 'packages/@zeruxjs/queue-rabbitmq',
+        tarball: path.join(sourceRoot, 'rabbitmq-test-package.tgz'),
+        integrity: 'sha512-cmFiYml0bXAtdGVzdA==',
+      },
+    ],
+    { sourceRoot }
+  );
   assert.equal(
     lock.packages['node_modules/@types/amqplib'].version,
     sourceLock.packages['node_modules/@types/amqplib'].version

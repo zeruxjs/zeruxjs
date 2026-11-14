@@ -3,7 +3,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // The state file lives beside the repository regardless of where scripts run.
+/** Absolute filename used to anchor development state paths. */
 const __filename = fileURLToPath(import.meta.url);
+/** Directory containing the development helper script. */
 const __dirname = path.dirname(__filename);
 
 /** Local value for state file. */

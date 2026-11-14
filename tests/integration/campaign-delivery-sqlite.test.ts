@@ -65,7 +65,7 @@ test('real SQLite durable delivery CAS and exact report across two connections',
     const first = createDatabaseEmailDeliveryStore(facade(a)),
       second = createDatabaseEmailDeliveryStore(facade(b));
     for (let i = 0; i < 611; i++)
-      assert.equal(await first.create(message(i)), true);
+      {assert.equal(await first.create(message(i)), true);}
     /** Test fixture or local value named stale. */
     const stale = await second.load('delivery000000');
     assert.equal(

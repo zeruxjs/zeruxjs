@@ -89,21 +89,21 @@ test('tenant-isolated saved reports, exact SQLite counts and two-manager CAS con
     });
     assert.equal(await analytics.initialize(), true);
     for (let i = 0; i < 515; i++)
-      assert.ok(
+      {assert.ok(
         await analytics.track({
           name: 'page_view',
           site: 'alice',
           source: 'server',
         })
-      );
+      );}
     for (let i = 0; i < 9; i++)
-      assert.ok(
+      {assert.ok(
         await analytics.track({
           name: 'page_view',
           site: 'bob',
           source: 'server',
         })
-      );
+      );}
     /** Test fixture or local value named alice1. */
     const alice1 = createDatabaseDocumentStore(
       a,

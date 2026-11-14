@@ -74,14 +74,14 @@ test('real SQLite day-grouped states and verified events across two independent 
         'INSERT INTO zerux_email_delivery (id,version,campaign_id,state,updated_at,payload_json) VALUES (?,?,?,?,?,?)'
       );
     for (let i = 0; i < 1200; i++)
-      insert.run(
+      {insert.run(
         `x${i}`,
         1,
         i % 2 ? 'fall' : 'other',
         i % 3 ? 'sent' : 'suppressed',
         day(i % 4 ? '2026-10-10' : '2026-10-11') + i,
         '{}'
-      );
+      );}
     /** Test fixture or local value named ledger. */
     const ledger = createDatabaseProviderOutcomeLedger(db(a));
     await ledger.record({

@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-
 /** Only the npm lock fields consumed by the isolated installer are modeled. */
 type LockedPackage = {
   name?: string;
@@ -54,6 +53,11 @@ type ConsumerOptions = {
 /** Validate CLI behavior by flag instead of assuming help includes the version.
  * A creator's --help must offer usage guidance, while --version must report
  * the exact manifest version. These are deliberately separate CLI contracts.
+ * @param {string} name - Published creator package name.
+ * @param {'--help'|'--version'} flag - CLI contract being validated.
+ * @param {string} output - Captured CLI output.
+ * @param {string} expectedVersion - Exact manifest version required for --version.
+ * @returns {void} Throws when the selected CLI contract is not satisfied.
  */
 export function assertCreatorCliOutput(
   name: string,
@@ -61,15 +65,22 @@ export function assertCreatorCliOutput(
   output: string,
   expectedVersion: string
 ): void {
+  /** Trimmed CLI output used for exact or guidance matching. */
   const printed = output.trim();
   if (!printed) {
     throw Error(`${name}: CLI ${flag} produced no output`);
   }
   if (flag === '--version') {
     if (printed !== expectedVersion) {
-      throw Error(`${name}: CLI --version expected ${expectedVersion}, received ${printed.slice(0, 100)}`);
+      throw Error(
+        `${name}: CLI --version expected ${expectedVersion}, received ${printed.slice(0, 100)}`
+      );
     }
-  } else if (!/(?:usage|options?|commands?|--help|--database|--storage|--base-path|--dry-run|create)/i.test(printed)) {
+  } else if (
+    !/(?:usage|options?|commands?|--help|--database|--storage|--base-path|--dry-run|create)/i.test(
+      printed
+    )
+  ) {
     throw Error(`${name}: CLI --help missing usage guidance`);
   }
 }
@@ -82,23 +93,14 @@ type PackageEntrypoints = {
   exports?: unknown;
 };
 
-
 /**
- * Title: Lock an isolated tarball consumer to the reviewed workspace resolutions.
- * Description: Replaces workspace links with actual archive versions/integrities and retains the reachable external lock graph, so npm ci needs cached tarballs rather than registry metadata.
- * Global Variables: None; filesystem paths are converted to portable file URLs without reading files or environment variables.
- * @param sourceLock Committed package-lock v3 data.
- * @param archives Packed workspace manifests, original relative directories, tarball paths and npm integrity hashes.
- * @param options.sourceRoot Repository directory for resolving committed local archive paths.
- * @param options.rootManifest Root package metadata carrying npm override rules.
- * @returns Consumer manifest and lockfile containing no workspace symlinks.
- */
-/** Perform the create consumer lock operation.
- * @param {unknown} sourceLock - Input value for source lock.
- * @param {unknown} archives - Input value for archives.
- * @param {unknown} root2 - Input value for root2.
- * @param {unknown} root2.sourceRoot - Input value for source root.
- * @returns {unknown} Result produced by create consumer lock.
+ * Replace workspace links with archive records in an isolated consumer lock.
+ *
+ * @param {SourceLock} sourceLock - Committed package-lock v3 data.
+ * @param {PackedWorkspace[]} archives - Packed workspaces and integrity metadata.
+ * @param {ConsumerOptions} options - Optional source and override policy inputs.
+ * @returns {{manifest: Record<string, unknown>; lock: object}} Consumer manifest and lockfile.
+ * @throws {Error} If a workspace, archive, dependency or path boundary is invalid.
  */
 export function createConsumerLock(
   sourceLock: SourceLock,
@@ -109,11 +111,12 @@ export function createConsumerLock(
     throw Error('Consumer requires the committed v3 workspace lock');
   }
   /**
-   * Run the package name callback.
-   * @param {unknown} location - Input value for location.
-   * @returns {unknown} Result produced by package name.
+   * Extract the package name represented by a node_modules lock location.
+   *
+   * @param {string} location - Lockfile location containing a node_modules segment.
+   * @returns {string} Package name suffix after the final node_modules segment.
    */
-  const packageName = (location: string) =>
+  const packageName = (location: string): string =>
     location.slice(
       location.lastIndexOf('node_modules/') + 'node_modules/'.length
     );
@@ -150,6 +153,7 @@ export function createConsumerLock(
     /** Local value for resolved. */
     const resolved = pathToFileURL(tarball).href;
     dependencies[pkg.name] = resolved;
+    /** Original workspace lock record used as the archive's metadata baseline. */
     const workspaceRecord = sourceLock.packages[relativeDir];
     if (!workspaceRecord) {
       throw Error(`${pkg.name}: workspace missing from committed lock`);
@@ -184,22 +188,32 @@ export function createConsumerLock(
   // reject valid overridden resolutions (e.g. minimatch 11 in ESLint tooling).
   // Translate $direct-dependency references against the ORIGINAL root rather
   // than adding unrelated development dependencies to this runtime consumer.
+  /** Root dependency declarations used to resolve $-prefixed overrides. */
   const rootDependencies = {
     ...rootManifest?.dependencies,
     ...rootManifest?.devDependencies,
     ...rootManifest?.optionalDependencies,
     ...rootManifest?.peerDependencies,
   };
+  /**
+   * Rewrite one npm override while preserving root-owned policy and path bounds.
+   *
+   * @param {unknown} value - String or nested override value to rewrite.
+   * @returns {string|NpmOverrides} Safe override value for the isolated lock.
+   * @throws {Error} If the override is malformed or escapes the source root.
+   */
   const rewriteOverride = (value: unknown): string | NpmOverrides => {
     if (typeof value === 'string') {
       let spec = value;
       if (spec.startsWith('$')) {
+        /** Root dependency name referenced by the override shorthand. */
         const dependency = spec.slice(1);
         if (!Object.hasOwn(rootDependencies, dependency)) {
           throw Error(
             `Consumer override references missing root dependency: ${dependency}`
           );
         }
+        /** Original root declaration retained by the isolated consumer. */
         const original = rootDependencies[dependency];
         if (!original) {
           throw Error(
@@ -212,7 +226,9 @@ export function createConsumerLock(
         if (!sourceRoot) {
           throw Error('Local consumer override requires sourceRoot');
         }
+        /** Canonical source root used as the local override boundary. */
         const base = path.resolve(sourceRoot);
+        /** Resolved local override target checked against the source boundary. */
         const target = path.resolve(base, spec.slice('file:'.length));
         if (!target.startsWith(base + path.sep)) {
           throw Error('Local consumer override escapes sourceRoot');
@@ -228,10 +244,11 @@ export function createConsumerLock(
       Object.entries(value).map(([name, spec]) => [name, rewriteOverride(spec)])
     );
   };
+  /** Rewritten root overrides, omitted when the source manifest has none. */
   const overrides = rootManifest?.overrides
     ? rewriteOverride(rootManifest.overrides)
     : undefined;
-  /** Local value for manifest. */
+  /** Isolated consumer manifest containing only selected published workspaces. */
   const manifest = {
     name: 'zerux-public-package-consumer',
     private: true,
@@ -239,24 +256,24 @@ export function createConsumerLock(
     dependencies,
     ...(overrides ? { overrides } : {}),
   };
-  /** Local value for packages. */
+  /** Lockfile package records accumulated during dependency traversal. */
   const packages: Record<string, LockedPackage> = { '': manifest };
-  /** Local value for queue. */
+  /** Pending package locations whose transitive dependencies still need visiting. */
   const queue = Object.keys(dependencies).map((name) => `node_modules/${name}`);
   while (queue.length) {
-    /** Local value for location. */
+    /** Current package location being resolved from the committed graph. */
     const location = queue.pop();
     if (!location || Object.hasOwn(packages, location)) {
       continue;
     }
-    /** Local value for record. */
+    /** Committed package record for the current dependency location. */
     const record = available[location];
     if (!record) {
       throw Error(
         `Consumer dependency lacks a committed resolution: ${location}`
       );
     }
-    /** Local value for locked. */
+    /** Mutable copy of the package record normalized for the consumer lock. */
     const locked = { ...record };
     if (!locked.resolved || !locked.integrity) {
       // npm can omit these fields for a repeated nested version. Reuse only an identical package/version already recorded in the committed lock.
@@ -314,7 +331,7 @@ export function createConsumerLock(
         if (!parent) {
           break;
         }
-        /** Local value for nested. */
+        /** Parent package boundary used to locate hoisted dependencies. */
         const nested = parent.lastIndexOf('/node_modules/');
         parent = nested < 0 ? '' : parent.slice(0, nested);
       }
@@ -337,9 +354,11 @@ export function createConsumerLock(
   };
 }
 /** Perform the check consumer selection operation.
- * @param {unknown} plan - Input value for plan.
- * @param {unknown} only - Input value for only.
- * @returns {unknown} Result produced by check consumer selection.
+ * @param {object} plan - Validated package graph.
+ * @param {boolean} plan.ok - Whether dependency planning succeeded.
+ * @param {{name: string}[]} plan.order - Ordered public packages in the plan.
+ * @param {string} [only] - Optional comma-separated package selection.
+ * @returns {string[]} Ordered package names selected for the consumer.
  */
 export function checkConsumerSelection(
   plan: { ok: boolean; order: { name: string }[] },
@@ -384,7 +403,10 @@ function collect(record: unknown, output: string[] = []): string[] {
  * @param {unknown} pkg - Input value for pkg.
  * @returns {unknown} Result produced by check entry targets.
  */
-export function checkEntryTargets(dir: string, pkg: PackageEntrypoints): string[] {
+export function checkEntryTargets(
+  dir: string,
+  pkg: PackageEntrypoints
+): string[] {
   /** Local value for targets. */
   const targets = [
     ...new Set([

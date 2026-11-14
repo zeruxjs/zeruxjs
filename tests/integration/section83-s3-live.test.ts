@@ -24,15 +24,17 @@ test(
     if (
       endpoint.protocol !== 'https:' &&
       !['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname)
-    )
+    ) {
       throw Error('Untrusted plaintext S3 endpoint');
+    }
     /** Test fixture or local value named ephemeral. */
     const ephemeral = process.env.LAB_S3_EPHEMERAL_BUCKET === '1';
     if (
       ephemeral &&
       !['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname)
-    )
+    ) {
       throw Error('Ephemeral bucket creation requires loopback S3 endpoint');
+    }
     /** Test fixture or local value named bucket. */
     const bucket = ephemeral
       ? `zerux-lab-${randomUUID().slice(0, 12)}`
@@ -71,6 +73,8 @@ test(
     /** Test fixture or local value named payload. */
     const payload = Buffer.from('Zerux package-only storage acceptance.');
     let createdBucket = false;
+    /** Cleanup failure retained until the protected operation has settled. */
+    let cleanupError: unknown;
     try {
       if (ephemeral) {
         /** AWS command used only for explicitly enabled ephemeral buckets. */
@@ -97,8 +101,9 @@ test(
       for await (const chunk of await manager.read(original, {
         start: 0,
         end: 4,
-      }))
+      })) {
         chunks.push(chunk);
+      }
       assert.equal(Buffer.concat(chunks).toString(), 'Zerux');
       await assert.rejects(
         manager.put(original, payload, { contentType: 'text/plain' }),
@@ -121,13 +126,13 @@ test(
         )
       );
     } finally {
-      let cleanupError;
-      for (const item of [duplicate, original])
+      for (const item of [duplicate, original]) {
         try {
           await manager.delete(item);
         } catch (error) {
           cleanupError ??= error;
         }
+      }
       if (createdBucket) {
         try {
           /** AWS command used to remove the explicitly created test bucket. */
@@ -144,8 +149,9 @@ test(
       } catch (error) {
         cleanupError ??= error;
       }
-      // eslint-disable-next-line no-unsafe-finally -- Cleanup failure must propagate; this owner explicitly reports failed resource release.
-      if (cleanupError) throw cleanupError;
+    }
+    if (cleanupError) {
+      throw cleanupError;
     }
   }
 );

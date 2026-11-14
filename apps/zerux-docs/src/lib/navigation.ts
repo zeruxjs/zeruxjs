@@ -10,49 +10,51 @@ export type NavPage = Readonly<{
 
 /** Authored documentation taxonomy. URLs remain versioned and existing slugs never move. */
 export const navigationGroups = Object.freeze(
-  ([
-    {
-      id: 'start',
-      label: 'Get Started',
-      slug: 'introduction',
-      description:
-        'Install, understand the runtime and build your first application.',
-    },
-    {
-      id: 'structure',
-      label: 'Structure',
-      slug: 'structure',
-      description:
-        'Every structure mode, directory and public/private boundary.',
-    },
-    {
-      id: 'guide',
-      label: 'Guide',
-      slug: 'guide',
-      description:
-        'Connect rendering, data, services and application lifecycles.',
-    },
-    {
-      id: 'api',
-      label: 'API',
-      slug: 'api',
-      description: 'Public contracts and authored guides for every package.',
-    },
-    {
-      id: 'deploy',
-      label: 'Deploy',
-      slug: 'deployment',
-      description:
-        'Build, export and operate with explicit runtime requirements.',
-    },
-    {
-      id: 'examples',
-      label: 'Examples',
-      slug: 'examples',
-      description:
-        'Small public-import recipes with prerequisites and expected results.',
-    },
-  ] as const).map((group) => Object.freeze(group))
+  (
+    [
+      {
+        id: 'start',
+        label: 'Get Started',
+        slug: 'introduction',
+        description:
+          'Install, understand the runtime and build your first application.',
+      },
+      {
+        id: 'structure',
+        label: 'Structure',
+        slug: 'structure',
+        description:
+          'Every structure mode, directory and public/private boundary.',
+      },
+      {
+        id: 'guide',
+        label: 'Guide',
+        slug: 'guide',
+        description:
+          'Connect rendering, data, services and application lifecycles.',
+      },
+      {
+        id: 'api',
+        label: 'API',
+        slug: 'api',
+        description: 'Public contracts and authored guides for every package.',
+      },
+      {
+        id: 'deploy',
+        label: 'Deploy',
+        slug: 'deployment',
+        description:
+          'Build, export and operate with explicit runtime requirements.',
+      },
+      {
+        id: 'examples',
+        label: 'Examples',
+        slug: 'examples',
+        description:
+          'Small public-import recipes with prerequisites and expected results.',
+      },
+    ] as const
+  ).map((group) => Object.freeze(group))
 );
 /** Legacy structure-topic identities retain their existing URLs while joining the Structure collection. */
 const structureSlugs = new Set([
@@ -91,7 +93,9 @@ export function groupFor(
   let id;
   if (
     page.package ||
-    ['Packages', 'API reference', 'Package reference'].includes(page.section ?? '')
+    ['Packages', 'API reference', 'Package reference'].includes(
+      page.section ?? ''
+    )
   ) {
     id = 'api';
   } else if (
@@ -117,6 +121,7 @@ export function groupFor(
   } else {
     id = 'guide';
   }
+  /** Resolved collection record selected from the validated navigation ID. */
   const group = navigationGroups.find((candidate) => candidate.id === id);
   if (!group) {
     // All default branches above select one of these six authored groups.
@@ -129,7 +134,10 @@ export function groupFor(
  * @param {object[]} pages - Validated complete page inventory.
  * @returns {object[]} Same-version collection members in their existing navigation order.
  */
-export function groupPages<T extends NavPage>(page: T, pages: readonly T[]): T[] {
+export function groupPages<T extends NavPage>(
+  page: T,
+  pages: readonly T[]
+): T[] {
   return pages.filter(
     (item) =>
       item.version === page.version && groupFor(item).id === groupFor(page).id
@@ -141,7 +149,9 @@ export function groupPages<T extends NavPage>(page: T, pages: readonly T[]): T[]
  * @returns {string} Human-readable family label with a runtime/tooling fallback.
  */
 export function packageFamily(name: string | undefined): string {
-  if (!name) return 'Runtime and tooling';
+  if (!name) {
+    return 'Runtime and tooling';
+  }
   if (/(?:cache|db|search)(?:-|$)/.test(name)) {
     return 'Data and search';
   }

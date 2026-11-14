@@ -37,7 +37,7 @@ for (const [label, dialect, result] of [
     { affectedRows: 1 },
   ],
 ])
-  test(`${label} version-checked UPDATE has atomic id+version WHERE and usable affected row count`, async () => {
+  {test(`${label} version-checked UPDATE has atomic id+version WHERE and usable affected row count`, async () => {
     /** Test fixture or local value named seen. */
     const seen = [];
     /** Test fixture or local value named connector. */
@@ -69,4 +69,4 @@ for (const [label, dialect, result] of [
     assert.match(seen[0].sql, /id/);
     assert.deepEqual(seen[0].params.slice(-2), ['backfill_2024', 4]);
     assert.equal(response.affectedCount ?? response.rowCount, 1);
-  });
+  });}

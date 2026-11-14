@@ -51,14 +51,14 @@ test('real SQLite counts >500 persisted events and UTC day totals without raw-ro
     /** Test fixture or local value named when. */
     const when = Date.now();
     for (let i = 0; i < 1101; i++)
-      assert.ok(
+      {assert.ok(
         await analytics.track({
           name: i % 2 ? 'visit' : 'purchase',
           source: 'web',
           site: i % 2 ? 'siteA' : 'siteB',
           occurredAt: when,
         })
-      );
+      );}
     /** Test fixture or local value named counts. */
     const counts = await analytics.aggregate({ groupBy: 'event' });
     assert.equal(counts.total, 1101);

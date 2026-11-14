@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { getFolders } from './helper.ts';
 
 // Workspace discovery must remain relative to this script on every platform.
+/** Absolute filename used to anchor workspace discovery. */
 const __filename = fileURLToPath(import.meta.url);
+/** Directory containing the install script. */
 const __dirname = path.dirname(__filename);
 
 /** Local value for dirs to scan. */

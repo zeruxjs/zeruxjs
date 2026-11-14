@@ -52,16 +52,23 @@ const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'zerux-public-consumer-'));
 /** Local value for consumer. */
 const consumer = path.join(temp, 'consumer');
 /**
- * Run the log callback.
- * @param {unknown} name - Input value for name.
- * @param {unknown} bin - Input value for bin.
- * @param {unknown} callArgs - Input value for call args.
- * @param {unknown} cwd - Input value for cwd.
- * @param {unknown} timeout - Input value for timeout.
- * @returns {unknown} Result produced by log.
- * @throws {Error} If the callback rejects or validation fails.
+ * Run a bounded offline subprocess and return its standard output.
+ *
+ * @param {string} name - Human-readable operation name for failure messages.
+ * @param {string} bin - Executable path or npm command selector.
+ * @param {string[]} callArgs - Arguments passed to the executable.
+ * @param {string} cwd - Working directory for the subprocess.
+ * @param {number} timeout - Maximum subprocess duration in milliseconds.
+ * @returns {string} Captured standard output from the successful subprocess.
+ * @throws {Error} If the subprocess exits unsuccessfully or exceeds its limits.
  */
-const log = (name, bin, callArgs, cwd, timeout = 180000) => {
+const log = (
+  name: string,
+  bin: string,
+  callArgs: string[],
+  cwd: string,
+  timeout = 180000
+): string => {
   /** Local value for invocation. */
   const invocation =
     bin === npm ? npmCommand(callArgs) : { command: bin, args: callArgs };
@@ -83,8 +90,10 @@ const log = (name, bin, callArgs, cwd, timeout = 180000) => {
     // Declaration acceptance may uncover multiple independent missing type
     // packages. Preserve a bounded diagnostic batch so they can be fixed in
     // one pass, while keeping other subprocess errors concise.
+    /** Diagnostic byte limit preserving useful declaration failures without unbounded logs. */
     const detailLimit =
       name === 'isolated TypeScript declaration resolution' ? 32 * 1024 : 1000;
+    /** Bounded subprocess diagnostic assembled without exposing unrelated output. */
     const detail = [run.error?.message, run.stderr?.trim(), run.stdout?.trim()]
       .filter(Boolean)
       .join('\n')
@@ -157,10 +166,11 @@ try {
   // Include the root's reviewed npm override policy in the isolated consumer.
   // The workspace lock alone does not record why a selected version differs
   // from the upstream dependency range, so dropping these rules breaks npm ci.
+  /** Root manifest whose override policy must remain active in the consumer. */
   const rootManifest = JSON.parse(
     fs.readFileSync(path.join(root, 'package.json'), 'utf8')
   );
-  /** Local value for locked. */
+  /** Consumer lock produced from the packed archives and committed graph. */
   const locked = createConsumerLock(sourceLock, archives, {
     sourceRoot: root,
     rootManifest,

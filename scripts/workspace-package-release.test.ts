@@ -106,11 +106,13 @@ test('missing artifact is blocked, but missing generated output is only a source
   );
 });
 test('wildcard dist exports cannot replace concrete packaged entry points', (t) => {
+  /** Temporary package fixture and its manifest under inspection. */
   const { dir, pkg } = fixture(t);
   pkg.exports = {
     '.': { types: './dist/index.d.ts', import: './dist/index.js' },
     './dist/*': './dist/*',
   };
+  /** Publishability report expected to reject the wildcard-only entry. */
   const report = inspectPublishablePackage({
     name: 'example',
     dir,
@@ -121,7 +123,8 @@ test('wildcard dist exports cannot replace concrete packaged entry points', (t) 
   });
   assert.ok(
     report.errors.some(
-      (issue) => issue.code === 'EXPORT_NOT_PACKED' && issue.detail === './dist/*'
+      (issue) =>
+        issue.code === 'EXPORT_NOT_PACKED' && issue.detail === './dist/*'
     )
   );
 });

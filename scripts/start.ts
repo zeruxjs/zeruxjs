@@ -7,7 +7,9 @@ import { getSafeName, readState, writeState } from './helper.ts';
 import type { Folder, TrackedProcess } from './helper.ts';
 
 // Always resolve package/application paths from the repository script directory.
+/** Absolute filename used to anchor start script paths. */
 const __filename = fileURLToPath(import.meta.url);
+/** Directory containing the start script. */
 const __dirname = path.dirname(__filename);
 
 /** Perform the scan apps operation.

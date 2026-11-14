@@ -76,7 +76,9 @@ test('SQLite historical backfill over 600 events: stable keyset pages, unique fa
       created += batch.created;
       cycles++;
       cursor = batch.nextCursor;
-      if (!batch.hasMore) break;
+      if (!batch.hasMore) {
+        break;
+      }
     } while (cycles < 20);
     assert.equal(scanned, 623);
     assert.equal(created, 623 + 312);

@@ -8,7 +8,9 @@ import type { WatcherEvent } from 'zlook';
 import type { Folder, TrackedProcess } from './helper.ts';
 
 // Anchor child-process and workspace paths to this script, not the caller's cwd.
+/** Absolute filename used to anchor the development watcher. */
 const __filename = fileURLToPath(import.meta.url);
+/** Directory containing this development script and its sibling tools. */
 const __dirname = path.dirname(__filename);
 
 if (process.argv.includes('--run-packages-watcher')) {

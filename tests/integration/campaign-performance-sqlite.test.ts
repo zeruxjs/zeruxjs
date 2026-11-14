@@ -61,7 +61,7 @@ test('real SQLite exact grouped reporting and provider-event replay across conne
       deliveries = createDatabaseEmailDeliveryStore(dbA),
       ledger = createDatabaseProviderOutcomeLedger(dbB);
     for (let i = 0; i < 1203; i++)
-      assert.equal(await deliveries.create(row(i)), true);
+      {assert.equal(await deliveries.create(row(i)), true);}
     /** Test fixture or local value named evt. */
     const evt = {
       provider: 'relay',

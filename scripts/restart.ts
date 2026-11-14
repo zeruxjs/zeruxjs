@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { readState } from './helper.ts';
 
 // Resolve the stop/start script entrypoints without relying on the invoking cwd.
+/** Absolute filename used to anchor restart script paths. */
 const __filename = fileURLToPath(import.meta.url);
+/** Directory containing the restart script. */
 const __dirname = path.dirname(__filename);
 
 /** Local value for state. */

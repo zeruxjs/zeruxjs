@@ -35,7 +35,7 @@ for (const [name, dialect] of [
     },
   ],
 ])
-  test(`${name} compilation supports composite uniqueness and resumable keyset queries`, async () => {
+  {test(`${name} compilation supports composite uniqueness and resumable keyset queries`, async () => {
     /** Test fixture or local value named seen. */
     const seen = [];
     /** Test fixture or local value named connector. */
@@ -63,7 +63,7 @@ for (const [name, dialect] of [
       // This isolated compilation fixture explicitly requests unconditional DDL.
       // Production callers must use an owning migration/external-index policy.
       await connector.execute({ ...index, ifNotExists: false }, context);
-    } else await connector.execute(index, context);
+    } else {await connector.execute(index, context);}
     await connector.execute(
       {
         op: 'select',
@@ -88,4 +88,4 @@ for (const [name, dialect] of [
     assert.match(seen[1].sql, /id/);
     assert.deepEqual(seen[1].params.slice(0, 3), [100, 200, 'cursor-id']);
     assert.ok(seen[1].sql.includes(name === 'postgresql' ? '$3' : '?'));
-  });
+  });}

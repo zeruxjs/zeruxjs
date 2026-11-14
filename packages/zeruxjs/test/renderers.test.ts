@@ -403,14 +403,21 @@ test('client graph emits deterministic private/public manifests and executable l
     try {
       // A build manifest controls the requested PATH only. Keep the request's
       // destination host and ephemeral test port separate and non-overridable.
-      assert.match(assetUrl, /^\/_zerux\/client\/[0-9a-f]{24}\/[0-9a-f]+\.js$/);
+      /** Validated same-origin asset path used by the loopback request. */
+      const assetPath = /^\/_zerux\/client\/[0-9a-f]{24}\/[0-9a-f]+\.js$/.exec(
+        assetUrl
+      )?.[0];
+      if (!assetPath) {
+        throw Error('Generated asset URL failed the expected path policy');
+      }
       /** Isolated loopback HTTP response from the explicitly bound fixture. */
       const served = await new Promise((resolve, reject) => {
+        /** Loopback request used to verify the generated asset response. */
         const request = httpGet(
           {
             hostname: '127.0.0.1',
             port: host.address().port,
-            path: assetUrl,
+            path: assetPath,
           },
           async (response) => {
             try {

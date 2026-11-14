@@ -3,7 +3,6 @@ import { installNavigationPrefetch } from '@zeruxjs/performance/navigation';
 
 installThemeControl();
 
-/** Optional local package filtering. No network requests, analytics, cookies or storage. */
 /** Package search input owned by the static homepage. */
 const input = document.querySelector<HTMLInputElement>('#package-filter')!;
 if (input) {
@@ -11,11 +10,14 @@ if (input) {
   const cards = [...document.querySelectorAll<HTMLElement>('.package')];
   input.closest<HTMLElement>('.filter')!.hidden = false;
   input.addEventListener('input', () => {
+    /** Normalized search text used to filter the static package cards. */
     const query = input.value.trim().toLowerCase();
     let visible = 0;
     for (const card of cards) {
       card.hidden = !card.textContent.toLowerCase().includes(query);
-      if (!card.hidden) visible++;
+      if (!card.hidden) {
+        visible++;
+      }
     }
     document.querySelector<HTMLElement>('#package-status')!.textContent =
       `${visible} of ${cards.length} packages`;
@@ -29,7 +31,9 @@ const navigation = installNavigationPrefetch({
   delayMs: 120,
 });
 window.addEventListener('pagehide', (event) => {
-  if (!event.persisted) navigation.destroy();
+  if (!event.persisted) {
+    navigation.destroy();
+  }
 });
 
 /** Enhance static examples with keyboard-accessible tabs; both examples remain readable without JS.
@@ -38,7 +42,9 @@ window.addEventListener('pagehide', (event) => {
 function installExampleTabs() {
   /** Static tablist enhanced with keyboard and ARIA behavior. */
   const list = document.querySelector<HTMLButtonElement>('[data-code-tabs]')!;
-  if (!list) return;
+  if (!list) {
+    return;
+  }
   /** Tab buttons belonging to the example tablist. */
   const tabs = [...list.querySelectorAll<HTMLButtonElement>('[data-code-tab]')];
   /** Panels associated with the example tabs. */
@@ -53,12 +59,14 @@ function installExampleTabs() {
    */
   const select = (tab: HTMLButtonElement): void => {
     for (const button of tabs) {
+      /** Whether this button is the active example tab. */
       const selected = button === tab;
       button.setAttribute('aria-selected', String(selected));
       button.tabIndex = selected ? 0 : -1;
     }
-    for (const panel of panels)
+    for (const panel of panels) {
       panel.hidden = panel.dataset.codePanel !== tab.dataset.codeTab;
+    }
   };
   list.setAttribute('role', 'tablist');
   for (const tab of tabs) {
@@ -66,12 +74,17 @@ function installExampleTabs() {
     tab.addEventListener('click', () => select(tab));
     tab.addEventListener('keydown', (event) => {
       let index = tabs.indexOf(tab);
-      if (event.key === 'ArrowRight') index = (index + 1) % tabs.length;
-      else if (event.key === 'ArrowLeft')
+      if (event.key === 'ArrowRight') {
+        index = (index + 1) % tabs.length;
+      } else if (event.key === 'ArrowLeft') {
         index = (index - 1 + tabs.length) % tabs.length;
-      else if (event.key === 'Home') index = 0;
-      else if (event.key === 'End') index = tabs.length - 1;
-      else return;
+      } else if (event.key === 'Home') {
+        index = 0;
+      } else if (event.key === 'End') {
+        index = tabs.length - 1;
+      } else {
+        return;
+      }
       event.preventDefault();
       select(tabs[index]);
       tabs[index].focus();
@@ -96,7 +109,9 @@ function installCommandCopy() {
   const command = document.querySelector<HTMLElement>('#install-command')!;
   /** Status element reporting copy success or fallback instructions. */
   const status = document.querySelector<HTMLButtonElement>('#copy-status')!;
-  if (!button || !command || !status || !navigator.clipboard?.writeText) return;
+  if (!button || !command || !status || !navigator.clipboard?.writeText) {
+    return;
+  }
   button.hidden = false;
   button.addEventListener('click', async () => {
     try {
@@ -124,8 +139,12 @@ function installHomeMotion() {
   /** Active Web Animations handles owned by this page. */
   const animations = new Set<Animation>();
   let paused = false;
-  /** Whether motion is allowed by both the user preference and local toggle. */
-  const allowed = () => !paused && !preference.matches;
+  /**
+   * Determine whether motion is allowed by both user preference and local toggle.
+   *
+   * @returns {boolean} Whether animations may currently run.
+   */
+  const allowed = (): boolean => !paused && !preference.matches;
   /**
    * Animate a visible element once and release it after settlement.
    *
@@ -134,7 +153,10 @@ function installHomeMotion() {
    * @returns {void} Tracks the animation while it is active.
    */
   const reveal = (element: Element, delay = 0): void => {
-    if (!allowed() || typeof element.animate !== 'function') return;
+    if (!allowed() || typeof element.animate !== 'function') {
+      return;
+    }
+    /** Animation handle retained until the browser settles or rejects it. */
     const animation = element.animate(
       [
         { opacity: 0, transform: 'translateY(28px)' },
@@ -153,6 +175,7 @@ function installHomeMotion() {
       () => animations.delete(animation)
     );
   };
+  /** Optional observer that owns visibility-triggered reveal work. */
   const observer =
     typeof IntersectionObserver === 'function'
       ? new IntersectionObserver(
@@ -169,26 +192,37 @@ function installHomeMotion() {
       : null;
   for (const element of document.querySelectorAll<HTMLAnchorElement>(
     '#why article, #how-it-works > div, #ecosystem article, main > div > section:last-child'
-  ))
+  )) {
     observer?.observe(element);
+  }
   /**
    * Synchronize CSS motion state and the accessible pause button.
    *
    * @returns {void} Cancels active effects when motion is disabled.
    */
   const render = () => {
+    /** Whether current preferences require all active motion to stop. */
     const stopped = !allowed();
-    if (stopped) document.documentElement.dataset.motion = 'paused';
-    else document.documentElement.dataset.motion = 'running';
-    if (stopped) for (const animation of animations) animation.cancel();
+    if (stopped) {
+      document.documentElement.dataset.motion = 'paused';
+    } else {
+      document.documentElement.dataset.motion = 'running';
+    }
+    if (stopped) {
+      for (const animation of animations) {
+        animation.cancel();
+      }
+    }
     if (toggle) {
       toggle.hidden = false;
       toggle.disabled = preference.matches;
-      toggle.textContent = preference.matches
-        ? 'Reduced motion enabled'
-        : paused
-          ? 'Resume animations'
-          : 'Pause animations';
+      let label = 'Pause animations';
+      if (preference.matches) {
+        label = 'Reduced motion enabled';
+      } else if (paused) {
+        label = 'Resume animations';
+      }
+      toggle.textContent = label;
       toggle.setAttribute('aria-pressed', String(stopped));
     }
   };
@@ -200,19 +234,27 @@ function installHomeMotion() {
   // Animate code-panel changes as well as the page sections.
   for (const tab of document.querySelectorAll<HTMLButtonElement>(
     '[data-code-tab]'
-  ))
+  )) {
     tab.addEventListener('click', () => {
+      /** Code panel revealed when its tab receives focus or activation. */
       const panel = document.getElementById(
         tab.getAttribute('aria-controls') ?? ''
       );
-      if (panel) reveal(panel);
+      if (panel) {
+        reveal(panel);
+      }
     });
+  }
   render();
   window.addEventListener('pagehide', (event) => {
-    if (event.persisted) return;
+    if (event.persisted) {
+      return;
+    }
     observer?.disconnect();
     preference.removeEventListener('change', render);
-    for (const animation of animations) animation.cancel();
+    for (const animation of animations) {
+      animation.cancel();
+    }
   });
 }
 installHomeMotion();
