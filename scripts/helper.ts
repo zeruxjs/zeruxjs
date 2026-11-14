@@ -1,12 +1,10 @@
-import { fileURLToPath } from 'node:url';
-/** Absolute script filename for explicit child-process entrypoints. */
-const __filename = fileURLToPath(import.meta.url);
-/** Directory anchor for repository-owned paths. */
-const __dirname = path.dirname(__filename);
-/** Local value for fs. */
 import fs from 'node:fs';
-/** Local value for path. */
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// The state file lives beside the repository regardless of where scripts run.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /** Local value for state file. */
 const STATE_FILE = path.join(__dirname, '../.dev-container/.env-state.json');

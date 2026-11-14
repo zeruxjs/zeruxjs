@@ -20,6 +20,15 @@
       "binding": "source package version match"
     },
     {
+      "name": "@aws-sdk/nested-clients",
+      "version": "3.997.48",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/aws/aws-sdk-js-v3/v3.1152.0/LICENSE",
+      "sha256": "edea91454b811f127fbdea3d86f378f6719bd372ed440abf82b232f6fca06c3d",
+      "file": "notices/edea91454b811f127fbdea3d86f378f6719bd372ed440abf82b232f6fca06c3d.txt",
+      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
+    },
+    {
       "name": "@esbuild/aix-ppc64",
       "version": "0.28.2",
       "license": "MIT",
@@ -228,6 +237,15 @@
       "file": "notices/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
     },
     {
+      "name": "@humanfs/types",
+      "version": "0.15.0",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/humanwhocodes/humanfs/85069f193cbacc371c3beb649ce746f8c5a493be/packages/core/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "file": "notices/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
+      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
+    },
+    {
       "name": "@msgpackr-extract/msgpackr-extract-darwin-arm64",
       "version": "3.0.4",
       "license": "MIT",
@@ -342,6 +360,15 @@
       "binding": "release tag"
     },
     {
+      "name": "boolbase",
+      "version": "1.0.0",
+      "license": "ISC",
+      "source": "https://raw.githubusercontent.com/fb55/boolbase/54811f01c797a6bb1c263183ae90b7dd627e0638/LICENSE",
+      "sha256": "cdf4d87ae0a6c160227263bf4e39a0a10e30e89ae7256e0f7ac7bde0836552c6",
+      "file": "notices/cdf4d87ae0a6c160227263bf4e39a0a10e30e89ae7256e0f7ac7bde0836552c6.txt",
+      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
+    },
+    {
       "name": "esrecurse",
       "version": "4.3.0",
       "license": "BSD-2-Clause",
@@ -359,6 +386,15 @@
       "binding": "release tag"
     },
     {
+      "name": "keyv",
+      "version": "4.5.4",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/jaredwray/keyv/e02ef9b9271fe48d8e1da6561f18e055995bfb1f/LICENSE",
+      "sha256": "1f7dca26d2d328c3dbb9b6fe3b15ec3cda08ffe2288e47b73d617454b256f959",
+      "file": "notices/1f7dca26d2d328c3dbb9b6fe3b15ec3cda08ffe2288e47b73d617454b256f959.txt",
+      "binding": "Historical upstream project full MIT notice; installed 4.5.4 declares MIT. Preserve original upstream attribution verbatim; this is project evidence, not an exact release source match."
+    },
+    {
       "name": "legacy-javascript",
       "version": "0.0.3",
       "license": "Apache-2.0",
@@ -373,6 +409,15 @@
       "source": "https://raw.githubusercontent.com/format-message/format-message/v6.2.0/LICENSE-MIT",
       "sha256": "60a3946f201f9fa04ad5b02f24c5d92f07ccfdee3948900723c70ca23e4055fd",
       "file": "notices/60a3946f201f9fa04ad5b02f24c5d92f07ccfdee3948900723c70ca23e4055fd.txt"
+    },
+    {
+      "name": "natural-compare",
+      "version": "1.4.0",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/litejs/natural-compare-lite/a8e1e32c85713ba7d079445207a808ce6f4852f9/LICENSE",
+      "sha256": "353fe762ba595bf1ffe786acf0f5984bb164205901d74f258af195fc8228c67d",
+      "file": "notices/353fe762ba595bf1ffe786acf0f5984bb164205901d74f258af195fc8228c67d.txt",
+      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
     },
     {
       "name": "pg-types",
@@ -408,48 +453,13 @@
       "file": "notices/a57b250a5bf03d7afe55b74063313f2adb7b00d546c0ab149a89398333fe3cc8.txt"
     },
     {
-      "name": "speedline-core",
-      "version": "1.4.3",
-      "license": "MIT",
-      "source": "https://raw.githubusercontent.com/paulirish/speedline/v1.4.3/license",
-      "sha256": "b00891eed6af8209b62d55813d49905a78becc38116244881a6498a13cf6ae4a",
-      "file": "notices/b00891eed6af8209b62d55813d49905a78becc38116244881a6498a13cf6ae4a.txt"
-    },
-    {
-      "name": "@humanfs/types",
-      "version": "0.15.0",
-      "license": "Apache-2.0",
-      "source": "https://raw.githubusercontent.com/humanwhocodes/humanfs/85069f193cbacc371c3beb649ce746f8c5a493be/packages/core/LICENSE",
-      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
-      "file": "notices/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
-      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
-    },
-    {
-      "name": "@aws-sdk/nested-clients",
-      "version": "3.997.48",
-      "license": "Apache-2.0",
-      "source": "https://raw.githubusercontent.com/aws/aws-sdk-js-v3/v3.1152.0/LICENSE",
-      "sha256": "edea91454b811f127fbdea3d86f378f6719bd372ed440abf82b232f6fca06c3d",
-      "file": "notices/edea91454b811f127fbdea3d86f378f6719bd372ed440abf82b232f6fca06c3d.txt",
-      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
-    },
-    {
-      "name": "boolbase",
-      "version": "1.0.0",
+      "name": "saxes",
+      "version": "6.0.0",
       "license": "ISC",
-      "source": "https://raw.githubusercontent.com/fb55/boolbase/54811f01c797a6bb1c263183ae90b7dd627e0638/LICENSE",
-      "sha256": "cdf4d87ae0a6c160227263bf4e39a0a10e30e89ae7256e0f7ac7bde0836552c6",
-      "file": "notices/cdf4d87ae0a6c160227263bf4e39a0a10e30e89ae7256e0f7ac7bde0836552c6.txt",
-      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
-    },
-    {
-      "name": "natural-compare",
-      "version": "1.4.0",
-      "license": "MIT",
-      "source": "https://raw.githubusercontent.com/litejs/natural-compare-lite/a8e1e32c85713ba7d079445207a808ce6f4852f9/LICENSE",
-      "sha256": "353fe762ba595bf1ffe786acf0f5984bb164205901d74f258af195fc8228c67d",
-      "file": "notices/353fe762ba595bf1ffe786acf0f5984bb164205901d74f258af195fc8228c67d.txt",
-      "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
+      "source": "https://raw.githubusercontent.com/lddubeau/saxes/v6.0.0/LICENSE",
+      "sha256": "0fac2374380621b22e6b50451057721a9c52935b02d16d106a9f04897f061d0e",
+      "file": "notices/0fac2374380621b22e6b50451057721a9c52935b02d16d106a9f04897f061d0e.txt",
+      "binding": "Exact upstream v6.0.0 LICENSE (Git blob 187f3ba399862022f4e670b2a3a1dbc6d7e6a800)."
     },
     {
       "name": "slick",
@@ -461,13 +471,30 @@
       "binding": "Upstream project full notice; installed release explicitly declares this license. Preserve source attribution verbatim."
     },
     {
-      "name": "keyv",
-      "version": "4.5.4",
+      "name": "spdx-exceptions",
+      "version": "2.5.0",
+      "license": "CC-BY-3.0",
+      "source": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/CC-BY-3.0.txt",
+      "sha256": "8e54d724fa22dccb05971fd377b53ddadd3c3ebb69a6e2ee10b0a088277cfb94",
+      "file": "notices/8e54d724fa22dccb05971fd377b53ddadd3c3ebb69a6e2ee10b0a088277cfb94.txt",
+      "binding": "Complete CC-BY-3.0 legal-code text from Debian TeX Live doclicense; the linked SPDX license text is an independent reference, not a byte-identical source for this notice or a publisher release-specific notice."
+    },
+    {
+      "name": "spdx-license-ids",
+      "version": "3.0.24",
+      "license": "CC0-1.0",
+      "source": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/CC0-1.0.txt",
+      "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+      "file": "notices/a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499.txt",
+      "binding": "SPDX legal-code reference for publisher-declared CC0-1.0 (matches upstream Git blob 0e259d42c996742e9e3cba14c677129b2c1b6311); not a publisher release-specific notice."
+    },
+    {
+      "name": "speedline-core",
+      "version": "1.4.3",
       "license": "MIT",
-      "source": "https://raw.githubusercontent.com/jaredwray/keyv/e02ef9b9271fe48d8e1da6561f18e055995bfb1f/LICENSE",
-      "sha256": "1f7dca26d2d328c3dbb9b6fe3b15ec3cda08ffe2288e47b73d617454b256f959",
-      "file": "notices/1f7dca26d2d328c3dbb9b6fe3b15ec3cda08ffe2288e47b73d617454b256f959.txt",
-      "binding": "Historical upstream project full MIT notice; installed 4.5.4 declares MIT. Preserve original upstream attribution verbatim; this is project evidence, not an exact release source match."
+      "source": "https://raw.githubusercontent.com/paulirish/speedline/v1.4.3/license",
+      "sha256": "b00891eed6af8209b62d55813d49905a78becc38116244881a6498a13cf6ae4a",
+      "file": "notices/b00891eed6af8209b62d55813d49905a78becc38116244881a6498a13cf6ae4a.txt"
     }
   ]
 }

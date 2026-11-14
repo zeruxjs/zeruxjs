@@ -1,5 +1,5 @@
 import {
-  createHmac,
+  hkdfSync,
   createHash,
   randomBytes,
   timingSafeEqual,
@@ -371,19 +371,25 @@ export function createProviderLogin(options: ProviderLoginOptions) {
     }
     return value;
   };
-  // This keyed index binds opaque session/state/authorization-code identifiers.
-  // It never hashes a human password: password verification uses the separate
-  // password KDF API. Replacing this protocol index with a password KDF would
-  // change stored state/code identity and invalidate outstanding ceremonies.
-  /** Bind protocol state/session/code lookup keys to this host key and explicit domain.
+  // All state and authorization codes are generated high-entropy protocol tokens.
+  // HKDF uses the host-owned binding key as salt and a purpose-specific info
+  // label so persistent lookup identities cannot be forged without that key.
+  // This v2 index intentionally invalidates pre-upgrade, short-lived attempts;
+  // it is not a human-password hash or a password verification interface.
+  /** Derive separate stable lookup identities for sessions, OAuth states, and codes.
    * @param {string} domain - Fixed internal protocol purpose.
-   * @param {unknown[]} values - Exact configured tenant/provider/session/code tuple.
-   * @returns {string} HMAC lookup identity, not a password hash or authorization grant. */
-  const digest = (domain: string, values: unknown[]) =>
-    createHmac('sha256', key)
-      // codeql[js/insufficient-password-hash] -- This is a keyed HMAC lookup identity, not password storage.
-      .update(JSON.stringify(['zeruxjs.auth.provider.v1', domain, ...values]))
-      .digest('base64url');
+   * @param {unknown[]} values - Trusted scope labels and opaque protocol token.
+   * @returns {string} Keyed, domain-separated 256-bit lookup identity. */
+  const digest = (domain: string, values: unknown[]): string =>
+    Buffer.from(
+      hkdfSync(
+        'sha256',
+        Buffer.from(JSON.stringify(values), 'utf8'),
+        key,
+        Buffer.from(`zeruxjs.auth.provider.v2:${domain}`, 'utf8'),
+        32
+      )
+    ).toString('base64url');
   /** Validate and detach exact tenant/session labels before binding lookup keys.
    * @param {ProviderLoginContext} value - Host-verified tenant/server-session context.
    * @returns {{tenant: string, session: string, sessionHash: string}} Fixed scope plus private session digest; validation is not authentication.

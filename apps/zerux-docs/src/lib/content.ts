@@ -15,10 +15,10 @@ export const repositoryRoot = path.resolve(root, '../..');
  * @returns {Promise<object[]>} Sorted manifests. Reads repository files only.
  */
 export async function discoverPackages(
-  directory = path.join(repositoryRoot, 'packages')
-) {
+  directory: string = path.join(repositoryRoot, 'packages')
+): Promise<Array<{ name: string; version: string; description?: string; source: string; [key: string]: unknown }>> {
   /** Public manifest inventory built from JSON only; package modules are never imported. */
-  const records = [];
+  const records: Array<{ name: string; version: string; description?: string; source: string; [key: string]: unknown }> = [];
   for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
     if (
       !entry.isDirectory() ||
@@ -35,12 +35,16 @@ export async function discoverPackages(
         await fs.readFile(path.join(child, 'package.json'), 'utf8')
       );
     } catch (error) {
-      if (error.code !== 'ENOENT') {
+      if (!((error as NodeJS.ErrnoException).code === 'ENOENT')) {
         throw error;
       }
     }
     if (manifest) {
-      if (!manifest.private) {
+      if (
+        !manifest.private &&
+        typeof manifest.name === 'string' &&
+        typeof manifest.version === 'string'
+      ) {
         records.push({
           ...manifest,
           source: path

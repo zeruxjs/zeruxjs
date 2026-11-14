@@ -6,7 +6,7 @@ const state = readState();
 
 console.log('Currently running tracked processes:\n');
 
-if (state && state.processes && state.processes.length > 0) {
+if (state.processes.length > 0) {
   /** Local value for table data. */
   const tableData: Record<
     number,

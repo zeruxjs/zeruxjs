@@ -650,8 +650,9 @@ test('missing candidate document asset rolls back preparation and preserves the 
     const marker = path.join(f.root, 'candidate-disposed');
     await writeFile(
       path.join(f.root, 'plugins/document.mjs'),
-      // codeql[js/bad-code-sanitization] -- This trusted test fixture embeds a JSON-escaped temporary marker path.
-      `import {createRenderAssets,createZyroDocumentRenderer} from 'zeruxjs/renderers';import {writeFile} from 'node:fs/promises';export default function(api){api.onDispose(()=>writeFile(${JSON.stringify(marker)},'closed'));api.renderers().register(createZyroDocumentRenderer({security:()=>({headers:{}}),render:()=>({html:'candidate'}),assets:createRenderAssets({schema:1,assets:[],namedEntries:{}}),clientEntry:'missing'}));}`
+      // Keep executable fixture content constant. The cleanup marker is
+      // resolved relative to this known temporary plugin file at runtime.
+      `import {createRenderAssets,createZyroDocumentRenderer} from 'zeruxjs/renderers';import {writeFile} from 'node:fs/promises';import {fileURLToPath} from 'node:url';import {dirname,resolve} from 'node:path';export default function(api){api.onDispose(()=>writeFile(resolve(dirname(fileURLToPath(import.meta.url)),'../candidate-disposed'),'closed'));api.renderers().register(createZyroDocumentRenderer({security:()=>({headers:{}}),render:()=>({html:'candidate'}),assets:createRenderAssets({schema:1,assets:[],namedEntries:{}}),clientEntry:'missing'}));}`
     );
     await assert.rejects(
       f.app.reload({}),

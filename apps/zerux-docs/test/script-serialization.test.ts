@@ -7,7 +7,7 @@ import { site, sitePath } from '../src/site.config.ts';
 /** Render synthetic metadata without evaluation.
  * @param {string} description Inert metadata.
  * @returns {string} HTML. */
-function render(description) {
+function render(description: string): string {
   /** Synthetic version-local metadata used only to exercise inert template serialization. */
   const pages = site.versions.map((version) => ({
     slug: 'introduction',

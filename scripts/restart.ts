@@ -1,19 +1,16 @@
-import { fileURLToPath } from 'node:url';
-/** Absolute script filename for explicit child-process entrypoints. */
-const __filename = fileURLToPath(import.meta.url);
-/** Directory anchor for repository-owned paths. */
-const __dirname = path.dirname(__filename);
-/** Local value for destructured values. */
-import { readState } from './helper.ts';
-/** Local value for destructured values. */
 import { execFileSync } from 'node:child_process';
-/** Local value for path. */
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { readState } from './helper.ts';
+
+// Resolve the stop/start script entrypoints without relying on the invoking cwd.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /** Local value for state. */
 const state = readState();
 /** Local value for previous type. */
-const previousType = state ? state.type : null;
+const previousType = state.type;
 
 // Use the current process path to avoid PATH lookup issues
 /** Local value for node path. */
@@ -69,6 +66,6 @@ if (previousType === 'start') {
   }
 } else {
   console.log(
-    '\nNo previous state available to determine mode. Run dev.js or start.js explicitly first.'
+    '\nNo previous state available to determine mode. Run dev.ts or start.ts explicitly first.'
   );
 }

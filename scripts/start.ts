@@ -1,20 +1,14 @@
-import type { Folder, TrackedProcess } from './helper.ts';
-import { fileURLToPath } from 'node:url';
-/** Absolute script filename for explicit child-process entrypoints. */
-const __filename = fileURLToPath(import.meta.url);
-/** Directory anchor for repository-owned paths. */
-const __dirname = path.dirname(__filename);
-import { execSync } from 'node:child_process';
-/** Local value for destructured values. */
-import { resetLogFileSync } from './file-io.ts';
-/** Local value for destructured values. */
-import { getSafeName, readState, writeState } from './helper.ts';
-/** Local value for path. */
-import path from 'node:path';
-/** Local value for fs. */
+import { execSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
-/** Local value for destructured values. */
-import { spawn } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { resetLogFileSync } from './file-io.ts';
+import { getSafeName, readState, writeState } from './helper.ts';
+import type { Folder, TrackedProcess } from './helper.ts';
+
+// Always resolve package/application paths from the repository script directory.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /** Perform the scan apps operation.
  * @param {unknown} dir - Input value for dir.

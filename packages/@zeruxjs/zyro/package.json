@@ -47,7 +47,6 @@
       "import": "./dist/renderer.js",
       "require": "./dist/renderer.js"
     },
-    "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "peerDependencies": {

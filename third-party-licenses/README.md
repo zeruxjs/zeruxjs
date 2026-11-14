@@ -9,6 +9,15 @@ Some notices come from the project repository rather than the exact package
 release; those entries explicitly describe that binding. These records preserve
 upstream attribution and do not establish legal compatibility or clearance.
 
+For `saxes@6.0.0`, the catalog retains the exact upstream license, including
+the inherited sax and historical MIT notices. `spdx-license-ids@3.0.24`
+and `spdx-exceptions@2.5.0` omit complete licenses from their installed
+artifacts, so their supplemental entries contain full CC0-1.0 and
+CC-BY-3.0 legal-code texts respectively. The latter comes from a
+separately distributed TeX Live legal-code copy and is not byte-identical
+to the SPDX reference linked in its manifest entry. These supplement
+declared license terms, not publisher-specific attribution or legal approval.
+
 The installed-license inspection checks the digest and rejects unsafe paths,
 missing evidence, changed versions, and missing license metadata. Unsupported
 optional native packages are reported separately because npm legitimately omits

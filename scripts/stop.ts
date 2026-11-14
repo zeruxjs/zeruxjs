@@ -15,7 +15,7 @@ const targetName = args.find((a) => !a.startsWith('--'));
 const state = readState();
 let stoppedCount = 0;
 
-if (state && state.processes) {
+if (state.processes.length > 0) {
   if (targetName) {
     // Stop a specific process only
     state.processes = state.processes.filter((p) => {

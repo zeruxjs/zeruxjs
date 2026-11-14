@@ -21,6 +21,7 @@
     "test": "npm run build && node --experimental-strip-types --test test/*.test.ts"
   },
   "dependencies": {
+    "@types/amqplib": "^0.10.7",
     "amqplib": "^0.10.9"
   },
   "license": "(MIT OR Apache-2.0)",
@@ -35,8 +36,7 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "@types/node": "^25.4.0",
-    "@types/amqplib": "^0.10.7"
+    "@types/node": "^25.4.0"
   },
   "repository": {
     "type": "git",

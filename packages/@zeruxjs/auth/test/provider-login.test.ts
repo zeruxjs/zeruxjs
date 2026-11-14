@@ -569,9 +569,9 @@ test('pending store failure retains admission until native settlement and deadli
   }
 });
 
-test('OAuth state indexes are keyed MACs of generated 256-bit tokens, not password hashes', async () => {
-  /** Native HMAC used to assert exact protocol index compatibility, not password hashing. */
-  const { createHmac } = require('node:crypto');
+test('OAuth state indexes are domain-separated HKDF keys of generated 256-bit tokens', async () => {
+  /** HKDF test oracle for the private protocol lookup identities. */
+  const { hkdfSync } = require('node:crypto');
   /** Isolated fixture owners, scripted transport and deterministic fault controls. */
   const f = await fixture();
   try {
@@ -588,9 +588,15 @@ test('OAuth state indexes are keyed MACs of generated 256-bit tokens, not passwo
      * @param {unknown[]} values - Exact synthetic identity tuple.
      * @returns {string} Expected exact domain-separated protocol lookup digest helper. */
     const index = (domain, values) =>
-      createHmac('sha256', f.options.bindingKey)
-        .update(JSON.stringify(['zeruxjs.auth.provider.v1', domain, ...values]))
-        .digest('base64url');
+      Buffer.from(
+        hkdfSync(
+          'sha256',
+          Buffer.from(JSON.stringify(values), 'utf8'),
+          f.options.bindingKey,
+          Buffer.from(`zeruxjs.auth.provider.v2:${domain}`, 'utf8'),
+          32
+        )
+      ).toString('base64url');
     assert.equal(record.key, index('state', [f.config.id, state]));
     assert.equal(
       record.session,

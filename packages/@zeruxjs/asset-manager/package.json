@@ -57,7 +57,6 @@
       "types": "./dist/brand.d.ts",
       "default": "./dist/brand.js"
     },
-    "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   }
 }

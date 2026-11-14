@@ -15,6 +15,7 @@ import { discoverWorkspaces } from './workspace-graph.ts';
 import {
   checkConsumerSelection,
   checkEntryTargets,
+  assertCreatorCliOutput,
   createConsumerLock,
 } from './workspace-public-consumer.ts';
 /** Local value for root. */
@@ -79,9 +80,16 @@ const log = (name, bin, callArgs, cwd, timeout = 180000) => {
     },
   });
   if (run.error || run.status !== 0) {
-    throw Error(
-      `${name} failed: ${[run.error?.message, run.stderr?.trim(), run.stdout?.trim()].filter(Boolean).join('\n').slice(0, 1000)}`
-    );
+    // Declaration acceptance may uncover multiple independent missing type
+    // packages. Preserve a bounded diagnostic batch so they can be fixed in
+    // one pass, while keeping other subprocess errors concise.
+    const detailLimit =
+      name === 'isolated TypeScript declaration resolution' ? 32 * 1024 : 1000;
+    const detail = [run.error?.message, run.stderr?.trim(), run.stdout?.trim()]
+      .filter(Boolean)
+      .join('\n')
+      .slice(0, detailLimit);
+    throw Error(`${name} failed: ${detail}`);
   }
   return run.stdout;
 };
@@ -146,8 +154,17 @@ try {
   const sourceLock = JSON.parse(
     fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8')
   );
+  // Include the root's reviewed npm override policy in the isolated consumer.
+  // The workspace lock alone does not record why a selected version differs
+  // from the upstream dependency range, so dropping these rules breaks npm ci.
+  const rootManifest = JSON.parse(
+    fs.readFileSync(path.join(root, 'package.json'), 'utf8')
+  );
   /** Local value for locked. */
-  const locked = createConsumerLock(sourceLock, archives, { sourceRoot: root });
+  const locked = createConsumerLock(sourceLock, archives, {
+    sourceRoot: root,
+    rootManifest,
+  });
   fs.writeFileSync(
     path.join(consumer, 'package.json'),
     JSON.stringify(locked.manifest, null, 2) + '\n'
@@ -184,9 +201,8 @@ try {
         [path.join(consumer, 'node_modules', name, bin), flag],
         consumer
       );
-      if (!output.includes(pkg.version)) {
-        throw Error(`${name}: CLI output missing release version`);
-      }
+      // Help need not print the release version; version MUST match exactly.
+      assertCreatorCliOutput(name, flag, output, pkg.version);
     }
     console.log(`PASS CLI ${name}`);
   }

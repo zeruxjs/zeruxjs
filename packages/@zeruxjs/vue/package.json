@@ -56,7 +56,6 @@
       "import": "./dist/server.js",
       "require": "./dist/server.js"
     },
-    "./dist/*": "./dist/*",
     "./package.json": "./package.json",
     "./rendering": {
       "types": "./dist/rendering.d.ts",

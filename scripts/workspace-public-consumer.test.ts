@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
+  assertCreatorCliOutput,
   checkConsumerSelection,
   checkEntryTargets,
   createConsumerLock,
@@ -28,7 +29,12 @@ test('exports, bins, declarations and all conditional targets must be built', (t
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'consumer-targets-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   /** Local value for pkg. */
-  const pkg = {
+  const pkg: {
+    main: string;
+    types: string;
+    exports: Record<string, string | Record<string, string>>;
+    bin: Record<string, string>;
+  } = {
     main: './dist/index.js',
     types: './dist/index.d.ts',
     exports: {
@@ -139,7 +145,7 @@ test('consumer lock keeps reviewed external resolutions and replaces workspace l
   assert.equal(JSON.stringify(source), before);
   assert.throws(
     () => createConsumerLock({ lockfileVersion: 3, packages: {} }, archives),
-    /committed resolution|baseline/
+    /committed resolution|baseline|workspace missing/
   );
   /** Local value for source root. */
   const sourceRoot = path.resolve(os.tmpdir(), 'reviewed source');
@@ -159,4 +165,143 @@ test('consumer lock keeps reviewed external resolutions and replaces workspace l
     () => createConsumerLock(source, archives, { sourceRoot }),
     /escapes sourceRoot/
   );
+});
+
+test('isolated consumer retains reviewed npm override semantics', () => {
+  const pkg = {
+    name: 'pkg-a',
+    version: '0.0.4',
+    dependencies: { dependency: '^1.0.0' },
+  };
+  const source = {
+    lockfileVersion: 3,
+    packages: {
+      '': { workspaces: ['packages/*'] },
+      'packages/pkg-a': pkg,
+      'node_modules/@types/node': {
+        version: '25.6.0',
+        resolved: 'https://registry.npmjs.org/@types/node/-/node-25.6.0.tgz',
+        integrity: 'sha512-bm9kZQ==',
+      },
+      'node_modules/dependency': {
+        version: '1.0.0',
+        resolved: 'https://registry.npmjs.org/dependency/-/dependency-1.0.0.tgz',
+        integrity: 'sha512-ZXh0ZXJuYWw=',
+        dependencies: { minimatch: '^10.2.2' },
+      },
+      'node_modules/minimatch': {
+        version: '11.0.5',
+        resolved: 'https://registry.npmjs.org/minimatch/-/minimatch-11.0.5.tgz',
+        integrity: 'sha512-YWJjZGU=',
+      },
+    },
+  };
+  const archives = [
+    {
+      pkg,
+      relativeDir: 'packages/pkg-a',
+      tarball: path.resolve(os.tmpdir(), 'pkg-a-0.0.4.tgz'),
+      integrity: 'sha512-eHl6eA==',
+    },
+  ];
+  const sourceRoot = path.resolve(os.tmpdir(), 'zerux-reviewed-source');
+  const rootManifest = {
+    devDependencies: {
+      'postcss-media-query-parser': 'file:vendor/safe-parser.tgz',
+    },
+    overrides: {
+      'minimatch@>=7 <11.0.1': '11.0.5',
+      dependency: { minimatch: '11.0.5' },
+      'postcss-media-query-parser': '$postcss-media-query-parser',
+    },
+  };
+  const original = JSON.stringify(rootManifest);
+  const { manifest, lock } = createConsumerLock(source, archives, {
+    sourceRoot,
+    rootManifest,
+  });
+  assert.deepEqual(manifest.overrides, {
+    'minimatch@>=7 <11.0.1': '11.0.5',
+    dependency: { minimatch: '11.0.5' },
+    'postcss-media-query-parser': pathToFileURL(
+      path.join(sourceRoot, 'vendor/safe-parser.tgz')
+    ).href,
+  });
+  assert.equal(lock.packages['node_modules/minimatch'].version, '11.0.5');
+  assert.equal(JSON.stringify(rootManifest), original);
+  assert.equal(
+    createConsumerLock(source, archives).manifest.overrides,
+    undefined
+  );
+  assert.throws(
+    () => createConsumerLock(source, archives, {
+      sourceRoot,
+      rootManifest: {
+        overrides: { missing: '$nonexistent' },
+      },
+    }),
+    /missing root dependency/
+  );
+  assert.throws(
+    () => createConsumerLock(source, archives, {
+      sourceRoot,
+      rootManifest: {
+        devDependencies: { escape: 'file:../outside.tgz' },
+        overrides: { escape: '$escape' },
+      },
+    }),
+    /escapes sourceRoot/
+  );
+});
+
+test('creator CLI checks distinguish help from exact published version', () => {
+  assert.doesNotThrow(() =>
+    assertCreatorCliOutput('create-zenix-js', '--help',
+      'Usage: create-zenix-js create <name>\n--database sqlite', '0.0.4'));
+  assert.doesNotThrow(() =>
+    assertCreatorCliOutput('create-zyro-app', '--help',
+      '--base-path /site; run create to generate', '0.0.4'));
+  assert.doesNotThrow(() =>
+    assertCreatorCliOutput('create-zerux-js', '--version', '0.0.4\n', '0.0.4'));
+  assert.throws(() =>
+    assertCreatorCliOutput('create-zenix-js', '--version', '0.0.3\n', '0.0.4'),
+    /expected 0\.0\.4/);
+  assert.throws(() =>
+    assertCreatorCliOutput('create-zenix-js', '--version', 'v0.0.4', '0.0.4'),
+    /expected 0\.0\.4/);
+  assert.throws(() =>
+    assertCreatorCliOutput('create-zenix-js', '--help', '  ', '0.0.4'),
+    /produced no output/);
+  assert.throws(() =>
+    assertCreatorCliOutput('create-zenix-js', '--help', 'unexpected', '0.0.4'),
+    /usage guidance/);
+});
+
+test('RabbitMQ published worker types have an installable dependency tree', () => {
+  const sourceRoot = path.resolve(import.meta.dirname, '..');
+  const sourceLock = JSON.parse(
+    fs.readFileSync(path.join(sourceRoot, 'package-lock.json'), 'utf8')
+  );
+  const pkg = JSON.parse(
+    fs.readFileSync(
+      path.join(sourceRoot, 'packages/@zeruxjs/queue-rabbitmq/package.json'),
+      'utf8'
+    )
+  );
+  // The public RabbitMQWorkerConnector references amqplib.ChannelModel in its
+  // .d.ts. Consumers cannot resolve that type from devDependencies alone.
+  assert.equal(typeof pkg.dependencies['@types/amqplib'], 'string');
+  assert.equal(pkg.devDependencies?.['@types/amqplib'], undefined);
+  const { lock } = createConsumerLock(sourceLock, [{
+    pkg,
+    relativeDir: 'packages/@zeruxjs/queue-rabbitmq',
+    tarball: path.join(sourceRoot, 'rabbitmq-test-package.tgz'),
+    integrity: 'sha512-cmFiYml0bXAtdGVzdA==',
+  }], { sourceRoot });
+  assert.equal(
+    lock.packages['node_modules/@types/amqplib'].version,
+    sourceLock.packages['node_modules/@types/amqplib'].version
+  );
+  assert.ok(lock.packages['node_modules/@types/node']);
+  assert.ok(lock.packages['node_modules/amqplib']);
 });

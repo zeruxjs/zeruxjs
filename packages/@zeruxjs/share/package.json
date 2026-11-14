@@ -40,7 +40,6 @@
   "exports": {
     ".": "./dist/index.js",
     "./server": "./dist/server.js",
-    "./*": "./*",
     "./sqlite": "./dist/sqlite-store.js"
   },
   "peerDependencies": {

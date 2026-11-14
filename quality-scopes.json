@@ -69,5 +69,14 @@
     "apps/zyro"
   ],
   "deferred": [],
-  "repositoryCompleted": ["scripts"]
+  "repositoryCompleted": [
+    "scripts",
+    "tests",
+    "pages",
+    ".github",
+    "integration-lab",
+    "assets",
+    ".gitlab",
+    "vs-ext"
+  ]
 }

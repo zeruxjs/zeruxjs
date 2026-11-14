@@ -105,6 +105,26 @@ test('missing artifact is blocked, but missing generated output is only a source
     true
   );
 });
+test('wildcard dist exports cannot replace concrete packaged entry points', (t) => {
+  const { dir, pkg } = fixture(t);
+  pkg.exports = {
+    '.': { types: './dist/index.d.ts', import: './dist/index.js' },
+    './dist/*': './dist/*',
+  };
+  const report = inspectPublishablePackage({
+    name: 'example',
+    dir,
+    pkg,
+    entries: new Map(),
+    packedFiles: expected,
+    built: true,
+  });
+  assert.ok(
+    report.errors.some(
+      (issue) => issue.code === 'EXPORT_NOT_PACKED' && issue.detail === './dist/*'
+    )
+  );
+});
 test('private dependency and unpinned workspace reference are release blockers', (t) => {
   /** Local value for destructured values. */
   const { dir, pkg } = fixture(t);

@@ -1,6 +1,16 @@
+/** Stable authored page identity shared by native navigation and the static docs builder. */
+export type NavPage = Readonly<{
+  version: string;
+  slug: string;
+  section: string;
+  url: string;
+  package?: string;
+  navigation?: string;
+}>;
+
 /** Authored documentation taxonomy. URLs remain versioned and existing slugs never move. */
 export const navigationGroups = Object.freeze(
-  [
+  ([
     {
       id: 'start',
       label: 'Get Started',
@@ -42,7 +52,7 @@ export const navigationGroups = Object.freeze(
       description:
         'Small public-import recipes with prerequisites and expected results.',
     },
-  ].map(Object.freeze)
+  ] as const).map((group) => Object.freeze(group))
 );
 /** Legacy structure-topic identities retain their existing URLs while joining the Structure collection. */
 const structureSlugs = new Set([
@@ -64,7 +74,9 @@ const exampleSlugs = new Set([
  * @param {object} page - Authored metadata and slug; an explicit unknown navigation ID rejects.
  * @returns {object} Configured collection record, preserving the existing classification order.
  */
-export function groupFor(page) {
+export function groupFor(
+  page: Partial<Pick<NavPage, 'navigation' | 'package' | 'section' | 'slug'>>
+): (typeof navigationGroups)[number] {
   if (page.navigation !== undefined) {
     /** Explicit metadata selection must identify a configured collection before rendering. */
     const group = navigationGroups.find(
@@ -79,40 +91,45 @@ export function groupFor(page) {
   let id;
   if (
     page.package ||
-    ['Packages', 'API reference', 'Package reference'].includes(page.section)
+    ['Packages', 'API reference', 'Package reference'].includes(page.section ?? '')
   ) {
     id = 'api';
   } else if (
     page.slug === 'structure' ||
-    page.slug.startsWith('structure-') ||
-    structureSlugs.has(page.slug)
+    page.slug?.startsWith('structure-') ||
+    structureSlugs.has(page.slug ?? '')
   ) {
     id = 'structure';
   } else if (
     page.slug === 'examples' ||
-    page.slug.startsWith('example-') ||
-    exampleSlugs.has(page.slug)
+    page.slug?.startsWith('example-') ||
+    exampleSlugs.has(page.slug ?? '')
   ) {
     id = 'examples';
   } else if (
     page.section === 'Operations' ||
     page.slug === 'deployment' ||
-    page.slug.startsWith('deploy-')
+    page.slug?.startsWith('deploy-')
   ) {
     id = 'deploy';
-  } else if (['Getting started', 'Learning'].includes(page.section)) {
+  } else if (['Getting started', 'Learning'].includes(page.section ?? '')) {
     id = 'start';
   } else {
     id = 'guide';
   }
-  return navigationGroups.find((group) => group.id === id);
+  const group = navigationGroups.find((candidate) => candidate.id === id);
+  if (!group) {
+    // All default branches above select one of these six authored groups.
+    throw Error(`Missing documentation navigation group: ${id}`);
+  }
+  return group;
 }
 /** Select peers within the current version and collection only.
  * @param {object} page - Current versioned document.
  * @param {object[]} pages - Validated complete page inventory.
  * @returns {object[]} Same-version collection members in their existing navigation order.
  */
-export function groupPages(page, pages) {
+export function groupPages<T extends NavPage>(page: T, pages: readonly T[]): T[] {
   return pages.filter(
     (item) =>
       item.version === page.version && groupFor(item).id === groupFor(page).id
@@ -123,7 +140,8 @@ export function groupPages(page, pages) {
  * @param {string} name - Actual public package name from the manifest inventory.
  * @returns {string} Human-readable family label with a runtime/tooling fallback.
  */
-export function packageFamily(name) {
+export function packageFamily(name: string | undefined): string {
+  if (!name) return 'Runtime and tooling';
   if (/(?:cache|db|search)(?:-|$)/.test(name)) {
     return 'Data and search';
   }
@@ -147,7 +165,11 @@ export function packageFamily(name) {
  * @param {object[]} pages - Validated page inventory.
  * @returns {string} Existing same-version landing/member/introduction URL; throws if no fallback exists.
  */
-export function groupTarget(group, page, pages) {
+export function groupTarget(
+  group: (typeof navigationGroups)[number],
+  page: Pick<NavPage, 'version'>,
+  pages: readonly NavPage[]
+): string {
   /** Same-version pages only; archived navigation never jumps silently to current content. */
   const candidates = pages.filter((item) => item.version === page.version);
   /** Preferred collection landing, then a collection member, then same-version introduction. */

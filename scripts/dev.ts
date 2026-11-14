@@ -1,21 +1,15 @@
+import { execSync, spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { resetLogFileSync } from './file-io.ts';
+import { getSafeName, writeState, readState, stopProcess } from './helper.ts';
 import type { WatcherEvent } from 'zlook';
 import type { Folder, TrackedProcess } from './helper.ts';
-import { fileURLToPath } from 'node:url';
-/** Absolute script filename for explicit child-process entrypoints. */
+
+// Anchor child-process and workspace paths to this script, not the caller's cwd.
 const __filename = fileURLToPath(import.meta.url);
-/** Directory anchor for repository-owned paths. */
 const __dirname = path.dirname(__filename);
-import { execSync } from 'node:child_process';
-/** Local value for destructured values. */
-import { resetLogFileSync } from './file-io.ts';
-/** Local value for destructured values. */
-import { getSafeName, writeState, readState, stopProcess } from './helper.ts';
-/** Local value for path. */
-import path from 'node:path';
-/** Local value for fs. */
-import fs from 'node:fs';
-/** Local value for destructured values. */
-import { spawn } from 'node:child_process';
 
 if (process.argv.includes('--run-packages-watcher')) {
   /** Local value for watcher module path. */
@@ -45,11 +39,7 @@ if (process.argv.includes('--run-packages-watcher')) {
 
           /** Local value for current state. */
           const currentState = readState();
-          if (
-            !currentState ||
-            currentState.type !== 'dev' ||
-            !currentState.processes
-          ) {
+          if (currentState.type !== 'dev') {
             return;
           }
 

@@ -13,7 +13,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { createServer } from 'node:http';
+import { createServer, get as httpGet } from 'node:http';
 import { once } from 'node:events';
 import {
   createApplicationLifecycle,
@@ -401,13 +401,33 @@ test('client graph emits deterministic private/public manifests and executable l
     host.listen(0, '127.0.0.1');
     await once(host, 'listening');
     try {
-      /** Compiled public asset response compared with its emitted file bytes. */
-      const served = await fetch(
-        // codeql[js/file-access-to-http] -- This test intentionally requests the locally emitted manifest asset.
-        `http://127.0.0.1:${host.address().port}${assetUrl}`
-      );
+      // A build manifest controls the requested PATH only. Keep the request's
+      // destination host and ephemeral test port separate and non-overridable.
+      assert.match(assetUrl, /^\/_zerux\/client\/[0-9a-f]{24}\/[0-9a-f]+\.js$/);
+      /** Isolated loopback HTTP response from the explicitly bound fixture. */
+      const served = await new Promise((resolve, reject) => {
+        const request = httpGet(
+          {
+            hostname: '127.0.0.1',
+            port: host.address().port,
+            path: assetUrl,
+          },
+          async (response) => {
+            try {
+              let text = '';
+              for await (const chunk of response) {
+                text += chunk.toString('utf8');
+              }
+              resolve({ status: response.statusCode, text });
+            } catch (error) {
+              reject(error);
+            }
+          }
+        );
+        request.once('error', reject);
+      });
       assert.equal(served.status, 200);
-      assert.equal(await served.text(), await readFile(source, 'utf8'));
+      assert.equal(served.text, await readFile(source, 'utf8'));
     } finally {
       await app.close();
       host.closeAllConnections();

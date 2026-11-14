@@ -47,7 +47,6 @@
       "import": "./dist/corpus.js",
       "require": "./dist/corpus.js"
     },
-    "./*": "./*",
     "./evidence": {
       "types": "./dist/evidence.d.ts",
       "import": "./dist/evidence.js",

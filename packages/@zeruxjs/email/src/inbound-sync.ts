@@ -515,8 +515,8 @@ export function createDatabaseMailboxSync(options: MailboxSyncOptions) {
     id: string,
     account: string
   ) =>
-    | ReturnType<typeof createDatabaseMailboxSync>
-    | Promise<ReturnType<typeof createDatabaseMailboxSync>>} resolve - Trusted explicit application registry lookup; never arbitrary package/module discovery.
+    | Pick<ReturnType<typeof createDatabaseMailboxSync>, 'runOnce'>
+    | Promise<Pick<ReturnType<typeof createDatabaseMailboxSync>, 'runOnce'>>} resolve - Trusted explicit application registry lookup; only the runOnce capability is borrowed.
  * @returns {(job: {data?: unknown}, workerId: string) => Promise<object>} Borrowed coordinator invocation; resolver must enforce host tenant/worker authorization.
  */
 export function createIncomingSyncProcessor(
@@ -524,8 +524,8 @@ export function createIncomingSyncProcessor(
     id: string,
     account: string
   ) =>
-    | ReturnType<typeof createDatabaseMailboxSync>
-    | Promise<ReturnType<typeof createDatabaseMailboxSync>>
+    | Pick<ReturnType<typeof createDatabaseMailboxSync>, 'runOnce'>
+    | Promise<Pick<ReturnType<typeof createDatabaseMailboxSync>, 'runOnce'>>
 ) {
   if (typeof resolve !== 'function') {
     throw new TypeError('Mailbox sync resolver required');

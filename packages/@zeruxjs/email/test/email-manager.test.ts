@@ -7,6 +7,7 @@ import {
   emailRow,
   emailButton,
   validateSmtp,
+  plainTextFromHtml,
 } from '../dist/index.js';
 /**
  * Create a synthetic message without contacting any transport.
@@ -20,6 +21,18 @@ const mail = (to = 'a@example.com', override = {}) => ({
   subject: 'Hi',
   text: 'Hello',
   ...override,
+});
+test('plain-text email conversion uses maintained converter without leaking image URLs', async () => {
+  /** Conversion runs locally; no SMTP transport or remote content is requested. */
+  const plain = await plainTextFromHtml(
+    '<p>Welcome <strong>reader</strong></p>' +
+      '<p><a href="https://example.test/info">Read more</a></p>' +
+      '<img src="https://example.test/hidden.png" alt="tracking pixel">'
+  );
+  assert.match(plain, /Welcome reader/);
+  assert.match(plain, /Read more/);
+  assert.match(plain, /https:\/\/example\.test\/info/);
+  assert.doesNotMatch(plain, /hidden\.png|tracking pixel/);
 });
 test('multiple accounts on same SMTP settings select independent transports', async (t) => {
   /** Captured private native envelopes; never sent to a real SMTP server. */

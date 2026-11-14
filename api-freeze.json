@@ -61,7 +61,6 @@
           "import": "./dist/tools.js",
           "require": "./dist/tools.js"
         },
-        "./*": "./*",
         "./structured": {
           "types": "./dist/structured.d.ts",
           "import": "./dist/structured.js",
@@ -91,7 +90,6 @@
           "import": "./dist/corpus.js",
           "require": "./dist/corpus.js"
         },
-        "./*": "./*",
         "./evidence": {
           "types": "./dist/evidence.d.ts",
           "import": "./dist/evidence.js",
@@ -163,7 +161,6 @@
           "types": "./dist/brand.d.ts",
           "default": "./dist/brand.js"
         },
-        "./dist/*": "./dist/*",
         "./package.json": "./package.json"
       },
       "bin": null,
@@ -581,7 +578,6 @@
           "types": "./dist/transcode.d.ts",
           "default": "./dist/transcode.js"
         },
-        "./dist/*": "./dist/*",
         "./package.json": "./package.json"
       },
       "bin": null,
@@ -836,7 +832,6 @@
           "types": "./dist/hydration.d.mts",
           "import": "./dist/hydration.mjs"
         },
-        "./dist/*": "./dist/*",
         "./package.json": "./package.json"
       },
       "bin": null,
@@ -1028,7 +1023,6 @@
       "exports": {
         ".": "./dist/index.js",
         "./server": "./dist/server.js",
-        "./*": "./*",
         "./sqlite": "./dist/sqlite-store.js"
       },
       "bin": null,
@@ -1157,7 +1151,6 @@
           "import": "./dist/server.js",
           "require": "./dist/server.js"
         },
-        "./dist/*": "./dist/*",
         "./package.json": "./package.json",
         "./rendering": {
           "types": "./dist/rendering.d.ts",
@@ -1202,7 +1195,6 @@
           "import": "./dist/renderer.js",
           "require": "./dist/renderer.js"
         },
-        "./dist/*": "./dist/*",
         "./package.json": "./package.json"
       },
       "bin": null,
