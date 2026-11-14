@@ -1,14 +1,20 @@
+import type { Readable } from 'node:stream';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcessByStdio } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { SourceMapConsumer } from 'source-map-js';
 import { buildZuix, watchZuix, scanProject } from 'zuixs/node';
-import { createZuix, zuixVite } from 'zuixs';
+import {
+  createZuix,
+  zuixVite,
+  type ZuixConfig,
+  type ZuixBuildManifest,
+} from 'zuixs';
 import { activeWatcherCount } from 'zlook';
 /** Create an isolated project with a source directory.
  * @returns {string} Owned project path.
@@ -25,7 +31,7 @@ const temp = () => {
  * @param {string} text - Synthetic contents.
  * @returns {void} Write completion.
  */
-const put = (root, file, text) => {
+const put = (root: string, file: string, text: string): void => {
   fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
   fs.writeFileSync(path.join(root, file), text);
 };
@@ -34,12 +40,14 @@ const put = (root, file, text) => {
  * @param {string} file - Relative output path.
  * @returns {string} UTF-8 fixture contents.
  */
-const read = (root, file) => fs.readFileSync(path.join(root, file), 'utf8');
+const read = (root: string, file: string): string =>
+  fs.readFileSync(path.join(root, file), 'utf8');
 /** Remove only an owned synthetic project tree.
  * @param {string} root - Owned directory.
  * @returns {void} Cleanup completion.
  */
-const remove = (root) => fs.rmSync(root, { recursive: true, force: true });
+const remove = (root: string): void =>
+  fs.rmSync(root, { recursive: true, force: true });
 /** Polling-only short intervals used by isolated watcher fixtures. */
 const options = { pollingOnly: true, pollIntervalMs: 100, debounceMs: 5 };
 /** Explicit shared fixture build configuration; each watcher snapshots its own copy. */
@@ -55,9 +63,9 @@ test('zlook watch invalidates tokens, excludes its outputs, and matches clean CS
   /** Initial shared-watcher count restored after every owned subscription closes. */
   const baseline = activeWatcherCount();
   /** Postcommit CSS observations; failed candidates must not add a success receipt. */
-  const builds = [];
+  const builds: string[] = [];
   /** Private fixture errors collected to distinguish failure from successful output. */
-  const errors = [];
+  const errors: unknown[] = [];
   let stop;
   try {
     put(root, 'src/a.html', '<p class="p-2">');
@@ -104,7 +112,7 @@ test('shared roots keep configuration and subscriptions independent; failed relo
   /** Initial shared-watcher count restored after every owned subscription closes. */
   const baseline = activeWatcherCount();
   /** Private fixture errors collected to distinguish failure from successful output. */
-  const errors = [];
+  const errors: unknown[] = [];
   let a, b;
   try {
     put(root, 'src/a.html', '<p class="bg-brand">');
@@ -156,7 +164,7 @@ test('declared config changes stage before activation and invalid config/depende
   /** Owned isolated project/consumer tree, removed in finally after resource cleanup. */
   const root = temp();
   /** Private fixture errors collected to distinguish failure from successful output. */
-  const errors = [];
+  const errors: unknown[] = [];
   let stop;
   try {
     put(root, 'src/a.html', '<p class="bg-brand">');
@@ -214,7 +222,7 @@ test('CSS-entry watching includes source changes, authored CSS and awaited cance
   /** Host cancellation controller for this isolated watcher owner. */
   const controller = new AbortController();
   /** Private fixture errors collected to distinguish failure from successful output. */
-  const errors = [];
+  const errors: unknown[] = [];
   let stop;
   try {
     put(root, 'src/a.html', '<p class="p-2">');
@@ -250,21 +258,24 @@ test('startup cancellation and a cooperative in-flight config load release handl
   const root = temp();
   /** Initial shared-watcher count restored after every owned subscription closes. */
   const baseline = activeWatcherCount();
-  let stop, release, started;
+  let stop: ReturnType<typeof watchZuix> | undefined;
+  let release: (() => void) | undefined;
+  let started: (() => void) | undefined;
   try {
     put(root, 'src/a.html', '<p class="p-2">');
     put(root, 'zuix.json', '{}');
     /** Fixture synchronization promise proving config loading started before cancellation. */
-    const entered = new Promise((resolve) => {
+    const entered = new Promise<void>((resolve) => {
       started = resolve;
     });
     stop = watchZuix(root, cfg, undefined, () => {}, {
       ...options,
       configFile: 'zuix.json',
       loadConfig: ({ signal }) =>
-        new Promise((resolve) => {
+        new Promise<ZuixConfig>((resolve) => {
           release = () => resolve({ ...cfg, safelist: ['hidden'] });
           signal.addEventListener('abort', release, { once: true });
+          assert.ok(started);
           started();
         }),
     });
@@ -317,7 +328,9 @@ test('valid manifests use non-root public URLs and hashes; source maps are expli
     };
     buildZuix(root, config);
     /** Parsed package or output manifest checked against explicit public contracts. */
-    const manifest = JSON.parse(read(root, 'public/css/assets.json'));
+    const manifest: ZuixBuildManifest = JSON.parse(
+      read(root, 'public/css/assets.json')
+    );
     assert.equal(manifest.version, 1);
     assert.equal(manifest.stylesheets.length, 2);
     assert.doesNotMatch(JSON.stringify(manifest), /src\/a\.html/);
@@ -328,6 +341,7 @@ test('valid manifests use non-root public URLs and hashes; source maps are expli
     assert.equal(fs.existsSync(path.join(root, cfg.output + '.map')), false);
     /** Public shared stylesheet record whose hash must match its actual committed bytes. */
     const shared = manifest.stylesheets.find((item) => item.id === 'shared');
+    assert.ok(shared);
     assert.equal(
       shared.integrity,
       'sha256-' +
@@ -343,7 +357,9 @@ test('valid manifests use non-root public URLs and hashes; source maps are expli
     /** Synchronous borrowed map reader used only for file-level mapping assertions. */
     const consumer = new SourceMapConsumer(map);
     /** Observed generated/source map positions, distinct from token-exact source mapping. */
-    const positions = [];
+    const positions: Parameters<
+      Parameters<SourceMapConsumer['eachMapping']>[0]
+    >[0][] = [];
     consumer.eachMapping((item) => positions.push(item));
     assert.ok(positions.length);
     assert.ok(positions.every((item) => item.originalLine === 1));
@@ -420,9 +436,9 @@ test('Vite targets stylesheet modules without full reload or unrelated invalidat
   try {
     put(root, 'src/a.html', '<p class="p-2">');
     /** Synthetic targeted HMR messages; no real browser socket is opened. */
-    const sent = [];
+    const sent: unknown[] = [];
     /** Synthetic graph records invalidated by the adapter. */
-    const invalidated = [];
+    const invalidated: unknown[] = [];
     /** Generated CSS or synthetic stylesheet module used by this fixture. */
     const css = { url: '/@id/virtual:zuix.css' };
     /** Unrelated module record that stylesheet invalidation must never include. */
@@ -448,9 +464,17 @@ test('Vite targets stylesheet modules without full reload or unrelated invalidat
     });
     assert.deepEqual(affected, [own, css]);
     assert.ok(!invalidated.includes(unrelated));
-    assert.ok(sent.every((item) => item.type === 'update'));
+    assert.ok(
+      sent.every(
+        (item) =>
+          item &&
+          typeof item === 'object' &&
+          'type' in item &&
+          item.type === 'update'
+      )
+    );
     assert.doesNotMatch(
-      plugin.load(plugin.resolveId('virtual:zuix.css')),
+      present(plugin.load(present(plugin.resolveId('virtual:zuix.css')))),
       /padding:/
     );
     plugin.closeBundle();
@@ -462,19 +486,20 @@ test('Vite targets stylesheet modules without full reload or unrelated invalidat
 test('actual zuix binary reloads declared config, retains good CSS on syntax error and exits after SIGTERM', async () => {
   /** Owned isolated project/consumer tree, removed in finally after resource cleanup. */
   const root = temp();
-  let child,
-    output = '',
-    errors = '';
+  let child: ChildProcessByStdio<null, Readable, Readable> | undefined;
+  let output = '';
+  let errors = '';
   /** Wait for bounded integration polling without creating a production retry policy.
    * @param {number} ms - Delay in milliseconds.
    * @returns {Promise<void>} Timer completion.
    */
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const delay = (ms: number): Promise<void> =>
+    new Promise((resolve) => setTimeout(resolve, ms));
   /** Poll a fixture condition with a finite deadline.
    * @param {() => boolean} condition - Assertion readiness predicate.
    * @returns {Promise<void>} Readiness or a declared fixture timeout.
    */
-  const until = async (condition) => {
+  const until = async (condition: () => boolean): Promise<void> => {
     /** Absolute fixture deadline preventing a hanging child-process check. */
     const end = Date.now() + 5000;
     while (!condition()) {
@@ -492,7 +517,7 @@ test('actual zuix binary reloads declared config, retains good CSS on syntax err
      * @param {string} brand - Synthetic color token.
      * @returns {string} Inert configuration source written only to the isolated project.
      */
-    const source = (brand) =>
+    const source = (brand: string): string =>
       'export default ' +
       JSON.stringify({ ...cfg, extend: { colors: { brand } } }) +
       ';';
@@ -522,7 +547,11 @@ test('actual zuix binary reloads declared config, retains good CSS on syntax err
     put(root, configFile, source('#789'));
     await until(() => read(root, cfg.output).includes('#789'));
     /** Child outcome promise installed before signalling termination. */
-    const exited = new Promise((resolve, reject) => {
+    const exited = new Promise<{
+      code: number | null;
+      signal: NodeJS.Signals | null;
+    }>((resolve, reject) => {
+      assert.ok(child);
       child.once('exit', (code, signal) => resolve({ code, signal }));
       child.once('error', reject);
     });
@@ -532,7 +561,7 @@ test('actual zuix binary reloads declared config, retains good CSS on syntax err
       /** Observed child termination outcome, not a claim about user-managed applications. */
       const status = await Promise.race([
         exited,
-        new Promise((_, reject) => {
+        new Promise<never>((_, reject) => {
           timer = setTimeout(
             () => reject(new Error('CLI did not drain')),
             3000
@@ -547,8 +576,21 @@ test('actual zuix binary reloads declared config, retains good CSS on syntax err
   } finally {
     if (child && child.exitCode === null) {
       child.kill('SIGKILL');
-      await new Promise((resolve) => child.once('close', resolve));
+      await new Promise<void>((resolve) => {
+        assert.ok(child);
+        child.once('close', () => resolve());
+      });
     }
     remove(root);
   }
 });
+
+/** Require an adapter result before matching generated CSS or a virtual module ID.
+ * @param {T | null | undefined} value - Nullable public result.
+ * @returns {T} Present result or a fixture assertion failure.
+ * @template T
+ */
+function present<T>(value: T | null | undefined): T {
+  assert.ok(value !== null && value !== undefined);
+  return value;
+}

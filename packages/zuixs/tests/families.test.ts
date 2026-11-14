@@ -7,6 +7,7 @@ import {
   resolveTheme,
   extractClasses,
   compileStylesheet,
+  type ZuixConfig,
 } from 'zuixs';
 
 /** Exact named-family declaration fixtures, checked independently against a CSS grammar parser. */
@@ -60,9 +61,11 @@ test('named families have exact declaration snapshots and independent CSS gramma
   assert.deepEqual(result.unmatched, []);
   /** Independent CSS parser result, not browser computed-style acceptance. */
   const parsed = cssTree.parse(result.css);
+  assert.equal(parsed.type, 'StyleSheet');
+  assert.ok(parsed.type === 'StyleSheet');
   assert.equal(parsed.children.size, tokens.length);
   /** Parser-reported grammar errors retained for an explicit empty-error assertion. */
-  const syntaxErrors = [];
+  const syntaxErrors: Error[] = [];
   cssTree.parse(result.css, {
     onParseError: (error) => syntaxErrors.push(error),
   });
@@ -137,6 +140,7 @@ test('arbitrary syntax cannot escape declarations, conditions or selectors, incl
   assert.deepEqual(utilityFor('block', direct), { display: 'block' });
   /** Public declaration copy intentionally mutated to verify built-in isolation. */
   const declaration = utilityFor('block', direct);
+  assert.ok(declaration);
   declaration.display = 'none';
   assert.deepEqual(utilityFor('block', direct), { display: 'block' });
 });
@@ -192,7 +196,7 @@ test('scanner handles nested helpers and literal parentheses with bounded source
 
 test('recipe/plugin priority and authored override order stay explicit and unsupported dependencies fail visibly', () => {
   /** Explicit per-test compiler/build policy independent of other fixtures. */
-  const config = {
+  const config: ZuixConfig = {
     preflight: false,
     plugins: [
       (api) => api.addUtilities({ '.text-start': { 'text-align': 'center' } }),

@@ -1,12 +1,14 @@
+import type { SqlDialectDefinition } from '@zeruxjs/db-sql-core';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 /** Resolve built CommonJS exports without source aliases. */
 const require = createRequire(import.meta.url);
 /** Public inert borrowed-executor factory. */
-const { createSqlConnector } = require('../dist/index.js');
+const { createSqlConnector } =
+  require('../dist/index.js') as typeof import('@zeruxjs/db-sql-core');
 /** Explicit parameterized PostgreSQL-compatible compiler fixture. */
-const dialect = {
+const dialect: SqlDialectDefinition = {
   kind: 'postgres',
   quoteIdentifier: (s) => `"${s}"`,
   placeholder: (i) => `$${i}`,
@@ -20,7 +22,7 @@ const ctx = {
 };
 test('SQL compiler rejects runtime enum injection and raw CHECK clauses without reaching driver', () => {
   /** Observed prepared SQL/parameter pairs; invalid inputs must leave this empty. */
-  const statements = [];
+  const statements: [string, unknown[]][] = [];
   /** Facade whose executor records only accepted native statements. */
   const conn = createSqlConnector(dialect, {
     executor: (sql, params) => {
@@ -29,9 +31,10 @@ test('SQL compiler rejects runtime enum injection and raw CHECK clauses without 
     },
   });
   /** Assert compiler denial through the real public executor boundary.
-   * @param {import("@zeruxjs/db").QueryOperation} op - Explicit hostile candidate from this fixture.
+   * @param {unknown} op - Explicit hostile candidate from this fixture.
    * @returns {void} Fails if any unsupported input reaches native dispatch. */
-  const deny = (op) => assert.throws(() => conn.execute(op, ctx));
+  const deny = (op: unknown): void =>
+    assert.throws(() => Reflect.apply(conn.execute, conn, [op, ctx]));
   deny({ op: 'select', table: 'events;DROP TABLE events' });
   deny({
     op: 'select',
@@ -101,7 +104,7 @@ test('SQL compiler rejects runtime enum injection and raw CHECK clauses without 
 });
 test('parameters remain bound and pg affected counts drive CAS decisions', async () => {
   /** Observed prepared SQL/parameter pairs; invalid inputs must leave this empty. */
-  const statements = [];
+  const statements: [string, unknown[]][] = [];
   /** Independent facade preserving native affected counts, including zero. */
   const c = createSqlConnector(dialect, {
     executor: (sql, params) => {

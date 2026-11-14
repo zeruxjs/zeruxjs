@@ -23,7 +23,7 @@ const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
  * @param {string} cwd - Owned fixture working directory.
  * @returns {string} Captured UTF-8 output.
  */
-const run = (bin, args, cwd) =>
+const run = (bin: string, args: string[], cwd: string): string =>
   execFileSync(bin, args, { cwd, encoding: 'utf8', timeout: 30000 });
 
 test('zero-runtime-dependency archive exposes compiled declarations and the public example', () => {
@@ -31,7 +31,7 @@ test('zero-runtime-dependency archive exposes compiled declarations and the publ
   const root = mkdtempSync(path.join(tmpdir(), 'zuix-families-consumer-'));
   try {
     /** Structured npm pack receipt for the already-built local package. */
-    const packed = JSON.parse(
+    const packed: unknown = JSON.parse(
       run(
         'npm',
         [
@@ -41,13 +41,21 @@ test('zero-runtime-dependency archive exposes compiled declarations and the publ
           '--pack-destination',
           root,
           '--cache',
-          '/tmp/zerux-zuix-npm-cache',
+          path.join(root, 'cache'),
         ],
         packageRoot
       )
     );
     /** Selected single archive receipt supporting npm array/object output formats. */
-    const info = Array.isArray(packed) ? packed[0] : Object.values(packed)[0];
+    assert.ok(packed && typeof packed === 'object');
+    /** Validated local npm receipt before archive path construction. */
+    const info: unknown = Object.values(packed)[0];
+    assert.ok(
+      info &&
+        typeof info === 'object' &&
+        'filename' in info &&
+        typeof info.filename === 'string'
+    );
     /** Owned consumer node_modules destination for the local package archive. */
     const installed = path.join(root, 'node_modules/zuixs');
     mkdirSync(installed, { recursive: true });
@@ -63,21 +71,37 @@ test('zero-runtime-dependency archive exposes compiled declarations and the publ
       root
     );
     /** Parsed package or output manifest checked against explicit public contracts. */
-    const manifest = JSON.parse(
+    const manifest: unknown = JSON.parse(
       readFileSync(path.join(installed, 'package.json'), 'utf8')
     );
-    assert.equal(manifest.dependencies, undefined);
+    assert.ok(
+      manifest &&
+        typeof manifest === 'object' &&
+        'version' in manifest &&
+        'exports' in manifest
+    );
+    assert.equal('dependencies' in manifest, false);
+    assert.ok(manifest.exports && typeof manifest.exports === 'object');
     assert.equal(manifest.version, '0.0.4');
     for (const entry of Object.values(manifest.exports)) {
+      assert.ok(entry && typeof entry === 'object');
       for (const file of Object.values(entry)) {
+        assert.equal(typeof file, 'string');
+        assert.ok(typeof file === 'string');
         assert.ok(readFileSync(path.join(installed, file)).length);
       }
     }
     writeFileSync(path.join(root, 'package.json'), '{"type":"module"}');
     /** README public-import example copied without replacing its declared APIs. */
-    const example = readFileSync(path.join(packageRoot, 'README.md'), 'utf8')
+    const exampleMatch = readFileSync(
+      path.join(packageRoot, 'README.md'),
+      'utf8'
+    )
       .split('Minimal public-import example:')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(exampleMatch);
+    /** Public compiler snippet copied verbatim after checking the authored fence. */
+    const example = exampleMatch[1];
     writeFileSync(path.join(root, 'example.ts'), example);
     /** Public browser-library TypeScript preset used to check installed declarations. */
     const preset = createTypeScriptPreset('browser-library');
@@ -104,12 +128,12 @@ test('zero-runtime-dependency archive exposes compiled declarations and the publ
     );
     run(process.execPath, [path.join(root, 'exports.mjs')], root);
     /** README Node watch example compiled against installed public exports. */
-    const watchExample = readFileSync(
-      path.join(packageRoot, 'README.md'),
-      'utf8'
-    )
+    const watchMatch = readFileSync(path.join(packageRoot, 'README.md'), 'utf8')
       .split('## Shared watch workflow and output manifests')[1]
-      .match(/```ts\n([\s\S]*?)```/)[1];
+      .match(/```ts\n([\s\S]*?)```/);
+    assert.ok(watchMatch);
+    /** Public watch snippet remains inert until invoked by a host. */
+    const watchExample = watchMatch[1];
     writeFileSync(path.join(root, 'example.ts'), watchExample);
     run(process.execPath, [tsc, '-p', path.join(root, 'tsconfig.json')], root);
     writeFileSync(

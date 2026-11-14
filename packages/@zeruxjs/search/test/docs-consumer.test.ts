@@ -1,13 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { JSDOM } from 'jsdom';
 test('existing public docs search consumer works with weighted prefix/version filtering without an app build', async () => {
   /** Original host document value restored in finally after the synthetic consumer fixture. */
-  const originalDocument = globalThis.document;
+  const originalDocument = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'document'
+  );
+  /** Owned emulated document supplies real DOM types without loading scripts or remote resources. */
+  const dom = new JSDOM(
+    '<body data-base-path="/zeruxjs" data-search-version="fixture"></body>'
+  );
   /** Original host Fetch function restored in finally; the fixture never delegates to the network. */
   const originalFetch = globalThis.fetch;
-  globalThis.document = {
-    body: { dataset: { basePath: '/zeruxjs', searchVersion: 'fixture' } },
-  };
+  globalThis.document = dom.window.document;
   let called = '';
   globalThis.fetch = async (url) => {
     called = String(url);
@@ -37,7 +43,7 @@ test('existing public docs search consumer works with weighted prefix/version fi
   try {
     /** Existing public docs search consumer imported against synthetic globals, without building the app. */
     const { searchDocs } =
-      await import('../../../../apps/zerux-docs/public/assets/search.js');
+      await import('../../../../apps/zerux-docs/src/browser/search.ts');
     /** Independent result clones used for public behavior assertions. */
     const results = await searchDocs('cache', '0.0.4');
     assert(called.startsWith('/zeruxjs/assets/search.json'));
@@ -46,10 +52,11 @@ test('existing public docs search consumer works with weighted prefix/version fi
     assert.equal((await searchDocs('notpresent', '0.0.4')).length, 0);
   } finally {
     if (originalDocument === undefined) {
-      delete globalThis.document;
+      assert.equal(Reflect.deleteProperty(globalThis, 'document'), true);
     } else {
-      globalThis.document = originalDocument;
+      Object.defineProperty(globalThis, 'document', originalDocument);
     }
     globalThis.fetch = originalFetch;
+    dom.window.close();
   }
 });

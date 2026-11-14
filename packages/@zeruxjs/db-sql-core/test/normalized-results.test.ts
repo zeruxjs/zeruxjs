@@ -1,16 +1,19 @@
+import type { CreateTableOperation } from '@zeruxjs/db';
+import type { SqlDialectDefinition } from '@zeruxjs/db-sql-core';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 /** Resolve built CommonJS public exports from this ESM fixture. */
 const require = createRequire(import.meta.url);
 /** Public inert compiler/executor facade factory. */
-const { createSqlConnector } = require('../dist/index.js');
+const { createSqlConnector } =
+  require('../dist/index.js') as typeof import('@zeruxjs/db-sql-core');
 /** Synthetic private configured identity. */
 const context = {
   connection: { slug: 'test', name: 'test', connector: 'sqlite', options: {} },
 };
 /** Explicit SQLite compiler fixture, not a native capability probe. */
-const dialect = {
+const dialect: SqlDialectDefinition = {
   kind: 'sqlite',
   quoteIdentifier: (s) => `"${s}"`,
   placeholder: () => '?',
@@ -82,14 +85,14 @@ test('capabilities describe the structured API and zero affected counts remain e
 });
 test('explicit synchronous execution never creates an async multi-statement tail', async () => {
   /** Multi-statement DDL used to prove strict sync mode has no asynchronous tail. */
-  const operation = {
+  const operation: CreateTableOperation = {
     op: 'createTable',
     table: 't',
     columns: [{ name: 'id', type: 'integer' }],
     indexes: [{ op: 'createIndex', table: 't', name: 'ix', columns: ['id'] }],
   };
   /** Observed synchronous statement order. */
-  const seen = [];
+  const seen: string[] = [];
   /** Explicit strictly synchronous borrowed executor facade. */
   const synchronous = createSqlConnector(dialect, {
     synchronous: true,
@@ -100,10 +103,10 @@ test('explicit synchronous execution never creates an async multi-statement tail
   });
   /** Normalized native outcome checked for precision, zero and sync semantics. */
   const result = synchronous.execute(operation, context);
-  assert.equal(typeof result.then, 'undefined');
+  assert.equal('then' in result, false);
   assert.equal(seen.length, 2);
   /** Observed thenable executor calls; no later DDL may be issued. */
-  const asynchronous = [];
+  const asynchronous: string[] = [];
   /** Strict-sync facade whose executor violates the declared owner contract. */
   const denied = createSqlConnector(dialect, {
     synchronous: true,
@@ -114,7 +117,13 @@ test('explicit synchronous execution never creates an async multi-statement tail
   });
   assert.throws(
     () => denied.execute(operation, context),
-    (error) => error.details?.code === 'ASYNCHRONOUS_EXECUTOR'
+    (error: unknown) =>
+      error instanceof Error &&
+      'details' in error &&
+      !!error.details &&
+      typeof error.details === 'object' &&
+      'code' in error.details &&
+      error.details.code === 'ASYNCHRONOUS_EXECUTOR'
   );
   await new Promise(setImmediate);
   assert.equal(asynchronous.length, 1);

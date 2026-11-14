@@ -32,12 +32,14 @@ const tmp = () => mkdtempSync(path.join(tmpdir(), 'zuix-test-'));
  * @param {string} root - Owned temporary directory.
  * @returns {void} Removal completion.
  */
-const cleanup = (root) => rmSync(root, { recursive: true, force: true });
+const cleanup = (root: string): void =>
+  rmSync(root, { recursive: true, force: true });
 /** Wait for bounded integration polling without creating a production retry policy.
  * @param {number} ms - Delay in milliseconds.
  * @returns {Promise<void>} Timer completion.
  */
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 test('generation stable regardless of input order and duplicates', () => {
   /** Representative compiler configuration with an explicit theme extension. */
@@ -228,9 +230,9 @@ test('watch rebuilds deterministically for edits/deletions and recovers after in
     const file = path.join(root, 'src/a.html');
     writeFileSync(file, '<i class="p-2"></i>');
     /** Postcommit CSS observations; failed candidates must not add a success receipt. */
-    const builds = [];
+    const builds: string[] = [];
     /** Private fixture errors collected to distinguish failure from successful output. */
-    const errors = [];
+    const errors: unknown[] = [];
     /** Owned callable watch disposer; closed tracks startup/loader/subscription settlement. */
     const stop = watchZuix(
       root,
@@ -247,14 +249,14 @@ test('watch rebuilds deterministically for edits/deletions and recovers after in
       writeFileSync(file, '<i class="m-4"></i>');
       await delay(630);
       assert.equal(builds.length, 2);
-      assert.match(builds.at(-1), /margin:/);
+      assert.match(present(builds.at(-1)), /margin:/);
       writeFileSync(file, 'x'.repeat(250));
       await delay(630);
       assert.equal(errors.length, 1);
       writeFileSync(file, '<i class="flex"></i>');
       await delay(630);
       assert.equal(builds.length, 3);
-      assert.match(builds.at(-1), /display:flex/);
+      assert.match(present(builds.at(-1)), /display:flex/);
       unlinkSync(file);
       await delay(630);
       assert.equal(builds.length, 4);
@@ -286,14 +288,15 @@ test('Vite adapter tracks transformed classes and removes stale values on deleti
     await v.buildStart();
     /** Resolved virtual stylesheet identifier, not an arbitrary engine/network address. */
     const id = v.resolveId('virtual:zuix.css');
-    assert.match(v.load(id), /padding:1rem/);
+    assert.ok(id);
+    assert.match(present(v.load(id)), /padding:1rem/);
     v.transform('<div class="m-4"/>', path.join(root, 'src/a.tsx'));
     /** Generated CSS or synthetic stylesheet module used by this fixture. */
-    const css = v.load(id);
+    const css = present(v.load(id));
     assert.match(css, /margin:1rem/);
     assert.doesNotMatch(css, /padding:1rem/);
     v.watchChange(path.join(root, 'src/a.tsx'), { event: 'delete' });
-    assert.doesNotMatch(v.load(id), /margin:1rem/);
+    assert.doesNotMatch(present(v.load(id)), /margin:1rem/);
     assert(invalidations >= 2);
     v.closeBundle();
   } finally {
@@ -310,7 +313,7 @@ test('CLI parsing rejects invalid arguments without generating output', () => {
      * @param {string[]} args - CLI argument vector.
      * @returns {import("node:child_process").SpawnSyncReturns<string>} Exit status and captured output.
      */
-    const run = (args) =>
+    const run = (args: string[]) =>
       spawnSync(process.execPath, [cli, ...args], {
         cwd: root,
         encoding: 'utf8',
@@ -333,3 +336,13 @@ test('root entry is browser-safe: no eager Node builtins', () => {
   );
   assert.doesNotMatch(file, /from ['"]node:(?:fs|path)/);
 });
+
+/** Require the expected fixture output rather than coercing absent CSS.
+ * @param {T | null | undefined} value - Nullable compiler or adapter result.
+ * @returns {T} Present result or an assertion failure.
+ * @template T
+ */
+function present<T>(value: T | null | undefined): T {
+  assert.ok(value !== null && value !== undefined);
+  return value;
+}

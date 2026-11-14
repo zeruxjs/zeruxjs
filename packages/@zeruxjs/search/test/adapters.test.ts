@@ -4,11 +4,27 @@ import {
   createSearchServices,
   registerSearchService,
   createLocalSearchFactory,
+  SearchAdapterError,
+  type SearchServiceOptions,
+  type SearchFactory,
+  type SearchAdapter,
+  type SearchCapabilities,
+  type SearchMutationReceipt,
 } from '@zeruxjs/search/adapters';
+/** Mutable synthetic startup selections; production registration snapshots these inputs. */
+type FixtureOptions = Omit<
+  SearchServiceOptions,
+  'factories' | 'connections'
+> & {
+  /** Explicit trusted fixture factories only. */
+  factories: Record<string, SearchFactory>;
+  /** Per-test connection list intentionally mutated before startup. */
+  connections: SearchServiceOptions['connections'][number][];
+};
 /** Build bounded memory-only service configuration for isolated synthetic tenants.
  * @returns {object} Fresh isolated local-service configuration.
  */
-const local = () => ({
+const local = (): FixtureOptions => ({
   factories: {
     local: createLocalSearchFactory({
       maxTenants: 2,
@@ -17,15 +33,22 @@ const local = () => ({
   },
   connections: [{ name: 'catalog', backend: 'local' }],
   authorize: (context) =>
-    context?.verified ? { tenant: context.tenant } : null,
+    context &&
+    typeof context === 'object' &&
+    'verified' in context &&
+    context.verified === true &&
+    'tenant' in context &&
+    typeof context.tenant === 'string'
+      ? { tenant: context.tenant }
+      : null,
 });
 /** Create a synthetic already-verified tenant context; production verification belongs to the host.
  * @param {string} tenant - Synthetic verified tenant identity.
  * @returns {object} Fixture context consumed only by the test authorizer.
  */
-const identity = (tenant) => ({ verified: true, tenant });
+const identity = (tenant: string) => ({ verified: true, tenant });
 /** Explicit synthetic remote capabilities; no live engine is contacted. */
-const caps = {
+const caps: SearchCapabilities = {
   tenantIsolation: true,
   durability: 'persistent',
   consistency: 'eventual',
@@ -38,7 +61,7 @@ const caps = {
  * @param {object} overrides - Explicit synthetic method replacements.
  * @returns {object} Injected adapter; no real network client is acquired.
  */
-const fixture = (overrides) => ({
+const fixture = (overrides: Partial<SearchAdapter> = {}): SearchAdapter => ({
   capabilities: caps,
   search: async () => ({ hits: [], coverage: 'exact' }),
   index: async () => ({ state: 'accepted', taskId: 'opaque' }),
@@ -50,7 +73,7 @@ const fixture = (overrides) => ({
  * @param {Function} factory - Explicit synthetic adapter factory.
  * @returns {object} Private connection fixture with a fixed HTTPS allowlist.
  */
-const remote = (factory) => ({
+const remote = (factory: SearchFactory): FixtureOptions => ({
   factories: { remote: factory },
   connections: [
     {
@@ -87,10 +110,14 @@ test('local compatibility, physical tenant isolation, staged writes, unsupported
     );
     assert.throws(
       () =>
-        service.search('catalog', identity('a'), {
-          text: 'hello',
-          tenant: 'a',
-        }),
+        Reflect.apply(service.search, service, [
+          'catalog',
+          identity('a'),
+          {
+            text: 'hello',
+            tenant: 'a',
+          },
+        ]),
       { code: 'INVALID' }
     );
     assert.throws(
@@ -182,9 +209,11 @@ test('backend errors are redacted and accepted task receipts do not imply comple
   try {
     await assert.rejects(
       service.search('catalog', {}, { text: 'x' }),
-      (e) =>
+      (e: unknown) =>
+        e instanceof SearchAdapterError &&
         e.code === 'UNAVAILABLE' &&
         !e.message.includes('private') &&
+        e.cause instanceof Error &&
         e.cause.message.includes('private')
     );
     assert.deepEqual(
@@ -197,17 +226,17 @@ test('backend errors are redacted and accepted task receipts do not imply comple
 });
 
 test('cancelled writes retain slot, signal and cleanup until native settlement; no replay', async (t) => {
-  let settle,
-    nativeSignal,
-    writes = 0,
-    closes = 0;
+  let settle: ((receipt: SearchMutationReceipt) => void) | undefined;
+  let nativeSignal: AbortSignal | undefined;
+  let writes = 0;
+  let closes = 0;
   /** Explicit fixture configuration; changes exercise validation without touching application state. */
   const options = remote(async () =>
     fixture({
       index: async (_, call) => {
         writes++;
         nativeSignal = call.signal;
-        return new Promise((r) => {
+        return new Promise<SearchMutationReceipt>((r) => {
           settle = r;
         });
       },
@@ -237,12 +266,14 @@ test('cancelled writes retain slot, signal and cleanup until native settlement; 
   await new Promise((r) => setImmediate(r));
   abort.abort();
   await assert.rejects(write, { code: 'CANCELLED', outcome: 'unknown' });
+  assert.ok(nativeSignal);
   assert.equal(nativeSignal.aborted, true);
   await assert.rejects(service.health('catalog'), { code: 'LIMIT' });
   /** Owned close promise; settle retained native work before awaiting its drain. */
   const closing = service.close();
   await new Promise((r) => setImmediate(r));
   assert.equal(closes, 0);
+  assert.ok(settle);
   settle({ state: 'completed' });
   await closing;
   assert.equal(closes, 1);
@@ -251,7 +282,7 @@ test('cancelled writes retain slot, signal and cleanup until native settlement; 
 
 test('startup rollback owns late factory settlement after deadline and closes prior resources', async () => {
   /** Synthetic close-order ledger, containing fixed fixture names only. */
-  const closed = [];
+  const closed: string[] = [];
   /** Explicit fixture configuration; changes exercise validation without touching application state. */
   const options = remote(async () =>
     fixture({
@@ -314,7 +345,8 @@ test('startup rollback failures stay explicit and preserve both private causes',
   options.connections.push({ name: 'failed', backend: 'failed' });
   await assert.rejects(
     createSearchServices(options),
-    (error) =>
+    (error: unknown) =>
+      error instanceof SearchAdapterError &&
       error.code === 'UNAVAILABLE' &&
       error.outcome === 'unknown' &&
       !error.message.includes('private') &&

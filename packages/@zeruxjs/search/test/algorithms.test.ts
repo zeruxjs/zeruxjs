@@ -1,3 +1,8 @@
+import type {
+  SearchIndexOptions,
+  SearchSnapshot,
+  SearchDocument,
+} from '@zeruxjs/search';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -88,9 +93,11 @@ test('atomic batches/replacements survive invalid input, generator failure, capa
   assert.throws(() => index.update(invalid));
   assert.deepEqual(index.snapshot(), before);
   assert.throws(() =>
-    index.addMany([
-      { id: 'new', text: 'new' },
-      { id: 'bad', text: 3 },
+    Reflect.apply(index.addMany, index, [
+      [
+        { id: 'new', text: 'new' },
+        { id: 'bad', text: 3 },
+      ],
     ])
   );
   assert.deepEqual(index.snapshot(), before);
@@ -128,7 +135,7 @@ test('atomic batches/replacements survive invalid input, generator failure, capa
 });
 test('V2 pins analyzer/weights; V1 migration intentionally uses receiver settings and invalid loads preserve generation', () => {
   /** Explicit fixture configuration; changes exercise validation without touching application state. */
-  const options = {
+  const options: SearchIndexOptions<SearchDocument> = {
     analyzer: { locale: 'en', diacritics: 'fold' },
     maxDocuments: 10,
   };
@@ -202,14 +209,19 @@ test('filter operators are literal, case-explicit, bounded and cannot mutate sto
       return true;
     },
   });
-  assert.equal(index.get('a').category, 'News');
+  assert.equal(index.get('a')?.category, 'News');
   assert.equal(index.search('mutated').length, 0);
   assert.throws(() =>
-    index.search('item', {
-      filters: [{ field: 'category', operator: 'regex', value: '(a+)+$' }],
-    })
+    Reflect.apply(index.search, index, [
+      'item',
+      {
+        filters: [{ field: 'category', operator: 'regex', value: '(a+)+$' }],
+      },
+    ])
   );
-  assert.throws(() => index.search('item', { mode: 'bogus' }));
+  assert.throws(() =>
+    Reflect.apply(index.search, index, ['item', { mode: 'bogus' }])
+  );
 });
 test('query/expansion/scan/highlight limits fail explicitly, including direct helper boundaries', () => {
   /** Independent bounded in-memory index used only by this example or fixture. */
@@ -236,7 +248,10 @@ test('query/expansion/scan/highlight limits fail explicitly, including direct he
     }
   );
   assert.throws(() =>
-    index.search('a', { match: 'fuzzy', fuzzy: { maxDistance: 3 } })
+    Reflect.apply(index.search, index, [
+      'a',
+      { match: 'fuzzy', fuzzy: { maxDistance: 3 } },
+    ])
   );
   assert.throws(() => highlightMatches('x', Array(65).fill('x')));
   assert.equal(highlightMatches('<a+>', ['a+']), '&lt;<mark>a+</mark>&gt;');
@@ -247,7 +262,10 @@ test('snapshot accessors/serialization callbacks and budget failures never execu
   index.add({ id: 'keep', text: 'stable' });
   let called = false;
   /** Synthetic input or decoded result retained for exact assertions. */
-  const value = { version: 1, documents: [{ id: 'other', text: 'new' }] };
+  const value: SearchSnapshot<SearchDocument> = {
+    version: 1,
+    documents: [{ id: 'other', text: 'new' }],
+  };
   Object.defineProperty(value.documents, 'toJSON', {
     value() {
       called = true;
@@ -256,7 +274,7 @@ test('snapshot accessors/serialization callbacks and budget failures never execu
   });
   assert.throws(() => index.load(value));
   assert.equal(called, false);
-  assert.equal(index.get('keep').text, 'stable');
+  assert.equal(index.get('keep')?.text, 'stable');
   assert.throws(
     () =>
       index.load({
@@ -282,11 +300,19 @@ test('async or nonboolean visibility filters fail closed instead of exposing mat
   const index = createSearchIndex();
   index.add({ id: 'secret', text: 'item' });
   assert.throws(
-    () => index.search('item', { filter: async () => false }),
+    () =>
+      Reflect.apply(index.search, index, [
+        'item',
+        { filter: async () => false },
+      ]),
     /synchronous boolean/
   );
   assert.throws(
-    () => index.search('item', { filter: () => ({ allowed: false }) }),
+    () =>
+      Reflect.apply(index.search, index, [
+        'item',
+        { filter: () => ({ allowed: false }) },
+      ]),
     /synchronous boolean/
   );
   assert.equal(index.size, 1);
@@ -300,7 +326,7 @@ test('nonplain arrays and snapshot containers cannot execute serialization hooks
   const before = index.snapshot();
   let invoked = 0;
   /** Untrusted data can provide inherited serialization/iteration behavior; the boundary must reject it. */
-  class PayloadArray extends Array {
+  class PayloadArray extends Array<unknown> {
     /** Represent an inherited callback that must never be invoked by validation/serialization.
      * @returns {unknown[]} Synthetic callback result; invocation would violate the inert-data contract.
      */
@@ -311,6 +337,10 @@ test('nonplain arrays and snapshot containers cannot execute serialization hooks
   }
   /** A class-based envelope is outside the public plain-JSON snapshot contract. */
   class SnapshotEnvelope {
+    /** Deliberately nonplain snapshot version. */
+    version: number;
+    /** Deliberately nonplain snapshot documents. */
+    documents: SearchDocument[];
     /** Construct synthetic data fields without any I/O or external side effects. */
     constructor() {
       this.version = 1;
@@ -327,16 +357,18 @@ test('nonplain arrays and snapshot containers cannot execute serialization hooks
   assert.throws(() =>
     index.add({ id: 'bad', text: 'unsafe', metadata: new PayloadArray() })
   );
-  assert.throws(() => index.load(new SnapshotEnvelope()));
+  assert.throws(() =>
+    Reflect.apply(index.load, index, [new SnapshotEnvelope()])
+  );
   assert.throws(() =>
     index.load({
       version: 1,
-      documents: new PayloadArray({ id: 'bad', text: 'unsafe' }),
+      documents: PayloadArray.of({ id: 'bad', text: 'unsafe' }),
     })
   );
   assert.equal(invoked, 0);
   assert.deepEqual(index.snapshot(), before);
   index.add({ id: 'plain', text: 'safe', metadata: ['inert'] });
-  assert.deepEqual(index.get('plain').metadata, ['inert']);
+  assert.deepEqual(index.get('plain')?.metadata, ['inert']);
   index.clear();
 });
