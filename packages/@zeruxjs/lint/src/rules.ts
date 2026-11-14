@@ -73,6 +73,9 @@ function serverImport(specifier: string): boolean {
     specifier === '@zeruxjs/performance/response' ||
     specifier === '@zeruxjs/react/server' ||
     specifier === '@zeruxjs/vue/server' ||
+    /^(?:ztrial)(?:$|\/(?:http|reports|experiments|playwright|vitest)$)/.test(
+      specifier
+    ) ||
     specifier === 'zclivo' ||
     specifier === 'zclivo/generator' ||
     specifier === 'zenixjs/application' ||
@@ -112,6 +115,10 @@ const acquisitions: Record<string, readonly string[]> = {
   ],
   'zeruxjs/services': ['createServiceScope', 'initializeRuntimeServices'],
   'zeruxjs/service-endpoints': ['createServiceClient'],
+  ztrial: ['createHttpFake'],
+  'ztrial/http': ['createHttpFake'],
+  'ztrial/jsdom': ['createJsdomEnvironment'],
+  'ztrial/experiments': ['createExperimentEvaluator'],
   'zforge/modules': ['createDevtoolsModuleHost'],
   'zforge/diagnostics': ['createRequestDiagnostics'],
   zhost: [

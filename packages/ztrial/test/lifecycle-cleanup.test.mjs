@@ -7,8 +7,10 @@ import { createRunner, validateConfig } from '../dist/index.js';
 import { main } from '../dist/bin/cli.js';
 
 test('bail invokes nested suite afterAll hooks exactly once for started suites', async () => {
-  const runner = createRunner(),
-    events = [];
+  /** Independent synthetic case/suite registry; no application or browser is started. */
+  const runner = createRunner();
+  /** Actual reached setup/cleanup callback sequence, including emergency bail cleanup. */
+  const events = [];
   runner.describe('outer', () => {
     runner.beforeAll(() => events.push('beforeAll'));
     runner.afterAll(() => events.push('outerDone'));
@@ -20,12 +22,14 @@ test('bail invokes nested suite afterAll hooks exactly once for started suites',
       runner.test('skipped by bail', () => assert.fail('must not execute'));
     });
   });
+  /** Actual runner outcomes proving failed teardown cannot become a green skip. */
   const summary = await runner.runTests({ bail: true });
   assert.equal(summary.failed, 1);
   assert.equal(summary.skipped, 1);
   assert.deepEqual(events, ['beforeAll', 'innerDone', 'outerDone']);
 });
 test('failure in emergency afterAll reports a failed cleanup and never reports green', async () => {
+  /** Independent synthetic case/suite registry; no application or browser is started. */
   const runner = createRunner();
   runner.afterAll(() => {
     throw new Error('cleanup failed');
@@ -34,6 +38,7 @@ test('failure in emergency afterAll reports a failed cleanup and never reports g
     throw new Error('test failed');
   });
   runner.test('skipped', () => {});
+  /** Actual runner outcomes proving failed teardown cannot become a green skip. */
   const summary = await runner.runTests({ bail: true });
   assert.equal(summary.failed, 2);
   assert.ok(
@@ -44,9 +49,12 @@ test('failure in emergency afterAll reports a failed cleanup and never reports g
   );
 });
 test('CLI fails on empty discovery, absent values, invalid reporter; config root resolves relative to config', async () => {
-  const root = mkdtempSync(join(tmpdir(), 'ztrial-sec79-'));
-  const old = process.stderr.write,
-    oldOut = process.stdout.write;
+  /** Owned temporary JSON/test-module fixture namespace, removed in finally. */
+  const root = mkdtempSync(join(tmpdir(), 'ztrial-lifecycle-'));
+  /** Original process stderr writer restored unconditionally after the CLI fixture. */
+  const old = process.stderr.write;
+  /** Original process stdout writer restored unconditionally after the CLI fixture. */
+  const oldOut = process.stdout.write;
   let errors = '';
   process.stderr.write = (v) => {
     errors += String(v);

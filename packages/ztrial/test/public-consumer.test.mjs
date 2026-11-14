@@ -14,18 +14,27 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createTsConfig, checkTypes } from '@zeruxjs/typescript';
+/** Package-local module resolver used only to pack explicitly installed declared test prerequisites. */
 const require = createRequire(import.meta.url);
 
 test('offline installed exports own declarations and support HTTP fake and runner lifecycle consumers', () => {
+  /** Owned temporary offline consumer/cache/archive namespace removed in finally. */
   const root = mkdtempSync(join(tmpdir(), 'ztrial-consumer-'));
   try {
+    /** Invoke only explicit trusted offline consumer npm commands with a private cache and finite timeout.
+     * @param {string[]} args Fixed test-owned npm pack/install arguments, never user-supplied shell text.
+     * @returns {string} Actual command output; no package is published or dependency version selected from the network. */
     const npm = (args) =>
       execFileSync('npm', [...args, '--cache', join(root, 'cache')], {
         cwd: root,
         encoding: 'utf8',
         timeout: 30000,
       });
+    /** Pack one explicit trusted local package archive into the private fixture namespace without lifecycle scripts.
+     * @param {string} directory Explicit installed local package directory.
+     * @returns {string} Private file archive reference for the isolated offline consumer. */
     const pack = (directory) => {
+      /** Actual npm pack receipt normalized across supported array/object JSON output shapes. */
       const [archive] = Object.values(
         JSON.parse(
           npm([
@@ -40,13 +49,15 @@ test('offline installed exports own declarations and support HTTP fake and runne
       );
       return `file:${join(root, archive.filename)}`;
     };
+    /** Explicit local tarball references only; no remote dependency resolution is permitted by the fixture. */
     const dependencies = {
       ztrial: pack(fileURLToPath(new URL('..', import.meta.url))),
     };
-    for (const name of ['@types/node', 'undici-types'])
+    for (const name of ['@types/node', 'undici-types']) {
       dependencies[name] = pack(
         dirname(require.resolve(name + '/package.json'))
       );
+    }
     writeFileSync(
       join(root, 'package.json'),
       JSON.stringify({
@@ -100,6 +111,7 @@ const invalid:HttpReply={failure:'fabricate-live'};void invalid;
       )
     );
     createTsConfig(root, { preset: 'node-server' });
+    /** Actual shared-tooling consumer declaration-check receipt with no inferred framework parity. */
     const checked = checkTypes({
       cwd: root,
       files: [],

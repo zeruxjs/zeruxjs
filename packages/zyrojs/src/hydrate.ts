@@ -44,11 +44,11 @@ export interface HydrationHandle {
 }
 /** Whole-root V1 adoption. Mismatches reject by default; replacement must be explicitly authorized. */
 /**
- * hydrate.
- * @param {Component<P>} component - Input value for this operation.
- * @param {Element} container - Input value for this operation.
- * @param {HydrateOptions<P>} options - Input value for this operation.
- * @returns {HydrationHandle} Result produced by this operation.
+ * Adopt one versioned server root; explicit replacement may discard existing form edits and rerun setup.
+ * @param {Component<P>} component - Trusted authored component matching the server definition and deterministic initial state.
+ * @param {Element} container - Host-owned element with no existing render owner and intact V1 root markers.
+ * @param {HydrateOptions<P>} options - Required public-props validator, inert serialized data and optional bounded recovery/cancellation policy.
+ * @returns {HydrationHandle} Frozen root outcome and owner-specific idempotent teardown handle.
  */
 export function hydrate<P extends Record<string, any>>(
   component: Component<P>,
@@ -64,14 +64,7 @@ export function hydrate<P extends Record<string, any>>(
       'ZyroJS: hydrate requires a component and element container'
     );
   }
-  /** Stores the {
-    data,
-    validateProps,
-    signal,
-    mismatch: recovery = 'throw',
-    onMismatch,
-    ...limitInput
-  } value used by this module. */
+  /** Separate public-data validation, cancellation and recovery policy from bounded traversal limits. */
   const {
     data,
     validateProps,
@@ -86,7 +79,7 @@ export function hydrate<P extends Record<string, any>>(
   ) {
     throw new TypeError('ZyroJS: invalid mismatch policy');
   }
-  /** Stores the limits value used by this module. */
+  /** Validated traversal/byte budgets, checked before adopting or replacing any root. */
   const limits = hydrationLimits(limitInput);
   checkAbort(signal);
   if (hydrationRootOwned(container)) {
@@ -95,14 +88,14 @@ export function hydrate<P extends Record<string, any>>(
       'ZyroJS: container already has a render owner'
     );
   }
-  /** Stores the payload value used by this module. */
+  /** Validated detached public props and prefix; JSON data never executes as JavaScript. */
   const payload = readHydrationData(
     data,
     { validateProps, signal },
     limits.maxPropsBytes
   );
   validateHydrationTree(container, limits, signal);
-  /** Stores the session value used by this module. */
+  /** Attempt-local cursors, deferred bindings and acquired nodes; no cross-root state is shared. */
   const session: HydrationSession = {
     prefix: payload.idPrefix,
     components: 0,
@@ -118,13 +111,13 @@ export function hydrate<P extends Record<string, any>>(
     textMarkers: [],
     created: new Set(),
   };
-  /** Stores the vnode value used by this module. */
+  /** Inert root description; component setup begins only during adoption or explicit replacement. */
   const vnode = h(component, payload.props);
   let acquired = false,
     status: HydrationHandle['status'] = 'hydrated';
   try {
     try {
-      /** Stores the first value used by this module. */
+      /** Both outer comments must match the validated prefix/version before traversal starts. */
       const first = container.childNodes[0],
         last = container.childNodes[container.childNodes.length - 1];
       if (
@@ -171,8 +164,8 @@ export function hydrate<P extends Record<string, any>>(
     checkAbort(signal);
     let release = () => {};
     /**
-     * Application function abort.
-     * @returns {unknown} Result produced by this operation.
+     * Release this exact hydration owner on later abort; signals do not interrupt synchronous JavaScript.
+     * @returns {void} Releases owned resources; disposer errors remain visible to the caller.
      */
     const abort = () => release();
     signal?.addEventListener('abort', abort, { once: true });
@@ -187,8 +180,8 @@ export function hydrate<P extends Record<string, any>>(
     return Object.freeze({
       status,
       /**
-       * dispose.
-       * @returns {unknown} Result produced by this operation.
+       * Release this handle once without taking ownership of a later replacement root.
+       * @returns {void} Releases owned resources; disposer errors remain visible to the caller.
        */
       dispose() {
         if (!disposed) {

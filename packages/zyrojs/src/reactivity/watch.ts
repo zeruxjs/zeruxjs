@@ -5,14 +5,13 @@ import {
   ownEffectCleanup,
 } from './effect.js';
 
-/** Tracks only source reads. Callback/cleanup are synchronous and untracked; equality is Object.is. */
 /**
- * watch.
- * @param {() => T} source - Input value for this operation.
- * @param {(value: T, previous: T | undefined) => void | (() => void)} callback - Input value for this operation.
- * @param {{ immediate?: boolean }} options - Input value for this operation.
+ * Observe synchronous source reads with Object.is equality; callbacks and cleanup run untracked.
+ * @param {() => T} source - Synchronous reader whose signal dependencies are tracked.
+ * @param {(value: T, previous: T | undefined) => void | (() => void)} callback - Receives current/previous values; may return synchronous cleanup for the next notification or stop.
+ * @param {{ immediate?: boolean }} options - Initial-notification policy; subsequent equal values never notify.
  * @param {boolean} options.immediate - Invoke the callback for the initial value.
- * @returns {() => void} Result produced by this operation.
+ * @returns {() => void} Idempotent stop callback, also owned by the ambient effect scope.
  */
 export function watch<T>(
   source: () => T,
@@ -29,11 +28,11 @@ export function watch<T>(
   let initialized = false;
   let previous: T;
   let cleanup: void | (() => void);
-  /** Stores the scope value used by this module. */
+  /** Owns the tracking effect and final callback cleanup, including failed initial setup. */
   const scope = createEffectScope();
   scope.add(() => {
     untracked(() => {
-      /** Stores the fn value used by this module. */
+      /** Detach cleanup before invoking it so reentrant disposal cannot invoke it twice. */
       const fn = cleanup;
       cleanup = undefined;
       fn?.();
@@ -42,22 +41,22 @@ export function watch<T>(
   try {
     scope.run(() =>
       effect(() => {
-        /** Stores the value value used by this module. */
+        /** Current source result; only reads made by source participate in dependency tracking. */
         const value = source();
         if (!initialized || !Object.is(value, previous)) {
-          /** Stores the old value used by this module. */
+          /** Previous observed value, undefined for the first callback. */
           const old = previous;
-          /** Stores the notify value used by this module. */
+          /** Initial callbacks require explicit opt-in; later changed values always notify. */
           const notify = initialized || options.immediate === true;
           previous = value;
           initialized = true;
           if (notify) {
             untracked(() => {
-              /** Stores the fn value used by this module. */
+              /** Detach cleanup before invoking it so reentrant disposal cannot invoke it twice. */
               const fn = cleanup;
               cleanup = undefined;
               fn?.();
-              /** Stores the result value used by this module. */
+              /** Only a synchronous cleanup function or undefined is accepted; promises are rejected. */
               const result = callback(value, old);
               if (result !== undefined && typeof result !== 'function') {
                 throw new TypeError(

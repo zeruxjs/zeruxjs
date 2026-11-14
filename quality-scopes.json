@@ -54,7 +54,9 @@
     "packages/zlocale",
     "packages/zlook",
     "packages/zuixs",
-    "packages/zforge"
+    "packages/zforge",
+    "packages/zhost",
+    "packages/ztrial"
   ],
   "deferred": []
 }

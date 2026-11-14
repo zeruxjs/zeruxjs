@@ -342,3 +342,12 @@ store (`close`) from inert module/experiment definitions. Root and these optiona
 entries import Node owners and reject in client modules. Legacy shared registration
 uses explicit unregister/server shutdown operations; it gains no invented returned
 disposer. Static retention checks do not prove teardown or host authorization.
+
+Ztrial ownership facts cover direct `createHttpFake` (root and `/http`),
+`createJsdomEnvironment` and `createExperimentEvaluator` calls. Retain their owned
+handles and perform the documented close/cleanup; static retention alone does not
+prove disposal. Inert runner/clock/report registrations and self-scoped
+`withHttpFake` are distinct. Node-backed root, HTTP, reports, experiments,
+Playwright and Vitest compatibility entries reject direct client imports. The
+small `/jsdom` module also exposes borrowed `requireDom`; optional emulator
+creation remains explicit, so the entire entry is not labeled server-only.

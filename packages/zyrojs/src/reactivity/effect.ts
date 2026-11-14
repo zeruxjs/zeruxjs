@@ -2,32 +2,32 @@ import { assertSetupHook } from '../dom/component.js';
 import type { Subscriber } from './types.js';
 
 /** Dependency tracking is synchronous: async work must use explicit signals/cleanup. */
-/** Stores the stack value used by this module. */
+/** Synchronous subscriber stack; undefined masks tracking during untracked callbacks. */
 const stack: (Subscriber | undefined)[] = [];
-/** Stores the cleanups value used by this module. */
+/** Dependency removers keyed weakly by effect identity, rebuilt on every successful tracking pass. */
 const cleanups = new WeakMap<Subscriber, Set<() => void>>();
-/** Stores the scopes value used by this module. */
+/** Synchronous ownership stack, restored in finally; scopes do not propagate through await. */
 const scopes: EffectScope[] = [];
-/** Stores the scheduled value used by this module. */
+/** Deduplicated pending effects; nested writes are deferred until the active batch/effect exits. */
 const scheduled = new Set<Subscriber>();
 let batchDepth = 0;
 let flushing = false;
 let effectDepth = 0;
 
 /**
- * getCurrentSubscriber.
- * @returns {Subscriber | undefined} Result produced by this operation.
+ * Read the innermost synchronous tracking subscriber.
+ * @returns {Subscriber | undefined} Active effect, or undefined outside tracking/untracked work.
  */
 export function getCurrentSubscriber(): Subscriber | undefined {
   return stack[stack.length - 1];
 }
 /**
- * trackDependency.
- * @param {() => void} unsubscribe - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Associate a dependency remover with the currently tracking effect.
+ * @param {() => void} unsubscribe - Removes this effect from one signal’s subscriber set.
+ * @returns {void} Completes synchronously; failures propagate to the caller.
  */
 export function trackDependency(unsubscribe: () => void): void {
-  /** Stores the current value used by this module. */
+  /** Active subscriber receiving the dependency remover. */
   const current = getCurrentSubscriber();
   if (current) {
     cleanups.get(current)?.add(unsubscribe);
@@ -35,8 +35,8 @@ export function trackDependency(unsubscribe: () => void): void {
 }
 
 /**
- * flush.
- * @returns {void} Result produced by this operation.
+ * Drain deduplicated effects after nested work settles; reject runaway update loops.
+ * @returns {void} Completes synchronously; failures propagate to the caller.
  */
 function flush(): void {
   if (flushing || batchDepth || effectDepth) {
@@ -49,7 +49,7 @@ function flush(): void {
       if (++iterations > 1000) {
         throw new Error('ZyroJS: possible reactive update loop');
       }
-      /** Stores the current value used by this module. */
+      /** Snapshot this pass so effects scheduled during execution run in a later pass. */
       const current = [...scheduled];
       scheduled.clear();
       for (const run of current) {
@@ -64,9 +64,9 @@ function flush(): void {
   }
 }
 /**
- * scheduleEffect.
- * @param {Subscriber} run - Input value for this operation.
- * @returns {void} Result produced by this operation.
+ * Queue one effect and flush immediately when no batch or effect is executing.
+ * @param {Subscriber} run - Effect identity used for both deduplication and invocation.
+ * @returns {void} Completes synchronously; failures propagate to the caller.
  */
 export function scheduleEffect(run: Subscriber): void {
   scheduled.add(run);
@@ -74,9 +74,9 @@ export function scheduleEffect(run: Subscriber): void {
 }
 /** Nested synchronous batches coalesce notifications; exceptions do not strand the queue. */
 /**
- * batch.
- * @param {() => T} fn - Input value for this operation.
- * @returns {T} Result produced by this operation.
+ * Coalesce synchronous notifications; writes remain immediately readable and are not rolled back.
+ * @param {() => T} fn - Trusted synchronous callback; ownership/tracking do not extend beyond its return.
+ * @returns {T} Callback return value; thrown errors propagate after stack/queue restoration.
  */
 export function batch<T>(fn: () => T): T {
   batchDepth++;
@@ -100,25 +100,25 @@ export interface EffectScope {
 }
 /** Own subscriptions, effects and DOM disposers across a mount/unmount boundary. */
 /**
- * createEffectScope.
- * @returns {EffectScope} Result produced by this operation.
+ * Create an inert owner for effects and cleanup across an explicit lifecycle boundary.
+ * @returns {EffectScope} Independent scope; dispose attempts every registered cleanup once.
  */
 export function createEffectScope(): EffectScope {
   let disposed = false;
-  /** Stores the owned value used by this module. */
+  /** Idempotent cleanup handles in registration order; disposal visits a reversed snapshot. */
   const owned = new Set<() => void>();
   return {
     /**
-     * disposed.
-     * @returns {unknown} Result produced by this operation.
+     * Report whether disposal has started; cleanup errors do not reactivate the scope.
+     * @returns {boolean} Whether this scope has been disposed.
      */
     get disposed() {
       return disposed;
     },
     /**
-     * run.
-     * @param {() => T} fn - Input value for this operation.
-     * @returns {T} Result produced by this operation.
+     * Temporarily install this scope as the synchronous resource owner.
+     * @param {() => T} fn - Trusted synchronous callback; ownership/tracking do not extend beyond its return.
+     * @returns {T} Callback return value; thrown errors propagate after stack/queue restoration.
      */
     run<T>(fn: () => T): T {
       if (disposed) {
@@ -132,9 +132,9 @@ export function createEffectScope(): EffectScope {
       }
     },
     /**
-     * add.
-     * @param {() => void} cleanup - Input value for this operation.
-     * @returns {() => void} Result produced by this operation.
+     * Register idempotent cleanup, executing immediately if this scope is already disposed.
+     * @param {() => void} cleanup - Trusted synchronous resource disposer; exceptions remain visible.
+     * @returns {() => void} Idempotent cleanup handle that also unregisters itself from the owner.
      */
     add(cleanup: () => void): () => void {
       if (disposed) {
@@ -143,8 +143,8 @@ export function createEffectScope(): EffectScope {
       }
       let active = true;
       /**
-       * Application function stop.
-       * @returns {unknown} Result produced by this operation.
+       * Release this owner’s registration once, before invoking user cleanup.
+       * @returns {void} Cleanup completes or propagates its original error.
        */
       const stop = () => {
         if (!active) {
@@ -158,15 +158,15 @@ export function createEffectScope(): EffectScope {
       return stop;
     },
     /**
-     * dispose.
-     * @returns {void} Result produced by this operation.
+     * Fence new ownership and dispose registered resources in reverse order.
+     * @returns {void} Completes synchronously; failures propagate to the caller.
      */
     dispose(): void {
       if (disposed) {
         return;
       }
       disposed = true;
-      /** Stores the errors value used by this module. */
+      /** Collect every disposer failure while still attempting the remaining owned cleanups. */
       const errors: unknown[] = [];
       for (const stop of [...owned].reverse()) {
         try {
@@ -186,12 +186,12 @@ export function createEffectScope(): EffectScope {
   };
 }
 /**
- * onScopeDispose.
- * @param {() => void} cleanup - Input value for this operation.
- * @returns {() => void} Result produced by this operation.
+ * Register cleanup on the active synchronous scope; reject use without an owner.
+ * @param {() => void} cleanup - Trusted synchronous resource disposer; exceptions remain visible.
+ * @returns {() => void} Idempotent cleanup handle that also unregisters itself from the owner.
  */
 export function onScopeDispose(cleanup: () => void): () => void {
-  /** Stores the scope value used by this module. */
+  /** Innermost active scope; calling without one is an ownership error. */
   const scope = scopes[scopes.length - 1];
   if (!scope) {
     throw new Error('ZyroJS: onScopeDispose requires an active scope');
@@ -201,9 +201,9 @@ export function onScopeDispose(cleanup: () => void): () => void {
 
 /** Runs immediately, re-tracks conditional dependencies, and returns an idempotent stop. */
 /**
- * effect.
- * @param {() => void | (() => void)} callback - Input value for this operation.
- * @returns {() => void} Result produced by this operation.
+ * Run immediately, track conditional reads afresh and stop permanently after callback failure.
+ * @param {() => void | (() => void)} callback - Synchronous tracked work; optional cleanup runs before rerun and on stop.
+ * @returns {() => void} Idempotent cleanup handle that also unregisters itself from the owner.
  */
 export function effect(callback: () => void | (() => void)): () => void {
   assertSetupHook();
@@ -211,11 +211,11 @@ export function effect(callback: () => void | (() => void)): () => void {
   let running = false;
   let rerun = false;
   let returnedCleanup: (() => void) | undefined;
-  /** Stores the dependencies value used by this module. */
+  /** Subscription removers for this effect’s most recent dependency reads. */
   const dependencies = new Set<() => void>();
   /**
-   * Application function removeDependencies.
-   * @returns {unknown} Result produced by this operation.
+   * Unsubscribe the previous pass before recording a new dependency graph.
+   * @returns {void} Completes synchronously; callback or cleanup failures propagate.
    */
   const removeDependencies = () => {
     for (const remove of dependencies) {
@@ -224,8 +224,8 @@ export function effect(callback: () => void | (() => void)): () => void {
     dependencies.clear();
   };
   /**
-   * Application function stop.
-   * @returns {unknown} Result produced by this operation.
+   * Remove queued work and dependencies before invoking final user cleanup.
+   * @returns {void} Completes synchronously; callback or cleanup failures propagate.
    */
   const stop = () => {
     if (!active) {
@@ -234,15 +234,15 @@ export function effect(callback: () => void | (() => void)): () => void {
     active = false;
     scheduled.delete(run);
     removeDependencies();
-    /** Stores the cleanup value used by this module. */
+    /** Detach the prior user cleanup before invocation to avoid calling it twice on reentry. */
     const cleanup = returnedCleanup;
     returnedCleanup = undefined;
     cleanup?.();
     cleanups.delete(run);
   };
   /**
-   * Application function run.
-   * @returns {unknown} Result produced by this operation.
+   * Execute one tracking pass; reentrant notifications request a later pass.
+   * @returns {void} Completes synchronously; callback or cleanup failures propagate.
    */
   const run = () => {
     if (!active) {
@@ -255,7 +255,7 @@ export function effect(callback: () => void | (() => void)): () => void {
     running = true;
     effectDepth++;
     removeDependencies();
-    /** Stores the cleanup value used by this module. */
+    /** Detach the prior user cleanup before invocation to avoid calling it twice on reentry. */
     const cleanup = returnedCleanup;
     returnedCleanup = undefined;
     try {
@@ -265,7 +265,7 @@ export function effect(callback: () => void | (() => void)): () => void {
         scopes.push(scope);
       }
       try {
-        /** Stores the result value used by this module. */
+        /** Only a returned function becomes cleanup; asynchronous callback work is not tracked. */
         const result = callback();
         if (typeof result === 'function') {
           returnedCleanup = result;
@@ -291,9 +291,9 @@ export function effect(callback: () => void | (() => void)): () => void {
   };
   cleanups.set(run, dependencies);
   // Scope registration precedes the first run so an initial failure cannot leak ownership.
-  /** Stores the scope value used by this module. */
+  /** Captured synchronous owner; reruns retain this owner rather than whichever scope triggered a write. */
   const scope = scopes[scopes.length - 1];
-  /** Stores the managedStop value used by this module. */
+  /** Scope-owned stop handle, or explicit caller-owned stop outside a scope. */
   const managedStop = scope ? scope.add(stop) : stop;
   try {
     run();
@@ -306,9 +306,9 @@ export function effect(callback: () => void | (() => void)): () => void {
 
 /** Run synchronous work without subscribing its caller to incidental reads. */
 /**
- * untracked.
- * @param {() => T} fn - Input value for this operation.
- * @returns {T} Result produced by this operation.
+ * Mask the current subscriber for synchronous work, restoring it even after failure.
+ * @param {() => T} fn - Trusted synchronous callback; ownership/tracking do not extend beyond its return.
+ * @returns {T} Callback return value; thrown errors propagate after stack/queue restoration.
  */
 export function untracked<T>(fn: () => T): T {
   stack.push(undefined);
@@ -321,12 +321,12 @@ export function untracked<T>(fn: () => T): T {
 
 /** Internal ownership bridge for composite reactive resources. */
 /**
- * ownEffectCleanup.
- * @param {() => void} cleanup - Input value for this operation.
- * @returns {() => void} Result produced by this operation.
+ * Attach a composite resource disposer to the ambient scope when one exists.
+ * @param {() => void} cleanup - Trusted synchronous resource disposer; exceptions remain visible.
+ * @returns {() => void} Idempotent cleanup handle that also unregisters itself from the owner.
  */
 export function ownEffectCleanup(cleanup: () => void): () => void {
-  /** Stores the scope value used by this module. */
+  /** Optional active scope; without one, the caller retains explicit cleanup ownership. */
   const scope = scopes[scopes.length - 1];
   return scope ? scope.add(cleanup) : cleanup;
 }

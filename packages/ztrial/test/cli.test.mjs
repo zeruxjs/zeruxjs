@@ -6,8 +6,10 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { main } from '../dist/bin/cli.js';
 test('cli finds nested tests, filters by name and reports failing exit status', async () => {
+  /** Owned temporary CLI discovery/configuration namespace, removed in finally. */
   const dir = mkdtempSync(join(tmpdir(), 'ztrial-cli-'));
   mkdirSync(join(dir, 'deep'));
+  /** Fixed built package-local public entry URL inserted only into trusted synthetic test source. */
   const entry = pathToFileURL(
     new URL('../dist/index.js', import.meta.url).pathname
   ).href;
@@ -20,6 +22,7 @@ test('cli finds nested tests, filters by name and reports failing exit status', 
       join(dir, 'config.json'),
       JSON.stringify({ root: dir, reporter: 'tap' })
     );
+    /** Original stdout writer restored after the fixture’s synthetic TAP capture. */
     const original = process.stdout.write;
     let collected = '';
     process.stdout.write = (v) => {

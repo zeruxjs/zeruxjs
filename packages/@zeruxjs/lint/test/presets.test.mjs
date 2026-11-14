@@ -1933,3 +1933,49 @@ test('hosting child scopes require retained handles while inert registries do no
     );
   }
 });
+
+test('test fixture resource owners retain handles while self-scoped runners and exporters stay inert', () => {
+  for (const [entry, factory] of [
+    ['ztrial', 'createHttpFake'],
+    ['ztrial/http', 'createHttpFake'],
+    ['ztrial/jsdom', 'createJsdomEnvironment'],
+    ['ztrial/experiments', 'createExperimentEvaluator'],
+  ]) {
+    assert.ok(
+      rules(
+        `import {${factory}} from '${entry}'; ${factory}(options);`
+      ).includes('zerux/cleanup-ownership')
+    );
+    assert.ok(
+      !rules(
+        `import {${factory}} from '${entry}'; const owned = await ${factory}(options);`
+      ).includes('zerux/cleanup-ownership')
+    );
+  }
+  for (const source of [
+    "import {createRunner,createTestClock,withHttpFake} from 'ztrial'; createRunner(); createTestClock(); await withHttpFake(options, run);",
+    "import {createBrowserRunner} from 'ztrial/playwright'; createBrowserRunner(options);",
+    "import {createReportExporters,createPdfExporter} from 'ztrial/reports'; createReportExporters(); createPdfExporter(options);",
+  ]) {
+    assert.ok(!rules(source).includes('zerux/cleanup-ownership'));
+  }
+  for (const entry of [
+    'ztrial',
+    'ztrial/http',
+    'ztrial/reports',
+    'ztrial/experiments',
+    'ztrial/playwright',
+    'ztrial/vitest',
+  ]) {
+    assert.ok(
+      rules(`'use client'; import '${entry}';`).includes(
+        'zerux/client-server-import'
+      )
+    );
+  }
+  assert.ok(
+    !rules("'use client'; import {requireDom} from 'ztrial/jsdom';").includes(
+      'zerux/client-server-import'
+    )
+  );
+});

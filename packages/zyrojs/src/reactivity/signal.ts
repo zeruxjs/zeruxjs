@@ -21,7 +21,7 @@ class SignalImpl<T> implements Signal<T> {
    * @returns {T} Result produced by this operation.
    */
   get value(): T {
-    /** Stores the subscriber value used by this module. */
+    /** Currently tracking effect; each subscription registers its own removal with that effect. */
     const subscriber = getCurrentSubscriber();
     if (subscriber && !this.subscribers.has(subscriber)) {
       this.subscribers.add(subscriber);
@@ -54,26 +54,25 @@ class SignalImpl<T> implements Signal<T> {
   }
 }
 /**
- * signal.
- * @param {T} initialValue - Input value for this operation.
- * @returns {Signal<T>} Result produced by this operation.
+ * Create a mutable signal with synchronous tracked reads and batched notifications.
+ * @param {T} initialValue - Initial value retained by reference; no cloning or freezing is performed.
+ * @returns {Signal<T>} Mutable value accessor plus an untracked peek.
  */
 export function signal<T>(initialValue: T): Signal<T> {
   return new SignalImpl(initialValue);
 }
 
-/** Stores the proxies value used by this module. */
+/** Weak identity cache for original objects and their proxies; neither is kept alive by this map. */
 const proxies = new WeakMap<object, object>();
-/** Lazily proxied objects/arrays with property, membership and key-enumeration tracking. */
 /**
- * reactive.
- * @param {T} target - Input value for this operation.
- * @returns {T} Result produced by this operation.
+ * Lazily track plain-object/array values, membership and key enumeration.
+ * @param {T} target - Host-owned object; native collections and class instances remain unchanged.
+ * @returns {T} Identity-cached proxy for eligible objects, otherwise the original target.
  */
 export function reactive<T extends object>(target: T): T {
   // Do not proxy native collections, Dates, typed arrays or class instances:
   // their internal slots/method receivers are not compatible with a generic Proxy.
-  /** Stores the proto value used by this module. */
+  /** Preserve native/class receivers whose internal slots cannot safely be proxied. */
   const proto = Object.getPrototypeOf(target);
   if (!Array.isArray(target) && proto !== Object.prototype && proto !== null) {
     return target;
@@ -81,11 +80,11 @@ export function reactive<T extends object>(target: T): T {
   if (proxies.has(target)) {
     return proxies.get(target) as T;
   }
-  /** Stores the versions value used by this module. */
+  /** Independent per-property read dependencies, allocated only when observed. */
   const versions = new Map<PropertyKey, Signal<number>>();
-  /** Stores the membership value used by this module. */
+  /** Separate dependencies for property existence so value changes do not invalidate membership alone. */
   const membership = new Map<PropertyKey, Signal<number>>();
-  /** Stores the keys value used by this module. */
+  /** Enumeration version, changed when own properties are added or removed. */
   const keys = signal(0);
   /**
    * Application function track.
@@ -114,13 +113,13 @@ export function reactive<T extends object>(target: T): T {
     store: Map<PropertyKey, Signal<number>>,
     property: PropertyKey
   ) => {
-    /** Stores the version value used by this module. */
+    /** Existing dependency version; unobserved properties need no notification signal. */
     const version = store.get(property);
     if (version) {
       version.value++;
     }
   };
-  /** Stores the proxy value used by this module. */
+  /** Stable reactive wrapper; native Reflect operations preserve receiver and property semantics. */
   const proxy = new Proxy(target, {
     /**
      * get.
@@ -131,10 +130,10 @@ export function reactive<T extends object>(target: T): T {
      */
     get(obj, property, receiver) {
       track(versions, property);
-      /** Stores the value value used by this module. */
+      /** Actual property value, recursively wrapped only when proxy invariants permit it. */
       const value: unknown = Reflect.get(obj, property, receiver);
       // Proxy invariants require exact values for frozen, non-configurable slots.
-      /** Stores the descriptor value used by this module. */
+      /** Frozen nonconfigurable data slots must return their exact original value. */
       const descriptor = Reflect.getOwnPropertyDescriptor(obj, property);
       if (
         descriptor &&
@@ -176,11 +175,11 @@ export function reactive<T extends object>(target: T): T {
      * @returns {unknown} Result produced by this operation.
      */
     set(obj, property, value, receiver) {
-      /** Stores the old value used by this module. */
+      /** Value before the attempted write, used for Object.is change detection. */
       const old = Reflect.get(obj, property, receiver);
-      /** Stores the existed value used by this module. */
+      /** Own-property membership before mutation; inherited properties do not count. */
       const existed = Object.prototype.hasOwnProperty.call(obj, property);
-      /** Stores the oldLength value used by this module. */
+      /** Prior array length; index writes can also invalidate observed length. */
       const oldLength = Array.isArray(obj) ? obj.length : -1;
       if (!Reflect.set(obj, property, value, receiver)) {
         return false;
@@ -204,7 +203,7 @@ export function reactive<T extends object>(target: T): T {
      * @returns {unknown} Result produced by this operation.
      */
     deleteProperty(obj, property) {
-      /** Stores the existed value used by this module. */
+      /** Own-property membership before mutation; inherited properties do not count. */
       const existed = Object.prototype.hasOwnProperty.call(obj, property);
       if (!Reflect.deleteProperty(obj, property)) {
         return false;
@@ -224,7 +223,7 @@ export function reactive<T extends object>(target: T): T {
      * @returns {unknown} Result produced by this operation.
      */
     defineProperty(obj, property, descriptor) {
-      /** Stores the existed value used by this module. */
+      /** Own-property membership before mutation; inherited properties do not count. */
       const existed = Object.prototype.hasOwnProperty.call(obj, property);
       if (!Reflect.defineProperty(obj, property, descriptor)) {
         return false;
@@ -243,5 +242,5 @@ export function reactive<T extends object>(target: T): T {
 }
 
 /** Ref is the same value/peek signal contract, not a React ref. */
-/** Stores the ref value used by this module. */
+/** Signal alias; DOM element holders instead use callback/current refs. */
 export const ref = signal;

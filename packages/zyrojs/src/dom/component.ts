@@ -5,7 +5,7 @@ export interface ComponentOptions {
   /** Handles synchronous setup/render failures only; event and Promise errors stay with their caller. */
   onError?: (error: unknown) => VNodeChild;
 }
-/** Stores the definitions value used by this module. */
+/** Private weak registry links opaque component functions to trusted setup code without extending their lifetime. */
 const definitions = new WeakMap<
   object,
   { setup: (...args: any[]) => any; onError?: ComponentOptions['onError'] }
@@ -13,7 +13,7 @@ const definitions = new WeakMap<
 let rendering = 0;
 /** Signal convenience hooks allocate resources and must run in setup, never in a repeated render. */
 /**
- * assertSetupHook.
+ * Reject resource allocation during repeated render; one-time setup owns hooks.
  * @returns {void} Result produced by this operation.
  */
 export function assertSetupHook(): void {
@@ -24,9 +24,9 @@ export function assertSetupHook(): void {
   }
 }
 /**
- * runComponentRender.
- * @param {() => T} fn - Input value for this operation.
- * @returns {T} Result produced by this operation.
+ * Mark a synchronous render so allocating hooks cannot leak repeated resources.
+ * @param {() => T} fn - Trusted synchronous render callback; the guard is restored even if it throws.
+ * @returns {T} Rendered value; no asynchronous render context is retained.
  */
 export function runComponentRender<T>(fn: () => T): T {
   rendering++;
@@ -37,19 +37,19 @@ export function runComponentRender<T>(fn: () => T): T {
   }
 }
 /**
- * getComponentDefinition.
- * @param {object} component - Input value for this operation.
- * @returns {unknown} Result produced by this operation.
+ * Look up explicitly registered setup metadata by exact component identity.
+ * @param {object} component - Authored function identity; arbitrary objects are never evaluated.
+ * @returns {{ setup: (...args: any[]) => any; onError?: ComponentOptions["onError"] } | undefined} Registered setup and optional boundary, or undefined for an ordinary component.
  */
 export function getComponentDefinition(component: object) {
   return definitions.get(component);
 }
 /** Setup runs once per mounted type/key. Returned render receives current props on every update. */
 /**
- * defineComponent.
- * @param {(initialProps: P) => Component<P>} setup - Input value for this operation.
- * @param {ComponentOptions} options - Input value for this operation.
- * @returns {Component<P>} Result produced by this operation.
+ * Register one-time setup; the renderer retains its returned render function per mounted type/key.
+ * @param {(initialProps: P) => Component<P>} setup - Trusted synchronous initializer receiving initial props; returns a render reading current props.
+ * @param {ComponentOptions} options - Optional synchronous setup/render error boundary; event and promise errors stay with their caller.
+ * @returns {Component<P>} Opaque component identity for h/render; direct invocation throws.
  */
 export function defineComponent<
   P extends Record<string, any> = Record<string, unknown>,
@@ -64,8 +64,8 @@ export function defineComponent<
     throw new TypeError('ZyroJS: invalid component definition');
   }
   /**
-   * Application function component.
-   * @returns {unknown} Result produced by this operation.
+   * Reject direct calls that would bypass renderer-owned setup and teardown.
+   * @returns {never} Always throws; only the renderer may instantiate setup components.
    */
   const component: Component<P> = () => {
     throw new Error(

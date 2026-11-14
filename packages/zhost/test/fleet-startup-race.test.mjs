@@ -105,7 +105,10 @@ test(
     child.stderr.on('data', (chunk) => {
       stderr = (stderr + chunk.toString()).slice(-16384);
     });
-    /** Cancel only the owned wrapper; never signal a PID obtained from external state. @returns {void} Requests native fixture termination. */
+    /**
+     * Cancel only the owned wrapper; never signal a PID obtained from external state.
+     * @returns {void} Requests native fixture termination.
+     */
     const abort = () => {
       child.kill('SIGKILL');
     };
@@ -132,7 +135,9 @@ test(
     } finally {
       clearTimeout(timer);
       t.signal.removeEventListener('abort', abort);
-      if (child.exitCode === null && child.signalCode === null) abort();
+      if (child.exitCode === null && child.signalCode === null) {
+        abort();
+      }
       // Bound fallback children even if a regression crashed their wrapper before its own cleanup.
       await new Promise((resolve) => setTimeout(resolve, 1800));
       await rm(dir, { recursive: true, force: true });

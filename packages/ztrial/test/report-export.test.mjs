@@ -12,12 +12,19 @@ import {
   createPngExporter,
 } from 'ztrial/reports';
 import { formatSummary } from '../dist/utils/logger.js';
+/** Create one inert synthetic portable-result row with a known duration.
+ * @param {string} name Explicit public/special-character fixture label.
+ * @param {string} status Fixed actual outcome under test, default passed.
+ * @returns {object} Trusted synthetic result data, never executable report expressions. */
 const row = (name, status = 'passed') => ({
   name,
   status,
   durationMs: 1,
   environment: 'node',
 });
+/** Create a synthetic run envelope whose intentionally zero totals prove reports count actual rows instead.
+ * @param {object[]} results Explicit synthetic result rows.
+ * @returns {object} Bounded fixture run envelope with no source bodies or real user data. */
 const summary = (results) => ({
   passed: 0,
   failed: 0,
@@ -28,9 +35,13 @@ const summary = (results) => ({
 });
 
 test('JSON/JUnit/CSV share schema, preserve special text, protect formulas and omit secrets', async () => {
+  /** Owned private temporary report namespace, removed in finally. */
   const root = await fs.mkdtemp(join(tmpdir(), 'ztrial-reports-'));
+  /** Independent explicit inert report registry; no global runner state is changed. */
   const exporters = createReportExporters();
+  /** Fixed formula/markup/newline/Unicode fixture label; it is never executed. */
   const special = '=SUM(1,2) <tag>&"\'\n雪';
+  /** Trusted synthetic result envelope whose private causes/labels must remain controlled by disclosure policy. */
   const input = summary([
     {
       ...row(special, 'failed'),
@@ -51,8 +62,10 @@ test('JSON/JUnit/CSV share schema, preserve special text, protect formulas and o
     row('browser missing', 'environment-unavailable'),
   ]);
   try {
-    for (const format of ['json', 'junit', 'csv'])
+    for (const format of ['json', 'junit', 'csv']) {
       await exporters.write(input, { directory: root, name: 'checks', format });
+    }
+    /** Actual parsed generated JSON report checked for schema/count/redaction semantics. */
     const json = JSON.parse(
       await fs.readFile(join(root, 'checks.results.json'), 'utf8')
     );
@@ -64,11 +77,13 @@ test('JSON/JUnit/CSV share schema, preserve special text, protect formulas and o
     assert.equal(json.results[0].artifacts[0].type, 'video');
     assert.ok(json.results[0].artifacts[0].path.startsWith('artifact-'));
     for (const file of await fs.readdir(root)) {
+      /** Actual generated fixture representation bytes decoded only for disclosure assertions. */
       const content = await fs.readFile(join(root, file), 'utf8');
       assert.ok(!content.includes('private-secret-token'));
       assert.ok(!content.includes('password'));
       assert.ok(!content.includes('private/video'));
     }
+    /** Actual independent XML/CSV/PNG/workbook parser output, not a signature-only acceptance check. */
     const parsed = JSON.parse(
       execFileSync(
         'python3',
@@ -92,6 +107,7 @@ print(json.dumps({'tests':suite.attrib['tests'],'errors':suite.attrib['errors'],
     assert.equal(parsed.csvRows, 4);
     assert.equal(input.failed, 0);
     assert.equal(input.results[0].error.message, 'private-secret-token');
+    /** Actual normalized CLI JSON report proving raw Error objects are not serialized. */
     const cli = JSON.parse(formatSummary(input, 'json'));
     assert.equal(cli.schema, json.schema);
     assert.equal(cli.results[0].error, undefined);
@@ -101,12 +117,16 @@ print(json.dumps({'tests':suite.attrib['tests'],'errors':suite.attrib['errors'],
 });
 
 test('formula prefixes, disclosure and redaction stay explicit', async () => {
+  /** Independent explicit inert report registry; no global runner state is changed. */
   const exporters = createReportExporters();
+  /** Fixed spreadsheet formula-leading text fixtures; every cell must remain text. */
   const inputs = ['=1', ' +1', '-1', '@calc', '\t=1', '\rtext', '\ntext'];
+  /** Actual bounded CSV encoder result parsed independently. */
   const csv = await exporters.render(
     summary(inputs.map((value) => row(value))),
     'csv'
   );
+  /** Actual independent XML/CSV/PNG/workbook parser output, not a signature-only acceptance check. */
   const parsed = JSON.parse(
     execFileSync(
       'python3',
@@ -125,6 +145,7 @@ test('formula prefixes, disclosure and redaction stay explicit', async () => {
     createResultReport(summary([row('bad\u0000\uD800name')])).results[0].name,
     'badname'
   );
+  /** Detached portable report under explicit includeErrors/redact policy. */
   const document = createResultReport(
     summary([{ ...row('public', 'failed'), error: new Error('token=secret') }]),
     {
@@ -136,6 +157,7 @@ test('formula prefixes, disclosure and redaction stay explicit', async () => {
 });
 
 test('budgets and unsupported adapters reject before producing output', async () => {
+  /** Independent explicit inert report registry; no global runner state is changed. */
   const exporters = createReportExporters();
   await assert.rejects(
     exporters.render(summary([row('x')]), 'html'),
@@ -182,11 +204,15 @@ test('budgets and unsupported adapters reject before producing output', async ()
 });
 
 test('traversal/symlink outputs and attachment escapes reject; existing output remains intact', async () => {
+  /** Owned private temporary report namespace, removed in finally. */
   const root = await fs.mkdtemp(join(tmpdir(), 'ztrial-paths-'));
+  /** Independent explicit inert report registry; no global runner state is changed. */
   const exporters = createReportExporters();
+  /** Trusted synthetic result envelope whose private causes/labels must remain controlled by disclosure policy. */
   const input = summary([row('valid')]);
   try {
     await exporters.write(input, { directory: root, format: 'json' });
+    /** Prior committed fixture report bytes that failed writes/publication must preserve. */
     const before = await fs.readFile(join(root, 'ztrial.results.json'), 'utf8');
     await assert.rejects(
       exporters.write(input, { directory: root, format: 'json' }),
@@ -200,6 +226,7 @@ test('traversal/symlink outputs and attachment escapes reject; existing output r
       }),
       (error) => error.code === 'UNSAFE_OUTPUT_NAME'
     );
+    /** Owned safe fixture symlink target whose contents must never be overwritten. */
     const outside = join(root, 'outside');
     await fs.writeFile(outside, 'safe');
     await fs.symlink(outside, join(root, 'link.results.json'));
@@ -244,21 +271,33 @@ test('traversal/symlink outputs and attachment escapes reject; existing output r
 });
 
 test('interrupted staged write and failed atomic publication release handles without partial replacement', async () => {
+  /** Owned private temporary report namespace, removed in finally. */
   const root = await fs.mkdtemp(join(tmpdir(), 'ztrial-atomic-'));
+  /** Independent explicit inert report registry; no global runner state is changed. */
   const exporters = createReportExporters();
+  /** Trusted synthetic result envelope whose private causes/labels must remain controlled by disclosure policy. */
   const input = summary([row('old')]);
   try {
     await exporters.write(input, { directory: root, format: 'json' });
-    const file = join(root, 'ztrial.results.json'),
-      before = await fs.readFile(file, 'utf8');
+    /** Fixed owned report destination in the private fixture namespace. */
+    const file = join(root, 'ztrial.results.json');
+    /** Prior committed fixture report bytes that failed writes/publication must preserve. */
+    const before = await fs.readFile(file, 'utf8');
+    /** Owned fixture cancellation controller triggered after a real staged partial write. */
     const controller = new AbortController();
+    /** Borrowed original native open method retained only while the fixture installs its scoped mock. */
     const open = fs.open.bind(fs);
     let closed = 0;
+    /** Owned temporary fs.open instrumentation, restored before subsequent fixtures. */
     const replacement = mock.method(fs, 'open', async (...args) => {
+      /** Actual owned staging descriptor; instrumented close count proves it is released. */
       const handle = await open(...args);
-      const write = handle.write.bind(handle),
-        close = handle.close.bind(handle);
+      /** Original native descriptor write method bound before temporary test instrumentation. */
+      const write = handle.write.bind(handle);
+      /** Original native descriptor close method bound before temporary test instrumentation. */
+      const close = handle.close.bind(handle);
       handle.write = async (...values) => {
+        /** Actual native write progress used to trigger cancellation after bytes were staged. */
         const result = await write(...values);
         controller.abort();
         return result;
@@ -288,6 +327,7 @@ test('interrupted staged write and failed atomic publication release handles wit
         name.startsWith('.ztrial-report-')
       )
     );
+    /** Owned injected atomic-publication failure hook, restored in finally. */
     const rename = mock.method(fs, 'rename', async () => {
       throw Object.assign(new Error('backend unavailable'), { code: 'EIO' });
     });
@@ -315,7 +355,9 @@ test('interrupted staged write and failed atomic publication release handles wit
 });
 
 test('custom adapters are scoped and optional dependencies fail without mutating test status', async () => {
+  /** Trusted synthetic result envelope whose private causes/labels must remain controlled by disclosure policy. */
   const input = summary([row('passed')]);
+  /** Explicit inert optional encoder registrations with deliberately failing trusted loaders. */
   const adapters = [
     createPdfExporter({
       fontFile: '/synthetic/font.ttf',
@@ -337,13 +379,16 @@ test('custom adapters are scoped and optional dependencies fail without mutating
       },
     }),
   ];
+  /** Independent explicit inert report registry; no global runner state is changed. */
   const exporters = createReportExporters(adapters);
-  for (const format of ['pdf', 'xlsx', 'png'])
+  for (const format of ['pdf', 'xlsx', 'png']) {
     await assert.rejects(
       exporters.render(input, format),
       (error) => error.code === 'DEPENDENCY_UNAVAILABLE'
     );
+  }
   assert.equal(input.results[0].status, 'passed');
+  /** Separate explicit trusted encoder registry proving no global format mutation. */
   const custom = createReportExporters([
     {
       format: 'custom',
@@ -375,6 +420,7 @@ test('default optional loaders report actual absent modules without auto-install
     ],
   ]) {
     try {
+      /** Optional renderer installation metadata; resolution alone does not load/render artifacts. */
       const resolved = import.meta.resolve(name);
       assert.equal(typeof resolved, 'string');
       t.diagnostic(

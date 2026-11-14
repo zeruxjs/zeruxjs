@@ -59,8 +59,8 @@ function runner(argv, env) {
     },
     /** Request termination of this owned fixture child and escalate after the fixed grace period.
      * @returns {Promise<void>} Completes bounded escalation; test assertions separately observe lifecycle recovery/exit state.
-     */ 
-/** Request termination of this owned fixture child and escalate after the fixed grace period.
+     */
+    /** Request termination of this owned fixture child and escalate after the fixed grace period.
      * @returns {Promise<void>} Completes bounded escalation; test assertions separately observe lifecycle recovery/exit state.
      */
     async end() {

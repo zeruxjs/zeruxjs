@@ -19,11 +19,11 @@ export interface VNode {
   el?: Node;
 }
 /**
- * h.
- * @param {(props: P) => VNodeChild} type - Input value for this operation.
- * @param {P | null} props - Input value for this operation.
- * @param {VNodeChild[]} children - Input value for this operation.
- * @returns {VNode} Result produced by this operation.
+ * Describe an inert node for later rendering; this constructor does not mount or execute components.
+ * @param {(props: P) => VNodeChild} type - Trusted authored element tag or component; never select executable callbacks from untrusted data.
+ * @param {P | null} props - Borrowed props object; null creates an empty record and no deep clone is performed.
+ * @param {VNodeChild[]} children - Child descriptions; null, undefined and false are omitted at construction.
+ * @returns {VNode} Fresh mutable node description; do not reuse it across mounted roots.
  */
 export function h<P extends Record<string, any>>(
   type: (props: P) => VNodeChild,
@@ -31,11 +31,11 @@ export function h<P extends Record<string, any>>(
   ...children: VNodeChild[]
 ): VNode;
 /**
- * h.
- * @param {string} type - Input value for this operation.
- * @param {Record<string, any> | null} props - Input value for this operation.
- * @param {VNodeChild[]} children - Input value for this operation.
- * @returns {VNode} Result produced by this operation.
+ * Describe an inert node for later rendering; this constructor does not mount or execute components.
+ * @param {string} type - Trusted authored element tag or component; never select executable callbacks from untrusted data.
+ * @param {Record<string, any> | null} props - Borrowed props object; null creates an empty record and no deep clone is performed.
+ * @param {VNodeChild[]} children - Child descriptions; null, undefined and false are omitted at construction.
+ * @returns {VNode} Fresh mutable node description; do not reuse it across mounted roots.
  */
 export function h(
   type: string,
@@ -43,11 +43,11 @@ export function h(
   ...children: VNodeChild[]
 ): VNode;
 /**
- * h.
- * @param {VNode['type']} type - Input value for this operation.
- * @param {Record<string, any> | null} props - Input value for this operation.
- * @param {VNodeChild[]} children - Input value for this operation.
- * @returns {VNode} Result produced by this operation.
+ * Describe an inert node for later rendering; this constructor does not mount or execute components.
+ * @param {VNode['type']} type - Trusted authored element tag or component; never select executable callbacks from untrusted data.
+ * @param {Record<string, any> | null} props - Borrowed props object; null creates an empty record and no deep clone is performed.
+ * @param {VNodeChild[]} children - Child descriptions; null, undefined and false are omitted at construction.
+ * @returns {VNode} Fresh mutable node description; do not reuse it across mounted roots.
  */
 export function h(
   type: VNode['type'],

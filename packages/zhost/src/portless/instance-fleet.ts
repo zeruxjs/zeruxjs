@@ -24,11 +24,17 @@ import {
 
 /** Mutable controller-owned generation record; published snapshots are detached. */
 interface Member {
+  /** Validated private loopback backend port. */
   port: number;
+  /** Owned supervised child, including its actual completion and stop promises. */
   process: SupervisedProcess;
+  /** Consecutive failed readiness probes capped at the unhealthy threshold. */
   failures: number;
+  /** Last readiness observation, separately fenced by child liveness. */
   healthy: boolean;
+  /** Whether the retained route currently includes this generation. */
   routed: boolean;
+  /** Monotonic identifier within this controller lifetime. */
   generation: number;
 }
 /**
@@ -47,9 +53,11 @@ function integer(
   max: number,
   name: string
 ): number {
+  /** Explicit value or caller-selected default, validated without coercion. */
   const n = value ?? fallback;
-  if (!Number.isSafeInteger(n) || n < min || n > max)
+  if (!Number.isSafeInteger(n) || n < min || n > max) {
     throw new RangeError(`${name} must be ${min}–${max}`);
+  }
   return n;
 }
 /**
@@ -79,14 +87,18 @@ export async function launchInstanceFleet(
   ) {
     throw new TypeError('A real proxy connection drain observer is required');
   }
+  /** Detached distinct validated loopback backend inventory; OS bind races remain possible. */
   const ports = validateBackends(options.ports.map((port) => ({ port }))).map(
     (target) => target.port
   );
+  /** Validated initial target, leaving at least one spare port. */
   const replicas = integer(options.replicas, 2, 2, 16, 'replicas');
-  if (ports.length < replicas + 1)
+  if (ports.length < replicas + 1) {
     throw new RangeError(
       'A fleet requires a spare port beyond its replica count'
     );
+  }
+  /** Validated periodic health interval; overlapping reconciliation is coalesced. */
   const healthIntervalMs = integer(
     options.healthIntervalMs,
     2000,
@@ -94,6 +106,7 @@ export async function launchInstanceFleet(
     3_600_000,
     'healthIntervalMs'
   );
+  /** Validated consecutive-failure threshold used for isolation. */
   const unhealthyThreshold = integer(
     options.unhealthyThreshold,
     2,
@@ -101,6 +114,7 @@ export async function launchInstanceFleet(
     20,
     'unhealthyThreshold'
   );
+  /** Validated sliding-window automated repair cap; zero disables repairs. */
   const maxReplacements = integer(
     options.maxReplacements,
     5,
@@ -108,6 +122,7 @@ export async function launchInstanceFleet(
     1000,
     'maxReplacements'
   );
+  /** Validated restart-attempt retention window in milliseconds. */
   const restartWindowMs = integer(
     options.restartWindowMs,
     60_000,
@@ -115,6 +130,7 @@ export async function launchInstanceFleet(
     86_400_000,
     'restartWindowMs'
   );
+  /** Validated initial cooperative repair delay. */
   const replacementDelayMs = integer(
     options.replacementDelayMs,
     100,
@@ -122,6 +138,7 @@ export async function launchInstanceFleet(
     60_000,
     'replacementDelayMs'
   );
+  /** Validated maximum cooperative repair delay. */
   const maxReplacementDelayMs = integer(
     options.maxReplacementDelayMs,
     5000,
@@ -129,6 +146,7 @@ export async function launchInstanceFleet(
     300_000,
     'maxReplacementDelayMs'
   );
+  /** Validated real-proxy connection-drain deadline. */
   const drainTimeoutMs = integer(
     options.drainTimeoutMs,
     10_000,
@@ -136,7 +154,9 @@ export async function launchInstanceFleet(
     300_000,
     'drainTimeoutMs'
   );
+  /** Validated local readiness-probe policy. */
   const health = validateHealthCheck(options.health);
+  /** Separate controller-owned policies/callbacks from the borrowed supervisor launch configuration. */
   const {
     store,
     hostname,
@@ -158,7 +178,9 @@ export async function launchInstanceFleet(
     drainTimeoutMs: _drain,
     ...supervisor
   } = options;
+  /** Mutable generation inventory owned only by this controller. */
   const members = new Map<number, Member>();
+  /** Controller-local sliding restart budget restored from the host checkpoint. */
   const budget = new SlidingRestartBudget(
     maxReplacements,
     restartWindowMs,
@@ -181,6 +203,8 @@ export async function launchInstanceFleet(
   let lease: RouteLease | undefined;
   let snapshot: Readonly<FleetStatus>;
 
+  /** Publish a detached frozen snapshot and isolate synchronous observer failures.
+   * @returns {void} Replaces the latest status without granting route or process authority. */
   const publish = () => {
     snapshot = Object.freeze({
       phase,
@@ -210,24 +234,44 @@ export async function launchInstanceFleet(
       /* Reporting must not affect processes. */
     }
   };
+  /** Wait for bounded backoff until its timer fires or stop explicitly wakes it.
+   * @param {number} ms Validated restart delay in milliseconds.
+   * @returns {Promise<void>} Settles when the wait ends; does not cancel child work. */
   const cancellablePause = (ms: number) =>
     new Promise<void>((resolve) => {
+      /** Clear this backoff timer and release its cancellation handle once.
+       * @returns {void} Resolves the cooperative pause. */
       const done = () => {
         clearTimeout(timer);
-        if (cancelPause === done) cancelPause = undefined;
+        if (cancelPause === done) {
+          cancelPause = undefined;
+        }
         resolve();
       };
+      /** Owned cooperative pause timer; distinct from the periodic health timer. */
       const timer = setTimeout(done, ms);
       cancelPause = done;
     });
+  /** Select currently routed members whose owned children are still observed running.
+   * @returns {Member[]} New list containing borrowed mutable controller records. */
   const serving = () =>
     [...members.values()].filter((m) => m.routed && m.process.running);
+  /** Conditionally replace backend membership under the retained route lease.
+   * @param {readonly Member[]} targets Ready controller-owned members to admit new traffic.
+   * @returns {void} Updates local membership only after the route store accepts the lease. */
   const switchTo = (targets: readonly Member[]) => {
-    if (!lease?.switchBackends(targets.map((m) => ({ port: m.port }))))
+    if (!lease?.switchBackends(targets.map((m) => ({ port: m.port })))) {
       throw new Error('Fleet route lease was superseded');
-    for (const m of members.values()) m.routed = targets.includes(m);
+    }
+    for (const m of members.values()) {
+      m.routed = targets.includes(m);
+    }
   };
+  /** Acquire one supervised ready child without inheriting independent signal forwarding.
+   * @param {number} port Validated unused candidate from the private inventory.
+   * @returns {Promise<Member>} New owned generation; callers must register or stop it. */
   const spawn = async (port: number): Promise<Member> => {
+    /** Owned supervised child returned after readiness; controller cleanup must await stop. */
     const proc = await launchSupervisedCommand(argv, {
       ...supervisor,
       port,
@@ -235,10 +279,13 @@ export async function launchInstanceFleet(
       forwardSignals: false,
       env: { ...supervisor.env, PORT: String(port) },
       onSpawn: (child) => {
-        if (stopping) throw new Error('Fleet is stopping');
+        if (stopping) {
+          throw new Error('Fleet is stopping');
+        }
         onSpawn?.(child, port);
       },
     });
+    /** Mutable generation record captured by this child’s completion callback. */
     const entry: Member = {
       port,
       process: proc,
@@ -254,9 +301,13 @@ export async function launchInstanceFleet(
         entry.failures = unhealthyThreshold;
         publish();
         // Initial startup still owns rollback; reconciliation needs a published lease.
-        if (!lease) return;
+        if (!lease) {
+          return;
+        }
         queueMicrotask(() => {
-          if (!stopping) void reconcile().catch(() => {});
+          if (!stopping) {
+            void reconcile().catch(() => {});
+          }
         });
       }
     });
@@ -272,6 +323,7 @@ export async function launchInstanceFleet(
       throw new Error(`Route already registered: ${hostname}`);
     }
     for (const port of ports.slice(0, replicas)) {
+      /** New ready child pending insertion into the initial inventory. */
       const member = await spawn(port);
       members.set(port, member);
     }
@@ -284,7 +336,9 @@ export async function launchInstanceFleet(
       process.pid,
       force ?? false
     );
-    for (const member of members.values()) member.routed = true;
+    for (const member of members.values()) {
+      member.routed = true;
+    }
     try {
       onLease?.(lease.leaseId);
     } catch (error) {
@@ -301,14 +355,25 @@ export async function launchInstanceFleet(
   phase = 'running';
   publish();
 
+  /** Run one serialized health/replacement pass with bounded shared restart attempts.
+   * @returns {Promise<FleetReconcileResult>} Explicit committed replacements, failures and the latest snapshot. */
   const runReconcile = async (): Promise<FleetReconcileResult> => {
+    /** Committed cutover receipts; later drain errors do not undo published replacements. */
     const replaced: { fromPort: number; toPort: number; drained: boolean }[] =
       [];
-    const failures: { port: number; error: string }[] = [];
+    /** Host-only operational failures for this pass; no request payloads are included. */
+    const failures: {
+      /** Validated private loopback backend port. */
+      port: number;
+      error: string;
+    }[] = [];
     // Test each process once; never launch concurrent probes from overlapping ticks.
     await Promise.all(
       [...members.values()].map(async (member) => {
-        if (stopping) return;
+        if (stopping) {
+          return;
+        }
+        /** Current child liveness combined with this pass’s bounded health probe. */
         const ok =
           member.process.running &&
           (await probeApplicationHealth(member.port, health));
@@ -317,11 +382,15 @@ export async function launchInstanceFleet(
           member.healthy = true;
         } else {
           member.failures = Math.min(unhealthyThreshold, member.failures + 1);
-          if (member.failures >= unhealthyThreshold) member.healthy = false;
+          if (member.failures >= unhealthyThreshold) {
+            member.healthy = false;
+          }
         }
       })
     );
-    if (stopping) return { replaced, failures, status: snapshot };
+    if (stopping) {
+      return { replaced, failures, status: snapshot };
+    }
     // A previously isolated process can recover before its next replacement
     // attempt. Safely rejoin it if the controller still owns the route.
     for (const recovered of members.values()) {
@@ -339,10 +408,15 @@ export async function launchInstanceFleet(
       }
     }
     for (const old of [...members.values()]) {
-      if (stopping) break;
-      if (old.healthy || old.failures < unhealthyThreshold) continue;
+      if (stopping) {
+        break;
+      }
+      if (old.healthy || old.failures < unhealthyThreshold) {
+        continue;
+      }
       // If another backend can serve traffic, isolate the failing generation
       // immediately, without waiting for a new process to become ready.
+      /** Other routed healthy members available while the failed generation is isolated. */
       const survivors = serving().filter((m) => m !== old && m.healthy);
       if (old.routed && survivors.length) {
         try {
@@ -359,12 +433,14 @@ export async function launchInstanceFleet(
         continue;
       }
       // Preserve one unused port for ready-before-cutover replacement.
+      /** First unused validated port; launch still handles concurrent native bind failure. */
       const spare = availableFleetPort(ports, new Set(members.keys()));
       if (spare === undefined) {
         lastError = 'No spare port available for replacement';
         failures.push({ port: old.port, error: lastError });
         continue;
       }
+      /** Consumed bounded restart delay; the attempt is checkpointed before waiting. */
       const backoff = budget.consume();
       // Retry attempts survive controller restarts. Fail closed if persistence fails.
       try {
@@ -375,16 +451,24 @@ export async function launchInstanceFleet(
         break;
       }
       replacementAttempts++;
-      if (backoff) await cancellablePause(backoff);
-      if (stopping) break;
+      if (backoff) {
+        await cancellablePause(backoff);
+      }
+      if (stopping) {
+        break;
+      }
       let candidate: Member | undefined;
       try {
         candidate = await spawn(spare);
-        if (stopping) throw new Error('Fleet is stopping');
-        if (!candidate.process.running)
+        if (stopping) {
+          throw new Error('Fleet is stopping');
+        }
+        if (!candidate.process.running) {
           throw new Error('Replacement exited before route publication');
+        }
         members.set(spare, candidate);
         // Atomic route publication is protected by the existing lease lock.
+        /** Copied currently healthy routed peers before adding the replacement. */
         const targets = [...members.values()].filter(
           (m) => m !== old && m.routed && m.healthy
         );
@@ -411,7 +495,9 @@ export async function launchInstanceFleet(
           failures.push({ port: old.port, error: lastError });
         }
         replaced.push({ fromPort: old.port, toPort: spare, drained });
-        if (!failures.length) lastError = null;
+        if (!failures.length) {
+          lastError = null;
+        }
       } catch (error) {
         lastError = errorMessage(error);
         failures.push({ port: old.port, error: lastError });
@@ -435,6 +521,7 @@ export async function launchInstanceFleet(
           failures.push({ port: 0, error: lastError });
           break;
         }
+        /** First unused validated port; launch still handles concurrent native bind failure. */
         const spare = availableFleetPort(ports, new Set(members.keys()));
         if (spare === undefined) {
           lastError =
@@ -442,6 +529,7 @@ export async function launchInstanceFleet(
           failures.push({ port: 0, error: lastError });
           break;
         }
+        /** Consumed bounded restart delay; the attempt is checkpointed before waiting. */
         const backoff = budget.consume();
         try {
           onBudgetAttempt?.(budget.snapshot());
@@ -451,12 +539,18 @@ export async function launchInstanceFleet(
           break;
         }
         replacementAttempts++;
-        if (backoff) await cancellablePause(backoff);
-        if (stopping) break;
+        if (backoff) {
+          await cancellablePause(backoff);
+        }
+        if (stopping) {
+          break;
+        }
         let candidate: Member | undefined;
         try {
           candidate = await spawn(spare);
-          if (stopping) throw new Error('Fleet is stopping');
+          if (stopping) {
+            throw new Error('Fleet is stopping');
+          }
           members.set(spare, candidate);
           switchTo([...serving(), candidate]);
         } catch (error) {
@@ -477,21 +571,34 @@ export async function launchInstanceFleet(
         ).length === desiredReplicas
           ? 'running'
           : 'degraded';
-      if (phase === 'running' && !failures.length) lastError = null;
+      if (phase === 'running' && !failures.length) {
+        lastError = null;
+      }
       publish();
     }
     return { replaced, failures, status: snapshot };
   };
+  /** Coalesce local repairs and wait for an active resize before starting a fresh repair pass.
+   * @returns {Promise<FleetReconcileResult>} Shared in-flight result; rejects after stopping begins.
+   */
   function reconcile(): Promise<FleetReconcileResult> {
-    if (stopping) return Promise.reject(new Error('Fleet is stopping'));
-    if (resizeOperation) return resizeOperation.then(() => reconcile());
-    if (!operation)
+    if (stopping) {
+      return Promise.reject(new Error('Fleet is stopping'));
+    }
+    if (resizeOperation) {
+      return resizeOperation.then(() => reconcile());
+    }
+    if (!operation) {
       operation = runReconcile().finally(() => {
         operation = undefined;
       });
+    }
     return operation;
   }
 
+  /** Serialize an explicit host-authorized scale request with repairs and other resizes.
+   * @param {number} requested Validated target must retain at least one spare port.
+   * @returns {Promise<Readonly<FleetStatus>>} Latest immutable status or explicit partial-failure rejection. */
   const scaleTo = (requested: number): Promise<Readonly<FleetStatus>> => {
     if (
       !Number.isSafeInteger(requested) ||
@@ -504,25 +611,39 @@ export async function launchInstanceFleet(
         )
       );
     }
-    if (stopping) return Promise.reject(new Error('Fleet is stopping'));
-    if (resizeOperation) return resizeOperation.then(() => scaleTo(requested));
+    if (stopping) {
+      return Promise.reject(new Error('Fleet is stopping'));
+    }
+    if (resizeOperation) {
+      return resizeOperation.then(() => scaleTo(requested));
+    }
     resizeOperation = (async () => {
-      if (operation) await operation.catch(() => {});
-      if (stopping) throw new Error('Fleet is stopping');
+      if (operation) {
+        await operation.catch(() => {});
+      }
+      if (stopping) {
+        throw new Error('Fleet is stopping');
+      }
       desiredReplicas = requested;
       publish();
       try {
         // Ready-before-cutover. Publish each verified generation atomically;
         // errors retain healthy capacity rather than withdrawing serving routes.
         while (serving().filter((m) => m.healthy).length < desiredReplicas) {
-          if (stopping) throw new Error('Fleet is stopping');
+          if (stopping) {
+            throw new Error('Fleet is stopping');
+          }
+          /** First unused validated port; launch still handles concurrent native bind failure. */
           const spare = availableFleetPort(ports, new Set(members.keys()));
-          if (spare === undefined)
+          if (spare === undefined) {
             throw new Error('No spare port available for scale-up');
+          }
           let candidate: Member | undefined;
           try {
             candidate = await spawn(spare);
-            if (stopping) throw new Error('Fleet is stopping');
+            if (stopping) {
+              throw new Error('Fleet is stopping');
+            }
             members.set(spare, candidate);
             switchTo([...serving(), candidate]);
             publish();
@@ -535,12 +656,17 @@ export async function launchInstanceFleet(
           }
         }
         while (serving().length > desiredReplicas) {
-          if (stopping) throw new Error('Fleet is stopping');
+          if (stopping) {
+            throw new Error('Fleet is stopping');
+          }
+          /** Copied serving inventory used to choose one safe retirement candidate. */
           const candidates = serving();
           // Remove the newest first. Older members remain warm and retain leases.
+          /** Unhealthy-first/newest eligible retirement observation from the shared policy. */
           const selected = fleetRetirementCandidate(
             candidates.map((m) => ({ ...m, running: m.process.running }))
           );
+          /** Controller-owned serving record matched to the selected retirement port. */
           const victim = candidates.find((m) => m.port === selected?.port)!;
           switchTo(candidates.filter((m) => m !== victim));
           members.delete(victim.port);
@@ -574,28 +700,39 @@ export async function launchInstanceFleet(
     return resizeOperation;
   };
 
+  /** Fence new work, wake backoff and settle owned children after conditional route withdrawal.
+   * @returns {Promise<void>} Shared idempotent cleanup promise; borrowed dependencies remain host-owned. */
   const stop = (): Promise<void> => {
-    if (stopPromise) return stopPromise;
+    if (stopPromise) {
+      return stopPromise;
+    }
     stopping = true;
     cancelPause?.();
-    if (timer) clearInterval(timer);
+    if (timer) {
+      clearInterval(timer);
+    }
     phase = 'stopping';
     publish();
     stopPromise = (async () => {
-      if (operation) await operation.catch(() => {});
-      if (resizeOperation) await resizeOperation.catch(() => {});
+      if (operation) {
+        await operation.catch(() => {});
+      }
+      if (resizeOperation) {
+        await resizeOperation.catch(() => {});
+      }
       try {
         lease?.release();
       } finally {
         await Promise.allSettled(
           [...members.values()].map(async (member) => {
             try {
-              if (member.routed)
+              if (member.routed) {
                 await connections.waitForIdle(
                   hostname,
                   member.port,
                   drainTimeoutMs
                 );
+              }
             } finally {
               await member.process.stop();
             }
@@ -609,12 +746,13 @@ export async function launchInstanceFleet(
     return stopPromise;
   };
   timer = setInterval(() => {
-    if (!stopping)
+    if (!stopping) {
       void reconcile().catch((error) => {
         lastError = errorMessage(error);
         phase = 'degraded';
         publish();
       });
+    }
   }, healthIntervalMs);
   timer.unref?.();
   return {

@@ -11,9 +11,13 @@ import {
   createEventSchemaRegistry,
   validateRegisteredEvent,
 } from '@zeruxjs/analytics';
-const tenant = 'tenant_0123456789',
-  subject = 'subject_0123456789',
-  salt = Buffer.alloc(32, 7);
+/** Fixed synthetic opaque tenant token; never a real customer identifier. */
+const tenant = 'tenant_0123456789';
+/** Fixed synthetic authenticated-context subject token for the known deterministic vector. */
+const subject = 'subject_0123456789';
+/** Synthetic repeated32byte fixture key only; never production entropy or a recommended secret. */
+const salt = Buffer.alloc(32, 7);
+/** Explicit inert three-variant retained initial rollout fixture using integer basis points. */
 const initial = {
   id: 'checkout',
   version: 1,
@@ -26,7 +30,12 @@ const initial = {
     { name: 'express', weight: 4000 },
   ],
 };
+/** Build a fresh immutable known fixture catalog without executing a test or collecting analytics.
+ * @returns {object} Branded synthetic immutable rollout snapshot. */
 const catalog = () => createExperimentCatalog([initial]);
+/** Return a synthetic trusted-resolver output; production authentication must never accept arbitrary principal overrides this way.
+ * @param {object} extra Explicit test-only context variations for denial/eligibility assertions.
+ * @returns {object} Synthetic opaque tenant/subject/environment/consent binding. */
 const context = (extra = {}) => ({
   tenant,
   subject,
@@ -34,6 +43,10 @@ const context = (extra = {}) => ({
   consent: 'granted',
   ...extra,
 });
+/** Acquire a synthetic tenant-fixed evaluator with explicit test-only context resolution and optional controlled dependency doubles.
+ * @param {object} cat Known branded fixture catalog.
+ * @param {object} extra Explicit trusted synthetic configuration/dependency overrides.
+ * @returns {object} Owned evaluator; each acquiring test awaits close to drain its own work/key copy. */
 const evaluator = (cat = catalog(), extra = {}) =>
   createExperimentEvaluator({
     catalog: cat,
@@ -42,39 +55,70 @@ const evaluator = (cat = catalog(), extra = {}) =>
     resolveContext: (principal) => context(principal),
     ...extra,
   });
+/** Create an in-memory linearizable-operation double for the declared durable contract; this test double is not a production durable adapter or cross-process proof.
+ * @returns {object} Isolated synthetic definition/assignment maps and explicit register/get/CAS callbacks.
+ */
 function storeFixture() {
-  const definitions = new Map(),
-    assignments = new Map();
+  /** Isolated in-memory fixture definition fingerprints, never a production durable journal. */
+  const definitions = new Map();
+  /** Isolated private fixture assignments or injected assignment-store double; no live primary is queried. */
+  const assignments = new Map();
   return {
     definitions,
     assignments,
     contract: 'ztrial-experiment-store-v1',
     durability: 'durable',
+    /** Simulate immutable definition unique-insert/compare in this isolated synchronous-before-await map fixture.
+     * @param {object} d - Known synthetic scope/experiment/version/fingerprint tuple.
+     * @returns {Promise<string>} Known registered/same/conflict result; no real database write occurs.
+     */
     async register(d) {
-      const key = JSON.stringify([d.scope, d.experiment, d.version]),
-        old = definitions.get(key);
-      if (old !== undefined) return old === d.fingerprint ? 'same' : 'conflict';
+      /** Synthetic immutable-definition map tuple, excluding raw subject identity. */
+      const key = JSON.stringify([d.scope, d.experiment, d.version]);
+      /** Existing isolated fixture definition/assignment/receipt snapshot used for known comparison outcomes. */
+      const old = definitions.get(key);
+      if (old !== undefined) {
+        return old === d.fingerprint ? 'same' : 'conflict';
+      }
       definitions.set(key, d.fingerprint);
       return 'registered';
     },
+    /** Return a detached private synthetic assignment snapshot from only this fixture map.
+     * @param {string} key - Evaluator-generated private fixture HMAC reference.
+     * @returns {Promise<object | null>} Cloned fixture record or absence, never a live external query.
+     */
     async get(key) {
       return structuredClone(assignments.get(key) ?? null);
     },
+    /** Simulate exact revision ownership with an immediate isolated-map compare/write, without claiming cross-process database atomicity.
+     * @param {string} key - Stable private evaluator-generated fixture reference.
+     * @param {number | null} revision - Known expected fixture revision or null for unique insert.
+     * @param {object} next - Frozen next declared synthetic assignment.
+     * @returns {Promise<boolean>} Known synthetic comparison outcome; no live primary/storage is involved.
+     */
     async cas(key, revision, next) {
+      /** Existing isolated fixture definition/assignment/receipt snapshot used for known comparison outcomes. */
       const old = assignments.get(key);
-      if ((old?.revision ?? null) !== revision) return false;
+      if ((old?.revision ?? null) !== revision) {
+        return false;
+      }
       assignments.set(key, structuredClone(next));
       return true;
     },
   };
 }
 test('stable named multi-variant assignment, detached configuration, and no test-runner registration', async () => {
-  const config = structuredClone(initial),
-    cat = createExperimentCatalog([config]),
-    a = evaluator(cat),
-    b = evaluator(cat);
+  /** Detached mutable input fixture proving catalog construction does not retain later weight edits. */
+  const config = structuredClone(initial);
+  /** Fresh immutable synthetic catalog used by isolated evaluators. */
+  const cat = createExperimentCatalog([config]);
+  /** Owned synthetic evaluator; all tests close it after actual pending work settles. */
+  const a = evaluator(cat);
+  /** Separately owned evaluator exercising preserved/restored/error/recording policies without sharing mutable context. */
+  const b = evaluator(cat);
   config.variants[0].weight = 9999;
   try {
+    /** Actual sanitized evaluation receipt compared with known allocation/denial/migration facts. */
     const result = await a.evaluate('checkout', {});
     assert.equal(result.status, 'assigned');
     assert.equal(result.variant, 'compact');
@@ -87,14 +131,17 @@ test('stable named multi-variant assignment, detached configuration, and no test
       /subject_0123456789|tenant_0123456789/
     );
     assert.ok(Object.isFrozen(cat.definitions[0].variants));
+    /** Independent inert test registry proving experiment evaluation registers no test case. */
     const runner = createRunner();
     runner.test('independent', () => {});
     await a.evaluate('checkout', {});
+    /** Actual independent runner outcome, unrelated to experiment statistical significance. */
     const summary = await runner.runTests();
     assert.equal(summary.results.length, 1);
     assert.equal(summary.passed, 1);
+    /** Observed deterministic named variants over synthetic opaque subjects; not a statistical significance calculation. */
     const seen = new Set();
-    for (let i = 0; i < 60; i++)
+    for (let i = 0; i < 60; i++) {
       seen.add(
         (
           await a.evaluate('checkout', {
@@ -102,6 +149,7 @@ test('stable named multi-variant assignment, detached configuration, and no test
           })
         ).variant
       );
+    }
     assert.equal(seen.size, 3);
   } finally {
     await a.close();
@@ -142,8 +190,9 @@ test('weights, duplicate names, uncontrolled rollouts, environment/config access
     { ...initial, environments: ['production', 'production'] },
     { ...initial, version: 2 },
     { ...initial, migration: 'preserve' },
-  ])
+  ]) {
     assert.throws(() => createExperimentCatalog([definition]));
+  }
   assert.throws(
     () =>
       evolveExperimentCatalog(catalog(), [
@@ -190,12 +239,15 @@ test('weights, duplicate names, uncontrolled rollouts, environment/config access
 });
 test('verified tenant, consent and environment denial occur before store/recorder effects', async () => {
   let calls = 0;
-  const store = storeFixture(),
-    native = store.register;
+  /** Controlled in-memory assignment dependency double, including explicit injected outage behavior. */
+  const store = storeFixture();
+  /** Original fixture register callback retained before instrumenting side-effect counts. */
+  const native = store.register;
   store.register = async (...args) => {
     calls++;
     return native(...args);
   };
+  /** Owned synthetic evaluator; all tests close it after actual pending work settles. */
   const a = evaluator(catalog(), { store });
   try {
     for (const [extra, reason] of [
@@ -203,11 +255,12 @@ test('verified tenant, consent and environment denial occur before store/recorde
       [{ consent: 'denied' }, 'consent'],
       [{ consent: 'unknown' }, 'consent'],
       [{ environment: 'staging' }, 'environment'],
-    ])
+    ]) {
       assert.deepEqual(await a.evaluate('checkout', extra), {
         status: 'denied',
         reason,
       });
+    }
     assert.equal(calls, 0);
     await assert.rejects(
       a.evaluate('checkout', { subject: 'email@example.com' }),
@@ -219,17 +272,21 @@ test('verified tenant, consent and environment denial occur before store/recorde
   }
 });
 test('tenant isolation, deterministic trusted overrides and sticky existing assignments', async () => {
-  const shared = storeFixture(),
-    a = evaluator(catalog(), {
-      store: shared,
-      overrides: [
-        { experiment: 'checkout', version: 1, subject, variant: 'express' },
-      ],
-    });
+  /** Shared isolated map double proving explicit scope/version/CAS semantics, not distributed durability. */
+  const shared = storeFixture();
+  /** Owned synthetic evaluator; all tests close it after actual pending work settles. */
+  const a = evaluator(catalog(), {
+    store: shared,
+    overrides: [
+      { experiment: 'checkout', version: 1, subject, variant: 'express' },
+    ],
+  });
   try {
+    /** Actual sanitized trusted-override receipt, excluding tenant/subject traits. */
     const assigned = await a.evaluate('checkout', {});
     assert.equal(assigned.variant, 'express');
     assert.equal(assigned.explanation.reason, 'override');
+    /** Owned later evaluator proving a stored current-version assignment wins over changed trusted overrides. */
     const second = evaluator(catalog(), {
       store: shared,
       overrides: [
@@ -241,7 +298,9 @@ test('tenant isolation, deterministic trusted overrides and sticky existing assi
     } finally {
       await second.close();
     }
+    /** Second fixed synthetic opaque tenant proving private key/scope separation. */
     const otherTenant = 'tenant_9876543210';
+    /** Owned separate-tenant evaluator whose host context remains fixed to that synthetic tenant. */
     const other = createExperimentEvaluator({
       catalog: catalog(),
       tenant: otherTenant,
@@ -252,6 +311,7 @@ test('tenant isolation, deterministic trusted overrides and sticky existing assi
     try {
       await other.evaluate('checkout', {});
       assert.equal(shared.assignments.size, 2);
+      /** Actual private synthetic assignment snapshots checked for tenant/reference isolation. */
       const rows = [...shared.assignments.values()];
       assert.notEqual(rows[0].key, rows[1].key);
       assert.notEqual(rows[0].scope, rows[1].scope);
@@ -267,15 +327,18 @@ test('tenant isolation, deterministic trusted overrides and sticky existing assi
   }
 });
 test('preserve/rebucket migrations require explicit versions and durable history; same-version changes and salt rotation fail closed', async () => {
-  const shared = storeFixture(),
-    a = evaluator(catalog(), {
-      store: shared,
-      overrides: [
-        { experiment: 'checkout', version: 1, subject, variant: 'express' },
-      ],
-    });
+  /** Shared isolated map double proving explicit scope/version/CAS semantics, not distributed durability. */
+  const shared = storeFixture();
+  /** Owned synthetic evaluator; all tests close it after actual pending work settles. */
+  const a = evaluator(catalog(), {
+    store: shared,
+    overrides: [
+      { experiment: 'checkout', version: 1, subject, variant: 'express' },
+    ],
+  });
   await a.evaluate('checkout', {});
   await a.close();
+  /** Immutable explicit next-version preservation rollout retaining zero-weight named history. */
   const preserve = evolveExperimentCatalog(catalog(), [
     {
       ...initial,
@@ -292,8 +355,10 @@ test('preserve/rebucket migrations require explicit versions and durable history
     () => evaluator(preserve),
     (e) => e.code === 'PRESERVE_REQUIRES_DURABLE_STORE'
   );
+  /** Separately owned evaluator exercising preserved/restored/error/recording policies without sharing mutable context. */
   const b = evaluator(preserve, { store: shared });
   try {
+    /** Actual sanitized evaluation receipt compared with known allocation/denial/migration facts. */
     const result = await b.evaluate('checkout', {});
     assert.equal(result.variant, 'express');
     assert.equal(result.version, 2);
@@ -301,6 +366,7 @@ test('preserve/rebucket migrations require explicit versions and durable history
   } finally {
     await b.close();
   }
+  /** Immutable explicit later rebucket rollout; never a hidden weight mutation. */
   const rebucket = evolveExperimentCatalog(preserve, [
     {
       ...initial,
@@ -312,8 +378,10 @@ test('preserve/rebucket migrations require explicit versions and durable history
       ],
     },
   ]);
+  /** Owned separate evaluator exercising rebucket/recording-ignore/cancellation behavior. */
   const c = evaluator(rebucket, { store: shared });
   try {
+    /** Actual sanitized evaluation receipt compared with known allocation/denial/migration facts. */
     const result = await c.evaluate('checkout', {});
     assert.equal(result.variant, 'control');
     assert.equal(result.version, 3);
@@ -321,12 +389,14 @@ test('preserve/rebucket migrations require explicit versions and durable history
   } finally {
     await c.close();
   }
+  /** Owned old-version evaluator expected to reject a newer persisted fixture assignment. */
   const rollback = evaluator(catalog(), { store: shared });
   await assert.rejects(
     rollback.evaluate('checkout', {}),
     (e) => e.code === 'ROLLBACK_OR_UNKNOWN_VERSION'
   );
   await rollback.close();
+  /** Owned same-version redefinition evaluator expected to fail before independent assignment. */
   const changed = evaluator(
     createExperimentCatalog([
       {
@@ -344,6 +414,7 @@ test('preserve/rebucket migrations require explicit versions and durable history
     (e) => e.code === 'VERSION_CONFLICT'
   );
   await changed.close();
+  /** Owned evaluator with a deliberately different synthetic key, proving unplanned salt changes fail closed. */
   const rotated = evaluator(catalog(), {
     store: shared,
     tenantSalt: Buffer.alloc(32, 9),
@@ -355,13 +426,19 @@ test('preserve/rebucket migrations require explicit versions and durable history
   await rotated.close();
 });
 test('parallel CAS assignment and idempotent analytics recording contain no traits and validate against public schema', async () => {
-  const assignments = storeFixture(),
-    receipts = new Map(),
-    schema = experimentAnalyticsSchema(catalog()),
-    registry = createEventSchemaRegistry([schema]);
+  /** Isolated private fixture assignments or injected assignment-store double; no live primary is queried. */
+  const assignments = storeFixture();
+  /** Bounded isolated synthetic unique exposure receipts; not a real analytics durable sink. */
+  const receipts = new Map();
+  /** Finite public analytics schema data derived from the actual fixture catalog. */
+  const schema = experimentAnalyticsSchema(catalog());
+  /** Actual analytics schema registry over only the finite synthetic schema; no collection service starts. */
+  const registry = createEventSchemaRegistry([schema]);
+  /** Explicit controlled synthetic once/capacity/failure callback, not live analytics acceptance. */
   const recorder = {
     contract: 'ztrial-experiment-recorder-v1',
     async recordOnce(receipt) {
+      /** Existing isolated fixture definition/assignment/receipt snapshot used for known comparison outcomes. */
       const old = receipts.get(receipt.id);
       if (old) {
         assert.deepEqual(old, receipt);
@@ -385,12 +462,14 @@ test('parallel CAS assignment and idempotent analytics recording contain no trai
       return 'recorded';
     },
   };
+  /** Owned synthetic evaluator; all tests close it after actual pending work settles. */
   const a = evaluator(catalog(), {
     store: assignments,
     maxRecordPending: 16,
     recording: { recorder, failure: 'error' },
   });
   try {
+    /** Actual concurrent sanitized receipts proving one synthetic assignment/receipt identity. */
     const replies = await Promise.all(
       Array.from({ length: 10 }, () => a.evaluate('checkout', {}))
     );
@@ -407,10 +486,12 @@ test('parallel CAS assignment and idempotent analytics recording contain no trai
   }
 });
 test('dependency failure never silently falls back or leaks private diagnostics; explicit recorder failure policy', async () => {
+  /** Controlled in-memory assignment dependency double, including explicit injected outage behavior. */
   const store = storeFixture();
   store.get = async () => {
     throw Error('PRIVATE subject token');
   };
+  /** Owned synthetic evaluator; all tests close it after actual pending work settles. */
   const a = evaluator(catalog(), { store });
   try {
     await assert.rejects(
@@ -421,14 +502,19 @@ test('dependency failure never silently falls back or leaks private diagnostics;
   } finally {
     await a.close();
   }
+  /** Explicit controlled synthetic once/capacity/failure callback, not live analytics acceptance. */
   const recorder = {
     contract: 'ztrial-experiment-recorder-v1',
     async recordOnce() {
       throw Error('PRIVATE analytics unavailable');
     },
   };
-  const b = evaluator(catalog(), { recording: { recorder, failure: 'error' } }),
-    c = evaluator(catalog(), { recording: { recorder, failure: 'ignore' } });
+  /** Separately owned evaluator exercising preserved/restored/error/recording policies without sharing mutable context. */
+  const b = evaluator(catalog(), { recording: { recorder, failure: 'error' } });
+  /** Owned separate evaluator exercising rebucket/recording-ignore/cancellation behavior. */
+  const c = evaluator(catalog(), {
+    recording: { recorder, failure: 'ignore' },
+  });
   try {
     await assert.rejects(
       b.evaluate('checkout', {}),
@@ -443,6 +529,7 @@ test('dependency failure never silently falls back or leaks private diagnostics;
 test('timeout/cancellation retains actual pending capacity and close drains borrowed dependencies', async () => {
   let finish,
     closed = 0;
+  /** Owned synthetic evaluator; all tests close it after actual pending work settles. */
   const a = evaluator(catalog(), {
     timeoutMs: 10,
     maxConcurrent: 1,
@@ -458,6 +545,7 @@ test('timeout/cancellation retains actual pending capacity and close drains borr
     (e) => e.code === 'OVERLOAD'
   );
   let done = false;
+  /** Actual evaluator close promise retained while a controlled dependency remains unsettled. */
   const closing = a.close().then(() => (done = true));
   await new Promise((resolve) => setTimeout(resolve, 2));
   assert.equal(done, false);
@@ -465,18 +553,22 @@ test('timeout/cancellation retains actual pending capacity and close drains borr
   await closing;
   assert.equal(a.diagnostics().pending, 0);
   await assert.rejects(a.evaluate('checkout', {}), (e) => e.code === 'CLOSED');
+  /** Controlled in-memory assignment dependency double, including explicit injected outage behavior. */
   const store = {
     ...storeFixture(),
     close() {
       closed++;
     },
   };
+  /** Separately owned evaluator exercising preserved/restored/error/recording policies without sharing mutable context. */
   const b = evaluator(catalog(), { store });
   await b.evaluate('checkout', {});
   await b.close();
   assert.equal(closed, 0);
+  /** Owned already-aborted fixture signal whose private reason must not leak into public diagnostics. */
   const controller = new AbortController();
   controller.abort('PRIVATE');
+  /** Owned separate evaluator exercising rebucket/recording-ignore/cancellation behavior. */
   const c = evaluator();
   try {
     await assert.rejects(
@@ -488,16 +580,23 @@ test('timeout/cancellation retains actual pending capacity and close drains borr
   }
 });
 test('recording capacity is explicit and recording concurrency never queues unlimited callbacks', async () => {
+  /** Bounded isolated synthetic unique exposure receipts; not a real analytics durable sink. */
   const receipts = new Map();
+  /** Explicit controlled synthetic once/capacity/failure callback, not live analytics acceptance. */
   const recorder = {
     contract: 'ztrial-experiment-recorder-v1',
     async recordOnce(receipt, context) {
-      if (receipts.has(receipt.id)) return 'duplicate';
-      if (receipts.size >= context.limit) return 'capacity';
+      if (receipts.has(receipt.id)) {
+        return 'duplicate';
+      }
+      if (receipts.size >= context.limit) {
+        return 'capacity';
+      }
       receipts.set(receipt.id, receipt);
       return 'recorded';
     },
   };
+  /** Owned synthetic evaluator; all tests close it after actual pending work settles. */
   const a = evaluator(catalog(), {
     recording: { recorder, failure: 'error', maxRecords: 1 },
   });
@@ -513,6 +612,7 @@ test('recording capacity is explicit and recording concurrency never queues unli
     await a.close();
   }
   let finish;
+  /** Separately owned evaluator exercising preserved/restored/error/recording policies without sharing mutable context. */
   const b = evaluator(catalog(), {
     maxRecordPending: 1,
     recording: {
@@ -523,6 +623,7 @@ test('recording capacity is explicit and recording concurrency never queues unli
       },
     },
   });
+  /** Actual in-flight synthetic recorder operation held to prove overload rejects instead of unbounded queuing. */
   const first = b.evaluate('checkout', {});
   await new Promise((resolve) => setImmediate(resolve));
   await assert.rejects(

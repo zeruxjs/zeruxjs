@@ -5,25 +5,80 @@ import os from 'node:os';
 import path from 'node:path';
 import { inspectFleetState } from '../dist/portless/fleet-diagnostics.js';
 import { RouteStore } from '../dist/portless/routes.js';
-import { createFleetCheckpointWriter, fingerprintFleetConfig } from '../dist/portless/fleet-state.js';
+import {
+  createFleetCheckpointWriter,
+  fingerprintFleetConfig,
+} from '../dist/portless/fleet-state.js';
 import { processIdentity } from '../dist/portless/lifecycle.js';
-const fixture=fn=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'fleet-doctor-'));try{return fn(dir)}finally{fs.rmSync(dir,{recursive:true,force:true})}};
-test('doctor detects an offline fleet, missing replicas and route drift without mutating anything',()=>fixture(dir=>{
- const host='demo.localhost';const store=new RouteStore(dir);
- const fp=fingerprintFleetConfig(['node','app'],[4100,4101,4102,4103],2,60000);
- const writer=createFleetCheckpointWriter(dir,host,fp,processIdentity(process.pid));
- writer.update({phase:'degraded',hostname:host,desiredReplicas:3,generation:2,replacementAttempts:1,budgetUsed:1,lastError:'test error',
-  members:[{port:4100,pid:process.pid,routed:true,healthy:true,failures:0,generation:1}],updatedAt:new Date().toISOString()});
- const result=inspectFleetState(dir,host);
- assert.equal(result.online,false);assert.equal(result.readyReplicas,1);assert.equal(result.desiredReplicas,3);
- assert.equal(result.routePresent,false);
- assert.ok(result.warnings.some(w=>/below desired/.test(w)));
- assert.ok(result.warnings.some(w=>/Route backends/.test(w)));
- assert.equal(store.loadRoutes().length,0);
-}));
+/** Run one synchronous private synthetic-state fixture and remove it even when an assertion throws.
+ * @param {(dir: string) => unknown} fn Assertions over the owned temporary directory.
+ * @returns {unknown} Callback result; no operator state or running app is used. */
+const fixture = (fn) => {
+  /** Owned private temporary directory removed after each fixture. */
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fleet-doctor-'));
+  try {
+    return fn(dir);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+};
+test('doctor detects an offline fleet, missing replicas and route drift without mutating anything', () =>
+  fixture((dir) => {
+    /** Fixed synthetic route label, never an authorization identity. */
+    const host = 'demo.localhost';
+    /** Borrowed route reader over only the isolated fixture state. */
+    const store = new RouteStore(dir);
+    /** Synthetic command/inventory fingerprint for the test checkpoint. */
+    const fp = fingerprintFleetConfig(
+      ['node', 'app'],
+      [4100, 4101, 4102, 4103],
+      2,
+      60000
+    );
+    /** Private fixture checkpoint writer using the current test-process identity. */
+    const writer = createFleetCheckpointWriter(
+      dir,
+      host,
+      fp,
+      processIdentity(process.pid)
+    );
+    writer.update({
+      phase: 'degraded',
+      hostname: host,
+      desiredReplicas: 3,
+      generation: 2,
+      replacementAttempts: 1,
+      budgetUsed: 1,
+      lastError: 'test error',
+      members: [
+        {
+          port: 4100,
+          pid: process.pid,
+          routed: true,
+          healthy: true,
+          failures: 0,
+          generation: 1,
+        },
+      ],
+      updatedAt: new Date().toISOString(),
+    });
+    /** Read-only diagnostic receipt compared against known offline/drift fixture facts. */
+    const result = inspectFleetState(dir, host);
+    assert.equal(result.online, false);
+    assert.equal(result.readyReplicas, 1);
+    assert.equal(result.desiredReplicas, 3);
+    assert.equal(result.routePresent, false);
+    assert.ok(result.warnings.some((w) => /below desired/.test(w)));
+    assert.ok(result.warnings.some((w) => /Route backends/.test(w)));
+    assert.equal(store.loadRoutes().length, 0);
+  }));
 
-test('doctor tolerates missing fleet state without inventing online status',()=>fixture(dir=>{
- const r=inspectFleetState(dir,'not-running.localhost');
- assert.equal(r.checkpointPresent,false);assert.equal(r.online,false);assert.equal(r.recoveryRequired,false);
- assert.ok(r.warnings.some(w=>/missing/.test(w)));
-}));
+test('doctor tolerates missing fleet state without inventing online status', () =>
+  fixture((dir) => {
+    /** Missing-state receipt proving no online or recovery status is invented. */
+    const r = inspectFleetState(dir, 'not-running.localhost');
+    assert.equal(r.checkpointPresent, false);
+    assert.equal(r.online, false);
+    assert.equal(r.recoveryRequired, false);
+    assert.ok(r.warnings.some((w) => /missing/.test(w)));
+  }));

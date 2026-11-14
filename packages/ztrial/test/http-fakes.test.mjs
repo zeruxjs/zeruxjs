@@ -11,10 +11,16 @@ import {
   spyOn,
   waitFor,
 } from 'ztrial';
+/** Build one exact inert synthetic response-step route.
+ * @param {string} path Fixed same-origin fixture path.
+ * @param {object} reply Explicit bounded synthetic response data, never executable source.
+ * @returns {object} One-step fixture definition without opening a server. */
 const route = (path, reply) => ({ path, responses: [reply] });
 
 test('injected exact routing scripts, metadata-only expectations and denied outbound requests', async () => {
+  /** Original global Fetch or test-object method reference, checked for unchanged/restored ownership. */
   const original = globalThis.fetch;
+  /** Owned explicit HTTP fixture; every direct-use test awaits close in finally. */
   const fake = createHttpFake({
     routes: [
       {
@@ -63,8 +69,11 @@ test('injected exact routing scripts, metadata-only expectations and denied outb
 });
 
 test('two ephemeral servers are isolated and release ports, sockets and listeners', async () => {
+  /** First independently owned synthetic HTTP fixture, using a private ephemeral listener. */
   const a = createHttpFake({ routes: [route('/same', { body: 'one' })] });
+  /** Second independently owned synthetic HTTP fixture with no shared scripts/state. */
   const b = createHttpFake({ routes: [route('/same', { body: 'two' })] });
+  /** Actual distinct ephemeral listener addresses from two independent fixtures. */
   const [first, second] = await Promise.all([a.listen(), b.listen()]);
   assert.notEqual(first, second);
   try {
@@ -84,17 +93,20 @@ test('two ephemeral servers are isolated and release ports, sockets and listener
     assert.equal(fake.diagnostics().listening, false);
     assert.equal(fake.diagnostics().activeRequests, 0);
   }
-  for (const origin of [first, second])
+  for (const origin of [first, second]) {
     await assert.rejects(
       new Promise((resolve, reject) => {
+        /** Owned one-shot local native HTTP probe; errors are observed after fixture port shutdown. */
         const req = http.get(origin, resolve);
         req.once('error', reject);
       }),
       (error) => error.code === 'ECONNREFUSED'
     );
+  }
 });
 
 test('deterministic stream chunks exercise SSE framing and partial-stream failure', async () => {
+  /** Owned explicit HTTP fixture; every direct-use test awaits close in finally. */
   const fake = createHttpFake({
     routes: [
       route('/sse', {
@@ -108,16 +120,23 @@ test('deterministic stream chunks exercise SSE framing and partial-stream failur
     ],
   });
   try {
+    /** Actual injected/native synthetic response; bodies must be consumed or cancelled. */
     const response = await fake.fetch('https://fake.test/sse');
+    /** Owned response/body reader with explicit lock release after terminal outcome. */
     const reader = response.body.getReader();
+    /** Observed deterministic producer chunks; not a claim about TCP packet boundaries. */
     const parts = [];
     while (true) {
+      /** Actual synthetic stream read receipt checked before consuming its bytes. */
       const value = await reader.read();
-      if (value.done) break;
+      if (value.done) {
+        break;
+      }
       parts.push(new TextDecoder().decode(value.value));
     }
     reader.releaseLock();
     assert.deepEqual(parts, ['data: {"value":', '1}\n', '\n']);
+    /** Owned intentionally failing scripted stream reader, released after observing its failure. */
     const broken = (
       await fake.fetch('https://fake.test/broken')
     ).body.getReader();
@@ -138,8 +157,11 @@ test('deterministic stream chunks exercise SSE framing and partial-stream failur
 });
 
 test('timeout, request abort and reader cancellation clean timers/listeners and streams', async () => {
+  /** Owned fixture abort controller; listener counts return to their pre-test state. */
   const controller = new AbortController();
+  /** Pre-call owned-signal abort listener count. */
   const before = getEventListeners(controller.signal, 'abort').length;
+  /** Owned explicit HTTP fixture; every direct-use test awaits close in finally. */
   const fake = createHttpFake({
     requestTimeoutMs: 20,
     routes: [
@@ -155,14 +177,18 @@ test('timeout, request abort and reader cancellation clean timers/listeners and 
       fake.fetch('https://fake.test/timeout'),
       (error) => error.code === 'REQUEST_TIMEOUT'
     );
+    /** Actual injected/native synthetic response; bodies must be consumed or cancelled. */
     const response = await fake.fetch('https://fake.test/slow', {
       signal: controller.signal,
     });
+    /** Owned response/body reader with explicit lock release after terminal outcome. */
     const reader = response.body.getReader();
+    /** Actual in-flight injected request/read promise observed through timeout/cancellation. */
     const pending = reader.read();
     controller.abort();
     await assert.rejects(pending);
     reader.releaseLock();
+    /** Owned reader whose explicit cancellation must release stream/request accounting. */
     const cancel = (
       await fake.fetch('https://fake.test/cancel')
     ).body.getReader();
@@ -179,7 +205,9 @@ test('timeout, request abort and reader cancellation clean timers/listeners and 
 });
 
 test('manual clock and sequence random never modify global time or entropy', async () => {
+  /** Owned manual fixture clock, closed after fake cleanup; global Date/timers remain untouched. */
   const clock = createTestClock(10);
+  /** Owned explicit HTTP fixture; every direct-use test awaits close in finally. */
   const fake = createHttpFake({
     now: clock.now,
     sleep: clock.sleep,
@@ -187,6 +215,7 @@ test('manual clock and sequence random never modify global time or entropy', asy
     routes: [route('/delayed', { delayMs: 50, body: 'done' })],
   });
   try {
+    /** Actual in-flight injected request/read promise observed through timeout/cancellation. */
     const pending = fake.fetch('https://fake.test/delayed');
     void pending.catch(() => {});
     await waitFor(() => clock.pending() === 1, {
@@ -213,8 +242,10 @@ test('body, response and concurrency bounds reject invalid/denied inputs', async
     { routes: [], maxBodyBytes: 0 },
     { routes: [route('/x', { body: 'too large' })], maxResponseBytes: 1 },
     { routes: [route('/x', { headers: { x: 'bad\r\nInjected: true' } })] },
-  ])
+  ]) {
     assert.throws(() => createHttpFake(options));
+  }
+  /** Owned explicit HTTP fixture; every direct-use test awaits close in finally. */
   const fake = createHttpFake({
     maxBodyBytes: 2,
     maxConcurrent: 1,
@@ -229,6 +260,7 @@ test('body, response and concurrency bounds reject invalid/denied inputs', async
       fake.fetch('https://fake.test/body', { method: 'POST', body: 'private' }),
       (error) => error.code === 'REQUEST_BODY_LIMIT'
     );
+    /** Actual in-flight injected request/read promise observed through timeout/cancellation. */
     const pending = fake.fetch('https://fake.test/hold');
     await assert.rejects(
       fake.fetch('https://fake.test/other'),
@@ -263,17 +295,22 @@ test('assertion failure, expectation failure and runner timeout close acquired s
     (error) => error.code === 'EXPECTATION_FAILED'
   );
   assert.equal(unmet.diagnostics().listening, false);
+  /** Independent inert runner whose callback owns this test’s fake/spies. */
   const runner = createRunner();
+  /** Fixture-owned method object; no unrelated parallel runner’s mock is restored. */
   const object = { method: () => 1 };
+  /** Original global Fetch or test-object method reference, checked for unchanged/restored ownership. */
   const original = object.method;
   let timed;
   runner.test('timeout owner', async (context) => {
+    /** Owned local method replacement registered with this callback’s onCleanup. */
     const spy = spyOn(object, 'method');
     context.onCleanup(spy.mockRestore);
     timed = createHttpFake({ scope: context, routes: [] });
     await timed.listen();
     await new Promise(() => {});
   });
+  /** Actual fixture runner outcome proving failed/undefined rejection cleanup stays visible. */
   const summary = await runner.runTests({ timeoutMs: 40 });
   assert.equal(summary.failed, 1);
   assert.equal(timed.diagnostics().listening, false);
@@ -281,8 +318,10 @@ test('assertion failure, expectation failure and runner timeout close acquired s
 });
 
 test('explicit external allowance is per fixture and backend rejection preserves failure', async () => {
+  /** Fixed injected transport/native acquisition cause, not a live dependency outage. */
   const failure = new Error('test transport unavailable');
   let calls = 0;
+  /** Owned explicit HTTP fixture; every direct-use test awaits close in finally. */
   const fake = createHttpFake({
     routes: [],
     network: {
@@ -308,6 +347,7 @@ test('explicit external allowance is per fixture and backend rejection preserves
   } finally {
     await fake.close();
   }
+  /** Independent fixture proving another fixture’s external allowance is never inherited. */
   const isolated = createHttpFake({ routes: [] });
   try {
     await assert.rejects(
@@ -321,6 +361,7 @@ test('explicit external allowance is per fixture and backend rejection preserves
 
 test('allowed injected transports still obey request/response bounds and stream ownership', async () => {
   let calls = 0;
+  /** Owned explicit HTTP fixture; every direct-use test awaits close in finally. */
   const fake = createHttpFake({
     routes: [],
     maxBodyBytes: 2,
@@ -342,6 +383,7 @@ test('allowed injected transports still obey request/response bounds and stream 
       (error) => error.code === 'REQUEST_BODY_LIMIT'
     );
     assert.equal(calls, 0);
+    /** Actual injected/native synthetic response; bodies must be consumed or cancelled. */
     const response = await fake.fetch('https://allowed.test/');
     await assert.rejects(
       response.text(),
@@ -355,7 +397,7 @@ test('allowed injected transports still obey request/response bounds and stream 
     'https://outbound.invalid/',
     '//outbound.invalid/',
     '/\\outbound.invalid/',
-  ])
+  ]) {
     assert.throws(
       () =>
         createHttpFake({
@@ -363,6 +405,7 @@ test('allowed injected transports still obey request/response bounds and stream 
         }),
       /redirect/
     );
+  }
 });
 
 test('fixture deadline and close during listen startup release ephemeral ports', async () => {
@@ -377,9 +420,12 @@ test('fixture deadline and close during listen startup release ephemeral ports',
   );
   assert.equal(timed.diagnostics().listening, false);
   assert.equal(timed.diagnostics().sockets, 0);
+  /** Owned explicit HTTP fixture; every direct-use test awaits close in finally. */
   const fake = createHttpFake({ routes: [] });
+  /** Actual explicit listener-start promise observed while concurrent close owns cleanup. */
   const starting = fake.listen();
   await fake.close();
+  /** Actual private ephemeral listener origin, never an operator application URL. */
   const origin = await starting;
   assert.ok(origin.startsWith('http://127.0.0.1:'));
   assert.equal(fake.diagnostics().listening, false);
@@ -387,7 +433,9 @@ test('fixture deadline and close during listen startup release ephemeral ports',
 });
 
 test('cleanup callbacks run LIFO after rejection and expose all cleanup failures', async () => {
+  /** Independent inert runner whose callback owns this test’s fake/spies. */
   const runner = createRunner();
+  /** Observed LIFO owned cleanup invocation order. */
   const order = [];
   runner.test('failed assertion', (context) => {
     context.onCleanup(() => {
@@ -402,6 +450,7 @@ test('cleanup callbacks run LIFO after rejection and expose all cleanup failures
   runner.test('undefined rejection', () => {
     throw undefined;
   });
+  /** Actual fixture runner outcome proving failed/undefined rejection cleanup stays visible. */
   const summary = await runner.runTests();
   assert.equal(summary.failed, 2);
   assert.deepEqual(order, [2, 1]);
@@ -410,7 +459,9 @@ test('cleanup callbacks run LIFO after rejection and expose all cleanup failures
 });
 
 test('native server acquisition failure preserves its cause and fixture cleanup', async () => {
+  /** Fixed injected transport/native acquisition cause, not a live dependency outage. */
   const failure = new Error('test bind backend unavailable');
+  /** Owned native createServer mock restored unconditionally after acquisition-failure assertion. */
   const replacement = mock.method(http, 'createServer', () => {
     throw failure;
   });
@@ -431,15 +482,19 @@ test('native server acquisition failure preserves its cause and fixture cleanup'
 });
 
 test('local adapter enforces body limits and exposes only sanitized unexpected-request responses', async () => {
+  /** Owned explicit HTTP fixture; every direct-use test awaits close in finally. */
   const fake = createHttpFake({ routes: [], maxBodyBytes: 2 });
+  /** Actual private ephemeral listener origin, never an operator application URL. */
   const origin = await fake.listen();
   try {
+    /** Actual private local bridge rejection receipt for a known oversized synthetic body. */
     const oversized = await fetch(origin + '/private', {
       method: 'POST',
       body: 'private payload',
     });
     assert.equal(oversized.status, 413);
     assert.doesNotMatch(await oversized.text(), /payload/);
+    /** Actual sanitized unexpected-request response, independently causing expectation failure. */
     const unknown = await fetch(origin + '/unknown');
     assert.equal(unknown.status, 500);
     assert.equal(await unknown.text(), 'HTTP fake request failed');
