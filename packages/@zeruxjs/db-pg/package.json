@@ -22,7 +22,7 @@
   "dependencies": {
     "@zeruxjs/db": "0.0.4",
     "@zeruxjs/db-sql-core": "0.0.4",
-    "pg": "^8.16.3"
+    "pg": "^8.23.1"
   },
   "keywords": [
     "Helper for @zerux/db for Postgre Database."
