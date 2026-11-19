@@ -28,7 +28,7 @@
     "mailparser": "^3.14.3",
     "node-pop3": "^0.15.1",
     "nodemailer": "^10.5.0",
-    "sanitize-html": "^2.13.0"
+    "sanitize-html": "^2.18.2"
   },
   "peerDependencies": {
     "@zeruxjs/files": "0.0.4"
