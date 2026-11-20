@@ -42,7 +42,7 @@ jobs:
       - name: Compare every package version with npm and plan retries
         id: plan
         run: node --experimental-strip-types scripts/publish-packages.ts --plan
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: plan_artifact
         if: always()
         with:
@@ -99,7 +99,7 @@ jobs:
         run: npm run build:workspaces -- --concurrency auto
       - name: Pack selected releases and record archive integrity
         run: node --experimental-strip-types scripts/publish-packages.ts --pack
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: prepared_artifact
         if: always()
         with:
@@ -135,7 +135,7 @@ jobs:
           path: .npm-release/
       - name: Publish exact verified archives through npm trusted publishing
         run: node --experimental-strip-types scripts/publish-packages.ts --publish
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: npm-release-${{ github.sha }}-${{ github.run_attempt }}
