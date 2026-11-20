@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./index.ts",
   "dependencies": {
-    "systeminformation": "^5.33.19",
+    "systeminformation": "^5.33.20",
     "zforge": "0.0.4"
   }
 }
