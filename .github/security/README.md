@@ -187,3 +187,18 @@ release audit still fails on low findings and remains enabled. Resolve/qualify
 that dependency before a release requiring a zero-advisory production tree.
 
 CodeQL remains in `workflows/codeql.yml` under job `analyze` to preserve the default-branch analysis identity. Moving it into another workflow breaks PR baseline comparisons even when language categories match. Other static scanners remain in `security.yml`; both use PR scans and master-only push scans.
+
+## Lockfile recovery token ownership
+
+The recovery workflow defaults to `contents: read`. Its `recover` job resolves,
+installs and builds the candidate dependency graph without repository write
+permissions. Only after that job succeeds does `propose` download this run's
+validated lockfile and receive the permissions needed to push a recovery branch,
+open a pull request and dispatch validation. The proposal job runs no npm install,
+package lifecycle script or workspace build. The artifact is restricted to the
+lockfile and retained for one day; it is not executable build output.
+
+This separation reduces token exposure; it does not make dependency resolution
+reproducible. The resolution step intentionally updates the lock, whereas the
+subsequent `npm ci` verifies that candidate. Full dependency hash pinning and
+maintainer review remain separate requirements.

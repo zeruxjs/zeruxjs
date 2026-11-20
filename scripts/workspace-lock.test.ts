@@ -340,3 +340,20 @@ test('lock recovery automatically proposes reviewed changes, never weakens the r
     /Check committed lockfile before scheduling six platform installs\s*\n\s*run: npm run deps:check/
   );
 });
+
+test('lock recovery dependency execution has no write token; proposal job only publishes its validated artifact', () => {
+  /** Workflow text is inspected without starting dependency installation or repository mutations. */
+  const workflow = fs.readFileSync(
+    new URL('../.github/workflows/package-lock-recovery.yml', import.meta.url),
+    'utf8'
+  );
+  /** Separate privileged proposal from the read-only resolution/build job. */
+  const [recovery, proposal] = workflow.split('  propose:');
+  assert.match(recovery, /permissions:\n  contents: read/);
+  assert.doesNotMatch(recovery, /(?:contents|actions|pull-requests): write/);
+  assert.ok(proposal);
+  assert.match(proposal, /needs: recover/);
+  assert.match(proposal, /name: validated-workspace-lock/);
+  assert.doesNotMatch(proposal, /run: npm|npm (?:ci|install)|build-workspaces/);
+  assert.match(proposal, /git add -- package-lock\.json/);
+});
