@@ -98,7 +98,7 @@ jobs:
       - uses: $/.github/actions/start-test-api
         with:
           port: ${{ vars.SECURITY_PORT || '3000' }}
-      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - name: Fuzz API automatically from OpenAPI specification
         env:
           PORT: ${{ vars.SECURITY_PORT || '3000' }}
