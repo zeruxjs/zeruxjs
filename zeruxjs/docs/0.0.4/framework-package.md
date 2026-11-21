@@ -208,7 +208,7 @@ Manifest reference for `zeruxjs@0.0.4`.
     "@zeruxjs/queue": "0.0.4",
     "@zeruxjs/security": "0.0.4",
     "@zeruxjs/validator": "0.0.4",
-    "parse5": "7.3.0"
+    "parse5": "^8.1.0"
   },
   "bin": {
     "zerux": "./dist/bin/zerux.js"

@@ -132,7 +132,7 @@ Manifest reference for `@zeruxjs/cache-redis@0.0.4`.
     "@zeruxjs/cache": "0.0.4",
     "@zeruxjs/security": "0.0.4",
     "ioredis": "^5.4.0",
-    "redis": "^5.8.3"
+    "redis": "^6.3.1"
   },
   "peerDependencies": {},
   "bin": {}

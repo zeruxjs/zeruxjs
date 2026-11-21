@@ -287,7 +287,7 @@ Manifest reference for `@zeruxjs/queue-bullmq@0.0.4`.
   },
   "dependencies": {
     "@zeruxjs/cache-redis": "0.0.4",
-    "bullmq": "^5.61.0",
+    "bullmq": "^6.7.2",
     "ioredis": "^5.4.0"
   },
   "peerDependencies": {},
