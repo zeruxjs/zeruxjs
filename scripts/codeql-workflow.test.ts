@@ -84,3 +84,21 @@ test('security action pins retain their verified immutable release annotations',
     }
   }
 });
+
+// The scanner image replaces an installation whose transitive Python dependencies floated.
+test('Semgrep pins the complete scanner image without granting source writes or forwarding secrets', () => {
+  /** Isolate scanner policy from unrelated jobs that own their own tools. */
+  const scanner = security.slice(
+    security.indexOf('  semgrep:'),
+    security.indexOf('  trivy:')
+  );
+  assert.match(scanner, /semgrep\/semgrep@sha256:[a-f0-9]{64}/);
+  assert.doesNotMatch(scanner, /pip install|SEMGREP_APP_TOKEN|--env-file/);
+  assert.match(scanner, /--volume "\$PWD:\/src:ro"/);
+  assert.match(scanner, /--volume "\$PWD\/reports:\/src\/reports:rw"/);
+  assert.match(scanner, /--user "\$\(id -u\):\$\(id -g\)"/);
+  assert.match(scanner, /--read-only --cpus 2 --memory 4g --pids-limit 256/);
+  assert.match(scanner, /--cap-drop ALL --security-opt no-new-privileges/);
+  assert.match(scanner, /--metrics off --disable-version-check/);
+  assert.match(scanner, /--sarif --output reports\/semgrep\.sarif --error/);
+});

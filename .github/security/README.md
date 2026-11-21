@@ -83,14 +83,19 @@ New external action references are immutable commit SHAs verified against offici
 repositories. Semgrep 1.184.0, Zizmor 1.32.0, Trivy 0.70.0 and Gitleaks 8.30.1 are
 explicitly selected. Gitleaks' archive is checked against the SHA-256 published in
 its GitHub release asset metadata before extraction. Dependabot maintains Actions
-and npm references; the Python/tool version literals and Gitleaks checksum require
-reviewed manual updates. Python transitive installation dependencies and remote
-Semgrep rules/Trivy vulnerability databases are not frozen by these version pins.
+and npm references; tool/image pins and the Gitleaks checksum require reviewed
+manual updates. The Semgrep scanner uses the official 1.184.0 image pinned by
+OCI digest, including its Python dependencies. Its container has a read-only
+source mount,
+a separate writable report mount, caller UID, temporary home and bounded
+CPU/memory/processes; no host token/environment is forwarded. Registry rules and
+Trivy vulnerability databases are not frozen by this image pin.
 Semgrep downloads public rules, with metrics disabled; this is not an offline scan.
 Zizmor deliberately uses offline audits and does not need an API token.
 
-GitHub-hosted Ubuntu runners need access to GitHub releases, PyPI, Semgrep's rule
-registry and Trivy's databases. Missing tools or denied downloads are failures.
+GitHub-hosted Ubuntu runners need Docker and access to GitHub releases, Docker
+Hub, Semgrep's rule registry and Trivy's databases. Missing tools or denied
+downloads are failures.
 Dependency Graph and Code Scanning must be available/enabled for the repository;
 Dependabot security alerts/updates and push protection are separate GitHub settings,
 not features enabled automatically by committing YAML. Add required branch checks
