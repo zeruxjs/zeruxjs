@@ -11,6 +11,9 @@ updates:
     open-pull-requests-limit: 10
     groups:
       npm-minor-patch:
+        # Formatter upgrades can require a separately reviewed source migration.
+        exclude-patterns:
+          - prettier
         update-types:
           - minor
           - patch

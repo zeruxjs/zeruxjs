@@ -72,6 +72,13 @@ in fixtures, and review artifact access under repository visibility policy.
 
 ## Tool maintenance and prerequisites
 
+Prettier version updates are excluded from the npm minor/patch group and remain
+eligible as separate Dependabot updates. A formatter release can change accepted
+source layout without producing ESLint diagnostics; review its formatting diff
+and run the existing reviewed-scope gate independently from SDK updates. This is
+not an ignore rule or permission to bypass formatting checks. Existing grouped
+PRs need regeneration/review before relying on the new grouping policy.
+
 New external action references are immutable commit SHAs verified against official
 repositories. Semgrep 1.184.0, Zizmor 1.32.0, Trivy 0.70.0 and Gitleaks 8.30.1 are
 explicitly selected. Gitleaks' archive is checked against the SHA-256 published in
