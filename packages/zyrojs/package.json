@@ -53,7 +53,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.4.0",
-    "parse5": "7.3.0",
+    "parse5": "8.1.0",
     "typescript": "^5.9.3"
   },
   "repository": {
