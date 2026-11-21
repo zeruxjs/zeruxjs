@@ -55,3 +55,32 @@ test('CodeQL keeps its baseline identity and is not duplicated in security workf
   assert.match(workflow, /^ {2}analyze:/m);
   assert.doesNotMatch(security, /github\/codeql-action\/(?:init|analyze)@/);
 });
+
+// Exact release comments keep immutable pins auditable when upstream major tags move.
+test('security action pins retain their verified immutable release annotations', async () => {
+  /** Security entry points share CodeQL upload and dependency-review action pins. */
+  const files = [
+    'codeql.yml',
+    'security.yml',
+    'runtime-security.yml',
+    'scorecard.yml',
+    'dependency-review.yml',
+  ];
+  // Check every occurrence rather than accepting one correct annotation per file.
+  for (const filename of files) {
+    /** Authored workflow content; no remote actions or application code execute. */
+    const content = await readFile(
+      new URL(`../.github/workflows/${filename}`, import.meta.url),
+      'utf8'
+    );
+    // Match only the two upstream commits whose release identities were verified.
+    for (const line of content.split('\n')) {
+      if (line.includes('33d7b85da1a04171e211befe2c739303b9a4c066')) {
+        assert.match(line, /# v4\.39\.3$/);
+      }
+      if (line.includes('a1d282b36b6f3519aa1f3fc636f609c47dddb294')) {
+        assert.match(line, /# v5\.0\.0$/);
+      }
+    }
+  }
+});

@@ -70,7 +70,7 @@ jobs:
             -jsonl -o /reports/nuclei.jsonl -sarif-export /reports/nuclei.sarif -no-color
       - name: Upload SARIF
         if: always() && hashFiles('reports/nuclei.sarif') != ''
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: reports/nuclei.sarif
           category: nuclei

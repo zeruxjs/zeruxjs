@@ -349,7 +349,7 @@ test('lock recovery dependency execution has no write token; proposal job only p
   );
   /** Separate privileged proposal from the read-only resolution/build job. */
   const [recovery, proposal] = workflow.split('  propose:');
-  assert.match(recovery, /permissions:\n  contents: read/);
+  assert.match(recovery, /permissions:\n {2}contents: read/);
   assert.doesNotMatch(recovery, /(?:contents|actions|pull-requests): write/);
   assert.ok(proposal);
   assert.match(proposal, /needs: recover/);

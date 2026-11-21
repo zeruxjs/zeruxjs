@@ -43,7 +43,7 @@ jobs:
           semgrep scan --config p/security-audit --metrics off --disable-version-check --timeout 10 --max-memory 2048 --sarif --output reports/semgrep.sarif --error .
       - name: Upload Semgrep to GitHub Code Scanning
         if: always() && hashFiles('reports/semgrep.sarif') != ''
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: reports/semgrep.sarif
           category: semgrep
@@ -83,7 +83,7 @@ jobs:
           ignore-unfixed: false
       - name: Upload Trivy SARIF
         if: always() && hashFiles('reports/trivy.sarif') != ''
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: reports/trivy.sarif
           category: trivy
@@ -121,7 +121,7 @@ jobs:
           "$RUNNER_TEMP/gitleaks" git --redact=100 --no-banner --log-level warn --log-opts=--all --report-format sarif --report-path reports/gitleaks.sarif .
       - name: Upload Gitleaks SARIF
         if: always() && hashFiles('reports/gitleaks.sarif') != ''
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: reports/gitleaks.sarif
           category: gitleaks
