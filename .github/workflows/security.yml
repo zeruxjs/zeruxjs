@@ -49,7 +49,7 @@ jobs:
           category: semgrep
       - name: Save Semgrep findings
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-semgrep
           path: reports/semgrep.sarif
@@ -89,7 +89,7 @@ jobs:
           category: trivy
       - name: Save Trivy findings
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-trivy
           path: reports/trivy.sarif
@@ -127,7 +127,7 @@ jobs:
           category: gitleaks
       - name: Save redacted Gitleaks findings
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-gitleaks
           path: reports/gitleaks.sarif
@@ -153,7 +153,7 @@ jobs:
           advanced-security: true
       - name: Save Zizmor findings
         if: always() && steps.scan.outputs.output-file != ''
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scan-zizmor
           path: ${{ steps.scan.outputs.output-file }}
