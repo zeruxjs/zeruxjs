@@ -18,7 +18,7 @@
 
 ## Select the driver
 
-The default adapter uses node-redis. Choose ioredis explicitly when needed. The manager owns a client it creates; injected clients remain caller-owned unless `ownClient: true` is set.
+The default adapter uses node-redis v6. Choose ioredis v5 explicitly when needed. The manager owns a client it creates; injected clients remain caller-owned unless `ownClient: true` is set.
 
 ```ts
 import { createCacheManager } from '@zeruxjs/cache';

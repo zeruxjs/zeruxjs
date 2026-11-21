@@ -18,6 +18,13 @@
 
 Basic RabbitMQ backend using amqplib: durable named queues, persistent JSON messages, publisher confirms and explicit consumer acknowledgement. Requires Node 20+ and a reachable RabbitMQ server.
 
+The adapter uses amqplib 2.x. An explicit `heartbeat=0` in the AMQP URL now
+**disables heartbeats**, rather than accepting the broker's suggested value.
+Omit that query option to use negotiation; configure a positive heartbeat when
+required by the deployment. Connection recovery remains owned by the optional
+worker service, not amqplib's separate recovery API. See the upstream
+[amqplib 2 migration notes](https://github.com/amqp-node/amqplib/blob/v2.2.1/CHANGELOG.md).
+
 ```ts
 import {createRabbitMQ} from '@zeruxjs/queue-rabbitmq';
 const jobs = await createRabbitMQ({

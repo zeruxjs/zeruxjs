@@ -16,14 +16,14 @@ plain subscribable object, **not** a native Vue ref/proxy.
 Install matching optional peers only when using the native entries:
 
 ```sh
-npm install @zeruxjs/vue@0.0.4 vue@3.5.44 @vue/runtime-dom@3.5.44 @vue/server-renderer@3.5.44
+npm install @zeruxjs/vue@0.0.4 vue@3.5.45 @vue/runtime-dom@3.5.45 @vue/server-renderer@3.5.45
 # Used only by the public-state example below:
 npm install @zeruxjs/security@0.0.4
 ```
 
 The intentional peer range is Vue 3.5.44+ within the 3.5 minor line; server peer
 versions must match exactly. Vue's own dependencies should resolve to the same
-runtime, not a bundled second copy. The exercised version is 3.5.44. Core APIs
+runtime, not a bundled second copy. The exercised renderer version is 3.5.45. Core APIs
 remain usable without those peers; renderer calls fail with a fixed
 `VUE_DEPENDENCY_UNAVAILABLE` when dependencies/required exported builds are absent.
 Vue ships its own types. Browser code needs a host bundler; the package currently
@@ -221,7 +221,7 @@ From this package run npm run build and focused tests:
 node --experimental-strip-types --test test/advanced.test.ts test/integration.test.ts test/vue-scope.test.ts test/renderer-server.test.ts test/renderer-dom.test.ts test/renderer-public.test.ts test/renderer-framework.test.ts
 ```
 
-Tests use real Vue 3.5.44 plus development-only jsdom 30.1.3 on Node 24.15.0.
+Renderer fixtures use real Vue 3.5.45 plus development-only jsdom 30.1.3 on Node 24.15.0.
 jsdom is DOM emulation, not a real browser. They verify native ref/computed/watch
 updates, scope teardown, controlled hydration, SSR isolation and failure cleanup.
 The packed fixture verifies standalone imports without peers, missing-peer

@@ -18,7 +18,7 @@
 
 ## Producer and worker roles
 
-A queue service manages named BullMQ queues. Producers add small job payloads; designated worker processes execute processors. Do not register processors on every web replica unless that deployment is intentional.
+The compatibility facade delegates to `@zeruxjs/queue-bullmq`, which uses BullMQ v6 with ioredis v5. A queue service manages named BullMQ queues. Producers add small job payloads; designated worker processes execute processors. Do not register processors on every web replica unless that deployment is intentional.
 
 ```ts
 import { createQueueService } from '@zeruxjs/queue';

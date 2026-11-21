@@ -348,7 +348,7 @@ Opt-in live multi-client/TTL/state-loss checks require CACHE_RATE_LIMIT_REDIS_UR
 
 ## JWT signing, verification and JWKS
 
-`@zeruxjs/security/jwt` uses maintained **jose 6.2.13** for signed compact JWTs. It is separate from encrypted `/crypto` records, password hashing and authorization. No network starts on import; JWKS requires an explicit configured transport. The same APIs are root exports.
+`@zeruxjs/security/jwt` uses maintained **jose 6.2.17** for signed compact JWTs. It is separate from encrypted `/crypto` records, password hashing and authorization. No network starts on import; JWKS requires an explicit configured transport. The same APIs are root exports.
 
 ```ts
 import { randomBytes } from 'node:crypto';

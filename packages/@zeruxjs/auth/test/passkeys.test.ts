@@ -1,3 +1,7 @@
+import { createRequire } from 'node:module';
+
+/** Resolve the CommonJS auth export explicitly from this ESM test entry. */
+const require = createRequire(import.meta.url);
 /** Node test entry; no application server or live provider is started. */
 const { test } = require('node:test');
 /** Local assertions over synthetic cryptographic/persistence fixtures. */

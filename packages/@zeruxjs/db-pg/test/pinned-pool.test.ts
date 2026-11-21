@@ -37,6 +37,7 @@ const code =
   };
 /** Provide independently owned synthetic native clients/settings with explicit failure and end behavior.
  * @param {Partial<Record<'resetFailure' | 'commitFailure' | 'rollbackFailure' | 'hang' | 'queryFailure', boolean>>} flags - Explicit synthetic query/commit/rollback/reset/hang controls.
+ * @param {(() => void) | undefined} onHang - Optional callback after the synthetic native query owns its rejection handler.
  * @returns {object} Injected pool, clients and observations; not live PostgreSQL acceptance.
  */
 function poolFixture(
@@ -49,7 +50,8 @@ function poolFixture(
       | 'queryFailure',
       boolean
     >
-  > = {}
+  > = {},
+  onHang?: () => void
 ) {
   /** Ordered synthetic control/setting/query/end/release observations. */
   const events: {
@@ -124,6 +126,7 @@ function poolFixture(
           if (flags.hang) {
             return new Promise<never>((_, reject) => {
               rejectQuery = reject;
+              onHang?.();
             });
           }
           if (flags.queryFailure) {
@@ -266,33 +269,26 @@ test('callback failures roll back before release, failed cleanup destroys rather
 test('abort/query watchdog ends and settles native work before destroying the leased client', async (t) => {
   // Check both caller abort and independent watchdog destructive termination.
   for (const abortRequest of [true, false]) {
-    /** Independent pool fixture with scripted failures. */
-    const f = poolFixture({ hang: true });
+    /** Caller cancellation is triggered at native query admission, independently of scheduler delay. */
+    const abort = new AbortController();
+    /** Independent pool fixture with scripted failure and deterministic cancellation timing. */
+    const f = poolFixture(
+      { hang: true },
+      abortRequest ? abort.abort.bind(abort) : undefined
+    );
     /** Owned session wrapper; borrowed native pool remains open. */
     const connector = await createConnector({
       pool: f.pool,
       queryTimeoutMs: 20,
     });
     t.after(() => connector.disconnect());
-    /** One caller cancellation controller, not an invented pg query signal API. */
-    const abort = new AbortController();
     try {
-      /** Accepted operation with cancellation observed separately from native settlement. */
-      const pending = connector.execute(select, {
-        ...context,
-        signal: abort.signal,
-      });
-      // Wait until the scripted native query starts before applying the caller abort.
-      while (!f.events.some((e) => e.sql?.startsWith('SELECT *'))) {
-        await new Promise(setImmediate);
-      }
-      if (abortRequest) {
-        abort.abort();
-      }
+      // Attach rejection observation immediately; the watchdog can fire under parallel test load.
       await assert.rejects(
-        async () => pending,
+        connector.execute(select, { ...context, signal: abort.signal }),
         code(abortRequest ? 'PG_QUERY_CANCELLED' : 'PG_QUERY_TIMEOUT')
       );
+      assert.ok(f.events.some((event) => event.sql?.startsWith('SELECT *')));
       /** Original native end function or observed end-event position. */
       const end = f.events.findIndex((e) => e.event === 'end');
       /** Observed release position; must follow destructive end settlement. */

@@ -1,6 +1,6 @@
 # @zeruxjs/cache-redis
 
-Redis 5 adapter for `@zeruxjs/cache`. Redis client loading is optional when passing an injected client; normal usage requires the `redis` dependency declared by this package.
+Redis adapter using node-redis v6 or explicitly selected ioredis v5 for `@zeruxjs/cache`. Redis client loading is optional when passing an injected client; normal usage requires the `redis` dependency declared by this package.
 
 ```ts
 import { createCacheManager } from '@zeruxjs/cache';

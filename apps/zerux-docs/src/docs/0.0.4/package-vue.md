@@ -57,7 +57,7 @@ createVueRef is a framework-independent primitive, not Vue's native ref. fromVue
 server-renderer build. `@zeruxjs/vue/rendering` validates explicit component/view
 registrations and exports the app-scoped context key. Core standalone helpers
 still import no Vue. Optional peers target matching Vue/runtime-dom/server-renderer
-3.5.44+ within the 3.5 line; qualification uses 3.5.44.
+3.5.44+ within the 3.5 line; renderer qualification uses 3.5.45.
 
 Author render/setup functions or use externally precompiled output. This package
 adds no SFC/compiler pipeline: templates/compiler options reject, nested server

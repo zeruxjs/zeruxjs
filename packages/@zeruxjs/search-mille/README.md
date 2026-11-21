@@ -7,7 +7,7 @@ the standalone local index or install a global search client.
 
 ## Setup and supported surface
 
-The runtime dependency is official **`meilisearch` 0.62.0**. This adapter requires
+The runtime dependency is official **`meilisearch` 0.63.0**. This adapter requires
 **Node 22.12+**, probes the engine's major version, and targets **Meilisearch 1.x**.
 Missing settings/features fail closed; no all-version/native qualification is
 claimed. See the official [SDK compatibility and APIs](https://github.com/meilisearch/meilisearch-js).

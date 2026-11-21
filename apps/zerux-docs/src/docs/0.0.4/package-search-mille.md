@@ -12,7 +12,7 @@
 
 ## Register the requested package
 
-The package is named `@zeruxjs/search-mille`. It uses official SDK 0.62.0,
+The package is named `@zeruxjs/search-mille`. It uses official SDK 0.63.0,
 requires Node 22.12+, and targets Meilisearch 1.x without claiming every feature
 or version has live qualification. Imports open no connections.
 
