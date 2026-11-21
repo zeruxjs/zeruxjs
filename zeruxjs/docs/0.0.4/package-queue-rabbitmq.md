@@ -5,6 +5,13 @@ Set up @zeruxjs/queue-rabbitmq with explicit lifecycle and capability boundaries
 
 Basic RabbitMQ backend using amqplib: durable named queues, persistent JSON messages, publisher confirms and explicit consumer acknowledgement. Requires Node 20+ and a reachable RabbitMQ server.
 
+The adapter uses amqplib 2.x. An explicit `heartbeat=0` in the AMQP URL now
+**disables heartbeats**, rather than accepting the broker's suggested value.
+Omit that query option to use negotiation; configure a positive heartbeat when
+required by the deployment. Connection recovery remains owned by the optional
+worker service, not amqplib's separate recovery API. See the upstream
+[amqplib 2 migration notes](https://github.com/amqp-node/amqplib/blob/v2.2.1/CHANGELOG.md).
+
 ```ts
 import {createRabbitMQ} from '@zeruxjs/queue-rabbitmq';
 const jobs = await createRabbitMQ({
@@ -118,6 +125,13 @@ Manifest reference for `@zeruxjs/queue-rabbitmq@0.0.4`.
 
 Basic RabbitMQ backend using amqplib: durable named queues, persistent JSON messages, publisher confirms and explicit consumer acknowledgement. Requires Node 20+ and a reachable RabbitMQ server.
 
+The adapter uses amqplib 2.x. An explicit `heartbeat=0` in the AMQP URL now
+**disables heartbeats**, rather than accepting the broker's suggested value.
+Omit that query option to use negotiation; configure a positive heartbeat when
+required by the deployment. Connection recovery remains owned by the optional
+worker service, not amqplib's separate recovery API. See the upstream
+[amqplib 2 migration notes](https://github.com/amqp-node/amqplib/blob/v2.2.1/CHANGELOG.md).
+
 ```ts
 import {createRabbitMQ} from '@zeruxjs/queue-rabbitmq';
 const jobs = await createRabbitMQ({
@@ -144,7 +158,7 @@ try {
 
 `close()` is idempotent and closes the connection, requeuing unacknowledged messages. Finish processing before closing if graceful draining is required. An interrupted confirmation/ack is ambiguous; use durable application idempotency. Publisher confirmation is not proof of consumer processing. Acknowledgements permit redelivery after crashes, not exactly-once side effects. Unexpected channel/connection failure rejects subsequent calls; reconstruct the service explicitly. There are no automatic reconnect, recurring/delayed scheduler, admin dashboard or consumer loops. `capabilities` exposes these basic guarantees.
 
-Run `npm run build` here. Live broker tests require an isolated RabbitMQ virtual host. Legacy framework queue config still selects BullMQ. Opt in through the facade's explicit [`rabbitMQBackend` selection](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/queue-rabbitmq/package-queue.md#explicit-neutral-backends-and-durable-webhooks), or use this standalone factory in a startup worker and return `() => jobs.close()`. See the [amqplib channel API](https://amqp-node.github.io/amqplib/channel_api.html).
+Run `npm run build` here. Live broker tests require an isolated RabbitMQ virtual host. Legacy framework queue config still selects BullMQ. Opt in through the facade's explicit [`rabbitMQBackend` selection](https://github.com/zeruxjs/zeruxjs/blob/version/v0.0.4/packages/@zeruxjs/queue/README.md#opt-in-neutral-backend-selection), or use this standalone factory in a startup worker and return `() => jobs.close()`. See the [amqplib channel API](https://amqp-node.github.io/amqplib/channel_api.html).
 
 ## Opt-in supervised worker service
 

@@ -5,7 +5,7 @@ Use bounded tenant-scoped Meilisearch queries and explicit asynchronous task rec
 
 ## Register the requested package
 
-The package is named `@zeruxjs/search-mille`. It uses official SDK 0.62.0,
+The package is named `@zeruxjs/search-mille`. It uses official SDK 0.63.0,
 requires Node 22.12+, and targets Meilisearch 1.x without claiming every feature
 or version has live qualification. Imports open no connections.
 
@@ -95,7 +95,7 @@ Manifest reference for `@zeruxjs/search-mille@0.0.4`.
   },
   "dependencies": {
     "@zeruxjs/search": "0.0.4",
-    "meilisearch": "0.62.0"
+    "meilisearch": "0.63.0"
   },
   "peerDependencies": {},
   "bin": {}
@@ -114,7 +114,7 @@ the standalone local index or install a global search client.
 
 ## Setup and supported surface
 
-The runtime dependency is official **`meilisearch` 0.62.0**. This adapter requires
+The runtime dependency is official **`meilisearch` 0.63.0**. This adapter requires
 **Node 22.12+**, probes the engine's major version, and targets **Meilisearch 1.x**.
 Missing settings/features fail closed; no all-version/native qualification is
 claimed. See the official [SDK compatibility and APIs](https://github.com/meilisearch/meilisearch-js).

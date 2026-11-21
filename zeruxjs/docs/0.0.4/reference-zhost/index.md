@@ -293,7 +293,7 @@ Manifest reference for `zhost@0.0.4`.
   "engines": {},
   "dependencies": {
     "chalk": "^4.1.2",
-    "ws": "^8.22.0",
+    "ws": "^8.23.0",
     "zforge": "0.0.4",
     "zlook": "0.0.4"
   },

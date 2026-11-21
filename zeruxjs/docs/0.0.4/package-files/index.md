@@ -247,11 +247,11 @@ Manifest reference for `@zeruxjs/files@0.0.4`.
   },
   "engines": {},
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.900.0",
-    "@aws-sdk/cloudfront-signer": "^3.900.0",
-    "@aws-sdk/credential-providers": "^3.900.0",
-    "@aws-sdk/lib-storage": "^3.900.0",
-    "@aws-sdk/s3-request-presigner": "^3.900.0"
+    "@aws-sdk/client-s3": "^3.1169.0",
+    "@aws-sdk/cloudfront-signer": "^3.1166.0",
+    "@aws-sdk/credential-providers": "^3.1169.0",
+    "@aws-sdk/lib-storage": "^3.1169.0",
+    "@aws-sdk/s3-request-presigner": "^3.1169.0"
   },
   "peerDependencies": {},
   "bin": {}

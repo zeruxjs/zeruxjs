@@ -429,9 +429,9 @@ Manifest reference for `@zeruxjs/email@0.0.4`.
     "imapflow": "^1.0.0",
     "juice": "^11.0.0",
     "mailparser": "^3.14.3",
-    "node-pop3": "^0.15.1",
+    "node-pop3": "^0.15.4",
     "nodemailer": "^10.5.0",
-    "sanitize-html": "^2.13.0"
+    "sanitize-html": "^2.18.2"
   },
   "peerDependencies": {
     "@zeruxjs/files": "0.0.4"

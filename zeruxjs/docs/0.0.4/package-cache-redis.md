@@ -5,7 +5,7 @@ Share cache data with node-redis, ioredis or an injected Redis Cluster.
 
 ## Select the driver
 
-The default adapter uses node-redis. Choose ioredis explicitly when needed. The manager owns a client it creates; injected clients remain caller-owned unless `ownClient: true` is set.
+The default adapter uses node-redis v6. Choose ioredis v5 explicitly when needed. The manager owns a client it creates; injected clients remain caller-owned unless `ownClient: true` is set.
 
 ```ts
 import { createCacheManager } from '@zeruxjs/cache';
@@ -144,7 +144,7 @@ Manifest reference for `@zeruxjs/cache-redis@0.0.4`.
 
 # @zeruxjs/cache-redis
 
-Redis 5 adapter for `@zeruxjs/cache`. Redis client loading is optional when passing an injected client; normal usage requires the `redis` dependency declared by this package.
+Redis adapter using node-redis v6 or explicitly selected ioredis v5 for `@zeruxjs/cache`. Redis client loading is optional when passing an injected client; normal usage requires the `redis` dependency declared by this package.
 
 ```ts
 import { createCacheManager } from '@zeruxjs/cache';

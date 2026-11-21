@@ -207,7 +207,7 @@ Manifest reference for `@zeruxjs/typescript@0.0.4`.
   "engines": {},
   "dependencies": {
     "@types/node": "^25.4.0",
-    "@types/ws": "^8.18.1",
+    "@types/ws": "^8.18.2",
     "esbuild": "^0.28.2",
     "typescript": "^5.9.3"
   },

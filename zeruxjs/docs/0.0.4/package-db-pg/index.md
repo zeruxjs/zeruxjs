@@ -89,7 +89,7 @@ Manifest reference for `@zeruxjs/db-pg@0.0.4`.
   "dependencies": {
     "@zeruxjs/db": "0.0.4",
     "@zeruxjs/db-sql-core": "0.0.4",
-    "pg": "^8.16.3"
+    "pg": "^8.23.1"
   },
   "peerDependencies": {},
   "bin": {}
