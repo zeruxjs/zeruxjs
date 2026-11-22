@@ -17,7 +17,7 @@ export function documentationNavigation(
   /** Explicit order precedes locale-independent identity ties. */
   const pages = catalog
     .pages(version)
-    .filter((page) => page.access === 'public')
+    .filter((page) => page.access === 'public' && page.hidden !== true)
     .sort(
       (a, b) =>
         (a.order ?? 0) - (b.order ?? 0) ||

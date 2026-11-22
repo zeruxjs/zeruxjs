@@ -1,4 +1,13 @@
 import { escapeHtmlText } from '@zeruxjs/security/encoding';
+import { identifier, record, list, pageSlug } from './validation.js';
+import {
+  pageMetadata,
+  versionMetadata,
+  type DocumentationPageMetadata,
+  type DocumentationVersionMetadata,
+} from './metadata.js';
+import { validateImage, type DocumentationImage } from './images.js';
+import { imagePolicy } from './markdown-images.js';
 
 /** Literal Markdown or an explicit reference to a version-owned reusable part. */
 export type DocumentationPart =
@@ -6,7 +15,7 @@ export type DocumentationPart =
   | {
       /** Registered part identifier, never a file/module path. */ include: string;
     };
-export interface DocumentationDocument {
+export interface DocumentationDocument extends DocumentationPageMetadata {
   /** Stable version-local route; changing a title never changes this identifier. */
   slug: string;
   /** Human-authored title, required unless removing an inherited page. */
@@ -22,13 +31,15 @@ export interface DocumentationDocument {
   /** Remove an inherited page without silently deleting it from other versions. */
   remove?: boolean;
 }
-export interface DocumentationVersion {
+export interface DocumentationVersion extends DocumentationVersionMetadata {
   /** Explicit release identifier; versions are never inferred from package versions. */
   id: string;
   /** Optional parent version; cycles and chains deeper than eight reject. */
   extends?: string;
   /** New/replacement pages or explicit inherited-page removals. */
   documents: readonly DocumentationDocument[];
+  /** Explicit version-owned image aliases; null removes an inherited image. */
+  images?: Readonly<Record<string, DocumentationImage | null>>;
   /** Version-local reusable parts, inherited and overridden by name. */
   fragments?: Readonly<Record<string, readonly DocumentationPart[]>>;
 }
@@ -40,7 +51,7 @@ export interface DocumentationDefinition {
   /** At most 32 explicitly registered versions. */
   versions: readonly DocumentationVersion[];
 }
-export interface DocumentationPage {
+export interface DocumentationPage extends Readonly<DocumentationPageMetadata> {
   /** Owning version identifier. */
   readonly version: string;
   /** Stable route identifier. */
@@ -51,6 +62,8 @@ export interface DocumentationPage {
   readonly section?: string;
   /** Explicit navigation order, default zero. */
   readonly order?: number;
+  /** Approximate expanded prose reading time in minutes, not a completion measure. */
+  readonly readingMinutes?: number;
   /** Expanded inert Markdown, bounded to 1 MiB of UTF-16 units. */
   readonly body: string;
   /** Canonical mount-relative pathname with trailing slash. */
@@ -66,80 +79,13 @@ export interface DocumentationSnapshot {
   /** Canonical public mount. */
   basePath: string;
   /** Expanded version/page data, independent of future fragment edits. */
-  versions: { id: string; documents: DocumentationDocument[] }[];
+  versions: (DocumentationVersionMetadata & {
+    id: string;
+    documents: DocumentationDocument[];
+    images?: Record<string, DocumentationImage>;
+  })[];
 }
 
-/** Validate bounded identifier data before using it as a route or map key.
- * @param {unknown} value - Candidate release, page or fragment identifier.
- * @returns {string} Validated identifier without traversal or encoding syntax.
- */
-function identifier(value: unknown): string {
-  if (
-    typeof value !== 'string' ||
-    !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/.test(value) ||
-    value === '.' ||
-    value === '..'
-  ) {
-    throw new TypeError('Invalid documentation identifier');
-  }
-  return value;
-}
-/** Require an inert JSON object without getters or prototype-bearing instances.
- * @param {unknown} value - Runtime configuration candidate.
- * @returns {Record<string, unknown>} Plain own-data record.
- */
-function record(value: unknown): Record<string, unknown> {
-  if (
-    !value ||
-    typeof value !== 'object' ||
-    Array.isArray(value) ||
-    ![Object.prototype, null].includes(Object.getPrototypeOf(value))
-  ) {
-    throw new TypeError('Documentation requires plain data');
-  }
-  // Inspect descriptors before reading values so configuration cannot execute getters.
-  for (const descriptor of Object.values(
-    Object.getOwnPropertyDescriptors(value)
-  )) {
-    if (!('value' in descriptor)) {
-      throw new TypeError('Documentation accessors are forbidden');
-    }
-  }
-  return value as Record<string, unknown>;
-}
-/** Require a dense plain array without accessor entries or custom iterators.
- * @param {unknown} value - JSON-like list candidate.
- * @param {number} maximum - Inclusive item ceiling.
- * @returns {unknown[]} Validated inert entries.
- */
-function list(value: unknown, maximum: number): unknown[] {
-  if (
-    !Array.isArray(value) ||
-    Object.getPrototypeOf(value) !== Array.prototype ||
-    value.length > maximum ||
-    Object.getOwnPropertySymbols(value).length
-  ) {
-    throw new TypeError('Invalid documentation list');
-  }
-  for (const [key, descriptor] of Object.entries(
-    Object.getOwnPropertyDescriptors(value)
-  )) {
-    if (
-      !('value' in descriptor) ||
-      (key !== 'length' && !/^(0|[1-9][0-9]*)$/.test(key))
-    ) {
-      throw new TypeError(
-        'Documentation list accessors/custom fields are forbidden'
-      );
-    }
-  }
-  for (let index = 0; index < value.length; index++) {
-    if (!Object.hasOwn(value, index)) {
-      throw new TypeError('Sparse documentation list');
-    }
-  }
-  return value;
-}
 /** Validate and copy one bounded part list without executing source content.
  * @param {unknown} input - Literal strings and explicit include records.
  * @returns {DocumentationPart[]} Detached validated part list.
@@ -175,6 +121,7 @@ export function createDocumentation(definition: DocumentationDefinition) {
   const base = input.basePath ?? '/docs';
   if (
     typeof base !== 'string' ||
+    base.length > 256 ||
     !/^\/(?:[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*)?$/.test(base)
   ) {
     throw new TypeError('Invalid documentation base path');
@@ -198,6 +145,7 @@ export function createDocumentation(definition: DocumentationDefinition) {
     if (definitions.has(id)) {
       throw new TypeError('Duplicate documentation version');
     }
+    versionMetadata(version);
     definitions.set(id, version);
   }
   /** Default version must be explicitly registered. */
@@ -211,11 +159,13 @@ export function createDocumentation(definition: DocumentationDefinition) {
     {
       documents: Map<string, DocumentationDocument>;
       fragments: Map<string, DocumentationPart[]>;
+      images: Map<string, DocumentationImage>;
     }
   >();
   /** Expanded public/private page inventory; publication is a separate host decision. */
   const inventory: DocumentationPage[] = [];
   let total = 0;
+  let imageCharacters = 0;
   /** Resolve one bounded inheritance chain before rendering any document.
    * @param {string} id - Registered version identity.
    * @param {string[]} chain - Current bounded recursion path.
@@ -227,6 +177,7 @@ export function createDocumentation(definition: DocumentationDefinition) {
   ): {
     documents: Map<string, DocumentationDocument>;
     fragments: Map<string, DocumentationPart[]>;
+    images: Map<string, DocumentationImage>;
   } {
     if (chain.includes(id) || chain.length >= 8) {
       throw new TypeError('Documentation inheritance cycle/depth');
@@ -250,6 +201,21 @@ export function createDocumentation(definition: DocumentationDefinition) {
     const documents = new Map(parent?.documents);
     /** Reusable parts are version-specific, never global mutable substitutions. */
     const fragments = new Map(parent?.fragments);
+    /** Images inherit independently from prose; only registered inert URLs are retained. */
+    const images = new Map(parent?.images);
+    if (version.images !== undefined) {
+      for (const [key, image] of Object.entries(record(version.images))) {
+        identifier(key);
+        if (image === null) {
+          images.delete(key);
+        } else {
+          images.set(key, validateImage(image));
+        }
+      }
+    }
+    if (images.size > 1000) {
+      throw new RangeError('Documentation image registry limit');
+    }
     if (version.fragments !== undefined) {
       for (const [name, body] of Object.entries(record(version.fragments))) {
         fragments.set(identifier(name), parts(body));
@@ -268,7 +234,7 @@ export function createDocumentation(definition: DocumentationDefinition) {
       /** Validated document record. */
       const doc = record(candidate);
       /** Stable version-local route. */
-      const slug = identifier(doc.slug);
+      const slug = pageSlug(doc.slug);
       if (seen.has(slug)) {
         throw new TypeError('Duplicate documentation page');
       }
@@ -311,6 +277,7 @@ export function createDocumentation(definition: DocumentationDefinition) {
         throw new TypeError('Invalid documentation order');
       }
       documents.set(slug, {
+        ...pageMetadata(doc),
         ...(doc.section === undefined
           ? {}
           : { section: doc.section as string }),
@@ -325,7 +292,7 @@ export function createDocumentation(definition: DocumentationDefinition) {
       throw new RangeError('Documentation page limit');
     }
     /** Only complete maps enter the cache. */
-    const result = { documents, fragments };
+    const result = { documents, fragments, images };
     resolved.set(id, result);
     return result;
   }
@@ -333,6 +300,10 @@ export function createDocumentation(definition: DocumentationDefinition) {
   for (const id of [...definitions.keys()].sort()) {
     /** Version-owned maps used only while compiling immutable page data. */
     const version = resolve(id, []);
+    imageCharacters += JSON.stringify([...version.images]).length;
+    if (imageCharacters > 8_388_608) {
+      throw new RangeError('Documentation image metadata budget');
+    }
     for (const [slug, doc] of [...version.documents].sort(([a], [b]) =>
       a < b ? -1 : a > b ? 1 : 0
     )) {
@@ -383,6 +354,11 @@ export function createDocumentation(definition: DocumentationDefinition) {
           version: id,
           slug,
           title: doc.title!,
+          ...pageMetadata(doc as unknown as Record<string, unknown>),
+          readingMinutes: Math.max(
+            1,
+            Math.ceil(body.split(/\s+/u).filter(Boolean).length / 200)
+          ),
           ...(doc.section === undefined ? {} : { section: doc.section }),
           ...(doc.order === undefined ? {} : { order: doc.order }),
           body,
@@ -405,16 +381,56 @@ export function createDocumentation(definition: DocumentationDefinition) {
       inventory.filter((page) => page.version === id),
     ])
   );
+  /** Catalog-owned immutable aliases are sorted once for deterministic snapshots and cheap rendering. */
+  const imageInventories = new Map(
+    versionIds.map((id) => [
+      id,
+      Object.freeze(
+        Object.fromEntries(
+          [...resolved.get(id)!.images].sort(
+            ([a], [b]) => Number(a > b) - Number(a < b)
+          )
+        )
+      ),
+    ])
+  );
+  /** Missing releases expose no mutable resource state. */
+  const emptyImages: Readonly<Record<string, DocumentationImage>> =
+    Object.freeze({});
+  /** Version metadata is source-owned and detached, never inferred from a build clock. */
+  const releases = new Map(
+    versionIds.map((id) => [
+      id,
+      Object.freeze({ id, ...versionMetadata(definitions.get(id)!) }),
+    ])
+  );
   return Object.freeze({
     latest,
     basePath: basePath || '/',
     versions: versionIds,
+    /** Read immutable release presentation metadata.
+     * @param {string} id - Exact registered version.
+     * @returns {Readonly<DocumentationVersionMetadata & {id:string}>|undefined} Authored release metadata or undefined.
+     */
+    version(id: string) {
+      return releases.get(id);
+    },
+    /** Read registered immutable images; private metadata remains host-authorized.
+     * @param {string} id - Exact owning version.
+     * @returns {Readonly<Record<string,DocumentationImage>>} Immutable sorted alias map of immutable image records.
+     */
+    images(id: string): Readonly<Record<string, DocumentationImage>> {
+      return imageInventories.get(id) ?? emptyImages;
+    },
     /** Find one page without changing version or silently falling back to unrelated content.
      * @param {string} version - Exact registered release.
      * @param {string} slug - Exact stable page identifier.
      * @returns {DocumentationPage | undefined} Immutable page or missing evidence.
      */
     get(version: string, slug: string) {
+      if (typeof version !== 'string' || typeof slug !== 'string') {
+        return undefined;
+      }
       return identities.get(version + '/' + slug);
     },
     /** List immutable pages; host authorization still applies before disclosure.
@@ -436,11 +452,18 @@ export function createDocumentation(definition: DocumentationDefinition) {
         basePath: basePath || '/',
         versions: versionIds.map((id) => ({
           id,
+          ...versionMetadata(definitions.get(id)!),
+          ...(resolved.get(id)!.images.size
+            ? {
+                images: JSON.parse(JSON.stringify(imageInventories.get(id))),
+              }
+            : {}),
           documents: inventory
             .filter((p) => p.version === id)
             .map((p) => ({
               slug: p.slug,
               title: p.title,
+              ...pageMetadata(p as unknown as Record<string, unknown>),
               ...(p.section === undefined ? {} : { section: p.section }),
               ...(p.order === undefined ? {} : { order: p.order }),
               access: p.access,
@@ -506,7 +529,13 @@ export function compareDocumentation(
           a.body !== b.body ||
           a.access !== b.access ||
           a.section !== b.section ||
-          a.order !== b.order)
+          a.order !== b.order ||
+          JSON.stringify(
+            pageMetadata(a as unknown as Record<string, unknown>)
+          ) !==
+            JSON.stringify(
+              pageMetadata(b as unknown as Record<string, unknown>)
+            ))
       );
     }),
   };
@@ -523,6 +552,8 @@ export function renderDocumentationPage(page: DocumentationPage): string {
  * @param {object} options - Explicit host authorization and trusted presentation callbacks.
  * @param {(request:Request,page:DocumentationPage)=>boolean|Promise<boolean>} [options.authorize] - Required for private pages; omission denies.
  * @param {(page:DocumentationPage)=>string|Promise<string>} [options.render] - Trusted renderer, never imported from saved definitions.
+ * @param {readonly string[]} [options.imageOrigins] - Explicit remote origins allowed by the response CSP; does not authorize image metadata.
+ * @param {boolean} [options.enableLocalScripts] - Explicit same-origin script approval for host-authored browser enhancements, disabled by default.
  * @returns {(request:Request)=>Promise<Response>} Fetch handler; no server starts on import.
  */
 export function createDocumentationHandler(
@@ -533,8 +564,22 @@ export function createDocumentationHandler(
       page: DocumentationPage
     ) => boolean | Promise<boolean>;
     render?: (page: DocumentationPage) => string | Promise<string>;
+    /** Explicit HTTPS image origins additionally approved for the handler CSP. */
+    imageOrigins?: readonly string[];
+    /** Explicit host approval for same-origin module scripts; defaults disabled. */
+    enableLocalScripts?: boolean;
   } = {}
 ) {
+  if (
+    options.enableLocalScripts !== undefined &&
+    typeof options.enableLocalScripts !== 'boolean'
+  ) {
+    throw new TypeError('Invalid documentation script policy');
+  }
+  /** CSP approval is a separate host decision from the renderer image registry. */
+  const imageOrigins = [
+    ...imagePolicy({ allowedImageOrigins: options.imageOrigins }).origins,
+  ];
   /** Build exact route lookup once; authorization still runs separately for every request. */
   const routes = new Map(catalog.pages().map((page) => [page.url, page]));
   return async (request: Request): Promise<Response> => {
@@ -566,10 +611,62 @@ export function createDocumentationHandler(
         'Cache-Control': 'private, no-store',
         'X-Content-Type-Options': 'nosniff',
         'Content-Security-Policy':
-          "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'",
+          "default-src 'none'; style-src 'self'; img-src 'self'" +
+          (imageOrigins.length ? ' ' + imageOrigins.join(' ') : '') +
+          (options.enableLocalScripts ? "; script-src 'self'" : '') +
+          "; base-uri 'none'; frame-ancestors 'none'",
+        ...(page.access === 'private'
+          ? { 'X-Robots-Tag': 'noindex, nofollow' }
+          : {}),
       },
     });
   };
 }
 
 export { documentationNavigation } from './navigation.js';
+
+export type { DocumentationImage, DocumentationImageSource } from './images.js';
+export type {
+  DocumentationPageMetadata,
+  DocumentationVersionMetadata,
+} from './metadata.js';
+
+/** Compare authored page/image/release changes without emitting document bodies or binary contents.
+ * @param {DocumentationCatalog} catalog - Host-authorized complete catalog.
+ * @param {string} before - Exact original release.
+ * @param {string} after - Exact target release.
+ * @returns {object} Page changes, image alias changes and a release-metadata change indicator.
+ */
+export function compareDocumentationVersions(
+  catalog: DocumentationCatalog,
+  before: string,
+  after: string
+) {
+  /** Existing page comparison retains its compatible result shape. */
+  const pages = compareDocumentation(catalog, before, after);
+  /** Maps contain immutable metadata; only alias identities enter the result. */
+  const left = catalog.images(before);
+  /** Descendant overrides do not mutate the original image registry. */
+  const right = catalog.images(after);
+  return {
+    pages,
+    images: {
+      added: Object.keys(right)
+        .filter((id) => !Object.hasOwn(left, id))
+        .sort(),
+      removed: Object.keys(left)
+        .filter((id) => !Object.hasOwn(right, id))
+        .sort(),
+      changed: Object.keys(right)
+        .filter(
+          (id) =>
+            Object.hasOwn(left, id) &&
+            JSON.stringify(left[id]) !== JSON.stringify(right[id])
+        )
+        .sort(),
+    },
+    metadataChanged:
+      JSON.stringify(versionMetadata(catalog.version(before)!)) !==
+      JSON.stringify(versionMetadata(catalog.version(after)!)),
+  };
+}

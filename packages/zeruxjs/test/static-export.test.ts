@@ -627,3 +627,95 @@ test('concurrent exports reject rather than sharing a staging directory; cancell
     await f.close();
   }
 });
+
+test('explicit document CSS and responsive candidates use only selected local integrity-verified resources', async () => {
+  /** Isolated exporter fixture owns both the input assets and final output. */
+  const f = await fixture();
+  try {
+    await mkdir(path.join(f.root, 'public'));
+    /** A minimal exact manifest keeps this test independent of application bootstrap/build services. */
+    const assets = [
+      { url: '/a.png', data: Buffer.from('a') },
+      { url: '/b.png', data: Buffer.from('b') },
+      { url: '/theme.css', data: Buffer.from('body { color: purple; }') },
+    ];
+    for (const item of assets) {
+      await writeFile(
+        path.join(f.root, 'public', item.url.slice(1)),
+        item.data
+      );
+    }
+    /** Only these actual bytes may become active browser resource URLs. */
+    const manifest = {
+      schema: 1,
+      assets: assets.map((item) => ({
+        url: item.url,
+        bytes: item.data.length,
+        integrity:
+          'sha256-' + createHash('sha256').update(item.data).digest('base64'),
+      })),
+    };
+    /** Safe responsive renderer receives mounted paths from the exporter. */
+    const options = {
+      ...f.options,
+      assets: {
+        directory: 'public',
+        manifest,
+        include: assets.map((item) => item.url),
+      },
+      document: { lang: 'en', stylesheets: ['/theme.css'] },
+      renderer: () =>
+        createZyroRenderer((view: { a?: string; b?: string }) =>
+          view.a
+            ? `<main><picture><source media="(prefers-color-scheme: dark)" srcset="${view.b}"><img src="${view.a}" srcset="${view.a} 1w, ${view.b} 2w" alt="Fixture"></picture></main>`
+            : '<main>Missing</main>'
+        ),
+      routes: [
+        {
+          path: '/catalog/images',
+          access: 'public' as const,
+          view: (
+            _params: unknown,
+            context: { asset: (url: string) => string }
+          ) => ({ a: context.asset('/a.png'), b: context.asset('/b.png') }),
+        },
+      ],
+    };
+    await exportStaticSite(options);
+    /** Head metadata uses the same mounted selected-asset mapping as body resources. */
+    const html = await readFile(
+      path.join(f.output, 'catalog/images/index.html'),
+      'utf8'
+    );
+    assert.match(html, /<html lang="en">/);
+    assert.match(html, /<meta name="viewport"/);
+    assert.match(html, /<link rel="stylesheet" href="\/catalog\/theme.css">/);
+    assert.match(html, /srcset="\/catalog\/a.png 1w, \/catalog\/b.png 2w"/);
+    /** Invalid responsive or document resources never replace last-good output. */
+    const before = await tree(f.output);
+    for (const value of [
+      'https://outside.test/image.png 1w',
+      '/catalog/missing.png 1w',
+      '/catalog/a.png 1w, /catalog/b.png 1w',
+      'data:image/png;base64,bad 1w',
+    ]) {
+      await assert.rejects(
+        exportStaticSite({
+          ...options,
+          renderer: () =>
+            createZyroRenderer(() => `<img srcset="${value}" alt="Fixture">`),
+        })
+      );
+      assert.deepEqual(await tree(f.output), before);
+    }
+    await assert.rejects(
+      exportStaticSite({
+        ...options,
+        document: { stylesheets: ['/unselected.css'] },
+      })
+    );
+    assert.deepEqual(await tree(f.output), before);
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});

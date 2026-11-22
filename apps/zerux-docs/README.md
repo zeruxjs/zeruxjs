@@ -229,3 +229,8 @@ and atomically replaces the prior output. `zerux serve-static --dir dist` can se
 that output without framework services. Existing app preview/watch commands remain
 available. This is shared content/publication infrastructure, not a claim of
 Next.js/Nuxt feature parity or automatic hydration.
+
+The shared docs dependency is now 0.0.4. Its authored package guide covers registered
+version-owned images, scoped optional UI, explicit local search and binary asset
+inventories. This site's existing renderer/search/offline owners remain separate;
+no package image registry is silently substituted for the site's asset policy.

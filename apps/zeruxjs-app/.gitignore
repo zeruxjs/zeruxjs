@@ -13,3 +13,8 @@ nohup.out
 !.env.workspace.example
 
 /.workspace-config-*
+/public/docs/assets/docs.css
+/public/docs/assets/.theme-*.css
+
+/public/docs/assets/docs-client.js
+/public/docs/assets/.theme-*.js

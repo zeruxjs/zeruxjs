@@ -266,3 +266,27 @@ The documentation sample declares explicit sidebar sections/order and enables
 local-link preflight before static export. Its shared article renderer supplies
 heading anchors, a table of contents and previous/next links. Release persistence
 remains a host operation; the sample does not automatically rewrite archived docs.
+
+### Rich documentation sample (0.0.4)
+
+The public docs use version-specific local diagrams, inherited content, release
+banners, package CSS, related links and native code-copy controls. The docs asset
+build copies the declared CSS export and bundles only the optional docs browser
+entry. Dynamic HTML explicitly approves that local module in CSP; stored content
+cannot choose script URLs. Pagehide disposes controls and BFCache restoration
+remounts them. The current local index is generation-owned and disposed on reload.
+
+- `/docs/current/introduction/`: current diagram, shared prose and theme.
+- `/docs/baseline/introduction/`: archived banner and the original version image.
+- `/docs/current/rendering/`: related-page navigation.
+- `/docs/latest/introduction`: temporary redirect to the current version.
+- `/docs/search?q=local`: bounded public-only JSON results (dynamic app only).
+
+`npm run docs:export` first prepares only docs CSS/browser assets, then exports
+public images/CSS and HTML. The generated static site contains no client script
+or private workspace data. It includes native picture/selected-resource metadata
+through the updated framework exporter; no universal browser/codec/clipboard
+qualification is implied. `npm run docs:serve` serves it on the documented
+separate port. Generated CSS/client files are ignored; source diagrams remain
+versioned. Existing assets/dev commands include docs asset preparation, but no
+operator-managed app was started or restarted during implementation checks.

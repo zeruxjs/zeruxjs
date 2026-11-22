@@ -42,7 +42,7 @@
     "ztrial": "0.0.4",
     "zuixs": "0.0.4",
     "zyrojs": "0.0.4",
-    "@zeruxjs/docs": "0.0.1"
+    "@zeruxjs/docs": "0.0.4"
   },
   "private": true,
   "scripts": {
@@ -57,7 +57,7 @@
     "check:workspace": "tsc -p tsconfig.workspace.json",
     "test:workspace": "node --experimental-strip-types --test test/workspace.test.ts test/workspace-tools.test.ts",
     "workspace:init": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/workspace-init-cli.ts",
-    "build:assets": "node --experimental-strip-types scripts/workspace-assets.ts",
+    "build:assets": "node --experimental-strip-types scripts/workspace-assets.ts && npm run build:docs-assets",
     "prebuild": "npm run build:assets",
     "predev": "npm run build:assets",
     "check:browser": "node --experimental-strip-types scripts/workspace-browser-check.ts",
@@ -66,7 +66,9 @@
     "watch:assets": "node --experimental-strip-types scripts/workspace-watch.ts",
     "check": "tsc -p tsconfig.json",
     "docs:export": "zerux export",
-    "docs:serve": "zerux serve-static --dir docs-dist -p 3012"
+    "docs:serve": "zerux serve-static --dir docs-dist -p 3012",
+    "build:docs-assets": "node --experimental-strip-types scripts/documentation-assets.ts",
+    "predocs:export": "npm run build:docs-assets"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

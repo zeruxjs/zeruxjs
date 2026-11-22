@@ -1,0 +1,177 @@
+/* Optional scoped docs theme. Host styles override these scoped custom properties. */
+.zerux-docs-layout {
+  --docs-background: #fff;
+  --docs-text: #20202b;
+  --docs-accent: #6d28d9;
+  --docs-border: #d4d4df;
+  --docs-surface: #f5f4fa;
+
+  display: grid;
+  grid-template-columns: minmax(12rem, 17rem) minmax(0, 1fr);
+  gap: 2rem;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding: 1.5rem;
+  color: var(--docs-text);
+  background: var(--docs-background);
+  font-family: system-ui, sans-serif;
+  line-height: 1.7;
+}
+
+.zerux-docs-layout a {
+  color: var(--docs-accent);
+}
+
+.zerux-docs-layout :focus-visible {
+  outline: 3px solid var(--docs-accent);
+  outline-offset: 3px;
+}
+
+.zerux-docs-sidebar {
+  align-self: start;
+  position: sticky;
+  top: 1rem;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.zerux-docs-sidebar h2 {
+  font-size: 1rem;
+}
+
+.zerux-docs-sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.zerux-docs-sidebar a {
+  display: block;
+  padding: 0.25rem 0.5rem;
+}
+
+.zerux-docs-sidebar [aria-current] {
+  font-weight: 700;
+  border-inline-start: 3px solid currentcolor;
+}
+
+.zerux-docs-content {
+  min-width: 0;
+}
+
+.zerux-docs-content nav[aria-label='Breadcrumb'] ol {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0;
+  list-style: none;
+}
+
+.zerux-docs h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.2;
+}
+
+.zerux-docs :is(h2, h3, h4, h5, h6) {
+  scroll-margin-top: 2rem;
+}
+
+.zerux-docs img {
+  max-width: 100%;
+  height: auto;
+}
+
+.zerux-docs table {
+  display: block;
+  overflow: auto;
+  border-collapse: collapse;
+}
+
+.zerux-docs :is(th, td) {
+  border: 1px solid var(--docs-border);
+  padding: 0.5rem;
+}
+
+.zerux-docs-code {
+  margin-inline: 0;
+  border: 1px solid var(--docs-border);
+  border-radius: 0.5rem;
+  background: var(--docs-surface);
+}
+
+.zerux-docs-code figcaption {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--docs-border);
+  font-family: monospace;
+}
+
+.zerux-docs-code pre {
+  padding: 1rem;
+  overflow: auto;
+  margin: 0;
+}
+
+.zerux-docs-code button {
+  margin: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.zerux-docs-notice {
+  padding: 1rem;
+  margin-block: 1rem;
+  border-inline-start: 4px solid var(--docs-accent);
+  background: var(--docs-surface);
+}
+
+.zerux-docs-adjacent {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-block: 2rem;
+}
+
+.zerux-docs-skip {
+  position: absolute;
+  left: -10000px;
+}
+
+.zerux-docs-skip:focus {
+  position: static;
+  padding: 1rem;
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  .zerux-docs-layout {
+    --docs-background: #17171e;
+    --docs-text: #f3f2fa;
+    --docs-accent: #c4a7ff;
+    --docs-border: #585565;
+    --docs-surface: #24222f;
+  }
+}
+
+@media (width <= 48rem) {
+  .zerux-docs-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .zerux-docs-sidebar {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .zerux-docs-layout {
+    --docs-background: Canvas;
+    --docs-text: CanvasText;
+    --docs-accent: LinkText;
+    --docs-border: CanvasText;
+    --docs-surface: Canvas;
+  }
+}

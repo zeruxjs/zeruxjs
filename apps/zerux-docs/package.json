@@ -8,7 +8,7 @@
     "@zeruxjs/security": "0.0.4",
     "@zeruxjs/typescript": "0.0.4",
     "zeruxjs": "0.0.4",
-    "@zeruxjs/docs": "0.0.1"
+    "@zeruxjs/docs": "0.0.4"
   },
   "private": true,
   "scripts": {

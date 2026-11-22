@@ -1689,3 +1689,15 @@ files. Existing output replacement requires explicit ownership. Hosts retain the
 staging directory on failure and must clean it up. Promotion restores the previous
 output on rename failure; it does not implement cross-process locking. Serve only
 an exporter-owned directory, never arbitrary source or private storage.
+
+Static exports optionally accept `document: {lang: 'en', stylesheets: ['/theme.css']}`.
+Every stylesheet must be an explicitly selected, byte-verified local CSS source;
+the exporter maps it to the public mount before emitting the head. Declaring this
+metadata also emits a device-width viewport. Legacy callers retain their original
+document envelope. No arbitrary head HTML, remote stylesheets or executable scripts
+are introduced. Responsive `img`/`source` srcset accepts at most eight literal local
+selected image URLs, with unique positive width descriptors capped at 16384; a
+single bare candidate is supported for dark picture sources. Data/remote/unknown
+resources, density descriptors and malformed lists reject before last-good output
+promotion. This enables the docs adapter's explicit responsive-image integration;
+normal standalone docs exports default to primary-only markup for older hosts.

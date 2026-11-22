@@ -92,6 +92,13 @@ export interface StaticExportOptions<V> {
   };
   /** New export-owned adapter, disposed before publication; no app bootstrap. */
   renderer: () => RendererAdapter<V> | Promise<RendererAdapter<V>>;
+  /** Optional inert document metadata; stylesheet URLs must identify selected local CSS assets. */
+  document?: {
+    /** Explicit BCP-47 document language; no user locale is inferred. */
+    lang?: string;
+    /** At most sixteen source URLs from assets.include, emitted in declaration order. */
+    stylesheets?: readonly string[];
+  };
   /** Explicit local source/public manifest/include policy. */
   assets?: {
     /** Project-relative selected local asset directory. */
@@ -187,6 +194,85 @@ export class StaticExportError extends Error {
  */
 function fail(code: string): never {
   throw new StaticExportError(code);
+}
+/** Validate optional declarative document metadata without accepting arbitrary head HTML.
+ * @param {unknown} value - Host configuration candidate.
+ * @returns {boolean} Whether language and selected-source stylesheet declarations have bounded safe shapes.
+ */
+function validDocumentOptions(value: unknown): boolean {
+  if (value === undefined) {
+    return true;
+  }
+  if (!ownKeys(value, ['lang', 'stylesheets'])) {
+    return false;
+  }
+  /** Own-key validation precedes consuming the known declaration fields. */
+  const document = value as NonNullable<
+    StaticExportOptions<unknown>['document']
+  >;
+  if (
+    document.lang !== undefined &&
+    (typeof document.lang !== 'string' ||
+      !/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/.test(document.lang))
+  ) {
+    return false;
+  }
+  if (document.stylesheets === undefined) {
+    return true;
+  }
+  return (
+    Array.isArray(document.stylesheets) &&
+    document.stylesheets.length <= 16 &&
+    new Set(document.stylesheets).size === document.stylesheets.length &&
+    document.stylesheets.every(
+      (url) =>
+        typeof url === 'string' && /^\/(?!\/)[A-Za-z0-9_./-]+\.css$/.test(url)
+    )
+  );
+}
+/** Validate one responsive image attribute against the byte-verified exported resource inventory.
+ * @param {string} value - Authored srcset attribute; URLs with spaces/commas/data or remote origins are unsupported.
+ * @param {string} tag - Only img/source may carry responsive resource candidates.
+ * @param {ReadonlySet<string>} resources - Explicit mounted public assets already verified against actual bytes.
+ * @returns {void} Valid selected candidates or a fixed exporter failure before output promotion.
+ */
+function validateResponsiveSources(
+  value: string,
+  tag: string,
+  resources: ReadonlySet<string>
+): void {
+  if (!['img', 'source'].includes(tag)) {
+    fail('STATIC_ASSET_INVALID');
+  }
+  /** Only at most eight literal local width candidates can participate in native browser selection. */
+  const candidates = value.split(',').map((candidate) => candidate.trim());
+  if (!candidates.length || candidates.length > 8) {
+    fail('STATIC_ASSET_INVALID');
+  }
+  /** Distinct bounded descriptors prevent ambiguous duplicate-width selection. */
+  const widths = new Set<number>();
+  for (const candidate of candidates) {
+    /** Paths must match selected mounted assets exactly, with no normalization or query forwarding. */
+    const match =
+      /^(\/[A-Za-z0-9_./-]+\.(?:png|jpe?g|gif|webp|avif|svg))(?: ([1-9][0-9]{0,4})w)?$/i.exec(
+        candidate
+      );
+    if (
+      !match ||
+      (candidates.length > 1 && !match[2]) ||
+      !resources.has(match[1]!)
+    ) {
+      fail('STATIC_ASSET_MISSING');
+    }
+    if (match[2]) {
+      /** Descriptor policy agrees with the documentation image registry's intrinsic width ceiling. */
+      const width = Number(match[2]);
+      if (width > 16384 || widths.has(width)) {
+        fail('STATIC_ASSET_INVALID');
+      }
+      widths.add(width);
+    }
+  }
 }
 /** Hash candidate asset/file bytes for integrity and deterministic identity, never authorship.
  * @param {Uint8Array | string} bytes - Explicit local bytes or text.
@@ -368,6 +454,7 @@ export async function exportStaticSite<V>(
       'notFound',
       'renderer',
       'assets',
+      'document',
       'maxRoutes',
       'maxBytes',
       'maxPageBytes',
@@ -386,6 +473,7 @@ export async function exportStaticSite<V>(
     (options.notFound.title !== undefined &&
       (typeof options.notFound.title !== 'string' ||
         options.notFound.title.length > 256)) ||
+    !validDocumentOptions(options.document) ||
     (options.signal !== undefined &&
       !(options.signal instanceof AbortSignal)) ||
     (options.mode !== undefined && !['static', 'mixed'].includes(options.mode))
@@ -985,12 +1073,15 @@ export async function exportStaticSite<V>(
           fail('STATIC_SERVER_FEATURE');
         }
         for (const attr of node.attrs ?? []) {
-          if (
-            /^on/i.test(attr.name) ||
-            attr.name === 'srcset' ||
-            /^_action_/.test(attr.value)
-          ) {
+          if (/^on/i.test(attr.name) || /^_action_/.test(attr.value)) {
             fail('STATIC_SERVER_FEATURE');
+          }
+          if (attr.name === 'srcset') {
+            validateResponsiveSources(
+              attr.value,
+              name,
+              new Set(assetUrls.values())
+            );
           }
           if (
             [
@@ -1110,8 +1201,29 @@ export async function exportStaticSite<V>(
      * @param {string | undefined} canonical - Optional validated public canonical URL; omitted for real 404 output.
      * @returns {string} Complete deterministic document without hydration/server runtime serialization.
      */
+    /** Explicit source CSS URLs resolve through the selected byte-verified asset map. */
+    const documentStyles = (options.document?.stylesheets ?? [])
+      .map((source) => {
+        /** Mounted destination identity comes from the exporter, never raw authored head HTML. */
+        const href = assetUrls.get(source);
+        if (!href) {
+          fail('STATIC_ASSET_MISSING');
+        }
+        return `<link rel="stylesheet" href="${escapeHtmlAttribute(href)}">`;
+      })
+      .join('');
+    /** Canonicalize only a host-declared language; legacy callers keep their original document envelope. */
+    const documentLanguage = options.document?.lang
+      ? new Intl.Locale(options.document.lang).toString()
+      : undefined;
+    /** Serialize only the validated title/canonical/resources around a completed inert body.
+     * @param {string} title - Authored document title.
+     * @param {string} html - Validated completed static fragment.
+     * @param {string} [canonical] - Exact exporter-owned public page URL.
+     * @returns {string} Deterministic standalone document; no raw head HTML or scripts are accepted.
+     */
     const document = (title: string, html: string, canonical?: string) =>
-      `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtmlText(title)}</title>${canonical ? `<link rel="canonical" href="${escapeHtmlAttribute(canonical)}">` : ''}</head><body>${html}</body></html>\n`;
+      `<!doctype html><html${documentLanguage ? ` lang="${escapeHtmlAttribute(documentLanguage)}"` : ''}><head><meta charset="utf-8">${options.document ? '<meta name="viewport" content="width=device-width, initial-scale=1">' : ''}<title>${escapeHtmlText(title)}</title>${documentStyles}${canonical ? `<link rel="canonical" href="${escapeHtmlAttribute(canonical)}">` : ''}</head><body>${html}</body></html>\n`;
     for (const page of pages.sort((a, b) =>
       a.pathname < b.pathname ? -1 : 1
     )) {
