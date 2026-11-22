@@ -10,21 +10,21 @@ import path from 'node:path';
  * @returns Command and argument array suitable for spawn or spawnSync.
  */
 /** Perform the npm command operation.
- * @param {unknown} args - Input value for args.
- * @param {unknown} root1 - Input value for root1.
- * @param {unknown} root1.execPath - Input value for exec path.
- * @param {unknown} root1.platform - Input value for platform.
- * @param {unknown} root1.npmExecPath - Input value for npm exec path.
- * @returns {unknown} Result produced by npm command.
+ * @param {string[]} args - Literal npm arguments forwarded without a shell.
+ * @param {object} root1 - Optional native executable/CLI resolution policy.
+ * @param {string} [root1.execPath] - Node executable; defaults to the running process.
+ * @param {string} [root1.platform] - Host platform used for native fallback policy.
+ * @param {string} [root1.npmExecPath] - npm-owned CLI path from the current run session.
+ * @returns {{command:string,args:string[]}} Shell-free native executable and literal arguments.
  */
 export function npmCommand(
-  args,
+  args: string[],
   {
     execPath = process.execPath,
     platform = process.platform,
     npmExecPath = process.env.npm_execpath,
-  } = {}
-) {
+  }: { execPath?: string; platform?: string; npmExecPath?: string } = {}
+): { command: string; args: string[] } {
   /** Local value for candidates. */
   const candidates = [
     npmExecPath,

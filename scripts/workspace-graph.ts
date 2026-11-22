@@ -139,10 +139,13 @@ export function planWorkspaces(
     requireBuild?: boolean;
   } = {}
 ) {
-  /** Local value for names. */
-  const names = [...entries.keys()].sort();
+  /** Discovery owns string identities; all graph maps are seeded before traversal. */
+  const names: string[] = [...entries.keys()].sort();
   /** Local value for bootstraps. */
-  const bootstraps = new Map();
+  const bootstraps = new Map<
+    string,
+    { script: string; dependencies: string[] }
+  >();
   for (const name of names) {
     /** Local value for metadata. */
     const metadata = entries.get(name).pkg.workspaceBuild;
@@ -167,7 +170,7 @@ export function planWorkspaces(
       new Set(metadata.finalizeDependencies).size !==
         metadata.finalizeDependencies.length ||
       metadata.finalizeDependencies.some(
-        (dep) =>
+        (dep: unknown) =>
           typeof dep !== 'string' ||
           dep === name ||
           !entries.has(dep) ||
@@ -189,9 +192,11 @@ export function planWorkspaces(
     }
   }
   /** Workspace-to-workspace edges used for ordering and dependent expansion. */
-  const dependencies = new Map();
+  const dependencies = new Map<string, string[]>();
   /** Reverse dependency edges used when callers request dependent workspaces. */
-  const dependents = new Map(names.map((name) => [name, new Set()]));
+  const dependents = new Map<string, Set<string>>(
+    names.map((name) => [name, new Set<string>()])
+  );
   for (const name of names) {
     /** Local value for manifest. */
     const manifest = entries.get(name).pkg;
@@ -217,7 +222,7 @@ export function planWorkspaces(
       .sort();
     dependencies.set(name, deps);
     for (const dep of deps) {
-      dependents.get(dep).add(name);
+      dependents.get(dep)!.add(name);
     }
   }
   /** DFS state used to detect cycles while producing a stable topological order. */
@@ -225,7 +230,7 @@ export function planWorkspaces(
     /** Nodes already emitted into the topological order. */
     visited = new Set(),
     /** Dependency-first workspace order returned to the scheduler. */
-    order = [];
+    order: string[] = [];
   /**
    * Run the visit callback.
    * @param {unknown} name - Input value for name.
@@ -243,7 +248,7 @@ export function planWorkspaces(
       return;
     }
     visiting.add(name);
-    for (const dep of dependencies.get(name)) {
+    for (const dep of dependencies.get(name)!) {
       visit(dep, [...stack, name]);
     }
     visiting.delete(name);
@@ -268,7 +273,7 @@ export function planWorkspaces(
       return;
     }
     selected.add(name);
-    for (const dep of dependencies.get(name)) {
+    for (const dep of dependencies.get(name)!) {
       addWithDeps(dep);
     }
   };
@@ -281,7 +286,7 @@ export function planWorkspaces(
     /** Breadth-first frontier used to add dependents without changing scope order. */
     const queue = [...scopes];
     while (queue.length) {
-      for (const dependent of dependents.get(queue.shift())) {
+      for (const dependent of dependents.get(queue.shift()!)!) {
         if (!selected.has(dependent)) {
           addWithDeps(dependent);
           queue.push(dependent);
@@ -315,13 +320,13 @@ export function planWorkspaces(
     dependencies: new Map(
       ordered.map((name) => [
         name,
-        dependencies.get(name).filter((dep) => ordered.includes(dep)),
+        dependencies.get(name)!.filter((dep) => ordered.includes(dep)),
       ])
     ),
     bootstrapScripts: new Map(
       ordered
         .filter((name) => bootstraps.has(name))
-        .map((name) => [name, bootstraps.get(name).script])
+        .map((name) => [name, bootstraps.get(name)!.script])
     ),
     finalize: ordered.filter((name) => bootstraps.has(name)),
   };

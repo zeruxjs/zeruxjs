@@ -177,6 +177,19 @@ positive and negative fixture when extending the enforced policy.
 
 ## Publishing and deployment
 
+Publish explicitly selected packages from an interactive terminal:
+
+```sh
+npm run publish -- -p @zeruxjs/docs -p zuixs
+# No builds, authentication or registry access:
+npm run publish -- -p @zeruxjs/docs --dry-run
+```
+
+The command builds all packages first, retains native npm browser/2FA prompts,
+checks newly uploaded archive integrity every 15 seconds and verifies all three
+trusted-publisher permissions. It never bumps versions. See the publishing guide
+for finite deadlines, partial completion and existing-publisher safeguards.
+
 [Automatic npm publishing](NPM_PUBLISHING.md) describes version checks and trusted publishing. [GitHub Actions release checks](GITHUB_ACTIONS_RELEASE_SETUP.md) documents workspace verification and release evidence. [Static-site deployment](SITE_DEPLOYMENT.md) covers the combined website and documentation output.
 
 Local builds and unit tests establish only the behavior they exercise. Consult package-specific integration requirements for databases, Redis, mail providers, cloud storage and browsers.

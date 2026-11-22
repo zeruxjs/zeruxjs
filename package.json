@@ -89,7 +89,9 @@
     "check:source-migration": "node --experimental-strip-types scripts/check-source-migration.ts",
     "quality:policy": "node --experimental-strip-types --test scripts/quality-policy.test.ts",
     "format:reviewed": "node --experimental-strip-types scripts/format-reviewed.ts",
-    "test:security-properties": "node --experimental-strip-types --test scripts/security-properties.test.ts"
+    "test:security-properties": "node --experimental-strip-types --test scripts/security-properties.test.ts",
+    "publish": "node --experimental-strip-types scripts/publish-selected.ts",
+    "test:publish": "node --experimental-strip-types --test scripts/selected-publish.test.ts"
   },
   "workspaces": [
     "packages/@zenixjs/*",
