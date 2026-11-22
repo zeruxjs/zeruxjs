@@ -7,7 +7,8 @@
   "dependencies": {
     "@zeruxjs/security": "0.0.4",
     "@zeruxjs/typescript": "0.0.4",
-    "zeruxjs": "0.0.4"
+    "zeruxjs": "0.0.4",
+    "@zeruxjs/docs": "0.0.1"
   },
   "private": true,
   "scripts": {
@@ -17,8 +18,9 @@
     "start": "node --experimental-strip-types scripts/serve.ts",
     "check": "node --experimental-strip-types scripts/check.ts",
     "snapshot": "node --experimental-strip-types scripts/snapshot.ts",
-    "prebuild": "node --experimental-strip-types ../../scripts/build-workspaces.ts --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security",
-    "predev": "node --experimental-strip-types ../../scripts/build-workspaces.ts --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security"
+    "prebuild": "node --experimental-strip-types ../../scripts/build-workspaces.ts --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security --scope @zeruxjs/docs",
+    "predev": "node --experimental-strip-types ../../scripts/build-workspaces.ts --scope zuixs --scope @zeruxjs/typescript --scope @zeruxjs/performance --scope @zeruxjs/search --scope @zeruxjs/security --scope @zeruxjs/docs",
+    "serve:static": "zerux serve-static --dir dist -p 3011"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

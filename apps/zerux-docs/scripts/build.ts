@@ -1,3 +1,4 @@
+import { publishStaticOutput } from 'zeruxjs/static-site';
 import { validateAcademy } from '../src/lib/academy.ts';
 import { emitOffline } from './offline.ts';
 import { navigationGroups } from '../src/lib/navigation.ts';
@@ -480,37 +481,16 @@ export async function build({ production = true } = {}) {
     await emitOffline(mountedRoot, site, pages, assets, { production });
     /** Candidate validation must succeed before touching the existing export. */
     const result = await check(staging);
-    /** Existing output metadata; symlink outputs are rejected before rename. */
-    const existing = await fs.lstat(output).catch((error) => {
-      if (error.code !== 'ENOENT') {
-        throw error;
-      }
-      return null;
+    /** Framework owns atomic public-output publication; this app retains its authored rendering/validation. */
+    await publishStaticOutput({
+      rootDir: root,
+      stagingDir: staging,
+      outDir: 'dist',
+      replaceExisting: true,
+      validate: async (directory) => {
+        await check(directory);
+      },
     });
-    if (existing?.isSymbolicLink()) {
-      throw new Error('Refusing symlinked docs output');
-    }
-    /** Reserved rollback location; an existing recovery directory requires operator inspection. */
-    const previous = path.join(root, '.docs-previous');
-    if (await fs.lstat(previous).catch(() => null)) {
-      throw new Error(
-        'Previous build directory exists; inspect before building'
-      );
-    }
-    if (existing) {
-      await fs.rename(output, previous);
-    }
-    try {
-      await fs.rename(staging, output);
-    } catch (error) {
-      if (existing) {
-        await fs.rename(previous, output);
-      }
-      throw error;
-    }
-    if (existing) {
-      await fs.rm(previous, { recursive: true, force: true });
-    }
     console.info(
       `[docs] ${pages.length} routes · ${result.links} verified local links · ${search.length} search entries → dist/`
     );

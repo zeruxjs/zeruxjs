@@ -94,6 +94,10 @@
       "types": "./dist/privacy.d.ts",
       "browser": null,
       "import": "./dist/privacy.js"
+    },
+    "./static-site": {
+      "types": "./dist/static-site.d.ts",
+      "import": "./dist/static-site.js"
     }
   },
   "license": "(MIT OR Apache-2.0)",

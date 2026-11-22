@@ -13,6 +13,11 @@
     "deployment",
     "reference-create-zyro-app",
     "structure"
+  ],
+  "parts": [
+    {
+      "include": "documentation-boundaries"
+    }
   ]
 }
 ---

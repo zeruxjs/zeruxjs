@@ -181,6 +181,15 @@ positive and negative fixture when extending the enforced policy.
 
 Local builds and unit tests establish only the behavior they exercise. Consult package-specific integration requirements for databases, Redis, mail providers, cloud storage and browsers.
 
+## Security property checks
+
+After installing locked development dependencies, build the security package and
+run `npm run test:security-properties` for bounded, seeded property tests of its
+HTML/JSON encoders and navigation origin policy. The existing workspace tooling
+CI suite includes these tests. See the [security automation guide](.github/security/README.md#reproducible-security-property-tests)
+for budgets, replay information and coverage limits. No application or live
+provider is started.
+
 ## Contributing, security and licenses
 
 Read the [contribution guide](CONTRIBUTING.md), [development instructions](AGENTS.md), [code of conduct](CODE_OF_CONDUCT.md) and [security policy](SECURITY.md).

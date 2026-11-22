@@ -41,7 +41,8 @@
     "zlocale": "0.0.4",
     "ztrial": "0.0.4",
     "zuixs": "0.0.4",
-    "zyrojs": "0.0.4"
+    "zyrojs": "0.0.4",
+    "@zeruxjs/docs": "0.0.1"
   },
   "private": true,
   "scripts": {
@@ -63,7 +64,9 @@
     "precheck:browser": "npm run build",
     "workspace:configure": "node --experimental-strip-types scripts/workspace-configure.ts",
     "watch:assets": "node --experimental-strip-types scripts/workspace-watch.ts",
-    "check": "tsc -p tsconfig.json"
+    "check": "tsc -p tsconfig.json",
+    "docs:export": "zerux export",
+    "docs:serve": "zerux serve-static --dir docs-dist -p 3012"
   },
   "homepage": "https://github.com/zeruxjs/zeruxjs#readme",
   "bugs": {

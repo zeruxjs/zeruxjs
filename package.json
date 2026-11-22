@@ -88,7 +88,8 @@
     "check:types:tests": "node --experimental-strip-types scripts/check-test-types.ts",
     "check:source-migration": "node --experimental-strip-types scripts/check-source-migration.ts",
     "quality:policy": "node --experimental-strip-types --test scripts/quality-policy.test.ts",
-    "format:reviewed": "node --experimental-strip-types scripts/format-reviewed.ts"
+    "format:reviewed": "node --experimental-strip-types scripts/format-reviewed.ts",
+    "test:security-properties": "node --experimental-strip-types --test scripts/security-properties.test.ts"
   },
   "workspaces": [
     "packages/@zenixjs/*",
@@ -106,6 +107,7 @@
     "better-sqlite3": "^12.6.2",
     "eslint": "9.39.4",
     "eslint-plugin-jsdoc": "65.4.7",
+    "fast-check": "4.11.0",
     "globals": "17.14.0",
     "html-validate": "11.21.1",
     "postcss-media-query-parser": "file:vendor/zeruxjs-scss-media-parser-0.2.3.tgz",

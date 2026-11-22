@@ -214,3 +214,18 @@ Content loading validates public manifest claims, route metadata and implementat
 Build helpers write only a staged candidate and validate it before promotion. Importing `build` or `check` does not invoke their CLI entry points. Preview and browser-check scripts are explicit executable tools with their own listener/process lifetimes; do not import them as application plugins. The generated worker program is an authored build payload, not an evaluator for content-supplied JavaScript.
 
 Browser enhancements are authored in `src/browser/*.ts` and compiled by the static asset pipeline to the existing `assets/*.js` URLs. TypeScript source is never copied into the public export. The trusted build configuration and Zuixs recipes also use `.ts`; execute repository Node tooling with the documented type-stripping flag.
+
+## Shared documentation catalog and framework publication
+
+`@zeruxjs/docs` validates/composes page parts. A version folder can contain inert
+`fragments.json` mapping identifiers to part arrays. Optional front-matter `parts`
+are expanded before the page body; includes never execute code or select a file.
+The package guide and static deployment guide share a real part this way.
+
+The application still owns its authored theme, search/raw Markdown/offline assets
+and content checks. Successful candidates are now published through
+`publishStaticOutput` from `zeruxjs/static-site`, which records an integrity manifest
+and atomically replaces the prior output. `zerux serve-static --dir dist` can serve
+that output without framework services. Existing app preview/watch commands remain
+available. This is shared content/publication infrastructure, not a claim of
+Next.js/Nuxt feature parity or automatic hydration.

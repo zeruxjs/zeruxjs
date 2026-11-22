@@ -299,7 +299,7 @@ test('removes obsolete workspace links but keeps legitimate downloaded entries',
   );
 });
 
-test('lock recovery automatically proposes reviewed changes, never weakens the required source lock gate', () => {
+test('lock recovery proposes metadata-only changes and rejects incomplete graphs before locked installation', () => {
   /** Local value for workflow. */
   const workflow = fs.readFileSync(
     new URL('../.github/workflows/package-lock-recovery.yml', import.meta.url),
@@ -313,17 +313,14 @@ test('lock recovery automatically proposes reviewed changes, never weakens the r
   assert.match(workflow, /push:\s*\n\s*branches: \[master, dev, test\]/);
   assert.match(workflow, /- 'packages\/\*\*\/package\.json'/);
   assert.match(workflow, /- '\.github\/workflows\/package-lock-recovery\.yml'/);
+  assert.doesNotMatch(workflow, /npm (?:install|update)|npx|continue-on-error/);
   assert.match(
     workflow,
-    /run: npm install --package-lock-only --ignore-scripts/
+    /- name: Synchronize committed workspace metadata[\s\S]*?run: npm run deps:sync-local/
   );
   assert.match(
     workflow,
-    /- name: Synchronize local workspace metadata after npm resolution[\s\S]*?run: npm run deps:sync-local/
-  );
-  assert.match(
-    workflow,
-    /- name: Require complete, validated dependency graph\s*\n\s*if: steps\.current\.outcome == 'failure'\s*\n\s*run: npm run deps:check/
+    /- name: Require complete, validated dependency graph\s*\n\s*run: npm run deps:check/
   );
   assert.match(workflow, /git add -- package-lock\.json/);
   assert.match(workflow, /gh pr create/);
@@ -333,8 +330,20 @@ test('lock recovery automatically proposes reviewed changes, never weakens the r
     workflow,
     /git push --force|run:\s*npm publish|--legacy-peer-deps/
   );
-  assert.match(workflow, /name: Prove resolved lockfile can install and build/);
+  assert.match(
+    workflow,
+    /name: Prove committed lockfile can install and build/
+  );
   assert.match(workflow, /run: npm ci --no-audit --no-fund/);
+  // Missing external resolutions must fail before npm can download or execute dependencies.
+  assert.ok(
+    workflow.indexOf('run: npm run deps:sync-local') <
+      workflow.indexOf('run: npm run deps:check')
+  );
+  assert.ok(
+    workflow.indexOf('run: npm run deps:check') <
+      workflow.indexOf('run: npm ci')
+  );
   assert.match(
     sourceWorkflow,
     /Check committed lockfile before scheduling six platform installs\s*\n\s*run: npm run deps:check/
@@ -347,7 +356,7 @@ test('lock recovery dependency execution has no write token; proposal job only p
     new URL('../.github/workflows/package-lock-recovery.yml', import.meta.url),
     'utf8'
   );
-  /** Separate privileged proposal from the read-only resolution/build job. */
+  /** Separate privileged proposal from the read-only metadata/build job. */
   const [recovery, proposal] = workflow.split('  propose:');
   assert.match(recovery, /permissions:\n {2}contents: read/);
   assert.doesNotMatch(recovery, /(?:contents|actions|pull-requests): write/);

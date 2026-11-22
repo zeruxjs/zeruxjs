@@ -59,6 +59,36 @@ const addCommands = () => {
     }
   );
 
+  cli.addCommand(
+    'zerux',
+    'export',
+    async () => {
+      registerLoader('zerux', { sourceRoot: process.cwd() });
+      /** Static-only command implementation remains lazy for normal runtime consumers. */
+      const { exportProject } = await import('../commands/static.js');
+      await exportProject();
+    },
+    {
+      description: 'Export explicitly enumerated public routes',
+      docs: 'Loads trusted zerux.static.ts/js without starting services.',
+      example: 'zerux export',
+    }
+  );
+  cli.addCommand(
+    'zerux',
+    'serve-static',
+    async (args) => {
+      /** Explicit static hosting bypasses service/bootstrap and optional export parsers. */
+      const { serveStaticProject } = await import('../commands/static.js');
+      await serveStaticProject(args.namedArgs);
+    },
+    {
+      description: 'Serve verified static output',
+      docs: 'Serves manifest-listed output without runtime services.',
+      example: 'zerux serve-static --dir out -p 3000',
+    }
+  );
+
   /**
    * Lint Commands (auto-generated)
    */

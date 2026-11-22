@@ -1661,3 +1661,31 @@ unregister handle. Cache startup deadlines bound waiting rather than cancelling
 underlying manager creation. A running thread-task timeout requests native termination without awaiting it;
 the task rejection is not a native termination-settlement receipt. The public examples retain owners and release them in cleanup;
 privacy examples require injected durable stores and verified host policies.
+
+## Explicit static export and hosting
+
+The existing `zeruxjs/static-export` API is also available through `zerux export`.
+Create a trusted local `zerux.static.ts` or `zerux.static.js` default-exporting the
+existing explicit public route/renderer/origin/output options. The CLI supplies
+its current directory as `rootDir`; it does not discover private application
+routes or bootstrap services. Export configuration is executable host code, never
+an uploaded document. The existing exporter retains finite route enumeration,
+public-data validation, deterministic rendering and atomic last-good publication.
+
+`zerux serve-static --dir out -p 3000` serves manifest-listed files with integrity
+checks, GET/HEAD, ETags, real 404s and conservative private headers on authenticated
+requests. It defaults to loopback; bind `--host 0.0.0.0` only as an explicit host
+operation. Port conflicts fail without stopping another process. TLS, reverse
+proxy admission and production operational policy remain hosting responsibilities.
+No portless proxy or private application service is started. `zerux dev`,
+`zerux build` and `zerux start` retain their dynamic Node application behavior.
+There is no automatic full-framework hydration or Next.js feature parity.
+
+`zeruxjs/static-site` exports `publishStaticOutput` for a host-rendered completed
+public directory and `createStaticSiteHandler` for either framework export manifest.
+The publisher rejects source/output overlap, symlinks, hidden/private names,
+changed validation candidates, files over 16 MiB and trees over 256 MiB/100000
+files. Existing output replacement requires explicit ownership. Hosts retain the
+staging directory on failure and must clean it up. Promotion restores the previous
+output on rename failure; it does not implement cross-process locking. Serve only
+an exporter-owned directory, never arbitrary source or private storage.

@@ -245,3 +245,24 @@ client asset; no authored browser module is imported during Node startup.
 `lib/workspace` owns the private server services, `client` owns disposable browser enhancements, and the plugin registers them under one framework generation. Operator scripts own their input, watcher, file and process lifetimes. Schema initialization and browser qualification are explicit commands, not import side effects. The asset builder compiles candidates first and then promotes each output with an individual rename; those renames are not one transaction across four files.
 
 The historical `public/src/zyro.js` bundle is preserved as generated compatibility output. Current counter code uses `client/counter.ts` and the installed library, built into `public/counter-client.js`. Review authored sources rather than editing generated bundles; the historical bundle does not define the current library’s contracts.
+
+## Versioned public documentation
+
+Public pages at `/docs/current/introduction/`, `/docs/current/rendering/` and
+`/docs/baseline/introduction/` use `@zeruxjs/docs`; `/docs` redirects to the current
+introduction. These pages do not read authenticated workspace records. The docs
+plugin is registered through normal ZeruxJS plugin discovery.
+
+`npm run docs:export` loads the trusted `zerux.static.ts` configuration and exports
+only the public catalog to `docs-dist`, without loading runtime config, workers,
+SQLite or credentials. `npm run docs:serve` serves that output on loopback port
+3012 through the framework static server; a port conflict fails without stopping
+another app. Change the explicit public origin in the export configuration for
+another deployment. `npm run dev`/`npm start` retain the dynamic application.
+Static output cannot provide authenticated workspace/protocol endpoints. No app is
+started by importing the catalog. Generated docs output is excluded from watching.
+
+The documentation sample declares explicit sidebar sections/order and enables
+local-link preflight before static export. Its shared article renderer supplies
+heading anchors, a table of contents and previous/next links. Release persistence
+remains a host operation; the sample does not automatically rewrite archived docs.

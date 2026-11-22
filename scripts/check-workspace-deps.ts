@@ -42,10 +42,10 @@ try {
         console.error(`  ${item.name}: ${item.requiredBy.join(', ')}`);
       }
       console.error(
-        '[deps] Restore the committed lockfile via GitHub Actions: Recover package-lock (manual, no publish).'
+        '[deps] Restore a complete reviewed lockfile from Git, or explicitly resolve missing dependencies locally.'
       );
       console.error(
-        '[deps] On a trusted branch push, recovery now proposes a review-only PR automatically. Merge it after its clean-install job passes.'
+        '[deps] CI recovery repairs local workspace metadata only; it never selects new external dependency versions.'
       );
       console.error(
         '[deps] Locally with registry access: npm install --package-lock-only --ignore-scripts --no-audit --no-fund && npm run deps:check && npm ci.'

@@ -19,6 +19,8 @@ This section is a maintained orientation map, not a claim that every capability 
 
 ### Runtime and package relationships
 
+- `@zeruxjs/docs` owns bounded version/part composition and inert snapshots; optional `/markdown` and `/zerux` keep content separate from trusted rendering. Private pages deny by default and never become export routes. ZeruxJS retains its general static exporter; `zerux export` and `zerux serve-static` are explicit alternatives to dynamic dev/build/start. `/static-site` owns bounded public artifact publication/manifest serving; docs apps keep their authored presentation and content checks. No automatic framework parity or hydration is implied.
+
 - `zeruxjs` directly depends on `zclivo`, `zhost`, `zlook`, `zforge`, hooks, database, cache and lint packages. Queue, validator, security, SQLite and parse5 integrations use optional peer contracts; selecting an integration still requires its dependencies and explicit host configuration. Inspect its [manifest](packages/zeruxjs/package.json) when changing foundational APIs.
 - Framework orientation: `packages/zeruxjs/src/index.ts` defines root exports, `src/bin/zerux.ts` is the CLI entry, `src/commands/` handles server/build commands, and `src/bootstrap/` contains configuration, runtime, request lifecycle, services and workers. `src/loader/` and `src/compiler/` handle loading and watching.
 - `zhost` owns hosting/proxy supervision and protocol gateway helpers, including MCP support. `zforge` supplies shared development tooling and depends on security helpers; `zlook` supplies watching. Do not reintroduce historical `zcli`, `zsrv`, `zwatch` or a separate MCP package based on old notes.
@@ -130,61 +132,62 @@ Each row is backed by a public manifest under `packages/`. Internal helper packa
 
 | #   | Path                                | npm name                   | Purpose                                                                                                       |
 | --- | ----------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 1   | `packages/zeruxjs`                  | `zeruxjs`                  | Framework runtime, bootstrapping, routing, configuration, CLI commands and loaders                            |
-| 2   | `packages/zyrojs`                   | `zyrojs`                   | Standalone reactive state, DOM rendering and network clients                                                  |
-| 3   | `packages/@zeruxjs/accessibility`   | `@zeruxjs/accessibility`   | DOM accessibility helpers with explicit cleanup                                                               |
-| 4   | `packages/@zeruxjs/ai`              | `@zeruxjs/ai`              | Provider adapters, bounded chat/streaming requests, retries and fallbacks                                     |
-| 5   | `packages/@zeruxjs/ai-model`        | `@zeruxjs/ai-model`        | Local document retrieval, evidence excerpts and grounded prompt construction                                  |
-| 6   | `packages/@zeruxjs/analytics`       | `@zeruxjs/analytics`       | Database-backed events, collectors, email activity and bounded aggregation                                    |
-| 7   | `packages/@zeruxjs/asset-manager`   | `@zeruxjs/asset-manager`   | Validated asset/brand catalog, variants, snapshots and persistence                                            |
-| 8   | `packages/@zeruxjs/auth`            | `@zeruxjs/auth`            | Password hashing, shared sessions/challenges, WebAuthn, explicit provider login and tenant/role authorization |
-| 9   | `packages/@zeruxjs/cache`           | `@zeruxjs/cache`           | Cache abstraction, bounded memory storage and adapter management                                              |
-| 10  | `packages/@zeruxjs/cache-memcache`  | `@zeruxjs/cache-memcache`  | Memcached cache adapter and bounded text transport; namespace clear is unsupported                            |
-| 11  | `packages/@zeruxjs/cache-redis`     | `@zeruxjs/cache-redis`     | Redis cache adapters, atomic limiter stores, namespace isolation and queue connection helpers                 |
-| 12  | `packages/@zeruxjs/cache-valkey`    | `@zeruxjs/cache-valkey`    | Bounded standalone/Cluster Valkey cache helper using iovalkey; explicit ownership and no automatic replay     |
-| 13  | `packages/@zeruxjs/db`              | `@zeruxjs/db`              | Named database connections, structured queries, tenant facades and migration contracts                        |
-| 14  | `packages/@zeruxjs/db-mongo`        | `@zeruxjs/db-mongo`        | MongoDB structured queries, validated expressions and opt-in deployment-probed session transactions           |
-| 15  | `packages/@zeruxjs/db-mysql`        | `@zeruxjs/db-mysql`        | MySQL parameterized SQL, pinned DML transactions, explicit row-count policy and string-preserving precision   |
-| 16  | `packages/@zeruxjs/db-pg`           | `@zeruxjs/db-pg`           | PostgreSQL parameterized SQL, pinned transactions, bounded leases and destructive cancellation                |
-| 17  | `packages/@zeruxjs/db-sql-core`     | `@zeruxjs/db-sql-core`     | Shared public parameterized SQL compiler and connector execution helpers                                      |
-| 18  | `packages/@zeruxjs/db-sqllite`      | `@zeruxjs/db-sqlite`       | SQLite connector with guarded synchronous transactions and online backups; npm name is `@zeruxjs/db-sqlite`   |
-| 19  | `packages/@zeruxjs/email`           | `@zeruxjs/email`           | SMTP delivery, inbox receiving/storage, campaigns and tracking integration                                    |
-| 20  | `packages/@zeruxjs/feed`            | `@zeruxjs/feed`            | RSS, Atom and JSON Feed generation and publication handlers                                                   |
-| 21  | `packages/@zeruxjs/files`           | `@zeruxjs/files`           | Named filesystem/S3-compatible stores and streaming file APIs                                                 |
-| 22  | `packages/@zeruxjs/font`            | `@zeruxjs/font`            | Font registry, build-time licensed font/icon assets, optional FontTools coverage and browser loading          |
-| 23  | `packages/@zeruxjs/hooks`           | `@zeruxjs/hooks`           | Request-scoped state/context, server lifecycle actions/filters and application path registry                  |
-| 24  | `packages/@zeruxjs/lint`            | `@zeruxjs/lint`            | Composable ESLint, Stylelint and Prettier runners                                                             |
-| 25  | `packages/@zeruxjs/media`           | `@zeruxjs/media`           | Private disk-backed media storage, bounded transfers and signed access                                        |
-| 26  | `packages/@zeruxjs/performance`     | `@zeruxjs/performance`     | Performance observations, resource hints, cache headers and timing utilities                                  |
-| 27  | `packages/@zeruxjs/queue`           | `@zeruxjs/queue`           | Legacy BullMQ compatibility facade plus explicit neutral factories and durable webhook coordination           |
-| 28  | `packages/@zeruxjs/queue-bullmq`    | `@zeruxjs/queue-bullmq`    | BullMQ/Redis implementation, scheduling, operations and durable delivery helpers                              |
-| 29  | `packages/@zeruxjs/queue-memcacheq` | `@zeruxjs/queue-memcacheq` | Destructive FIFO reads; opt-in bounded polling worker without acknowledgements or crash recovery              |
-| 30  | `packages/@zeruxjs/queue-rabbitmq`  | `@zeruxjs/queue-rabbitmq`  | Confirmed publishing and manual-ack pulls; opt-in supervised worker/topology service                          |
-| 31  | `packages/@zeruxjs/react`           | `@zeruxjs/react`           | External stores, injected hooks and optional native React DOM rendering                                       |
-| 32  | `packages/@zeruxjs/reports`         | `@zeruxjs/reports`         | Authorized analytics report definitions, queries and dashboard UI                                             |
-| 33  | `packages/@zeruxjs/search`          | `@zeruxjs/search`          | Standalone in-memory index and explicit tenant-scoped external-adapter registration                           |
-| 34  | `packages/@zeruxjs/search-elastic`  | `@zeruxjs/search-elastic`  | Explicit tenant-scoped official Elasticsearch adapter                                                         |
-| 35  | `packages/@zeruxjs/search-mille`    | `@zeruxjs/search-mille`    | Explicit Meilisearch adapter with tenant-bound asynchronous task receipts                                     |
-| 36  | `packages/@zeruxjs/security`        | `@zeruxjs/security`        | Application headers, CSRF/origin controls, escaping, cryptography, JWT policies and scoped rate admission     |
-| 37  | `packages/@zeruxjs/seo`             | `@zeruxjs/seo`             | Page metadata, sitemaps, robots files and crawler endpoints                                                   |
-| 38  | `packages/@zeruxjs/share`           | `@zeruxjs/share`           | Browser sharing plus opt-in authorized durable short links and a borrowed SQLite adapter                      |
-| 39  | `packages/@zeruxjs/tags`            | `@zeruxjs/tags`            | Versioned tag containers, consent-aware collection and approved destinations                                  |
-| 40  | `packages/@zeruxjs/typescript`      | `@zeruxjs/typescript`      | Transpilation, typechecking, typed environment presets, configuration, loaders and bundling                   |
-| 41  | `packages/@zeruxjs/validator`       | `@zeruxjs/validator`       | Typed schemas, bounded validation, browser form feedback and Fetch input adapters                             |
-| 42  | `packages/@zeruxjs/vue`             | `@zeruxjs/vue`             | Standalone refs, scoped bindings and optional native Vue rendering                                            |
-| 43  | `packages/@zeruxjs/zyro`            | `@zeruxjs/zyro`            | Observable state, scoped standalone-renderer conversions, async resources and subscription scopes             |
-| 44  | `packages/zhost`                    | `zhost`                    | HTTP hosting, protocol gateway, proxy and process supervision                                                 |
-| 45  | `packages/zclivo`                   | `zclivo`                   | Command registry, cooperative cleanup, transactional opt-in CLI plugins and minimal application starter       |
-| 46  | `packages/zlook`                    | `zlook`                    | Bounded shared filesystem reconciliation, subscriber isolation and cleanup diagnostics                        |
-| 47  | `packages/zforge`                   | `zforge`                   | Development tooling and runtime inspection                                                                    |
-| 48  | `packages/ztrial`                   | `ztrial`                   | Isolated test runners, scoped HTTP/browser fixtures, honest coverage and bounded pluggable reports            |
-| 49  | `packages/zlocale`                  | `zlocale`                  | Localization and request-scoped locale support                                                                |
-| 50  | `packages/zuixs`                    | `zuixs`                    | Utility CSS compiler and integrations                                                                         |
-| 51  | `packages/zenixjs`                  | `zenixjs`                  | Initial host-authenticated ZyroJS SSR CMS application on ZeruxJS                                              |
-| 52  | `packages/@zenixjs/core`            | `@zenixjs/core`            | Minimal tenant-authorized SQLite CMS domain core; compatible metadata                                         |
-| 53  | `packages/create/create-zerux-app`  | `create-zerux-js`          | `create-zerux-js` safe HTML-only SSR generator (ZyroJS/React/Vue)                                             |
-| 54  | `packages/create/create-zyro-app`   | `create-zyro-app`          | `create-zyro-app` safe standalone generator; client/static/SSR/hydrated JS/TS templates                       |
-| 55  | `packages/create/create-zenix-app`  | `create-zenix-js`          | `create-zenix-js` safe SQLite CMS integration generator; explicit host-policy prerequisites                   |
+| 1 | `packages/zeruxjs`                  | `zeruxjs`                  | Framework runtime, bootstrapping, routing, configuration, CLI commands and loaders                            |
+| 2 | `packages/zyrojs`                   | `zyrojs`                   | Standalone reactive state, DOM rendering and network clients                                                  |
+| 3 | `packages/@zeruxjs/accessibility`   | `@zeruxjs/accessibility`   | DOM accessibility helpers with explicit cleanup                                                               |
+| 4 | `packages/@zeruxjs/ai`              | `@zeruxjs/ai`              | Provider adapters, bounded chat/streaming requests, retries and fallbacks                                     |
+| 5 | `packages/@zeruxjs/ai-model`        | `@zeruxjs/ai-model`        | Local document retrieval, evidence excerpts and grounded prompt construction                                  |
+| 6 | `packages/@zeruxjs/analytics`       | `@zeruxjs/analytics`       | Database-backed events, collectors, email activity and bounded aggregation                                    |
+| 7 | `packages/@zeruxjs/asset-manager`   | `@zeruxjs/asset-manager`   | Validated asset/brand catalog, variants, snapshots and persistence                                            |
+| 8 | `packages/@zeruxjs/auth`            | `@zeruxjs/auth`            | Password hashing, shared sessions/challenges, WebAuthn, explicit provider login and tenant/role authorization |
+| 9 | `packages/@zeruxjs/cache`           | `@zeruxjs/cache`           | Cache abstraction, bounded memory storage and adapter management                                              |
+| 10 | `packages/@zeruxjs/cache-memcache`  | `@zeruxjs/cache-memcache`  | Memcached cache adapter and bounded text transport; namespace clear is unsupported                            |
+| 11 | `packages/@zeruxjs/cache-redis`     | `@zeruxjs/cache-redis`     | Redis cache adapters, atomic limiter stores, namespace isolation and queue connection helpers                 |
+| 12 | `packages/@zeruxjs/cache-valkey`    | `@zeruxjs/cache-valkey`    | Bounded standalone/Cluster Valkey cache helper using iovalkey; explicit ownership and no automatic replay     |
+| 13 | `packages/@zeruxjs/db`              | `@zeruxjs/db`              | Named database connections, structured queries, tenant facades and migration contracts                        |
+| 14 | `packages/@zeruxjs/db-mongo`        | `@zeruxjs/db-mongo`        | MongoDB structured queries, validated expressions and opt-in deployment-probed session transactions           |
+| 15 | `packages/@zeruxjs/db-mysql`        | `@zeruxjs/db-mysql`        | MySQL parameterized SQL, pinned DML transactions, explicit row-count policy and string-preserving precision   |
+| 16 | `packages/@zeruxjs/db-pg`           | `@zeruxjs/db-pg`           | PostgreSQL parameterized SQL, pinned transactions, bounded leases and destructive cancellation                |
+| 17 | `packages/@zeruxjs/db-sql-core`     | `@zeruxjs/db-sql-core`     | Shared public parameterized SQL compiler and connector execution helpers                                      |
+| 18 | `packages/@zeruxjs/db-sqllite`      | `@zeruxjs/db-sqlite`       | SQLite connector with guarded synchronous transactions and online backups; npm name is `@zeruxjs/db-sqlite`   |
+| 19 | `packages/@zeruxjs/docs` | `@zeruxjs/docs` | Versioned documentation catalogs, reusable inert parts, expanded snapshots and optional framework export adapters |
+| 20 | `packages/@zeruxjs/email`           | `@zeruxjs/email`           | SMTP delivery, inbox receiving/storage, campaigns and tracking integration                                    |
+| 21 | `packages/@zeruxjs/feed`            | `@zeruxjs/feed`            | RSS, Atom and JSON Feed generation and publication handlers                                                   |
+| 22 | `packages/@zeruxjs/files`           | `@zeruxjs/files`           | Named filesystem/S3-compatible stores and streaming file APIs                                                 |
+| 23 | `packages/@zeruxjs/font`            | `@zeruxjs/font`            | Font registry, build-time licensed font/icon assets, optional FontTools coverage and browser loading          |
+| 24 | `packages/@zeruxjs/hooks`           | `@zeruxjs/hooks`           | Request-scoped state/context, server lifecycle actions/filters and application path registry                  |
+| 25 | `packages/@zeruxjs/lint`            | `@zeruxjs/lint`            | Composable ESLint, Stylelint and Prettier runners                                                             |
+| 26 | `packages/@zeruxjs/media`           | `@zeruxjs/media`           | Private disk-backed media storage, bounded transfers and signed access                                        |
+| 27 | `packages/@zeruxjs/performance`     | `@zeruxjs/performance`     | Performance observations, resource hints, cache headers and timing utilities                                  |
+| 28 | `packages/@zeruxjs/queue`           | `@zeruxjs/queue`           | Legacy BullMQ compatibility facade plus explicit neutral factories and durable webhook coordination           |
+| 29 | `packages/@zeruxjs/queue-bullmq`    | `@zeruxjs/queue-bullmq`    | BullMQ/Redis implementation, scheduling, operations and durable delivery helpers                              |
+| 30 | `packages/@zeruxjs/queue-memcacheq` | `@zeruxjs/queue-memcacheq` | Destructive FIFO reads; opt-in bounded polling worker without acknowledgements or crash recovery              |
+| 31 | `packages/@zeruxjs/queue-rabbitmq`  | `@zeruxjs/queue-rabbitmq`  | Confirmed publishing and manual-ack pulls; opt-in supervised worker/topology service                          |
+| 32 | `packages/@zeruxjs/react`           | `@zeruxjs/react`           | External stores, injected hooks and optional native React DOM rendering                                       |
+| 33 | `packages/@zeruxjs/reports`         | `@zeruxjs/reports`         | Authorized analytics report definitions, queries and dashboard UI                                             |
+| 34 | `packages/@zeruxjs/search`          | `@zeruxjs/search`          | Standalone in-memory index and explicit tenant-scoped external-adapter registration                           |
+| 35 | `packages/@zeruxjs/search-elastic`  | `@zeruxjs/search-elastic`  | Explicit tenant-scoped official Elasticsearch adapter                                                         |
+| 36 | `packages/@zeruxjs/search-mille`    | `@zeruxjs/search-mille`    | Explicit Meilisearch adapter with tenant-bound asynchronous task receipts                                     |
+| 37 | `packages/@zeruxjs/security`        | `@zeruxjs/security`        | Application headers, CSRF/origin controls, escaping, cryptography, JWT policies and scoped rate admission     |
+| 38 | `packages/@zeruxjs/seo`             | `@zeruxjs/seo`             | Page metadata, sitemaps, robots files and crawler endpoints                                                   |
+| 39 | `packages/@zeruxjs/share`           | `@zeruxjs/share`           | Browser sharing plus opt-in authorized durable short links and a borrowed SQLite adapter                      |
+| 40 | `packages/@zeruxjs/tags`            | `@zeruxjs/tags`            | Versioned tag containers, consent-aware collection and approved destinations                                  |
+| 41 | `packages/@zeruxjs/typescript`      | `@zeruxjs/typescript`      | Transpilation, typechecking, typed environment presets, configuration, loaders and bundling                   |
+| 42 | `packages/@zeruxjs/validator`       | `@zeruxjs/validator`       | Typed schemas, bounded validation, browser form feedback and Fetch input adapters                             |
+| 43 | `packages/@zeruxjs/vue`             | `@zeruxjs/vue`             | Standalone refs, scoped bindings and optional native Vue rendering                                            |
+| 44 | `packages/@zeruxjs/zyro`            | `@zeruxjs/zyro`            | Observable state, scoped standalone-renderer conversions, async resources and subscription scopes             |
+| 45 | `packages/zhost`                    | `zhost`                    | HTTP hosting, protocol gateway, proxy and process supervision                                                 |
+| 46 | `packages/zclivo`                   | `zclivo`                   | Command registry, cooperative cleanup, transactional opt-in CLI plugins and minimal application starter       |
+| 47 | `packages/zlook`                    | `zlook`                    | Bounded shared filesystem reconciliation, subscriber isolation and cleanup diagnostics                        |
+| 48 | `packages/zforge`                   | `zforge`                   | Development tooling and runtime inspection                                                                    |
+| 49 | `packages/ztrial`                   | `ztrial`                   | Isolated test runners, scoped HTTP/browser fixtures, honest coverage and bounded pluggable reports            |
+| 50 | `packages/zlocale`                  | `zlocale`                  | Localization and request-scoped locale support                                                                |
+| 51 | `packages/zuixs`                    | `zuixs`                    | Utility CSS compiler and integrations                                                                         |
+| 52 | `packages/zenixjs`                  | `zenixjs`                  | Initial host-authenticated ZyroJS SSR CMS application on ZeruxJS                                              |
+| 53 | `packages/@zenixjs/core`            | `@zenixjs/core`            | Minimal tenant-authorized SQLite CMS domain core; compatible metadata                                         |
+| 54 | `packages/create/create-zerux-app`  | `create-zerux-js`          | `create-zerux-js` safe HTML-only SSR generator (ZyroJS/React/Vue)                                             |
+| 55 | `packages/create/create-zyro-app`   | `create-zyro-app`          | `create-zyro-app` safe standalone generator; client/static/SSR/hydrated JS/TS templates                       |
+| 56 | `packages/create/create-zenix-app`  | `create-zenix-js`          | `create-zenix-js` safe SQLite CMS integration generator; explicit host-policy prerequisites                   |
 
 ### Private packages and internal helpers
 
@@ -227,7 +230,7 @@ These are development/static-site consumers, not public library packages. Read t
 
 Use each `package.json` for actual npm names, visibility, exports, runtime requirements and scripts. Directory names can differ from npm names: `packages/@zeruxjs/db-sqllite` publishes `@zeruxjs/db-sqlite`, and `packages/create/create-zenix-app` publishes `create-zenix-js`. An empty/invalid manifest file or a directory/roadmap entry is not a package contract.
 
-GitHub security automation keeps one CodeQL workflow plus complementary static scans in [security.yml](.github/workflows/security.yml). See the [security automation guide](.github/security/README.md) for scanner gates, fork upload limits and tool updates. Semgrep uses its official digest-pinned image with read-only source and a separate report mount; no host credentials are forwarded. These workflows do not start apps or perform runtime fuzzing; root `eslint.config.mjs`/`stylelint.config.mjs` and `lint:*` commands explicitly consume the existing lint package and installed engines. Run `lint:prepare` after a clean install; CI lint jobs use read-only report commands. The private Stylelint bundle remains separately owned. Root HTML validation uses locked tooling and checks authored previews with documented inline-style exceptions. Reviewed Gitleaks/regex/type-test annotations remain narrow; they do not disable global security rules. The non-root dev image is digest pinned and requires operator-reviewed bind-mount permissions on rebuild. Static security validation runs on PRs and master pushes; feature-branch pushes avoid duplicate PR scans. Dependency Review is a separate PR-only workflow. Scorecard is default-branch-only; unconfigured runtime/API and RESTler fuzzers are manual-only with their safety flags retained. Merge-queue and scheduled/manual static validation remain separate, and deployment/mirror/release triggers retain their ownership.
+GitHub security automation keeps one CodeQL workflow plus complementary static scans in [security.yml](.github/workflows/security.yml). See the [security automation guide](.github/security/README.md) for scanner gates, fork upload limits and tool updates. Semgrep uses its official digest-pinned image with read-only source and a separate report mount; no host credentials are forwarded. These workflows do not start apps or perform runtime fuzzing; root `eslint.config.mjs`/`stylelint.config.mjs` and `lint:*` commands explicitly consume the existing lint package and installed engines. Run `lint:prepare` after a clean install; CI lint jobs use read-only report commands. The workspace tooling test glob includes bounded, seeded fast-check properties for security encoders/navigation; these do not start network/API fuzzers. The private Stylelint bundle remains separately owned. Root HTML validation uses locked tooling and checks authored previews with documented inline-style exceptions. Reviewed Gitleaks/regex/type-test annotations remain narrow; they do not disable global security rules. The non-root dev image is digest pinned and requires operator-reviewed bind-mount permissions on rebuild. Static security validation runs on PRs and master pushes; feature-branch pushes avoid duplicate PR scans. Dependency Review is a separate PR-only workflow. Scorecard is default-branch-only. Lock recovery repairs committed workspace metadata only; maintainers must explicitly resolve and review missing external dependencies before CI installation. Unconfigured runtime/API and RESTler fuzzers are manual-only with their safety flags retained. Merge-queue and scheduled/manual static validation remain separate, and deployment/mirror/release triggers retain their ownership.
 
 ## Workflow
 

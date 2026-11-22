@@ -1,3 +1,4 @@
+import { createDocumentation, type DocumentationPart } from '@zeruxjs/docs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -84,6 +85,17 @@ export async function loadContent() {
     }
     /** Configured version/package directory, resolved within the fixed repository layout. */
     const directory = path.join(root, 'src/docs', version.id);
+    /** Optional inert version-owned reusable paragraph definitions. */
+    const fragments = JSON.parse(
+      await fs
+        .readFile(path.join(directory, 'fragments.json'), 'utf8')
+        .catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== 'ENOENT') {
+            throw error;
+          }
+          return '{}';
+        })
+    );
     for (const entry of (await fs.readdir(directory)).sort()) {
       if (!entry.endsWith('.md')) {
         continue;
@@ -141,7 +153,26 @@ export async function loadContent() {
         version: version.id,
         versionInfo: version,
         url: sitePath(`/docs/${version.id}/${slug}/`),
-        body: match[2],
+        body: createDocumentation({
+          latest: version.id,
+          versions: [
+            {
+              id: version.id,
+              fragments,
+              documents: [
+                {
+                  slug,
+                  title: metadata.title,
+                  access: 'public',
+                  parts: [
+                    ...((metadata.parts ?? []) as DocumentationPart[]),
+                    match[2],
+                  ],
+                },
+              ],
+            },
+          ],
+        }).get(version.id, slug)!.body,
         source: `apps/zerux-docs/src/docs/${version.id}/${entry}`,
         readingMinutes: Math.max(1, Math.ceil(words / 200)),
       });

@@ -1,0 +1,62 @@
+{
+  "name": "@zeruxjs/docs",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Versioned documentation catalogs, reusable Markdown parts and explicit static/dynamic adapters",
+  "license": "(MIT OR Apache-2.0)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./markdown": {
+      "types": "./dist/markdown.d.ts",
+      "import": "./dist/markdown.js"
+    },
+    "./zerux": {
+      "types": "./dist/zerux.d.ts",
+      "import": "./dist/zerux.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --experimental-strip-types --test test/*.test.ts",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@zeruxjs/security": "0.0.4",
+    "marked": "^18.2.0"
+  },
+  "files": [
+    "dist/",
+    "examples/",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "typescript": "^5.9.3",
+    "zeruxjs": "0.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeruxjs/zeruxjs.git"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "peerDependencies": {
+    "zeruxjs": "0.0.4"
+  },
+  "peerDependenciesMeta": {
+    "zeruxjs": {
+      "optional": true
+    }
+  }
+}

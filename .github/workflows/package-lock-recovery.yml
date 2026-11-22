@@ -31,16 +31,12 @@ jobs:
           node-version: '24.15.0'
           cache: npm
           cache-dependency-path: package-lock.json
-      - name: Resolve package lock metadata
-        id: current
-        continue-on-error: true
-        run: npm install --package-lock-only --ignore-scripts
-      - name: Synchronize local workspace metadata after npm resolution
+      # Repair local metadata only; registry resolution must be reviewed before CI installs it.
+      - name: Synchronize committed workspace metadata
         run: npm run deps:sync-local
       - name: Require complete, validated dependency graph
-        if: steps.current.outcome == 'failure'
         run: npm run deps:check
-      - name: Prove resolved lockfile can install and build
+      - name: Prove committed lockfile can install and build
         run: npm ci --no-audit --no-fund
       - name: Build resolved workspaces
         run: npm run build:workspaces -- --concurrency auto

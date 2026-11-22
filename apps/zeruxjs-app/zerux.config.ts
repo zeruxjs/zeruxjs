@@ -11,7 +11,7 @@ const zeruxConfig: ZeruxConfig = {
   },
   server: {
     portless: process.env.ENABLE_PORTLESS_PROXY === 'true',
-    watchIgnoredPaths: ['.workspace'],
+    watchIgnoredPaths: ['.workspace', 'docs-dist'],
   },
   lifecycleHooks: createServerLifecycleHooks(),
   connectorManager: '@zeruxjs/db',

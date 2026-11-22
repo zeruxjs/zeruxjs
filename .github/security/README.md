@@ -2,7 +2,7 @@
 
 This is the repository-specific integration of the reviewed local security stack.
 It complements existing publishing, site deployment and GitLab mirror workflows;
-it does not replace those workflows or run application code.
+it does not replace those workflows or start application services.
 
 ## Checks and results
 
@@ -202,15 +202,49 @@ CodeQL remains in `workflows/codeql.yml` under job `analyze` to preserve the def
 
 ## Lockfile recovery token ownership
 
-The recovery workflow defaults to `contents: read`. Its `recover` job resolves,
-installs and builds the candidate dependency graph without repository write
-permissions. Only after that job succeeds does `propose` download this run's
-validated lockfile and receive the permissions needed to push a recovery branch,
-open a pull request and dispatch validation. The proposal job runs no npm install,
-package lifecycle script or workspace build. The artifact is restricted to the
-lockfile and retained for one day; it is not executable build output.
+The recovery workflow defaults to `contents: read`. Its `recover` job repairs
+only local workspace metadata, validates the complete committed dependency graph,
+then uses `npm ci` to install the lockfile's integrity-pinned external packages.
+It never resolves new registry versions. Missing external resolutions fail before
+installation; a maintainer must restore a reviewed complete lockfile or explicitly
+resolve dependencies locally and commit the result.
 
-This separation reduces token exposure; it does not make dependency resolution
-reproducible. The resolution step intentionally updates the lock, whereas the
-subsequent `npm ci` verifies that candidate. Full dependency hash pinning and
-maintainer review remain separate requirements.
+Only after validation/install/build succeed does `propose` download this run's
+validated lockfile and receive permissions to push a recovery branch, open a PR
+and dispatch validation. The proposal job runs no dependency installation,
+package lifecycle script or workspace build. The artifact contains only the
+lockfile and is retained for one day. This is not executable build output.
+
+The standard source gate still rejects stale/incomplete committed locks; metadata
+repair does not make that gate optional. A lockfile pins selected dependency
+bytes, not their safety or correctness; maintainer review and the existing
+build/security gates remain required.
+
+## Reproducible security property tests
+
+`npm run test:security-properties` runs four bounded fast-check campaigns over
+public `@zeruxjs/security/encoding` imports: HTML text/attribute delimiters,
+script-safe JSON and own-property preservation, approved navigation origins,
+and rejected schemes/foreign origins. Build the security package first:
+
+```sh
+npm run build --workspace @zeruxjs/security
+npm run test:security-properties
+```
+
+The root development dependency and its transitive dependency are locked by npm.
+The existing workspace validation job builds packages and runs
+`test:workspace-tools`, whose `scripts/*.test.ts` glob includes this test. No
+additional server, credentials, source upload or running application is needed.
+
+Each campaign uses seed `0x5eed`, 1000 runs, bounded UTF-16 strings/arrays and a
+10-second interruption limit that fails the campaign. The JSON campaign also
+includes a fixed script-termination example. Fast-check reports a seed and
+shrunk counterexample path on failure; retain those synthetic values when adding
+regressions. Inputs never come from private files or user records, and generated
+strings are never evaluated or inserted into a DOM. Time limits observe the
+bounded synchronous work; they cannot forcibly cancel arbitrary JavaScript.
+
+These properties cover the named pure helpers. They are not network/API fuzzing,
+coverage-guided fuzzing, or evidence that every package has been fuzzed. Scorecard
+recognition still requires its next default-branch scan.
