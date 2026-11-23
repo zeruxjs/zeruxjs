@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "html-to-text": "^10.0.1",
-    "imapflow": "^1.0.0",
+    "imapflow": "^2.12.1",
     "juice": "^11.0.0",
     "mailparser": "^3.14.3",
     "node-pop3": "^0.15.4",
