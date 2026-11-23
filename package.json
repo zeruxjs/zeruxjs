@@ -114,7 +114,7 @@
     "html-validate": "11.21.1",
     "postcss-media-query-parser": "file:vendor/zeruxjs-scss-media-parser-0.2.3.tgz",
     "postcss-scss": "4.0.9",
-    "prettier": "3.8.2",
+    "prettier": "3.10.1",
     "stylelint": "17.16.0",
     "stylelint-config-standard": "40.0.0",
     "stylelint-config-standard-scss": "17.0.0",
