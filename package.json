@@ -106,7 +106,7 @@
     "@zeruxjs/lint": "0.0.4",
     "@zeruxjs/performance": "0.0.4",
     "@zeruxjs/typescript": "0.0.4",
-    "better-sqlite3": "^12.6.2",
+    "better-sqlite3": "^13.2.0",
     "eslint": "9.39.4",
     "eslint-plugin-jsdoc": "65.4.7",
     "fast-check": "4.11.0",
