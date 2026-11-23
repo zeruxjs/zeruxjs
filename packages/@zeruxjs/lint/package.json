@@ -42,7 +42,7 @@
     "eslint-plugin-vue": "^10.12.1",
     "globals": "^17.14.0",
     "postcss-scss": "4.0.9",
-    "prettier": "^3.8.1",
+    "prettier": "^3.10.1",
     "stylelint": "17.16.0",
     "stylelint-config-standard": "40.0.0",
     "stylelint-config-standard-scss": "17.0.0",
