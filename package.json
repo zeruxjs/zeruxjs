@@ -108,7 +108,7 @@
     "@zeruxjs/typescript": "0.0.4",
     "better-sqlite3": "^12.6.2",
     "eslint": "9.39.4",
-    "eslint-plugin-jsdoc": "65.4.7",
+    "eslint-plugin-jsdoc": "65.4.8",
     "fast-check": "4.11.0",
     "globals": "17.14.0",
     "html-validate": "11.21.1",
