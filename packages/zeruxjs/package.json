@@ -127,7 +127,7 @@
     "@zeruxjs/queue": "0.0.4",
     "@zeruxjs/security": "0.0.4",
     "@zeruxjs/validator": "0.0.4",
-    "parse5": "^8.1.0"
+    "parse5": "^8.1.1"
   },
   "peerDependenciesMeta": {
     "@zeruxjs/queue": {
@@ -169,6 +169,6 @@
   },
   "optionalDependencies": {
     "graphql": "16.14.2",
-    "graphql-sse": "2.6.3"
+    "graphql-sse": "2.6.4"
   }
 }
